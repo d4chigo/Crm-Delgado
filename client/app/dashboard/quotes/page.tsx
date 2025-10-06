@@ -49,62 +49,13 @@ interface Quote {
   notes: string
 }
 
-export default function QuotesPage() {
+export default function PaginaCotizaciones() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
-  const [quotes, setQuotes] = useState<Quote[]>([
-    {
-      id: "1",
-      quoteNumber: "COT-2025-001",
-      clientName: "María González",
-      clientEmail: "maria.g@email.com",
-      property: "Dpto 301",
-      project: "Proyecto Los Olivos",
-      basePrice: 280000,
-      discount: 5,
-      finalPrice: 266000,
-      program: "Mi Vivienda",
-      status: "sent",
-      createdAt: "2025-01-15",
-      validUntil: "2025-02-15",
-      notes: "Incluye estacionamiento y depósito. Descuento por pronto pago.",
-    },
-    {
-      id: "2",
-      quoteNumber: "COT-2025-002",
-      clientName: "Carlos Ramírez",
-      clientEmail: "carlos.r@email.com",
-      property: "Dpto 502",
-      project: "Condominio San Isidro",
-      basePrice: 350000,
-      discount: 3,
-      finalPrice: 339500,
-      program: "Tradicional",
-      status: "accepted",
-      createdAt: "2025-01-14",
-      validUntil: "2025-02-14",
-      notes: "Cliente aprobó cotización. Proceder con separación.",
-    },
-    {
-      id: "3",
-      quoteNumber: "COT-2025-003",
-      clientName: "Ana Torres",
-      clientEmail: "ana.t@email.com",
-      property: "Casa 15",
-      project: "Torres del Norte",
-      basePrice: 220000,
-      discount: 0,
-      finalPrice: 220000,
-      program: "Techo Propio",
-      status: "draft",
-      createdAt: "2025-01-16",
-      validUntil: "2025-02-16",
-      notes: "Pendiente de envío. Verificar disponibilidad de bono.",
-    },
-  ])
+  const [quotes, setQuotes] = useState<Quote[]>([])
 
   const [newQuote, setNewQuote] = useState({
     clientName: "",

@@ -47,95 +47,14 @@ interface Property {
   features: string[]
 }
 
-export default function ProjectsPage() {
+export default function PaginaProyectos() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterType, setFilterType] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
 
-  const [properties, setProperties] = useState<Property[]>([
-    {
-      id: "1",
-      projectName: "Proyecto Los Olivos",
-      unitNumber: "Dpto 301",
-      type: "departamento",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 85,
-      price: 280000,
-      status: "disponible",
-      floor: "3er piso",
-      location: "Los Olivos, Lima",
-      program: "Mi Vivienda",
-      deliveryDate: "Diciembre 2025",
-      features: ["Estacionamiento", "Depósito", "Área común", "Seguridad 24/7"],
-    },
-    {
-      id: "2",
-      projectName: "Condominio San Isidro",
-      unitNumber: "Dpto 502",
-      type: "departamento",
-      bedrooms: 2,
-      bathrooms: 2,
-      area: 72,
-      price: 350000,
-      status: "reservado",
-      floor: "5to piso",
-      location: "San Isidro, Lima",
-      program: "Tradicional",
-      deliveryDate: "Marzo 2026",
-      features: ["Vista panorámica", "Estacionamiento doble", "Gimnasio", "Piscina"],
-    },
-    {
-      id: "3",
-      projectName: "Torres del Norte",
-      unitNumber: "Casa 15",
-      type: "casa",
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 120,
-      price: 220000,
-      status: "disponible",
-      floor: "2 pisos",
-      location: "Independencia, Lima",
-      program: "Techo Propio",
-      deliveryDate: "Inmediata",
-      features: ["Jardín", "Cochera", "Terraza", "Área de parrilla"],
-    },
-    {
-      id: "4",
-      projectName: "Edificio Miraflores",
-      unitNumber: "Dpto 801",
-      type: "departamento",
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 95,
-      price: 420000,
-      status: "vendido",
-      floor: "8vo piso",
-      location: "Miraflores, Lima",
-      program: "Tradicional",
-      deliveryDate: "Entregado",
-      features: ["Vista al mar", "Balcón", "Estacionamiento", "Depósito"],
-    },
-    {
-      id: "5",
-      projectName: "Residencial Surco",
-      unitNumber: "Dpto 204",
-      type: "departamento",
-      bedrooms: 2,
-      bathrooms: 1,
-      area: 65,
-      price: 195000,
-      status: "construccion",
-      floor: "2do piso",
-      location: "Santiago de Surco, Lima",
-      program: "Mi Vivienda",
-      deliveryDate: "Junio 2026",
-      features: ["Área verde", "Juegos infantiles", "Estacionamiento"],
-    },
-  ])
+  const [properties, setProperties] = useState<Property[]>([])
 
   const statusConfig = {
     disponible: { label: "Disponible", color: "bg-green-100 text-green-700 border-green-200" },
