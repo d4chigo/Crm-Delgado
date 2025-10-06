@@ -178,6 +178,31 @@ export class ContactoController {
       respuestaError(res, error.message || 'Error al convertir contacto', 500);
     }
   }
+
+  /**
+   * POST /api/contactos/convertir-leads/masivo
+   */
+  async convertirVariosALeads(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { ids } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        respuestaError(res, 'Debe proporcionar un array de IDs', 400);
+        return;
+      }
+
+      const resultado = await contactoService.convertirVariosALeads(ids, usuarioId);
+      respuestaExito(res, resultado, `${resultado.convertidos} contacto(s) convertido(s) a leads exitosamente`);
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al convertir contactos', 500);
+    }
+  }
 }
 
 export default new ContactoController();

@@ -146,6 +146,26 @@ class ContactoService {
       },
     });
   }
+
+  /**
+   * Convertir múltiples contactos a leads
+   */
+  async convertirVariosALeads(ids: string[]): Promise<{ convertidos: number; total: number; noConvertidos: number }> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<{ convertidos: number; total: number; noConvertidos: number }>('/contactos/convertir-leads/masivo', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+  }
 }
 
 export default new ContactoService();

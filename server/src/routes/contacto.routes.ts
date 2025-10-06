@@ -58,4 +58,10 @@ router.post(
   contactoController.convertirALead.bind(contactoController)
 );
 
+// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
+router.post(
+  '/convertir-leads/masivo',
+  contactoController.convertirVariosALeads.bind(contactoController)
+);
+
 export default router;

@@ -168,6 +168,29 @@ export function useContactos() {
   }
 
   /**
+   * Convertir múltiples contactos a leads
+   */
+  const convertirVariosALeads = async (ids: string[]): Promise<{ convertidos: number; total: number; noConvertidos: number }> => {
+    setEstaCargando(true)
+    setError(null)
+    
+    try {
+      const resultado = await contactoService.convertirVariosALeads(ids)
+      
+      // Recargar la lista completa después de la conversión masiva
+      await cargarContactos()
+      await cargarEstadisticas()
+      
+      return resultado
+    } catch (err: any) {
+      setError(err.message || 'Error al convertir contactos')
+      throw err
+    } finally {
+      setEstaCargando(false)
+    }
+  }
+
+  /**
    * Buscar contactos
    */
   const buscarContactos = (busqueda: string) => {
@@ -223,6 +246,7 @@ export function useContactos() {
     actualizarContacto,
     eliminarContacto,
     convertirALead,
+    convertirVariosALeads,
     
     // Funciones de filtrado/búsqueda
     buscarContactos,

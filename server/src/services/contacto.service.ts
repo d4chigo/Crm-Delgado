@@ -234,6 +234,40 @@ export class ContactoService {
   }
 
   /**
+   * Convertir múltiples contactos a leads
+   */
+  async convertirVariosALeads(ids: string[], usuarioId: string) {
+    // Verificar que todos los contactos existen y pertenecen al usuario
+    const contactos = await prisma.contacto.findMany({
+      where: {
+        id: { in: ids },
+        usuarioId,
+        tipo: TipoContacto.CONTACTO // Solo contactos que no sean ya leads o clientes
+      }
+    });
+
+    if (contactos.length === 0) {
+      throw new Error('No se encontraron contactos válidos para convertir');
+    }
+
+    // Convertir todos a leads
+    const resultado = await prisma.contacto.updateMany({
+      where: {
+        id: { in: contactos.map(c => c.id) }
+      },
+      data: {
+        tipo: TipoContacto.LEAD
+      }
+    });
+
+    return {
+      convertidos: resultado.count,
+      total: ids.length,
+      noConvertidos: ids.length - resultado.count
+    };
+  }
+
+  /**
    * Obtener estadísticas de contactos
    */
   async obtenerEstadisticas(usuarioId: string) {

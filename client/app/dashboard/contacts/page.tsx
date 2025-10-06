@@ -8,7 +8,9 @@ import { DialogoEliminarContacto } from "@/components/features/contacts/DialogoE
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useToast } from "@/hooks/use-toast"
+import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
 
 export default function PaginaContactos() {
@@ -22,11 +24,19 @@ export default function PaginaContactos() {
     crearContacto,
     actualizarContacto,
     eliminarContacto,
+    convertirALead,
+    convertirVariosALeads,
   } = useContactos()
 
+  const { toast } = useToast()
   const [busqueda, setBusqueda] = useState("")
   const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
+  const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
+  const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
+
+  // Filtrar solo contactos tipo CONTACTO (no leads ni clientes)
+  const soloContactos = contactos.filter(c => c.tipo === TipoContacto.CONTACTO)
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
@@ -47,8 +57,75 @@ export default function PaginaContactos() {
     try {
       await eliminarContacto(contactoEliminando.id)
       setContactoEliminando(null)
+      toast({
+        title: "✅ Contacto eliminado",
+        description: "El contacto se eliminó correctamente",
+      })
     } catch (error) {
       console.error('Error al eliminar contacto:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudo eliminar el contacto",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleConvertirALead = async (contacto: Contacto) => {
+    try {
+      await convertirALead(contacto.id)
+      toast({
+        title: "✅ Convertido a Lead",
+        description: `${contacto.nombre} ${contacto.apellido} ahora es un lead`,
+      })
+    } catch (error) {
+      console.error('Error al convertir contacto:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudo convertir el contacto a lead",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSeleccionarContacto = (contactoId: string) => {
+    setContactosSeleccionados(prev => {
+      if (prev.includes(contactoId)) {
+        return prev.filter(id => id !== contactoId)
+      } else {
+        return [...prev, contactoId]
+      }
+    })
+  }
+
+  const handleSeleccionarTodos = () => {
+    if (contactosSeleccionados.length === soloContactos.length) {
+      setContactosSeleccionados([])
+    } else {
+      setContactosSeleccionados(soloContactos.map(c => c.id))
+    }
+  }
+
+  const handleConvertirVariosALeads = async () => {
+    if (contactosSeleccionados.length === 0) return
+    
+    setConvirtiendoALeads(true)
+    try {
+      const resultado = await convertirVariosALeads(contactosSeleccionados)
+      setContactosSeleccionados([])
+      toast({
+        title: "✅ Conversión exitosa",
+        description: `${resultado.convertidos} de ${resultado.total} contacto(s) convertido(s) a leads`,
+      })
+    } catch (error) {
+      console.error('Error al convertir contactos:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudieron convertir los contactos a leads",
+        variant: "destructive",
+      })
+    } finally {
+      setConvirtiendoALeads(false)
     }
   }
 
@@ -92,8 +169,8 @@ export default function PaginaContactos() {
         </div>
       )}
 
-      {/* Barra de búsqueda */}
-      <div className="flex gap-4">
+      {/* Barra de búsqueda y acciones */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -103,7 +180,51 @@ export default function PaginaContactos() {
             className="pl-9"
           />
         </div>
+        
+        {/* Acciones masivas */}
+        {contactosSeleccionados.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-muted-foreground">
+              {contactosSeleccionados.length} seleccionado(s)
+            </span>
+            <Button
+              onClick={handleConvertirVariosALeads}
+              disabled={convirtiendoALeads}
+              size="sm"
+              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+              {convirtiendoALeads ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Convirtiendo...
+                </>
+              ) : (
+                <>
+                  <ArrowRightCircle className="h-4 w-4 mr-2" />
+                  Convertir a Leads
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Seleccionar todos */}
+      {soloContactos.length > 0 && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="seleccionar-todos"
+            checked={contactosSeleccionados.length === soloContactos.length}
+            onCheckedChange={handleSeleccionarTodos}
+          />
+          <label
+            htmlFor="seleccionar-todos"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Seleccionar todos ({soloContactos.length})
+          </label>
+        </div>
+      )}
 
       {/* Estado de carga */}
       {estaCargando && (
@@ -122,16 +243,26 @@ export default function PaginaContactos() {
       )}
 
       {/* Lista de contactos */}
-      {!estaCargando && contactos.length > 0 && (
+      {!estaCargando && soloContactos.length > 0 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {contactos.map((contacto) => (
+            {soloContactos.map((contacto) => (
               <Card key={contacto.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-lg">
-                    {contacto.nombre} {contacto.apellido}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">{contacto.correo}</p>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id={`contacto-${contacto.id}`}
+                      checked={contactosSeleccionados.includes(contacto.id)}
+                      onCheckedChange={() => handleSeleccionarContacto(contacto.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">
+                        {contacto.nombre} {contacto.apellido}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">{contacto.correo}</p>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
@@ -145,35 +276,43 @@ export default function PaginaContactos() {
                       <p className="text-muted-foreground">🎂 {contacto.edad} años</p>
                     )}
                     <div className="flex items-center gap-2 mt-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        contacto.tipo === TipoContacto.CLIENTE
-                          ? 'bg-green-100 text-green-700'
-                          : contacto.tipo === TipoContacto.LEAD
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
                         {contacto.tipo}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-4">
+                    <div className="flex flex-col gap-2 mt-4">
+                      {/* Botón convertir a lead */}
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setContactoEditando(contacto)}
-                        className="flex-1"
+                        onClick={() => handleConvertirALead(contacto)}
+                        className="w-full bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] border-[#FCBA00]"
                       >
-                        <Edit className="w-3 h-3 mr-1" />
-                        Editar
+                        <ArrowRightCircle className="w-3 h-3 mr-1" />
+                        Convertir a Lead
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setContactoEliminando(contacto)}
-                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" />
-                        Eliminar
-                      </Button>
+                      
+                      {/* Botones editar/eliminar */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setContactoEditando(contacto)}
+                          className="flex-1"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setContactoEliminando(contacto)}
+                          className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Eliminar
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -193,18 +332,17 @@ export default function PaginaContactos() {
       )}
 
       {/* Estado vacío */}
-      {!estaCargando && contactos.length === 0 && !error && (
+      {!estaCargando && soloContactos.length === 0 && !error && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No hay contactos</h3>
             <p className="text-muted-foreground text-center mb-4">
-              {busqueda ? 'No se encontraron contactos con esa búsqueda' : 'Comienza agregando tu primer contacto'}
+              {busqueda 
+                ? "No se encontraron contactos con ese criterio de búsqueda"
+                : "Comienza agregando tu primer contacto para gestionar tus relaciones"}
             </p>
-            <Button className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]">
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Contacto
-            </Button>
+            <FormularioContacto onCrear={crearContacto} />
           </CardContent>
         </Card>
       )}
