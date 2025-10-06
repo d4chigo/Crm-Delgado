@@ -49,7 +49,7 @@ interface Stage {
   value?: number
 }
 
-export default function PipelinePage() {
+export default function PaginaPipeline() {
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
@@ -66,104 +66,7 @@ export default function PipelinePage() {
   const [editingStageId, setEditingStageId] = useState<string | null>(null)
   const [editingStageName, setEditingStageName] = useState("")
 
-  const [deals, setDeals] = useState<Deal[]>([
-    {
-      id: "1",
-      clientName: "María González",
-      email: "maria.g@email.com",
-      phone: "+51 987 654 321",
-      property: "Dpto 301",
-      project: "Proyecto Los Olivos",
-      value: 280000,
-      stage: "negociacion",
-      probability: 75,
-      lastActivity: "Hace 2 horas",
-      nextAction: "Enviar cotización final",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-15",
-      notes: "Cliente muy interesado. Tiene aprobación de crédito Mi Vivienda.",
-    },
-    {
-      id: "2",
-      clientName: "Carlos Ramírez",
-      email: "carlos.r@email.com",
-      phone: "+51 987 654 322",
-      property: "Dpto 502",
-      project: "Condominio San Isidro",
-      value: 350000,
-      stage: "visita",
-      probability: 60,
-      lastActivity: "Hace 1 día",
-      nextAction: "Agendar segunda visita",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-14",
-      notes: "Programar visita con familia este fin de semana.",
-    },
-    {
-      id: "3",
-      clientName: "Ana Torres",
-      email: "ana.t@email.com",
-      phone: "+51 987 654 323",
-      property: "Casa 15",
-      project: "Torres del Norte",
-      value: 220000,
-      stage: "contacto",
-      probability: 40,
-      lastActivity: "Hace 3 días",
-      nextAction: "Llamada de seguimiento",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-13",
-      notes: "Interesada en Techo Propio. Necesita asesoría financiera.",
-    },
-    {
-      id: "4",
-      clientName: "Roberto Silva",
-      email: "roberto.s@email.com",
-      phone: "+51 987 654 324",
-      property: "Dpto 204",
-      project: "Residencial Surco",
-      value: 195000,
-      stage: "lead",
-      probability: 25,
-      lastActivity: "Hace 5 días",
-      nextAction: "Primer contacto",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-10",
-      notes: "Lead desde formulario web. Sin contactar aún.",
-    },
-    {
-      id: "5",
-      clientName: "Patricia Mendoza",
-      email: "patricia.m@email.com",
-      phone: "+51 987 654 325",
-      property: "Dpto 801",
-      project: "Edificio Miraflores",
-      value: 420000,
-      stage: "cierre",
-      probability: 90,
-      lastActivity: "Hace 1 hora",
-      nextAction: "Firma de contrato",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-08",
-      notes: "Lista para firmar. Separación pagada.",
-    },
-    {
-      id: "6",
-      clientName: "Luis Vargas",
-      email: "luis.v@email.com",
-      phone: "+51 987 654 326",
-      property: "Casa 22",
-      project: "Torres del Norte",
-      value: 220000,
-      stage: "ganado",
-      probability: 100,
-      lastActivity: "Hace 2 días",
-      nextAction: "Proceso de escrituración",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-05",
-      notes: "Venta cerrada exitosamente. Cliente muy satisfecho.",
-    },
-  ])
+  const [deals, setDeals] = useState<Deal[]>([])
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 

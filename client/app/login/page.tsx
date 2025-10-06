@@ -8,27 +8,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, Lock, Mail } from "lucide-react"
+import { Building2 as IconoEdificio, Lock as IconoCandado, Mail as IconoCorreo } from "lucide-react"
 
-export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+export default function PaginaLogin() {
+  const enrutador = useRouter()
+  const [correo, setCorreo] = useState("")
+  const [contrasena, setContrasena] = useState("")
+  const [estaCargando, setEstaCargando] = useState(false)
   const [error, setError] = useState("")
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    setIsLoading(true)
+    setEstaCargando(true)
 
     // Simulate login - replace with real authentication later
     setTimeout(() => {
-      if (email && password) {
+      if (correo && contrasena) {
         localStorage.setItem(
           "crm_user",
           JSON.stringify({
-            email,
+            email: correo,
             name: "Usuario Demo",
             role: "Agente",
           }),
@@ -37,10 +37,10 @@ export default function LoginPage() {
         // Create session cookie for middleware
         document.cookie = "crm_session=true; path=/; max-age=86400" // 24 hours
 
-        router.push("/dashboard")
+        enrutador.push("/dashboard")
       } else {
         setError("Por favor ingresa email y contraseña")
-        setIsLoading(false)
+        setEstaCargando(false)
       }
     }, 1000)
   }
@@ -50,7 +50,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-0">
         <CardHeader className="space-y-4 text-center pb-8">
           <div className="mx-auto w-16 h-16 bg-[#FCBA00] rounded-2xl flex items-center justify-center shadow-lg">
-            <Building2 className="w-9 h-9 text-[#303030]" />
+            <IconoEdificio className="w-9 h-9 text-[#303030]" />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold text-[#303030]">CRM Inmobiliario</CardTitle>
@@ -58,19 +58,19 @@ export default function LoginPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={manejarLogin} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-[#303030]">
                 Correo Electrónico
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <IconoCorreo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
                   className="pl-10 h-11 border-border focus:border-[#FCBA00] focus:ring-[#FCBA00]"
                   required
                 />
@@ -82,13 +82,13 @@ export default function LoginPage() {
                 Contraseña
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <IconoCandado className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={contrasena}
+                  onChange={(e) => setContrasena(e.target.value)}
                   className="pl-10 h-11 border-border focus:border-[#FCBA00] focus:ring-[#FCBA00]"
                   required
                 />
@@ -99,10 +99,10 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={estaCargando}
               className="w-full h-11 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold text-base shadow-md transition-all"
             >
-              {isLoading ? "Ingresando..." : "Iniciar Sesión"}
+              {estaCargando ? "Ingresando..." : "Iniciar Sesión"}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground pt-2">
