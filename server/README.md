@@ -69,14 +69,14 @@ NODE_ENV=development
 CORS_ORIGIN="http://localhost:3000"
 BCRYPT_ROUNDS=10
 
-# API DNI Perú (APIs.net.pe)
-DNI_API_TOKEN=""  # Obtén tu token gratis en https://apis.net.pe/
+# API DNI Perú (decolecta.com)
+DNI_API_TOKEN=""  # Obtén tu token gratis en https://decolecta.com/
 ```
 
 > **🔑 Obtener Token de API DNI:**
-> 1. Visita https://apis.net.pe/
+> 1. Visita https://decolecta.com/
 > 2. Regístrate gratis
-> 3. En tu panel obtén el token de API DNI
+> 3. En tu panel genera un token de API
 > 4. Copia el token en `DNI_API_TOKEN` en el archivo `.env`
 > 5. **Plan Gratuito**: Hasta 100 consultas por día
 

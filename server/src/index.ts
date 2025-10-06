@@ -57,6 +57,7 @@ app.use(manejarErrores);
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni`);
 });
 
 export default app;

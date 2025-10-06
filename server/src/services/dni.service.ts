@@ -1,6 +1,6 @@
 /**
- * Servicio para consultar DNI usando APIs.net.pe
- * Documentación: https://apis.net.pe/consulta-dni-api.html
+ * Servicio para consultar DNI usando decolecta.com
+ * Documentación: https://decolecta.com
  */
 
 interface RespuestaDNI {
@@ -8,7 +8,7 @@ interface RespuestaDNI {
   nombres: string
   apellidoPaterno: string
   apellidoMaterno: string
-  codVerifica: string
+  codVerifica?: string
 }
 
 interface ErrorAPIDNI {
@@ -17,7 +17,8 @@ interface ErrorAPIDNI {
 }
 
 export class DNIService {
-  private readonly API_URL = 'https://dniruc.apisperu.com/api/v1/dni'
+  // URL para decolecta.com - Probando diferentes endpoints
+  private readonly API_URL = 'https://api.decolecta.com'
   private readonly API_TOKEN: string
 
   constructor() {
@@ -45,33 +46,47 @@ export class DNIService {
         throw new Error('API Token no configurado. Configure DNI_API_TOKEN en .env')
       }
 
-      // Realizar consulta a la API
-      const url = `${this.API_URL}/${dni}?token=${this.API_TOKEN}`
+      // Consulta a decolecta.com (formato correcto con query param)
+      const url = `${this.API_URL}/v1/reniec/dni?numero=${dni}`
+      console.log('🔍 Consultando DNI:', dni)
+      console.log('📡 URL:', url)
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
+          'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': `Bearer ${this.API_TOKEN}`,
         },
       })
+
+      console.log('📊 Status:', response.status)
 
       // Verificar respuesta
       if (!response.ok) {
         if (response.status === 404) {
           return null // DNI no encontrado
         }
+        const errorText = await response.text()
+        console.log('❌ Error response:', errorText)
         throw new Error(`Error en la API: ${response.status} ${response.statusText}`)
       }
 
       const data: any = await response.json()
+      console.log('📊 Respuesta de API DNI:', JSON.stringify(data, null, 2))
 
-      // Verificar si la respuesta tiene error
-      if ('success' in data && !data.success) {
-        const errorData = data as ErrorAPIDNI
-        throw new Error(errorData.message || 'Error al consultar DNI')
+      // decolecta.com retorna: { first_name, first_last_name, second_last_name, document_number }
+      if (!data.document_number) {
+        throw new Error('Respuesta inválida de la API')
       }
 
-      // Retornar datos
-      return data as RespuestaDNI
+      // Retornar datos en el formato esperado por nuestro sistema
+      return {
+        dni: data.document_number,
+        nombres: data.first_name,
+        apellidoPaterno: data.first_last_name,
+        apellidoMaterno: data.second_last_name,
+      } as RespuestaDNI
 
     } catch (error) {
       if (error instanceof Error) {
