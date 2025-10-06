@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELO DE USUARIO
+// ============================================
+
+model Usuario {
+  id        String   @id @default(uuid())
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       Rol      @default(AGENTE)
+  avatar    String?
+  telefono  String?
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("usuarios")
+}
+
+enum Rol {
+  ADMIN
+  SUPERVISOR
+  AGENTE
+  ASISTENTE
+}
