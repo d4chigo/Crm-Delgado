@@ -147,6 +147,38 @@ export function DialogoEditarContacto({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* DNI con botón de búsqueda - PRIMERO */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-dni">DNI (Perú)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="edit-dni"
+                value={formulario.dni}
+                onChange={(e) => handleChange("dni", e.target.value)}
+                placeholder="12345678"
+                maxLength={8}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBuscarDNI}
+                disabled={buscandoDNI || !formulario.dni || formulario.dni.length !== 8}
+                className="flex-shrink-0"
+              >
+                {buscandoDNI ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                {buscandoDNI ? "Buscando..." : "Buscar"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              💡 Si tienes el DNI, ingrésalo y haz clic en buscar para auto-completar
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             {/* Nombre */}
             <div className="space-y-2">
@@ -184,38 +216,6 @@ export function DialogoEditarContacto({
               onChange={(e) => handleChange("correo", e.target.value)}
               placeholder="juan@example.com"
             />
-          </div>
-
-          {/* DNI con botón de búsqueda */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-dni">DNI (Perú)</Label>
-            <div className="flex gap-2">
-              <Input
-                id="edit-dni"
-                value={formulario.dni}
-                onChange={(e) => handleChange("dni", e.target.value)}
-                placeholder="12345678"
-                maxLength={8}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBuscarDNI}
-                disabled={buscandoDNI || !formulario.dni || formulario.dni.length !== 8}
-                className="flex-shrink-0"
-              >
-                {buscandoDNI ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Search className="w-4 h-4" />
-                )}
-                {buscandoDNI ? "Buscando..." : "Buscar"}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Ingresa el DNI y haz clic en buscar para auto-completar nombre y apellido
-            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

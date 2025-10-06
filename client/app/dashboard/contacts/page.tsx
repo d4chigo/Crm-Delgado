@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto"
 import { DialogoEditarContacto } from "@/components/features/contacts/DialogoEditarContacto"
@@ -19,7 +19,6 @@ export default function PaginaContactos() {
     error,
     paginacion,
     buscarContactos,
-    filtrarPorTipo,
     crearContacto,
     actualizarContacto,
     eliminarContacto,
@@ -29,16 +28,17 @@ export default function PaginaContactos() {
   const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
 
-  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = e.target.value
-    setBusqueda(valor)
-    
-    // Buscar después de un pequeño delay
+  // Efecto para buscar con delay (debounce)
+  useEffect(() => {
     const timer = setTimeout(() => {
-      buscarContactos(valor)
+      buscarContactos(busqueda)
     }, 500)
     
     return () => clearTimeout(timer)
+  }, [busqueda])
+
+  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusqueda(e.target.value)
   }
 
   const handleConfirmarEliminar = async () => {
@@ -67,50 +67,32 @@ export default function PaginaContactos() {
 
       {/* Estadísticas */}
       {estadisticas && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Total de Registros</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{estadisticas.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">Todos los contactos registrados</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Contactos</CardTitle>
+              <CardTitle className="text-sm font-medium">Solo Contactos</CardTitle>
               <Users className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{estadisticas.totalContactos}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Leads</CardTitle>
-              <UserPlus className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{estadisticas.totalLeads}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-              <UserCheck className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{estadisticas.totalClientes}</div>
+              <p className="text-xs text-muted-foreground mt-1">Sin convertir a leads</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Barra de búsqueda y filtros */}
+      {/* Barra de búsqueda */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -120,33 +102,6 @@ export default function PaginaContactos() {
             onChange={handleBusqueda}
             className="pl-9"
           />
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => filtrarPorTipo(undefined)}
-          >
-            Todos
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => filtrarPorTipo(TipoContacto.CONTACTO)}
-          >
-            Contactos
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => filtrarPorTipo(TipoContacto.LEAD)}
-          >
-            Leads
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => filtrarPorTipo(TipoContacto.CLIENTE)}
-          >
-            Clientes
-          </Button>
         </div>
       </div>
 
