@@ -90,11 +90,11 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
       // Preparar datos para enviar
       const datos: CrearContactoDTO = {
         nombre: formulario.nombre.trim(),
-        apellido: formulario.apellido.trim(),
-        correo: formulario.correo.trim(),
       }
 
       // Agregar campos opcionales solo si tienen valor
+      if (formulario.apellido?.trim()) datos.apellido = formulario.apellido.trim()
+      if (formulario.correo?.trim()) datos.correo = formulario.correo.trim()
       if (formulario.telefono?.trim()) datos.telefono = formulario.telefono.trim()
       if (formulario.direccion?.trim()) datos.direccion = formulario.direccion.trim()
       if (formulario.ciudad?.trim()) datos.ciudad = formulario.ciudad.trim()
@@ -128,7 +128,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
     }
   }
 
-  const esValido = formulario.nombre.trim() && formulario.apellido.trim() && formulario.correo.trim()
+  const esValido = formulario.nombre.trim().length > 0
 
   return (
     <Dialog open={abierto} onOpenChange={setAbierto}>
@@ -165,14 +165,13 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
             {/* Apellido */}
             <div className="space-y-2">
               <Label htmlFor="apellido">
-                Apellido <span className="text-red-500">*</span>
+                Apellido
               </Label>
               <Input
                 id="apellido"
                 value={formulario.apellido}
                 onChange={(e) => handleChange("apellido", e.target.value)}
                 placeholder="Pérez"
-                required
               />
             </div>
           </div>
@@ -180,7 +179,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
           {/* Correo */}
           <div className="space-y-2">
             <Label htmlFor="correo">
-              Correo Electrónico <span className="text-red-500">*</span>
+              Correo Electrónico
             </Label>
             <Input
               id="correo"
@@ -188,7 +187,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               value={formulario.correo}
               onChange={(e) => handleChange("correo", e.target.value)}
               placeholder="juan@example.com"
-              required
             />
           </div>
 

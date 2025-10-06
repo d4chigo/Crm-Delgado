@@ -37,8 +37,8 @@ export interface Contacto {
 // DTOs para crear y actualizar
 export interface CrearContactoDTO {
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;

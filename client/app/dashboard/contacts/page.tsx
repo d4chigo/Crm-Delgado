@@ -3,11 +3,13 @@
 import { useState } from "react"
 import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto"
+import { DialogoEditarContacto } from "@/components/features/contacts/DialogoEditarContacto"
+import { DialogoEliminarContacto } from "@/components/features/contacts/DialogoEliminarContacto"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, Users, UserPlus, UserCheck, Loader2 } from "lucide-react"
-import { TipoContacto } from "@/types/contacto.types"
+import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2 } from "lucide-react"
+import { TipoContacto, type Contacto } from "@/types/contacto.types"
 
 export default function PaginaContactos() {
   const {
@@ -19,9 +21,13 @@ export default function PaginaContactos() {
     buscarContactos,
     filtrarPorTipo,
     crearContacto,
+    actualizarContacto,
+    eliminarContacto,
   } = useContactos()
 
   const [busqueda, setBusqueda] = useState("")
+  const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
+  const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
 
   const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value
@@ -33,6 +39,17 @@ export default function PaginaContactos() {
     }, 500)
     
     return () => clearTimeout(timer)
+  }
+
+  const handleConfirmarEliminar = async () => {
+    if (!contactoEliminando) return
+    
+    try {
+      await eliminarContacto(contactoEliminando.id)
+      setContactoEliminando(null)
+    } catch (error) {
+      console.error('Error al eliminar contacto:', error)
+    }
   }
 
   return (
@@ -183,6 +200,26 @@ export default function PaginaContactos() {
                         {contacto.tipo}
                       </span>
                     </div>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setContactoEditando(contacto)}
+                        className="flex-1"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setContactoEliminando(contacto)}
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -216,6 +253,21 @@ export default function PaginaContactos() {
           </CardContent>
         </Card>
       )}
+
+      {/* Diálogos */}
+      <DialogoEditarContacto
+        contacto={contactoEditando}
+        abierto={!!contactoEditando}
+        onActualizar={actualizarContacto}
+        onCancelar={() => setContactoEditando(null)}
+      />
+
+      <DialogoEliminarContacto
+        contacto={contactoEliminando}
+        abierto={!!contactoEliminando}
+        onConfirmar={handleConfirmarEliminar}
+        onCancelar={() => setContactoEliminando(null)}
+      />
     </div>
   )
 }

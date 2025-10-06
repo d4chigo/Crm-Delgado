@@ -7,13 +7,15 @@ export const crearContactoSchema = z.object({
       .min(2, 'El nombre debe tener al menos 2 caracteres')
       .max(100, 'El nombre no puede exceder 100 caracteres'),
     apellido: z
-      .string({ message: 'El apellido es requerido' })
+      .string()
       .min(2, 'El apellido debe tener al menos 2 caracteres')
-      .max(100, 'El apellido no puede exceder 100 caracteres'),
+      .max(100, 'El apellido no puede exceder 100 caracteres')
+      .optional(),
     correo: z
-      .string({ message: 'El correo es requerido' })
+      .string()
       .email('Correo electrónico inválido')
-      .toLowerCase(),
+      .toLowerCase()
+      .optional(),
     telefono: z
       .string()
       .optional(),
