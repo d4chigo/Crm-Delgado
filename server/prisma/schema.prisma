@@ -26,6 +26,9 @@ model Usuario {
   creadoEn  DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
+  // Relaciones
+  contactos Contacto[]
+
   @@map("usuarios")
 }
 
@@ -34,4 +37,45 @@ enum Rol {
   SUPERVISOR
   AGENTE
   ASISTENTE
+}
+
+// ============================================
+// MODELO DE CONTACTO
+// ============================================
+
+model Contacto {
+  id              String       @id @default(uuid())
+  nombre          String
+  apellido        String
+  correo          String       @unique
+  telefono        String?
+  direccion       String?
+  ciudad          String?
+  dni             String?      @unique
+  sexo            Sexo?
+  fechaNacimiento DateTime?
+  tipo            TipoContacto @default(CONTACTO)
+  creadoEn        DateTime     @default(now())
+  actualizadoEn   DateTime     @updatedAt
+
+  // Relación con usuario que lo creó
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("contactos")
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([correo])
+}
+
+enum Sexo {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
+enum TipoContacto {
+  CONTACTO
+  LEAD
+  CLIENTE
 }

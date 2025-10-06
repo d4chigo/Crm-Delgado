@@ -1,0 +1,183 @@
+import { Request, Response } from 'express';
+import contactoService from '@/services/contacto.service';
+import { respuestaExito, respuestaError } from '@/utils/respuesta.util';
+import { CrearContactoDTO, ActualizarContactoDTO, FiltrosContacto } from '@/types';
+
+export class ContactoController {
+  /**
+   * GET /api/contactos
+   */
+  async obtenerContactos(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const filtros: FiltrosContacto = {
+        tipo: req.query.tipo as any,
+        ciudad: req.query.ciudad as string,
+        busqueda: req.query.busqueda as string,
+        pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
+        limite: req.query.limite ? Number(req.query.limite) : undefined
+      };
+
+      const resultado = await contactoService.obtenerContactos(usuarioId, filtros);
+      respuestaExito(res, resultado);
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al obtener contactos', 500);
+    }
+  }
+
+  /**
+   * GET /api/contactos/estadisticas
+   */
+  async obtenerEstadisticas(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const estadisticas = await contactoService.obtenerEstadisticas(usuarioId);
+      respuestaExito(res, estadisticas);
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al obtener estadísticas', 500);
+    }
+  }
+
+  /**
+   * GET /api/contactos/:id
+   */
+  async obtenerContactoPorId(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const contacto = await contactoService.obtenerContactoPorId(id, usuarioId);
+      respuestaExito(res, contacto);
+    } catch (error: any) {
+      if (error.message === 'Contacto no encontrado') {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al obtener contacto', 500);
+    }
+  }
+
+  /**
+   * POST /api/contactos
+   */
+  async crearContacto(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const datos: CrearContactoDTO = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const contacto = await contactoService.crearContacto(datos, usuarioId);
+      respuestaExito(res, contacto, 'Contacto creado exitosamente', 201);
+    } catch (error: any) {
+      if (error.message.includes('Ya existe')) {
+        respuestaError(res, error.message, 409);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al crear contacto', 500);
+    }
+  }
+
+  /**
+   * PUT /api/contactos/:id
+   */
+  async actualizarContacto(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id } = req.params;
+      const datos: ActualizarContactoDTO = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const contacto = await contactoService.actualizarContacto(id, datos, usuarioId);
+      respuestaExito(res, contacto, 'Contacto actualizado exitosamente');
+    } catch (error: any) {
+      if (error.message === 'Contacto no encontrado') {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      if (error.message.includes('Ya existe')) {
+        respuestaError(res, error.message, 409);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al actualizar contacto', 500);
+    }
+  }
+
+  /**
+   * DELETE /api/contactos/:id
+   */
+  async eliminarContacto(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const resultado = await contactoService.eliminarContacto(id, usuarioId);
+      respuestaExito(res, resultado);
+    } catch (error: any) {
+      if (error.message === 'Contacto no encontrado') {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al eliminar contacto', 500);
+    }
+  }
+
+  /**
+   * POST /api/contactos/:id/convertir-lead
+   */
+  async convertirALead(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const contacto = await contactoService.convertirALead(id, usuarioId);
+      respuestaExito(res, contacto, 'Contacto convertido a lead exitosamente');
+    } catch (error: any) {
+      if (error.message === 'Contacto no encontrado') {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      if (error.message.includes('ya es')) {
+        respuestaError(res, error.message, 400);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al convertir contacto', 500);
+    }
+  }
+}
+
+export default new ContactoController();

@@ -1,4 +1,4 @@
-import { Rol } from '@prisma/client';
+import { Rol, Sexo, TipoContacto } from '@prisma/client';
 
 // ==================== USUARIO ====================
 export interface Usuario {
@@ -66,4 +66,56 @@ declare global {
       usuario?: PayloadJWT;
     }
   }
+}
+
+// ==================== CONTACTOS ====================
+export interface Contacto {
+  id: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  telefono?: string;
+  direccion?: string;
+  ciudad?: string;
+  dni?: string;
+  sexo?: Sexo;
+  fechaNacimiento?: Date;
+  edad?: number; // Campo calculado
+  tipo: TipoContacto;
+  creadoEn: Date;
+  actualizadoEn: Date;
+  usuarioId: string;
+}
+
+export interface CrearContactoDTO {
+  nombre: string;
+  apellido: string;
+  correo: string;
+  telefono?: string;
+  direccion?: string;
+  ciudad?: string;
+  dni?: string;
+  sexo?: Sexo;
+  fechaNacimiento?: string; // ISO string
+}
+
+export interface ActualizarContactoDTO {
+  nombre?: string;
+  apellido?: string;
+  correo?: string;
+  telefono?: string;
+  direccion?: string;
+  ciudad?: string;
+  dni?: string;
+  sexo?: Sexo;
+  fechaNacimiento?: string; // ISO string
+  tipo?: TipoContacto;
+}
+
+export interface FiltrosContacto {
+  tipo?: TipoContacto;
+  ciudad?: string;
+  busqueda?: string; // Para buscar en nombre, apellido, correo
+  pagina?: number;
+  limite?: number;
 }
