@@ -3,12 +3,9 @@
 # dependencies
 /node_modules
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
+/dist
 
 # debug
 npm-debug.log*
@@ -18,11 +15,12 @@ yarn-error.log*
 
 # env files
 .env*
-
-# vercel
-.vercel
+!.env.example
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 /src/generated/prisma
+
+# pruebas
+pruebas.http
+*.rest
