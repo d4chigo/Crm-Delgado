@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
 import contactoRoutes from '@/routes/contacto.routes';
+import dniRoutes from '@/routes/dni.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 
 // Cargar variables de entorno
@@ -47,6 +48,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/contactos', contactoRoutes);
+app.use('/api/dni', dniRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);

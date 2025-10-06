@@ -68,7 +68,17 @@ NODE_ENV=development
 # Seguridad
 CORS_ORIGIN="http://localhost:3000"
 BCRYPT_ROUNDS=10
+
+# API DNI Perú (APIs.net.pe)
+DNI_API_TOKEN=""  # Obtén tu token gratis en https://apis.net.pe/
 ```
+
+> **🔑 Obtener Token de API DNI:**
+> 1. Visita https://apis.net.pe/
+> 2. Regístrate gratis
+> 3. En tu panel obtén el token de API DNI
+> 4. Copia el token en `DNI_API_TOKEN` en el archivo `.env`
+> 5. **Plan Gratuito**: Hasta 100 consultas por día
 
 ### 2. Instalar Dependencias
 
@@ -165,6 +175,70 @@ Content-Type: application/json
   "mensaje": "Login exitoso"
 }
 ```
+
+#### Obtener Perfil (requiere autenticación)
+```http
+GET /api/auth/perfil
+Authorization: Bearer <token>
+```
+
+### Consulta de DNI (RENIEC - Perú)
+
+#### Consultar DNI
+```http
+GET /api/dni/:numero
+Authorization: Bearer <token>
+
+# Ejemplo:
+GET /api/dni/12345678
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Respuesta exitosa:**
+```json
+{
+  "exito": true,
+  "mensaje": "DNI encontrado exitosamente",
+  "datos": {
+    "dni": "12345678",
+    "nombre": "JUAN CARLOS",
+    "apellido": "PÉREZ GARCÍA",
+    "apellidoPaterno": "PÉREZ",
+    "apellidoMaterno": "GARCÍA"
+  }
+}
+```
+
+**Respuestas de error:**
+```json
+// DNI no encontrado
+{
+  "exito": false,
+  "mensaje": "DNI no encontrado en RENIEC"
+}
+
+// DNI inválido
+{
+  "exito": false,
+  "mensaje": "El DNI debe tener exactamente 8 dígitos"
+}
+
+// Token no configurado
+{
+  "exito": false,
+  "mensaje": "API Token no configurado. Configure DNI_API_TOKEN en .env"
+}
+```
+
+> **📌 Notas sobre API DNI:**
+> - Requiere `DNI_API_TOKEN` configurado en `.env`
+> - Usa la API de **APIs.net.pe** - https://apis.net.pe/
+> - Plan gratuito: 100 consultas/día
+> - Responde con datos oficiales de RENIEC
+> - El DNI debe tener exactamente 8 dígitos numéricos
+> - Útil para auto-completar formularios de contactos
+
+### Contactos
 
 #### Obtener Perfil (requiere autenticación)
 ```http
