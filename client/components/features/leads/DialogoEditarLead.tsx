@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
+import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
 
 interface DialogoEditarLeadProps {
   lead: Contacto | null;
@@ -42,34 +43,6 @@ export function DialogoEditarLead({
   const [guardando, setGuardando] = useState(false);
   const [datos, setDatos] = useState<ActualizarContactoDTO>({});
   const [edad, setEdad] = useState<number | null>(null);
-
-  // Función para validar solo letras, espacios y acentos
-  const validarTexto = (texto: string): string => {
-    return texto.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-  };
-
-  // Función para validar DNI (solo números)
-  const validarDNI = (dni: string): string => {
-    return dni.replace(/[^0-9]/g, '').slice(0, 8);
-  };
-
-  // Función para validar teléfono (números, espacios, + y guiones)
-  const validarTelefono = (telefono: string): string => {
-    return telefono.replace(/[^0-9\s\+\-]/g, '');
-  };
-
-  // Función para calcular edad
-  const calcularEdad = (fechaNacimiento: string): number | null => {
-    if (!fechaNacimiento) return null;
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    return edad;
-  };
 
   // Inicializar datos cuando el lead cambia o el diálogo se abre
   useEffect(() => {
@@ -112,7 +85,7 @@ export function DialogoEditarLead({
     if (!lead) return;
 
     // Validar edad mínima
-    if (datos.fechaNacimiento && edad !== null && edad < 18) {
+    if (datos.fechaNacimiento && !esMayorDeEdad(datos.fechaNacimiento)) {
       toast({
         title: 'Validación fallida',
         description: 'El lead debe ser mayor de 18 años',
@@ -265,13 +238,13 @@ export function DialogoEditarLead({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="correo">Correo electrónico</Label>
+                <Label htmlFor="correo">Correo electrónico (Opcional)</Label>
                 <Input
                   id="correo"
-                  type="email"
+                  type="text"
                   value={datos.correo || ''}
                   onChange={(e) => setDatos({ ...datos, correo: e.target.value })}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="correo@ejemplo.com (opcional)"
                 />
               </div>
 
@@ -321,7 +294,7 @@ export function DialogoEditarLead({
                 <Input
                   id="fechaNacimiento"
                   type="date"
-                  max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                  max={obtenerFechaMaxima()} // No permitir fechas futuras
                   value={datos.fechaNacimiento?.split('T')[0] || ''}
                   onChange={(e) => {
                     setDatos({ ...datos, fechaNacimiento: e.target.value });

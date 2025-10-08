@@ -124,18 +124,20 @@ export class ContactoService {
   async crearContacto(datos: CrearContactoDTO, usuarioId: string) {
     const { fechaNacimiento, ...restoDatos } = datos;
 
-    // Verificar si el correo ya existe
-    const contactoExistente = await prisma.contacto.findUnique({
-      where: { correo: datos.correo }
-    });
+    // Verificar si el correo ya existe (solo si se proporciona)
+    if (datos.correo) {
+      const contactoExistente = await prisma.contacto.findFirst({
+        where: { correo: datos.correo }
+      });
 
-    if (contactoExistente) {
-      throw new Error('Ya existe un contacto con este correo electrónico');
+      if (contactoExistente) {
+        throw new Error('Ya existe un contacto con este correo electrónico');
+      }
     }
 
     // Verificar DNI si se proporciona
     if (datos.dni) {
-      const dniExistente = await prisma.contacto.findUnique({
+      const dniExistente = await prisma.contacto.findFirst({
         where: { dni: datos.dni }
       });
 
@@ -168,9 +170,9 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    // Verificar correo único
+    // Verificar correo único (solo si se proporciona y es diferente)
     if (datos.correo && datos.correo !== contactoExistente.correo) {
-      const correoExistente = await prisma.contacto.findUnique({
+      const correoExistente = await prisma.contacto.findFirst({
         where: { correo: datos.correo }
       });
 
@@ -179,9 +181,9 @@ export class ContactoService {
       }
     }
 
-    // Verificar DNI único
+    // Verificar DNI único (solo si se proporciona y es diferente)
     if (datos.dni && datos.dni !== contactoExistente.dni) {
-      const dniExistente = await prisma.contacto.findUnique({
+      const dniExistente = await prisma.contacto.findFirst({
         where: { dni: datos.dni }
       });
 

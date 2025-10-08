@@ -22,6 +22,7 @@ import {
 import { Loader2, Search } from "lucide-react"
 import { Sexo, type ActualizarContactoDTO, type Contacto } from "@/types/contacto.types"
 import { dniService } from "@/services/api/dni.service"
+import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from "@/lib/validaciones"
 
 interface DialogoEditarContactoProps {
   contacto: Contacto | null
@@ -39,6 +40,7 @@ export function DialogoEditarContacto({
   const [estaCargando, setEstaCargando] = useState(false)
   const [buscandoDNI, setBuscandoDNI] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [edad, setEdad] = useState<number | null>(null)
   const [formulario, setFormulario] = useState<ActualizarContactoDTO>({
     nombre: "",
     apellido: "",
@@ -54,6 +56,10 @@ export function DialogoEditarContacto({
   // Cargar datos del contacto cuando se abre el diálogo
   useEffect(() => {
     if (contacto && abierto) {
+      const fechaNacimiento = contacto.fechaNacimiento 
+        ? new Date(contacto.fechaNacimiento).toISOString().split('T')[0] 
+        : ""
+      
       setFormulario({
         nombre: contacto.nombre || "",
         apellido: contacto.apellido || "",
@@ -63,16 +69,27 @@ export function DialogoEditarContacto({
         ciudad: contacto.ciudad || "",
         dni: contacto.dni || "",
         sexo: contacto.sexo,
-        fechaNacimiento: contacto.fechaNacimiento 
-          ? new Date(contacto.fechaNacimiento).toISOString().split('T')[0] 
-          : "",
+        fechaNacimiento,
       })
+      
+      // Calcular edad al cargar
+      if (fechaNacimiento) {
+        setEdad(calcularEdad(fechaNacimiento))
+      } else {
+        setEdad(null)
+      }
+      
       setError(null)
     }
   }, [contacto, abierto])
 
   const handleChange = (campo: keyof ActualizarContactoDTO, valor: any) => {
     setFormulario(prev => ({ ...prev, [campo]: valor }))
+    
+    // Calcular edad cuando cambia la fecha de nacimiento
+    if (campo === 'fechaNacimiento') {
+      setEdad(calcularEdad(valor))
+    }
   }
 
   const handleBuscarDNI = async () => {
@@ -104,6 +121,12 @@ export function DialogoEditarContacto({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!contacto) return
+
+    // Validar edad si se proporciona fecha de nacimiento
+    if (formulario.fechaNacimiento && !esMayorDeEdad(formulario.fechaNacimiento)) {
+      setError("El contacto debe ser mayor de 18 años")
+      return
+    }
 
     setEstaCargando(true)
     setError(null)
@@ -154,7 +177,7 @@ export function DialogoEditarContacto({
               <Input
                 id="edit-dni"
                 value={formulario.dni}
-                onChange={(e) => handleChange("dni", e.target.value)}
+                onChange={(e) => handleChange("dni", validarDNI(e.target.value))}
                 placeholder="12345678"
                 maxLength={8}
                 className="flex-1"
@@ -188,7 +211,7 @@ export function DialogoEditarContacto({
               <Input
                 id="edit-nombre"
                 value={formulario.nombre}
-                onChange={(e) => handleChange("nombre", e.target.value)}
+                onChange={(e) => handleChange("nombre", validarTexto(e.target.value))}
                 placeholder="Juan"
                 required
               />
@@ -200,7 +223,7 @@ export function DialogoEditarContacto({
               <Input
                 id="edit-apellido"
                 value={formulario.apellido}
-                onChange={(e) => handleChange("apellido", e.target.value)}
+                onChange={(e) => handleChange("apellido", validarTexto(e.target.value))}
                 placeholder="Pérez"
               />
             </div>
@@ -208,13 +231,13 @@ export function DialogoEditarContacto({
 
           {/* Correo */}
           <div className="space-y-2">
-            <Label htmlFor="edit-correo">Correo Electrónico</Label>
+            <Label htmlFor="edit-correo">Correo Electrónico (Opcional)</Label>
             <Input
               id="edit-correo"
-              type="email"
+              type="text"
               value={formulario.correo}
               onChange={(e) => handleChange("correo", e.target.value)}
-              placeholder="juan@example.com"
+              placeholder="juan@example.com (opcional)"
             />
           </div>
 
@@ -226,8 +249,8 @@ export function DialogoEditarContacto({
                 id="edit-telefono"
                 type="tel"
                 value={formulario.telefono}
-                onChange={(e) => handleChange("telefono", e.target.value)}
-                placeholder="987654321"
+                onChange={(e) => handleChange("telefono", validarTelefono(e.target.value))}
+                placeholder="+51 987 654 321"
               />
             </div>
 
@@ -253,13 +276,21 @@ export function DialogoEditarContacto({
           <div className="grid grid-cols-2 gap-4">
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
-              <Label htmlFor="edit-fechaNacimiento">Fecha de Nacimiento</Label>
+              <Label htmlFor="edit-fechaNacimiento">
+                Fecha de Nacimiento {edad !== null && <span className="text-muted-foreground">({edad} años)</span>}
+              </Label>
               <Input
                 id="edit-fechaNacimiento"
                 type="date"
                 value={formulario.fechaNacimiento}
                 onChange={(e) => handleChange("fechaNacimiento", e.target.value)}
+                max={obtenerFechaMaxima()}
               />
+              {edad !== null && edad < 18 && (
+                <p className="text-sm text-destructive">
+                  El contacto debe ser mayor de 18 años
+                </p>
+              )}
             </div>
           </div>
 

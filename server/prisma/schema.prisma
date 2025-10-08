@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,26 +7,89 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// MODELO DE USUARIO
-// ============================================
-
 model Usuario {
-  id        String   @id @default(uuid())
-  nombre    String
-  email     String   @unique
-  password  String
-  rol       Rol      @default(AGENTE)
-  avatar    String?
-  telefono  String?
-  activo    Boolean  @default(true)
-  creadoEn  DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
-
-  // Relaciones
-  contactos Contacto[]
+  id            String     @id @default(uuid())
+  nombre        String
+  email         String     @unique
+  password      String
+  rol           Rol        @default(AGENTE)
+  avatar        String?
+  telefono      String?
+  activo        Boolean    @default(true)
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+  contactos     Contacto[]
 
   @@map("usuarios")
+}
+
+model Contacto {
+  id               String             @id @default(uuid())
+  nombre           String
+  apellido         String?
+  correo           String?
+  telefono         String?
+  direccion        String?
+  ciudad           String?
+  dni              String?
+  sexo             Sexo?
+  fechaNacimiento  DateTime?
+  tipo             TipoContacto       @default(CONTACTO)
+  creadoEn         DateTime           @default(now())
+  actualizadoEn    DateTime           @updatedAt
+  usuarioId        String
+  cargo            String?
+  departamento     String?
+  distrito         String?
+  empresa          String?
+  estadoLead       EstadoLead?
+  fechaConversion  DateTime?
+  fechaSeguimiento DateTime?
+  fuente           String?
+  intereses        String?            @db.Text
+  notas            String?            @db.Text
+  presupuesto      Decimal?           @db.Decimal(10, 2)
+  prioridad        Prioridad          @default(MEDIA)
+  probabilidad     Int?
+  provincia        String?
+  etiquetas        ContactoEtiqueta[]
+  usuario          Usuario            @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([correo])
+  @@index([estadoLead])
+  @@index([prioridad])
+  @@map("contactos")
+}
+
+model Etiqueta {
+  id            String             @id @default(uuid())
+  nombre        String             @unique
+  color         String
+  descripcion   String?
+  icono         String?
+  activa        Boolean            @default(true)
+  orden         Int                @default(0)
+  creadoEn      DateTime           @default(now())
+  actualizadoEn DateTime           @updatedAt
+  contactos     ContactoEtiqueta[]
+
+  @@index([activa])
+  @@map("etiquetas")
+}
+
+model ContactoEtiqueta {
+  contactoId String
+  etiquetaId String
+  asignadoEn DateTime @default(now())
+  contacto   Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([contactoId, etiquetaId])
+  @@index([contactoId])
+  @@index([etiquetaId])
+  @@map("contacto_etiquetas")
 }
 
 enum Rol {
@@ -37,65 +97,6 @@ enum Rol {
   SUPERVISOR
   AGENTE
   ASISTENTE
-}
-
-// ============================================
-// MODELO DE CONTACTO
-// ============================================
-
-model Contacto {
-  id              String       @id @default(uuid())
-  nombre          String
-  apellido        String
-  correo          String       @unique
-  telefono        String?
-  direccion       String?
-  ciudad          String?
-  dni             String?      @unique
-  sexo            Sexo?
-  fechaNacimiento DateTime?
-  tipo            TipoContacto @default(CONTACTO)
-  
-  // Información profesional
-  empresa         String?
-  cargo           String?
-  
-  // Información comercial (Leads)
-  presupuesto     Decimal?     @db.Decimal(10, 2)
-  estadoLead      EstadoLead?
-  prioridad       Prioridad    @default(MEDIA)
-  fuente          String?
-  probabilidad    Int?         // 0-100
-  
-  // Fechas de seguimiento
-  fechaSeguimiento DateTime?
-  fechaConversion  DateTime?
-  
-  // Notas
-  notas           String?      @db.Text
-  intereses       String?      @db.Text
-  
-  // Ubicación UBIGEO
-  departamento    String?
-  provincia       String?
-  distrito        String?
-  
-  creadoEn        DateTime     @default(now())
-  actualizadoEn   DateTime     @updatedAt
-
-  // Relación con usuario que lo creó
-  usuarioId String
-  usuario   Usuario @relation(fields: [usuarioId], references: [id])
-
-  // Relación con etiquetas (muchos a muchos)
-  etiquetas ContactoEtiqueta[]
-
-  @@map("contactos")
-  @@index([usuarioId])
-  @@index([tipo])
-  @@index([correo])
-  @@index([estadoLead])
-  @@index([prioridad])
 }
 
 enum Sexo {
@@ -126,41 +127,4 @@ enum Prioridad {
   MEDIA
   ALTA
   URGENTE
-}
-
-// ============================================
-// MODELO DE ETIQUETA
-// ============================================
-
-model Etiqueta {
-  id          String   @id @default(uuid())
-  nombre      String   @unique
-  color       String   // Hex color para el badge
-  descripcion String?
-  icono       String?  // Emoji o nombre de icono
-  activa      Boolean  @default(true)
-  orden       Int      @default(0) // Para ordenar en la UI
-  creadoEn    DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
-
-  // Relación con contactos (muchos a muchos)
-  contactos ContactoEtiqueta[]
-
-  @@map("etiquetas")
-  @@index([activa])
-}
-
-// Tabla intermedia para relación muchos a muchos
-model ContactoEtiqueta {
-  contactoId  String
-  etiquetaId  String
-  asignadoEn  DateTime @default(now())
-
-  contacto Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
-  etiqueta Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
-
-  @@id([contactoId, etiquetaId])
-  @@map("contacto_etiquetas")
-  @@index([contactoId])
-  @@index([etiquetaId])
 }

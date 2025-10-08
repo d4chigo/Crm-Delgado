@@ -27,6 +27,7 @@ import {
 import { Plus, Loader2, Search } from "lucide-react"
 import { Sexo, type CrearContactoDTO, type Contacto } from "@/types/contacto.types"
 import { dniService } from "@/services/api/dni.service"
+import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from "@/lib/validaciones"
 
 interface FormularioContactoProps {
   onCrear: (datos: CrearContactoDTO) => Promise<Contacto>
@@ -37,6 +38,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
   const [estaCargando, setEstaCargando] = useState(false)
   const [buscandoDNI, setBuscandoDNI] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [edad, setEdad] = useState<number | null>(null)
 
   const [formulario, setFormulario] = useState<CrearContactoDTO>({
     nombre: "",
@@ -52,6 +54,11 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
 
   const handleChange = (campo: keyof CrearContactoDTO, valor: any) => {
     setFormulario(prev => ({ ...prev, [campo]: valor }))
+    
+    // Calcular edad cuando cambia la fecha de nacimiento
+    if (campo === 'fechaNacimiento') {
+      setEdad(calcularEdad(valor))
+    }
   }
 
   const handleBuscarDNI = async () => {
@@ -83,6 +90,13 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validar edad mínima
+    if (formulario.fechaNacimiento && !esMayorDeEdad(formulario.fechaNacimiento)) {
+      setError("El contacto debe ser mayor de 18 años")
+      return
+    }
+    
     setEstaCargando(true)
     setError(null)
 
@@ -142,7 +156,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
         <DialogHeader>
           <DialogTitle>Agregar Nuevo Contacto</DialogTitle>
           <DialogDescription>
-            Completa la información del contacto. Los campos marcados con * son obligatorios.
+            Solo el <strong>nombre</strong> es obligatorio. Completa los demás campos cuando tengas la información disponible.
           </DialogDescription>
         </DialogHeader>
 
@@ -154,7 +168,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               <Input
                 id="dni"
                 value={formulario.dni}
-                onChange={(e) => handleChange("dni", e.target.value)}
+                onChange={(e) => handleChange("dni", validarDNI(e.target.value))}
                 placeholder="12345678"
                 maxLength={8}
                 className="flex-1"
@@ -188,7 +202,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               <Input
                 id="nombre"
                 value={formulario.nombre}
-                onChange={(e) => handleChange("nombre", e.target.value)}
+                onChange={(e) => handleChange("nombre", validarTexto(e.target.value))}
                 placeholder="Juan"
                 required
               />
@@ -202,7 +216,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               <Input
                 id="apellido"
                 value={formulario.apellido}
-                onChange={(e) => handleChange("apellido", e.target.value)}
+                onChange={(e) => handleChange("apellido", validarTexto(e.target.value))}
                 placeholder="Pérez"
               />
             </div>
@@ -211,14 +225,14 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
           {/* Correo */}
           <div className="space-y-2">
             <Label htmlFor="correo">
-              Correo Electrónico
+              Correo Electrónico (Opcional)
             </Label>
             <Input
               id="correo"
-              type="email"
+              type="text"
               value={formulario.correo}
               onChange={(e) => handleChange("correo", e.target.value)}
-              placeholder="juan@example.com"
+              placeholder="juan@example.com (opcional)"
             />
           </div>
 
@@ -230,8 +244,8 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
                 id="telefono"
                 type="tel"
                 value={formulario.telefono}
-                onChange={(e) => handleChange("telefono", e.target.value)}
-                placeholder="987654321"
+                onChange={(e) => handleChange("telefono", validarTelefono(e.target.value))}
+                placeholder="+51 987 654 321"
               />
             </div>
 
@@ -257,13 +271,20 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
           <div className="grid grid-cols-2 gap-4">
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
-              <Label htmlFor="fechaNacimiento">Fecha de Nacimiento</Label>
+              <Label htmlFor="fechaNacimiento">
+                Fecha de Nacimiento
+                {edad !== null && <span className="text-muted-foreground ml-2">({edad} años)</span>}
+              </Label>
               <Input
                 id="fechaNacimiento"
                 type="date"
+                max={obtenerFechaMaxima()}
                 value={formulario.fechaNacimiento}
                 onChange={(e) => handleChange("fechaNacimiento", e.target.value)}
               />
+              {edad !== null && edad < 18 && (
+                <p className="text-sm text-destructive">El contacto debe ser mayor de 18 años</p>
+              )}
             </div>
           </div>
 
