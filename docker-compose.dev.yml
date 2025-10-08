@@ -39,6 +39,8 @@ services:
     volumes:
       - ./server/src:/app/src
       - ./server/prisma:/app/prisma
+      - ./server/tsconfig.json:/app/tsconfig.json
+      - ./server/nodemon.json:/app/nodemon.json
       - /app/node_modules
 
   # Frontend (desarrollo con hot reload)
@@ -50,7 +52,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:5000
+      NEXT_PUBLIC_API_URL: http://localhost:5000/api
     ports:
       - "3000:3000"
     depends_on:
@@ -61,7 +63,15 @@ services:
       - ./client/app:/app/app
       - ./client/components:/app/components
       - ./client/lib:/app/lib
+      - ./client/services:/app/services
+      - ./client/hooks:/app/hooks
+      - ./client/types:/app/types
+      - ./client/schemas:/app/schemas
+      - ./client/features:/app/features
+      - ./client/context:/app/context
+      - ./client/styles:/app/styles
       - ./client/public:/app/public
+      - ./client/middleware.ts:/app/middleware.ts
       - /app/node_modules
       - /app/.next
 

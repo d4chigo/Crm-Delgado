@@ -12,7 +12,7 @@ RUN npm install -g pnpm nodemon ts-node
 # Copiar archivos de dependencias
 COPY package*.json pnpm-lock.yaml ./
 
-# Instalar dependencias
+# Instalar dependencias (incluye tsconfig-paths)
 RUN pnpm install
 
 # Copiar prisma schema
