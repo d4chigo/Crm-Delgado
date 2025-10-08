@@ -65,10 +65,13 @@ export default function PaginaLeads() {
       const token = localStorage.getItem('crm_token')
       if (!token) {
         toast({
-          title: 'Error',
-          description: 'No estás autenticado',
+          title: 'Sesión expirada',
+          description: 'Por favor inicia sesión nuevamente',
           variant: 'destructive',
         })
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
         return
       }
 
@@ -78,6 +81,21 @@ export default function PaginaLeads() {
           Authorization: `Bearer ${token}`,
         },
       })
+
+      // Si el token expiró
+      if (respuesta.status === 401) {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+        toast({
+          title: 'Sesión expirada',
+          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          variant: 'destructive',
+        });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
 
       const resultado = await respuesta.json()
 

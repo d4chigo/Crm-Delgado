@@ -39,6 +39,9 @@ export function SelectorEtiquetas({
       const token = localStorage.getItem('crm_token');
       if (!token) {
         console.error('No hay token de autenticación');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
         return;
       }
 
@@ -51,6 +54,21 @@ export function SelectorEtiquetas({
       });
 
       console.log('Respuesta etiquetas:', respuesta.status);
+
+      // Si el token expiró o es inválido
+      if (respuesta.status === 401) {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+        toast({
+          title: 'Sesión expirada',
+          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          variant: 'destructive',
+        });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
 
       if (respuesta.ok) {
         const resultado = await respuesta.json();
@@ -97,7 +115,12 @@ export function SelectorEtiquetas({
     setGuardando(true);
     try {
       const token = localStorage.getItem('crm_token');
-      if (!token) return;
+      if (!token) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
 
       const respuesta = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/etiquetas/contacto/${contactoId}`,
@@ -110,6 +133,21 @@ export function SelectorEtiquetas({
           body: JSON.stringify({ etiquetaIds }),
         }
       );
+
+      // Si el token expiró
+      if (respuesta.status === 401) {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+        toast({
+          title: 'Sesión expirada',
+          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          variant: 'destructive',
+        });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
 
       if (!respuesta.ok) {
         throw new Error('Error al guardar etiquetas');

@@ -17,6 +17,18 @@ interface RespuestaError {
 
 type RespuestaAPI<T> = RespuestaExito<T> | RespuestaError;
 
+// Función para cerrar sesión y redirigir al login
+function cerrarSesionYRedirigir() {
+  // Limpiar localStorage
+  localStorage.removeItem('crm_token');
+  localStorage.removeItem('crm_user');
+  
+  // Redirigir al login
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
 // Función helper para hacer requests
 async function fetchAPI<T>(
   endpoint: string,
@@ -32,6 +44,12 @@ async function fetchAPI<T>(
         ...options?.headers,
       },
     });
+
+    // Si el token es inválido o expiró (401 Unauthorized)
+    if (response.status === 401) {
+      cerrarSesionYRedirigir();
+      throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+    }
 
     // Si no hay respuesta o el servidor no responde
     if (!response.ok && response.status >= 500) {
@@ -50,6 +68,10 @@ async function fetchAPI<T>(
       }
       if (data.codigo === 'EMAIL_DUPLICADO') {
         throw new Error('Este email ya está registrado');
+      }
+      if (data.codigo === 'TOKEN_INVALIDO' || data.codigo === 'TOKEN_EXPIRADO') {
+        cerrarSesionYRedirigir();
+        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
       }
       
       throw new Error(data.error || 'Error en la petición');
