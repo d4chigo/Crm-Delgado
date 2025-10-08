@@ -48,6 +48,7 @@ docker-compose -f docker-compose.dev.yml up -d
 - MySQL en el puerto 3306
 - Backend en el puerto 5000
 - Frontend en el puerto 3000
+- Adminer (gestor BD) en el puerto 8080
 
 ### Paso 3: Ver los logs
 
@@ -65,6 +66,7 @@ docker-compose -f docker-compose.dev.yml logs -f mysql
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
+- **Adminer (BD)**: http://localhost:8080
 - **MySQL**: localhost:3306
   - Usuario: `crm_user`
   - Password: `crm_pass`
@@ -157,6 +159,7 @@ docker-compose up -d
 - Backend con build optimizado
 - Frontend con build optimizado
 - Nginx como reverse proxy
+- Adminer (gestor BD) en el puerto 8080
 
 ### Paso 3: Verificar que todo inició correctamente
 
@@ -173,6 +176,7 @@ Todos los servicios deben mostrar `Up` y `healthy`.
 ### Paso 4: Acceder a la aplicación
 
 - **Aplicación completa**: http://localhost
+- **Adminer (BD)**: http://localhost:8080
 - O por dominio: http://tu-dominio.com
 
 **Nginx enruta automáticamente:**
@@ -206,7 +210,37 @@ docker-compose logs -f
 
 ## 🗄️ GESTIÓN DE BASE DE DATOS
 
-### Conectarse a MySQL
+### 🎨 Interfaz Visual con Adminer (Recomendado)
+
+Adminer es una interfaz web ligera para gestionar MySQL (alternativa a phpMyAdmin, pero mucho más rápida y simple).
+
+**Acceso:**
+- URL: http://localhost:8080
+- **Servidor**: `mysql`
+- **Usuario**: `crm_user`
+- **Contraseña**: `crm_pass` (desarrollo) o `crm_password_2025` (producción)
+- **Base de datos**: `crm_delgado`
+
+**Características:**
+- ✅ Explorar tablas y registros
+- ✅ Ejecutar queries SQL directamente
+- ✅ Importar/exportar datos
+- ✅ Editar registros visualmente
+- ✅ Crear/modificar estructura de tablas
+- ✅ Ver relaciones entre tablas
+
+**⚠️ IMPORTANTE - Seguridad:**
+- En **producción pública**, desactiva Adminer agregando `--profile dev` al comando up:
+  ```bash
+  # Actualmente comentado - para activar perfiles, edita docker-compose.yml
+  docker-compose --profile dev up -d
+  ```
+- Para **staging/dev interno**, puedes dejarlo activo
+- En ambientes públicos, considera usar solo Prisma Studio o acceso SSH
+
+---
+
+### Conectarse a MySQL por CLI
 
 ```bash
 # Desde tu máquina (si MySQL está expuesto en 3306)
@@ -455,6 +489,13 @@ docker inspect <nombre_contenedor>
 - Password: `crm_pass`
 - Base de datos: `crm_delgado`
 
+**Adminer:**
+- URL: http://localhost:8080
+- Servidor: `mysql`
+- Usuario: `crm_user`
+- Password: `crm_pass`
+- Base de datos: `crm_delgado`
+
 **Aplicación (después de seed):**
 - Email: Ver `server/prisma/seed.ts` para usuarios creados
 - Password: Ver seed para contraseñas
@@ -491,7 +532,8 @@ Antes de desplegar en producción:
 4. ✅ Cambiar `NEXT_PUBLIC_API_URL` a tu dominio
 5. ✅ Configurar firewall del servidor
 6. ✅ Habilitar backups automáticos de BD
-7. ✅ Revisar logs periódicamente
+7. ✅ **Desactivar Adminer** en producción pública (ver sección Gestión de Base de Datos)
+8. ✅ Revisar logs periódicamente
 
 ---
 
