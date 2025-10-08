@@ -41,6 +41,35 @@ export function DialogoEditarLead({
 }: DialogoEditarLeadProps) {
   const [guardando, setGuardando] = useState(false);
   const [datos, setDatos] = useState<ActualizarContactoDTO>({});
+  const [edad, setEdad] = useState<number | null>(null);
+
+  // Función para validar solo letras, espacios y acentos
+  const validarTexto = (texto: string): string => {
+    return texto.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+  };
+
+  // Función para validar DNI (solo números)
+  const validarDNI = (dni: string): string => {
+    return dni.replace(/[^0-9]/g, '').slice(0, 8);
+  };
+
+  // Función para validar teléfono (números, espacios, + y guiones)
+  const validarTelefono = (telefono: string): string => {
+    return telefono.replace(/[^0-9\s\+\-]/g, '');
+  };
+
+  // Función para calcular edad
+  const calcularEdad = (fechaNacimiento: string): number | null => {
+    if (!fechaNacimiento) return null;
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    return edad;
+  };
 
   // Inicializar datos cuando el lead cambia o el diálogo se abre
   useEffect(() => {
@@ -69,11 +98,28 @@ export function DialogoEditarLead({
         provincia: lead.provincia || '',
         distrito: lead.distrito || '',
       });
+      
+      // Calcular edad si hay fecha de nacimiento
+      if (lead.fechaNacimiento) {
+        setEdad(calcularEdad(lead.fechaNacimiento));
+      } else {
+        setEdad(null);
+      }
     }
   }, [lead, abierto]);
 
   const handleGuardar = async () => {
     if (!lead) return;
+
+    // Validar edad mínima
+    if (datos.fechaNacimiento && edad !== null && edad < 18) {
+      toast({
+        title: 'Validación fallida',
+        description: 'El lead debe ser mayor de 18 años',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setGuardando(true);
     try {
@@ -90,13 +136,36 @@ export function DialogoEditarLead({
         return;
       }
 
-      // Limpiar datos vacíos
+      // Limpiar datos vacíos y convertir fechas
       const datosLimpios: any = {};
       Object.entries(datos).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
-          datosLimpios[key] = value;
+          // Convertir fechas al formato ISO datetime
+          if (key === 'fechaNacimiento' && value) {
+            // Si es solo fecha (YYYY-MM-DD), agregar hora 00:00:00
+            if (typeof value === 'string' && !value.includes('T')) {
+              datosLimpios[key] = `${value}T00:00:00.000Z`;
+            } else {
+              datosLimpios[key] = value;
+            }
+          } else if (key === 'fechaSeguimiento' && value) {
+            // Si es datetime-local, convertir a ISO
+            if (typeof value === 'string' && value.length === 16) {
+              // datetime-local format: YYYY-MM-DDTHH:mm
+              datosLimpios[key] = `${value}:00.000Z`;
+            } else if (typeof value === 'string' && !value.endsWith('Z')) {
+              datosLimpios[key] = `${value}.000Z`;
+            } else {
+              datosLimpios[key] = value;
+            }
+          } else {
+            datosLimpios[key] = value;
+          }
         }
       });
+
+      console.log('Guardando lead:', lead.id);
+      console.log('Datos a enviar:', datosLimpios);
 
       const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${lead.id}`, {
         method: 'PUT',
@@ -106,6 +175,8 @@ export function DialogoEditarLead({
         },
         body: JSON.stringify(datosLimpios),
       });
+
+      console.log('Respuesta status:', respuesta.status);
 
       // Si el token expiró
       if (respuesta.status === 401) {
@@ -124,8 +195,10 @@ export function DialogoEditarLead({
 
       const resultado = await respuesta.json();
 
+      console.log('Resultado:', resultado);
+
       if (!respuesta.ok) {
-        throw new Error(resultado.mensaje || 'Error al actualizar lead');
+        throw new Error(resultado.mensaje || resultado.error || 'Error al actualizar lead');
       }
 
       toast({
@@ -136,6 +209,7 @@ export function DialogoEditarLead({
       onActualizado();
       onCerrar();
     } catch (error: any) {
+      console.error('Error al guardar lead:', error);
       toast({
         title: 'Error',
         description: error.message || 'No se pudo actualizar el lead',
@@ -175,7 +249,7 @@ export function DialogoEditarLead({
                 <Input
                   id="nombre"
                   value={datos.nombre || ''}
-                  onChange={(e) => setDatos({ ...datos, nombre: e.target.value })}
+                  onChange={(e) => setDatos({ ...datos, nombre: validarTexto(e.target.value) })}
                   placeholder="Nombre del lead"
                 />
               </div>
@@ -185,7 +259,7 @@ export function DialogoEditarLead({
                 <Input
                   id="apellido"
                   value={datos.apellido || ''}
-                  onChange={(e) => setDatos({ ...datos, apellido: e.target.value })}
+                  onChange={(e) => setDatos({ ...datos, apellido: validarTexto(e.target.value) })}
                   placeholder="Apellido del lead"
                 />
               </div>
@@ -206,7 +280,7 @@ export function DialogoEditarLead({
                 <Input
                   id="telefono"
                   value={datos.telefono || ''}
-                  onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
+                  onChange={(e) => setDatos({ ...datos, telefono: validarTelefono(e.target.value) })}
                   placeholder="+51 999 999 999"
                 />
               </div>
@@ -216,9 +290,9 @@ export function DialogoEditarLead({
                 <Input
                   id="dni"
                   value={datos.dni || ''}
-                  onChange={(e) => setDatos({ ...datos, dni: e.target.value })}
+                  onChange={(e) => setDatos({ ...datos, dni: validarDNI(e.target.value) })}
                   placeholder="12345678"
-                  maxLength={20}
+                  maxLength={8}
                 />
               </div>
 
@@ -240,13 +314,23 @@ export function DialogoEditarLead({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fechaNacimiento">Fecha de nacimiento</Label>
+                <Label htmlFor="fechaNacimiento">
+                  Fecha de nacimiento
+                  {edad !== null && <span className="text-muted-foreground ml-2">({edad} años)</span>}
+                </Label>
                 <Input
                   id="fechaNacimiento"
                   type="date"
+                  max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
                   value={datos.fechaNacimiento?.split('T')[0] || ''}
-                  onChange={(e) => setDatos({ ...datos, fechaNacimiento: e.target.value })}
+                  onChange={(e) => {
+                    setDatos({ ...datos, fechaNacimiento: e.target.value });
+                    setEdad(calcularEdad(e.target.value));
+                  }}
                 />
+                {edad !== null && edad < 18 && (
+                  <p className="text-sm text-destructive">El lead debe ser mayor de 18 años</p>
+                )}
               </div>
 
               <div className="space-y-2">
