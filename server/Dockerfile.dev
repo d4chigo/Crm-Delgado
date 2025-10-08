@@ -1,0 +1,28 @@
+# Dockerfile para desarrollo con hot reload
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache curl
+
+# Instalar pnpm
+RUN npm install -g pnpm nodemon ts-node
+
+# Copiar archivos de dependencias
+COPY package*.json pnpm-lock.yaml ./
+
+# Instalar dependencias
+RUN pnpm install
+
+# Copiar prisma schema
+COPY prisma ./prisma
+
+# Generar Prisma Client
+RUN npx prisma generate
+
+# Exponer puerto
+EXPOSE 5000
+
+# Comando de desarrollo
+CMD ["sh", "-c", "npx prisma migrate deploy && pnpm run dev"]
