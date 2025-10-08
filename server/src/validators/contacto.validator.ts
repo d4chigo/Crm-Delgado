@@ -37,7 +37,30 @@ export const crearContactoSchema = z.object({
     fechaNacimiento: z
       .string()
       .datetime('Fecha de nacimiento inválida')
-      .optional()
+      .optional(),
+    
+    // Información profesional
+    empresa: z.string().max(200).optional(),
+    cargo: z.string().max(100).optional(),
+    
+    // Información comercial
+    presupuesto: z.number().positive().optional(),
+    estadoLead: z.enum(['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA']).optional(),
+    prioridad: z.enum(['BAJA', 'MEDIA', 'ALTA', 'URGENTE']).optional(),
+    fuente: z.string().max(100).optional(),
+    probabilidad: z.number().int().min(0).max(100).optional(),
+    
+    // Fechas
+    fechaSeguimiento: z.string().datetime().optional(),
+    
+    // Notas
+    notas: z.string().optional(),
+    intereses: z.string().optional(),
+    
+    // Ubicación
+    departamento: z.string().max(100).optional(),
+    provincia: z.string().max(100).optional(),
+    distrito: z.string().max(100).optional(),
   })
 });
 
@@ -82,7 +105,30 @@ export const actualizarContactoSchema = z.object({
       .optional(),
     tipo: z
       .enum(['CONTACTO', 'LEAD', 'CLIENTE'])
-      .optional()
+      .optional(),
+    
+    // Información profesional
+    empresa: z.string().max(200).optional(),
+    cargo: z.string().max(100).optional(),
+    
+    // Información comercial
+    presupuesto: z.number().positive().optional(),
+    estadoLead: z.enum(['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA']).optional(),
+    prioridad: z.enum(['BAJA', 'MEDIA', 'ALTA', 'URGENTE']).optional(),
+    fuente: z.string().max(100).optional(),
+    probabilidad: z.number().int().min(0).max(100).optional(),
+    
+    // Fechas
+    fechaSeguimiento: z.string().datetime().optional(),
+    
+    // Notas
+    notas: z.string().optional(),
+    intereses: z.string().optional(),
+    
+    // Ubicación
+    departamento: z.string().max(100).optional(),
+    provincia: z.string().max(100).optional(),
+    distrito: z.string().max(100).optional(),
   })
 });
 
@@ -96,6 +142,12 @@ export const filtrosContactoSchema = z.object({
       .optional(),
     busqueda: z
       .string()
+      .optional(),
+    estadoLead: z
+      .enum(['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA'])
+      .optional(),
+    prioridad: z
+      .enum(['BAJA', 'MEDIA', 'ALTA', 'URGENTE'])
       .optional(),
     pagina: z
       .string()

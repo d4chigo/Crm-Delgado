@@ -15,6 +15,24 @@ export enum TipoContacto {
   CLIENTE = 'CLIENTE'
 }
 
+export enum EstadoLead {
+  NUEVO = 'NUEVO',
+  CONTACTADO = 'CONTACTADO',
+  CALIFICADO = 'CALIFICADO',
+  NEGOCIACION = 'NEGOCIACION',
+  PROPUESTA = 'PROPUESTA',
+  GANADO = 'GANADO',
+  PERDIDO = 'PERDIDO',
+  EN_ESPERA = 'EN_ESPERA'
+}
+
+export enum Prioridad {
+  BAJA = 'BAJA',
+  MEDIA = 'MEDIA',
+  ALTA = 'ALTA',
+  URGENTE = 'URGENTE'
+}
+
 // Interfaz principal de Contacto
 export interface Contacto {
   id: string;
@@ -29,6 +47,42 @@ export interface Contacto {
   fechaNacimiento?: string;
   edad?: number;
   tipo: TipoContacto;
+  
+  // Información profesional
+  empresa?: string;
+  cargo?: string;
+  
+  // Información comercial (Leads)
+  presupuesto?: number;
+  estadoLead?: EstadoLead;
+  prioridad?: Prioridad;
+  fuente?: string;
+  probabilidad?: number;
+  
+  // Fechas de seguimiento
+  fechaSeguimiento?: string;
+  fechaConversion?: string;
+  
+  // Notas
+  notas?: string;
+  intereses?: string;
+  
+  // Ubicación UBIGEO
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+  
+  // Etiquetas
+  etiquetas?: Array<{
+    etiqueta: {
+      id: string;
+      nombre: string;
+      color: string;
+      descripcion?: string;
+      icono?: string;
+    };
+  }>;
+  
   creadoEn: string;
   actualizadoEn: string;
   usuarioId: string;
@@ -45,6 +99,29 @@ export interface CrearContactoDTO {
   dni?: string;
   sexo?: Sexo;
   fechaNacimiento?: string;
+  
+  // Información profesional
+  empresa?: string;
+  cargo?: string;
+  
+  // Información comercial
+  presupuesto?: number;
+  estadoLead?: EstadoLead;
+  prioridad?: Prioridad;
+  fuente?: string;
+  probabilidad?: number;
+  
+  // Fechas
+  fechaSeguimiento?: string;
+  
+  // Notas
+  notas?: string;
+  intereses?: string;
+  
+  // Ubicación
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
 }
 
 export interface ActualizarContactoDTO {
@@ -58,6 +135,29 @@ export interface ActualizarContactoDTO {
   sexo?: Sexo;
   fechaNacimiento?: string;
   tipo?: TipoContacto;
+  
+  // Información profesional
+  empresa?: string;
+  cargo?: string;
+  
+  // Información comercial
+  presupuesto?: number;
+  estadoLead?: EstadoLead;
+  prioridad?: Prioridad;
+  fuente?: string;
+  probabilidad?: number;
+  
+  // Fechas
+  fechaSeguimiento?: string;
+  
+  // Notas
+  notas?: string;
+  intereses?: string;
+  
+  // Ubicación
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
 }
 
 // Filtros de búsqueda

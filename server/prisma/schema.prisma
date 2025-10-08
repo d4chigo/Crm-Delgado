@@ -55,6 +55,31 @@ model Contacto {
   sexo            Sexo?
   fechaNacimiento DateTime?
   tipo            TipoContacto @default(CONTACTO)
+  
+  // Información profesional
+  empresa         String?
+  cargo           String?
+  
+  // Información comercial (Leads)
+  presupuesto     Decimal?     @db.Decimal(10, 2)
+  estadoLead      EstadoLead?
+  prioridad       Prioridad    @default(MEDIA)
+  fuente          String?
+  probabilidad    Int?         // 0-100
+  
+  // Fechas de seguimiento
+  fechaSeguimiento DateTime?
+  fechaConversion  DateTime?
+  
+  // Notas
+  notas           String?      @db.Text
+  intereses       String?      @db.Text
+  
+  // Ubicación UBIGEO
+  departamento    String?
+  provincia       String?
+  distrito        String?
+  
   creadoEn        DateTime     @default(now())
   actualizadoEn   DateTime     @updatedAt
 
@@ -62,10 +87,15 @@ model Contacto {
   usuarioId String
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
 
+  // Relación con etiquetas (muchos a muchos)
+  etiquetas ContactoEtiqueta[]
+
   @@map("contactos")
   @@index([usuarioId])
   @@index([tipo])
   @@index([correo])
+  @@index([estadoLead])
+  @@index([prioridad])
 }
 
 enum Sexo {
@@ -78,4 +108,59 @@ enum TipoContacto {
   CONTACTO
   LEAD
   CLIENTE
+}
+
+enum EstadoLead {
+  NUEVO
+  CONTACTADO
+  CALIFICADO
+  NEGOCIACION
+  PROPUESTA
+  GANADO
+  PERDIDO
+  EN_ESPERA
+}
+
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+// ============================================
+// MODELO DE ETIQUETA
+// ============================================
+
+model Etiqueta {
+  id          String   @id @default(uuid())
+  nombre      String   @unique
+  color       String   // Hex color para el badge
+  descripcion String?
+  icono       String?  // Emoji o nombre de icono
+  activa      Boolean  @default(true)
+  orden       Int      @default(0) // Para ordenar en la UI
+  creadoEn    DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // Relación con contactos (muchos a muchos)
+  contactos ContactoEtiqueta[]
+
+  @@map("etiquetas")
+  @@index([activa])
+}
+
+// Tabla intermedia para relación muchos a muchos
+model ContactoEtiqueta {
+  contactoId  String
+  etiquetaId  String
+  asignadoEn  DateTime @default(now())
+
+  contacto Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  etiqueta Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([contactoId, etiquetaId])
+  @@map("contacto_etiquetas")
+  @@index([contactoId])
+  @@index([etiquetaId])
 }

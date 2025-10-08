@@ -203,6 +203,30 @@ export class ContactoController {
       respuestaError(res, error.message || 'Error al convertir contactos', 500);
     }
   }
+
+  /**
+   * POST /api/contactos/:id/convertir-cliente
+   */
+  async convertirLeadACliente(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const contacto = await contactoService.convertirLeadACliente(id, usuarioId);
+      respuestaExito(res, contacto, 'Lead convertido a cliente exitosamente');
+    } catch (error: any) {
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al convertir lead', 500);
+    }
+  }
 }
 
 export default new ContactoController();

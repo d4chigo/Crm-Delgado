@@ -64,4 +64,10 @@ router.post(
   contactoController.convertirVariosALeads.bind(contactoController)
 );
 
+// POST /api/contactos/:id/convertir-cliente - Convertir lead a cliente
+router.post(
+  '/:id/convertir-cliente',
+  contactoController.convertirLeadACliente.bind(contactoController)
+);
+
 export default router;

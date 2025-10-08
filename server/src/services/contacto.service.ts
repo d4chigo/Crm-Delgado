@@ -70,7 +70,14 @@ export class ContactoService {
         where,
         skip,
         take: limite,
-        orderBy: { creadoEn: 'desc' }
+        orderBy: { creadoEn: 'desc' },
+        include: {
+          etiquetas: {
+            include: {
+              etiqueta: true
+            }
+          }
+        }
       }),
       prisma.contacto.count({ where })
     ]);
@@ -94,7 +101,14 @@ export class ContactoService {
    */
   async obtenerContactoPorId(id: string, usuarioId: string) {
     const contacto = await prisma.contacto.findFirst({
-      where: { id, usuarioId }
+      where: { id, usuarioId },
+      include: {
+        etiquetas: {
+          include: {
+            etiqueta: true
+          }
+        }
+      }
     });
 
     if (!contacto) {
@@ -265,6 +279,35 @@ export class ContactoService {
       total: ids.length,
       noConvertidos: ids.length - resultado.count
     };
+  }
+
+  /**
+   * Convertir un lead a cliente
+   */
+  async convertirLeadACliente(id: string, usuarioId: string) {
+    // Verificar que el lead existe y pertenece al usuario
+    const contacto = await prisma.contacto.findFirst({
+      where: {
+        id,
+        usuarioId,
+        tipo: TipoContacto.LEAD
+      }
+    });
+
+    if (!contacto) {
+      throw new Error('Lead no encontrado o no es un lead válido');
+    }
+
+    // Convertir a cliente y guardar fecha de conversión
+    const contactoActualizado = await prisma.contacto.update({
+      where: { id },
+      data: {
+        tipo: TipoContacto.CLIENTE,
+        fechaConversion: new Date()
+      }
+    });
+
+    return this.agregarEdad(contactoActualizado);
   }
 
   /**

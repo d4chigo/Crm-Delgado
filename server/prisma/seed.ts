@@ -10,28 +10,111 @@ async function seed() {
       where: { rol: 'ADMIN' }
     });
 
-    if (adminExistente) {
+    if (!adminExistente) {
+      // Crear usuario administrador solo si no existe
+      const passwordHasheada = await hashearPassword('admin123');
+
+      const admin = await prisma.usuario.create({
+        data: {
+          nombre: 'Administrador',
+          email: 'admin@crm-delgado.com',
+          password: passwordHasheada,
+          rol: 'ADMIN',
+          telefono: '1234567890'
+        }
+      });
+
+      console.log('✅ Usuario administrador creado exitosamente');
+      console.log('📧 Email:', admin.email);
+      console.log('🔑 Password: admin123');
+      console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');
+    } else {
       console.log('ℹ️  Ya existe un usuario administrador');
-      return;
     }
 
-    // Crear usuario administrador
-    const passwordHasheada = await hashearPassword('admin123');
+    // Crear etiquetas predefinidas para programas inmobiliarios
+    const etiquetasExistentes = await prisma.etiqueta.count();
+    
+    if (etiquetasExistentes === 0) {
+      const etiquetas = await prisma.etiqueta.createMany({
+        data: [
+          {
+            nombre: 'Techo Propio',
+            color: '#10B981', // Verde
+            descripcion: 'Programa Techo Propio del Estado',
+            icono: '🏠',
+            orden: 1
+          },
+          {
+            nombre: 'Crédito Mi Vivienda',
+            color: '#3B82F6', // Azul
+            descripcion: 'Crédito Mi Vivienda - Fondo MiVivienda',
+            icono: '🏡',
+            orden: 2
+          },
+          {
+            nombre: 'Compra',
+            color: '#8B5CF6', // Púrpura
+            descripcion: 'Interesado en comprar propiedad',
+            icono: '🛒',
+            orden: 3
+          },
+          {
+            nombre: 'Venta',
+            color: '#F59E0B', // Naranja
+            descripcion: 'Interesado en vender propiedad',
+            icono: '💰',
+            orden: 4
+          },
+          {
+            nombre: 'Alquiler',
+            color: '#06B6D4', // Cyan
+            descripcion: 'Interesado en alquilar',
+            icono: '🔑',
+            orden: 5
+          },
+          {
+            nombre: 'Inversión',
+            color: '#EC4899', // Rosa
+            descripcion: 'Inversionista inmobiliario',
+            icono: '📈',
+            orden: 6
+          },
+          {
+            nombre: 'Crédito Hipotecario',
+            color: '#6366F1', // Índigo
+            descripcion: 'Crédito hipotecario bancario',
+            icono: '🏦',
+            orden: 7
+          },
+          {
+            nombre: 'Primera Vivienda',
+            color: '#14B8A6', // Teal
+            descripcion: 'Primera vez comprando vivienda',
+            icono: '🎉',
+            orden: 8
+          },
+          {
+            nombre: 'Nuevo',
+            color: '#84CC16', // Lima
+            descripcion: 'Propiedad nueva',
+            icono: '✨',
+            orden: 9
+          },
+          {
+            nombre: 'Usado',
+            color: '#64748B', // Slate
+            descripcion: 'Propiedad usada/segunda mano',
+            icono: '🏘️',
+            orden: 10
+          }
+        ]
+      });
 
-    const admin = await prisma.usuario.create({
-      data: {
-        nombre: 'Administrador',
-        email: 'admin@crm-delgado.com',
-        password: passwordHasheada,
-        rol: 'ADMIN',
-        telefono: '1234567890'
-      }
-    });
-
-    console.log('✅ Usuario administrador creado exitosamente');
-    console.log('📧 Email:', admin.email);
-    console.log('🔑 Password: admin123');
-    console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');
+      console.log(`✅ ${etiquetas.count} etiquetas predefinidas creadas`);
+    } else {
+      console.log('ℹ️  Ya existen etiquetas en la base de datos');
+    }
 
   } catch (error) {
     console.error('❌ Error al ejecutar seed:', error);
