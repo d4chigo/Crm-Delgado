@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
@@ -27,14 +28,16 @@ export default function PaginaLeads() {
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
+  const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
 
-  // Cargar leads al montar
+  // Cargar leads y clientes al montar
   useEffect(() => {
-    filtrarPorTipo(TipoContacto.LEAD)
+    cargarContactos()
   }, [])
 
-  // Filtrar solo leads
+  // Filtrar leads y clientes
   const leads = contactos.filter(c => c.tipo === TipoContacto.LEAD)
+  const clientes = contactos.filter(c => c.tipo === TipoContacto.CLIENTE)
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
@@ -104,11 +107,12 @@ export default function PaginaLeads() {
       }
 
       toast({
-        title: 'Lead convertido',
-        description: 'El lead se ha convertido a cliente exitosamente',
+        title: 'Lead convertido a Cliente',
+        description: `El lead ahora es un cliente y aparece en la pestaña "Clientes"`,
       })
 
       cargarContactos()
+      setTabActivo('clientes') // Cambiar a la pestaña de clientes
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -149,9 +153,9 @@ export default function PaginaLeads() {
       {/* Encabezado */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Leads</h1>
+          <h1 className="text-3xl font-bold text-[#303030]">Leads & Clientes</h1>
           <p className="text-muted-foreground mt-1">
-            Gestiona tus leads y conviértelos en clientes
+            Gestiona tus leads y clientes en un solo lugar
           </p>
         </div>
       </div>
@@ -161,240 +165,437 @@ export default function PaginaLeads() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+              <CardTitle className="text-sm font-medium">Leads Activos</CardTitle>
               <TrendingUp className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{estadisticas.totalLeads}</div>
-              <p className="text-xs text-muted-foreground mt-1">Contactos convertidos</p>
+              <div className="text-2xl font-bold text-yellow-600">{leads.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">En proceso de conversión</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Contactos</CardTitle>
-              <Users className="h-4 w-4 text-blue-500" />
+              <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+              <Users className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{estadisticas.totalContactos}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pendientes de conversión</p>
+              <div className="text-2xl font-bold text-green-600">{clientes.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Leads convertidos</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {estadisticas.total > 0 
-                  ? Math.round((estadisticas.totalLeads / estadisticas.total) * 100)
+              <div className="text-2xl font-bold text-blue-600">
+                {(leads.length + clientes.length) > 0 
+                  ? Math.round((clientes.length / (leads.length + clientes.length)) * 100)
                   : 0}%
               </div>
-              <p className="text-xs text-muted-foreground mt-1">De contactos a leads</p>
+              <p className="text-xs text-muted-foreground mt-1">Leads → Clientes</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Barra de búsqueda */}
-      <div className="flex gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar leads por nombre, apellido o correo..."
-            value={busqueda}
-            onChange={handleBusqueda}
-            className="pl-9"
-          />
-        </div>
-      </div>
+      {/* Tabs: Leads y Clientes */}
+      <Tabs value={tabActivo} onValueChange={(value) => setTabActivo(value as 'leads' | 'clientes')}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Leads ({leads.length})
+          </TabsTrigger>
+          <TabsTrigger value="clientes" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Clientes ({clientes.length})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Estado de carga */}
-      {estaCargando && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
-        </div>
-      )}
+        {/* TAB: LEADS */}
+        <TabsContent value="leads" className="space-y-4">
+          {/* Barra de búsqueda */}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar leads por nombre, apellido o correo..."
+                value={busqueda}
+                onChange={handleBusqueda}
+                className="pl-9"
+              />
+            </div>
+          </div>
 
-      {/* Error */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-600">{error}</p>
-          </CardContent>
-        </Card>
-      )}
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
 
-      {/* Lista de leads */}
-      {!estaCargando && leads.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {leads.map((lead) => (
-            <Card key={lead.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">
-                      {lead.nombre} {lead.apellido}
-                    </CardTitle>
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
-                        LEAD
-                      </Badge>
-                      {lead.estadoLead && (
-                        <Badge className={obtenerColorEstado(lead.estadoLead)}>
-                          {lead.estadoLead.replace('_', ' ')}
-                        </Badge>
-                      )}
-                      {lead.prioridad && (
-                        <Badge className={obtenerColorPrioridad(lead.prioridad)}>
-                          {lead.prioridad}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <User className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  {lead.empresa && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span className="font-medium">🏢 {lead.empresa}</span>
-                    </div>
-                  )}
-
-                  {lead.cargo && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span>{lead.cargo}</span>
-                    </div>
-                  )}
-
-                  {lead.correo && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{lead.correo}</span>
-                    </div>
-                  )}
-                  
-                  {lead.telefono && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>{lead.telefono}</span>
-                    </div>
-                  )}
-
-                  {lead.presupuesto && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="h-4 w-4" />
-                      <span>S/ {lead.presupuesto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
-                  
-                  {lead.ciudad && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{lead.ciudad}</span>
-                    </div>
-                  )}
-
-                  {/* Etiquetas */}
-                  {lead.etiquetas && lead.etiquetas.length > 0 && (
-                    <div className="pt-2 border-t">
-                      <div className="flex flex-wrap gap-1">
-                        {lead.etiquetas.map((ce) => (
-                          <Badge
-                            key={ce.etiqueta.id}
-                            variant="outline"
-                            style={{
-                              backgroundColor: ce.etiqueta.color + '20',
-                              color: ce.etiqueta.color,
-                              borderColor: ce.etiqueta.color,
-                            }}
-                            className="text-xs"
-                          >
-                            {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
-                            {ce.etiqueta.nombre}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-3 mt-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
-
-                  {/* Botones de acción */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleVerDetalles(lead)}
-                      className="flex-1"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditar(lead)}
-                      className="flex-1"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleConvertirCliente(lead.id)}
-                      disabled={convirtiendoCliente === lead.id}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {convirtiendoCliente === lead.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ArrowRight className="h-4 w-4 mr-1" />
-                          Cliente
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* Estado vacío */}
-      {!estaCargando && leads.length === 0 && !error && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              {busqueda 
-                ? "No se encontraron leads con ese criterio de búsqueda"
-                : "Convierte tus contactos en leads para comenzar a gestionarlos"}
-            </p>
-            <Button
-              onClick={() => window.location.href = '/dashboard/contacts'}
-              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
-            >
-              Ir a Contactos
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+          {/* Lista de leads */}
+          {!estaCargando && leads.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {leads.map((lead) => (
+                <Card key={lead.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">
+                          {lead.nombre} {lead.apellido}
+                        </CardTitle>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                            LEAD
+                          </Badge>
+                          {lead.estadoLead && (
+                            <Badge className={obtenerColorEstado(lead.estadoLead)}>
+                              {lead.estadoLead.replace('_', ' ')}
+                            </Badge>
+                          )}
+                          {lead.prioridad && (
+                            <Badge className={obtenerColorPrioridad(lead.prioridad)}>
+                              {lead.prioridad}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      {lead.empresa && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="font-medium">🏢 {lead.empresa}</span>
+                        </div>
+                      )}
+
+                      {lead.cargo && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{lead.cargo}</span>
+                        </div>
+                      )}
+
+                      {lead.correo && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-4 w-4" />
+                          <span className="truncate">{lead.correo}</span>
+                        </div>
+                      )}
+                      
+                      {lead.telefono && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-4 w-4" />
+                          <span>{lead.telefono}</span>
+                        </div>
+                      )}
+
+                      {lead.presupuesto && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <DollarSign className="h-4 w-4" />
+                          <span>S/ {lead.presupuesto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      
+                      {lead.ciudad && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{lead.ciudad}</span>
+                        </div>
+                      )}
+
+                      {/* Etiquetas */}
+                      {lead.etiquetas && lead.etiquetas.length > 0 && (
+                        <div className="pt-2 border-t">
+                          <div className="flex flex-wrap gap-1">
+                            {lead.etiquetas.map((ce) => (
+                              <Badge
+                                key={ce.etiqueta.id}
+                                variant="outline"
+                                style={{
+                                  backgroundColor: ce.etiqueta.color + '20',
+                                  color: ce.etiqueta.color,
+                                  borderColor: ce.etiqueta.color,
+                                }}
+                                className="text-xs"
+                              >
+                                {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                                {ce.etiqueta.nombre}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-3 mt-3 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+
+                      {/* Botones de acción */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVerDetalles(lead)}
+                          className="flex-1"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditar(lead)}
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleConvertirCliente(lead.id)}
+                          disabled={convirtiendoCliente === lead.id}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {convirtiendoCliente === lead.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <>
+                              <ArrowRight className="h-4 w-4 mr-1" />
+                              Cliente
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Estado vacío */}
+          {!estaCargando && leads.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {busqueda 
+                    ? "No se encontraron leads con ese criterio de búsqueda"
+                    : "Convierte tus contactos en leads para comenzar a gestionarlos"}
+                </p>
+                <Button
+                  onClick={() => window.location.href = '/dashboard/contacts'}
+                  className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+                >
+                  Ir a Contactos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB: CLIENTES */}
+        <TabsContent value="clientes" className="space-y-4">
+          {/* Barra de búsqueda */}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar clientes por nombre, apellido o correo..."
+                value={busqueda}
+                onChange={handleBusqueda}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de clientes */}
+          {!estaCargando && clientes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clientes.map((cliente) => (
+                <Card key={cliente.id} className="hover:shadow-lg transition-shadow border-green-200">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">
+                          {cliente.nombre} {cliente.apellido}
+                        </CardTitle>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          <Badge className="bg-green-100 text-green-700 border-green-200">
+                            CLIENTE
+                          </Badge>
+                          {cliente.estadoLead && (
+                            <Badge className={obtenerColorEstado(cliente.estadoLead)}>
+                              {cliente.estadoLead.replace('_', ' ')}
+                            </Badge>
+                          )}
+                          {cliente.prioridad && (
+                            <Badge className={obtenerColorPrioridad(cliente.prioridad)}>
+                              {cliente.prioridad}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <User className="h-5 w-5 text-green-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      {cliente.empresa && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span className="font-medium">🏢 {cliente.empresa}</span>
+                        </div>
+                      )}
+
+                      {cliente.cargo && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <span>{cliente.cargo}</span>
+                        </div>
+                      )}
+
+                      {cliente.correo && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="h-4 w-4" />
+                          <span className="truncate">{cliente.correo}</span>
+                        </div>
+                      )}
+                      
+                      {cliente.telefono && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="h-4 w-4" />
+                          <span>{cliente.telefono}</span>
+                        </div>
+                      )}
+
+                      {cliente.presupuesto && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <DollarSign className="h-4 w-4" />
+                          <span>S/ {cliente.presupuesto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      
+                      {cliente.ciudad && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{cliente.ciudad}</span>
+                        </div>
+                      )}
+
+                      {/* Etiquetas */}
+                      {cliente.etiquetas && cliente.etiquetas.length > 0 && (
+                        <div className="pt-2 border-t">
+                          <div className="flex flex-wrap gap-1">
+                            {cliente.etiquetas.map((ce) => (
+                              <Badge
+                                key={ce.etiqueta.id}
+                                variant="outline"
+                                style={{
+                                  backgroundColor: ce.etiqueta.color + '20',
+                                  color: ce.etiqueta.color,
+                                  borderColor: ce.etiqueta.color,
+                                }}
+                                className="text-xs"
+                              >
+                                {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                                {ce.etiqueta.nombre}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-3 mt-3 border-t">
+                        <p className="text-xs text-muted-foreground">
+                          Creado: {new Date(cliente.creadoEn).toLocaleDateString('es-PE', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+
+                      {/* Botones de acción para clientes */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVerDetalles(cliente)}
+                          className="flex-1"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditar(cliente)}
+                          className="flex-1"
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Estado vacío */}
+          {!estaCargando && clientes.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay clientes</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {busqueda 
+                    ? "No se encontraron clientes con ese criterio de búsqueda"
+                    : "Convierte tus leads en clientes para comenzar"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Diálogos */}
       <DialogoDetallesLead

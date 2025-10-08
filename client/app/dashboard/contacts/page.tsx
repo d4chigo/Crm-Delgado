@@ -36,7 +36,7 @@ export default function PaginaContactos() {
   const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
 
   // Filtrar solo contactos tipo CONTACTO (no leads ni clientes)
-  const soloContactos = contactos.filter(c => c.tipo === TipoContacto.CONTACTO)
+  const contactosFiltrados = contactos.filter(c => c.tipo === TipoContacto.CONTACTO)
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
@@ -99,10 +99,10 @@ export default function PaginaContactos() {
   }
 
   const handleSeleccionarTodos = () => {
-    if (contactosSeleccionados.length === soloContactos.length) {
+    if (contactosSeleccionados.length === contactosFiltrados.length) {
       setContactosSeleccionados([])
     } else {
-      setContactosSeleccionados(soloContactos.map(c => c.id))
+      setContactosSeleccionados(contactosFiltrados.map(c => c.id))
     }
   }
 
@@ -169,7 +169,7 @@ export default function PaginaContactos() {
         </div>
       )}
 
-      {/* Barra de búsqueda y acciones */}
+      {/* Barra de búsqueda y filtros */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -210,18 +210,18 @@ export default function PaginaContactos() {
       </div>
 
       {/* Seleccionar todos */}
-      {soloContactos.length > 0 && (
+      {contactosFiltrados.length > 0 && (
         <div className="flex items-center space-x-2">
           <Checkbox
             id="seleccionar-todos"
-            checked={contactosSeleccionados.length === soloContactos.length}
+            checked={contactosSeleccionados.length === contactosFiltrados.length}
             onCheckedChange={handleSeleccionarTodos}
           />
           <label
             htmlFor="seleccionar-todos"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
           >
-            Seleccionar todos ({soloContactos.length})
+            Seleccionar todos ({contactosFiltrados.length})
           </label>
         </div>
       )}
@@ -243,10 +243,10 @@ export default function PaginaContactos() {
       )}
 
       {/* Lista de contactos */}
-      {!estaCargando && soloContactos.length > 0 && (
+      {!estaCargando && contactosFiltrados.length > 0 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {soloContactos.map((contacto) => (
+            {contactosFiltrados.map((contacto) => (
               <Card key={contacto.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start gap-3">
@@ -332,7 +332,7 @@ export default function PaginaContactos() {
       )}
 
       {/* Estado vacío */}
-      {!estaCargando && soloContactos.length === 0 && !error && (
+      {!estaCargando && contactosFiltrados.length === 0 && !error && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
