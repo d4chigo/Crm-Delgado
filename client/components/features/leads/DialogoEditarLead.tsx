@@ -77,7 +77,7 @@ export function DialogoEditarLead({
 
     setGuardando(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('crm_token');
       if (!token) {
         toast({
           title: 'Error',

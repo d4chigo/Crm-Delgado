@@ -36,21 +36,42 @@ export function SelectorEtiquetas({
 
   const cargarEtiquetas = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      const token = localStorage.getItem('crm_token');
+      if (!token) {
+        console.error('No hay token de autenticación');
+        return;
+      }
 
+      console.log('Cargando etiquetas desde:', `${process.env.NEXT_PUBLIC_API_URL}/etiquetas`);
+      
       const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/etiquetas`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log('Respuesta etiquetas:', respuesta.status);
+
       if (respuesta.ok) {
         const resultado = await respuesta.json();
+        console.log('Etiquetas recibidas:', resultado);
         setEtiquetasDisponibles(resultado.datos || []);
+      } else {
+        const error = await respuesta.json();
+        console.error('Error al cargar etiquetas:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar las etiquetas',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Error al cargar etiquetas:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo conectar con el servidor',
+        variant: 'destructive',
+      });
     } finally {
       setCargando(false);
     }
@@ -75,7 +96,7 @@ export function SelectorEtiquetas({
   const guardarEtiquetas = async (etiquetaIds: string[]) => {
     setGuardando(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('crm_token');
       if (!token) return;
 
       const respuesta = await fetch(

@@ -62,7 +62,7 @@ export default function PaginaLeads() {
   const handleConvertirCliente = async (leadId: string) => {
     setConvirtiendoCliente(leadId)
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('crm_token')
       if (!token) {
         toast({
           title: 'Error',
