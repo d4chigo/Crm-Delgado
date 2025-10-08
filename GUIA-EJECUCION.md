@@ -215,11 +215,17 @@ docker-compose logs -f
 Adminer es una interfaz web ligera para gestionar MySQL (alternativa a phpMyAdmin, pero mucho más rápida y simple).
 
 **Acceso:**
-- URL: http://localhost:8080
+- URL: http://localhost:8080 (configurable con `ADMINER_PORT` en `.env`)
 - **Servidor**: `mysql`
-- **Usuario**: `crm_user`
-- **Contraseña**: `crm_pass` (desarrollo) o `crm_password_2025` (producción)
+- **Usuario**: Usa `MYSQL_USER` del archivo `.env`
+- **Contraseña**: Usa `MYSQL_PASSWORD` del archivo `.env`
 - **Base de datos**: `crm_delgado`
+
+**Configuración en `.env`:**
+```env
+ADMINER_PORT=8080              # Puerto de acceso web
+ADMINER_DESIGN=pepa-linha-dark # Tema (pepa-linha-dark, nette, etc.)
+```
 
 **Características:**
 - ✅ Explorar tablas y registros
