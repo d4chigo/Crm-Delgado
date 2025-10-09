@@ -281,7 +281,6 @@ export function DialogoEditarLead({
                   <SelectContent>
                     <SelectItem value="MASCULINO">Masculino</SelectItem>
                     <SelectItem value="FEMENINO">Femenino</SelectItem>
-                    <SelectItem value="OTRO">Otro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -102,7 +102,6 @@ enum Rol {
 enum Sexo {
   MASCULINO
   FEMENINO
-  OTRO
 }
 
 enum TipoContacto {

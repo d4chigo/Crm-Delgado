@@ -262,7 +262,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
                 <SelectContent>
                   <SelectItem value={Sexo.MASCULINO}>Masculino</SelectItem>
                   <SelectItem value={Sexo.FEMENINO}>Femenino</SelectItem>
-                  <SelectItem value={Sexo.OTRO}>Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>

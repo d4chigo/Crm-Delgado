@@ -5,8 +5,7 @@
 // Enums
 export enum Sexo {
   MASCULINO = 'MASCULINO',
-  FEMENINO = 'FEMENINO',
-  OTRO = 'OTRO'
+  FEMENINO = 'FEMENINO'
 }
 
 export enum TipoContacto {
