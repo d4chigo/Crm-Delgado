@@ -1,6 +1,6 @@
 /**
  * Servicio para consultar DNI usando decolecta.com
- * Documentación: https://decolecta.com
+ * Documentación: https://api.decolecta.com/
  */
 
 interface RespuestaDNI {
@@ -17,8 +17,8 @@ interface ErrorAPIDNI {
 }
 
 export class DNIService {
-  // URL para decolecta.com - Probando diferentes endpoints
-  private readonly API_URL = 'https://api.decolecta.com'
+  // URL para decolecta.com
+  private readonly API_URL = 'https://api.decolecta.com/v1'
   private readonly API_TOKEN: string
 
   constructor() {
@@ -26,6 +26,8 @@ export class DNIService {
     
     if (!this.API_TOKEN) {
       console.warn('⚠️ DNI_API_TOKEN no configurado. La consulta de DNI no funcionará.')
+    } else {
+      console.log('✅ DNI_API_TOKEN configurado correctamente')
     }
   }
 
@@ -46,8 +48,8 @@ export class DNIService {
         throw new Error('API Token no configurado. Configure DNI_API_TOKEN en .env')
       }
 
-      // Consulta a decolecta.com (formato correcto con query param)
-      const url = `${this.API_URL}/v1/reniec/dni?numero=${dni}`
+      // Consulta a decolecta.com (formato: /v1/reniec/dni?numero=DNI)
+      const url = `${this.API_URL}/reniec/dni?numero=${dni}`
       console.log('🔍 Consultando DNI:', dni)
       console.log('📡 URL:', url)
       
