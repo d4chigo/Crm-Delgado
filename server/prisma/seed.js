@@ -74,41 +74,6 @@ async function seed() {
             descripcion: 'Interesado en alquilar',
             icono: '🔑',
             orden: 5
-          },
-          {
-            nombre: 'Inversión',
-            color: '#EC4899',
-            descripcion: 'Inversionista inmobiliario',
-            icono: '📈',
-            orden: 6
-          },
-          {
-            nombre: 'Crédito Hipotecario',
-            color: '#6366F1',
-            descripcion: 'Crédito hipotecario bancario',
-            icono: '🏦',
-            orden: 7
-          },
-          {
-            nombre: 'Primera Vivienda',
-            color: '#14B8A6',
-            descripcion: 'Primera vez comprando vivienda',
-            icono: '🎉',
-            orden: 8
-          },
-          {
-            nombre: 'Nuevo',
-            color: '#84CC16',
-            descripcion: 'Propiedad nueva',
-            icono: '✨',
-            orden: 9
-          },
-          {
-            nombre: 'Usado',
-            color: '#64748B',
-            descripcion: 'Propiedad usada/segunda mano',
-            icono: '🏘️',
-            orden: 10
           }
         ]
       });
