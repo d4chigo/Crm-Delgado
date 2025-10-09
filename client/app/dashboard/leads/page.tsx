@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
 import { toast } from "@/hooks/use-toast"
+import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
 
 export default function PaginaLeads() {
   const {
@@ -29,15 +31,48 @@ export default function PaginaLeads() {
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
+  const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
 
-  // Cargar leads y clientes al montar
+  // Cargar leads, clientes y etiquetas al montar
   useEffect(() => {
     cargarContactos()
+    cargarEtiquetas()
   }, [])
 
+  const cargarEtiquetas = async () => {
+    try {
+      const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+      // Asegurarse de que sea un array
+      if (Array.isArray(etiquetasObtenidas)) {
+        setEtiquetas(etiquetasObtenidas)
+      } else {
+        console.error('Las etiquetas obtenidas no son un array:', etiquetasObtenidas)
+        setEtiquetas([])
+      }
+    } catch (error) {
+      console.error('Error al cargar etiquetas:', error)
+      setEtiquetas([]) // Establecer array vacío en caso de error
+    }
+  }
+
   // Filtrar leads y clientes
-  const leads = contactos.filter(c => c.tipo === TipoContacto.LEAD)
-  const clientes = contactos.filter(c => c.tipo === TipoContacto.CLIENTE)
+  const leadsSinFiltrar = contactos.filter(c => c.tipo === TipoContacto.LEAD)
+  const clientesSinFiltrar = contactos.filter(c => c.tipo === TipoContacto.CLIENTE)
+
+  // Aplicar filtro por etiqueta
+  const leads = etiquetaFiltroLeads === "todas" 
+    ? leadsSinFiltrar 
+    : leadsSinFiltrar.filter(lead => 
+        lead.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)
+      )
+
+  const clientes = etiquetaFiltroClientes === "todas" 
+    ? clientesSinFiltrar 
+    : clientesSinFiltrar.filter(cliente => 
+        cliente.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)
+      )
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
@@ -217,7 +252,7 @@ export default function PaginaLeads() {
 
         {/* TAB: LEADS */}
         <TabsContent value="leads" className="space-y-4">
-          {/* Barra de búsqueda */}
+          {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -228,6 +263,28 @@ export default function PaginaLeads() {
                 className="pl-9"
               />
             </div>
+            <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Estado de carga */}
@@ -418,7 +475,7 @@ export default function PaginaLeads() {
 
         {/* TAB: CLIENTES */}
         <TabsContent value="clientes" className="space-y-4">
-          {/* Barra de búsqueda */}
+          {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -429,6 +486,28 @@ export default function PaginaLeads() {
                 className="pl-9"
               />
             </div>
+            <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Estado de carga */}
