@@ -9,6 +9,7 @@ import authRoutes from '@/routes/auth.routes';
 import contactoRoutes from '@/routes/contacto.routes';
 import dniRoutes from '@/routes/dni.routes';
 import etiquetaRoutes from '@/routes/etiqueta.routes';
+import proyectoRoutes from '@/routes/proyecto.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 
 // Cargar variables de entorno
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/contactos', contactoRoutes);
 app.use('/api/dni', dniRoutes);
 app.use('/api/etiquetas', etiquetaRoutes);
+app.use('/api/proyectos', proyectoRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);

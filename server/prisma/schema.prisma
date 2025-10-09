@@ -19,6 +19,7 @@ model Usuario {
   creadoEn      DateTime   @default(now())
   actualizadoEn DateTime   @updatedAt
   contactos     Contacto[]
+  proyectos     Proyecto[]
 
   @@map("usuarios")
 }
@@ -53,6 +54,7 @@ model Contacto {
   probabilidad     Int?
   provincia        String?
   etiquetas        ContactoEtiqueta[]
+  proyectos        ProyectoCliente[]
   usuario          Usuario            @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
@@ -74,6 +76,7 @@ model Etiqueta {
   creadoEn      DateTime           @default(now())
   actualizadoEn DateTime           @updatedAt
   contactos     ContactoEtiqueta[]
+  proyectos     ProyectoEtiqueta[]
 
   @@index([activa])
   @@map("etiquetas")
@@ -126,4 +129,64 @@ enum Prioridad {
   MEDIA
   ALTA
   URGENTE
+}
+
+// Modelo de Proyecto Inmobiliario
+model Proyecto {
+  id            String              @id @default(uuid())
+  nombre        String
+  descripcion   String?             @db.Text
+  imagen        String?             // URL de la imagen del proyecto
+  precio        Decimal?            @db.Decimal(12, 2)
+  ubicacion     String?
+  estado        EstadoProyecto      @default(DISPONIBLE)
+  activo        Boolean             @default(true)
+  creadoEn      DateTime            @default(now())
+  actualizadoEn DateTime            @updatedAt
+  usuarioId     String
+  usuario       Usuario             @relation(fields: [usuarioId], references: [id])
+  etiquetas     ProyectoEtiqueta[]
+  clientes      ProyectoCliente[]
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([activo])
+  @@map("proyectos")
+}
+
+// Relación muchos a muchos: Proyecto - Etiqueta
+model ProyectoEtiqueta {
+  proyectoId String
+  etiquetaId String
+  asignadoEn DateTime @default(now())
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, etiquetaId])
+  @@index([proyectoId])
+  @@index([etiquetaId])
+  @@map("proyecto_etiquetas")
+}
+
+// Relación muchos a muchos: Proyecto - Cliente (Contacto tipo CLIENTE)
+model ProyectoCliente {
+  proyectoId  String
+  clienteId   String
+  asociadoEn  DateTime @default(now())
+  notas       String?  @db.Text
+  proyecto    Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  cliente     Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, clienteId])
+  @@index([proyectoId])
+  @@index([clienteId])
+  @@map("proyecto_clientes")
+}
+
+enum EstadoProyecto {
+  DISPONIBLE
+  RESERVADO
+  VENDIDO
+  CONSTRUCCION
+  FINALIZADO
 }
