@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
 import { toast } from "@/hooks/use-toast"
 import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
 
@@ -29,6 +30,8 @@ export default function PaginaLeads() {
   const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
+  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
@@ -652,6 +655,17 @@ export default function PaginaLeads() {
                           Editar
                         </Button>
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setClienteParaOportunidad(cliente)
+                          setDialogoOportunidadAbierto(true)
+                        }}
+                        className="w-full mt-2 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Agregar al Pipeline
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -692,6 +706,24 @@ export default function PaginaLeads() {
           setDialogoEditarAbierto(false)
         }}
       />
+
+      {/* Diálogo para crear oportunidad */}
+      {clienteParaOportunidad && (
+        <DialogoCrearOportunidad
+          clienteId={clienteParaOportunidad.id}
+          clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
+          open={dialogoOportunidadAbierto}
+          onOpenChange={setDialogoOportunidadAbierto}
+          onSuccess={() => {
+            toast({
+              title: "¡Oportunidad creada!",
+              description: "El cliente ha sido agregado al pipeline exitosamente",
+            })
+            setDialogoOportunidadAbierto(false)
+            setClienteParaOportunidad(null)
+          }}
+        />
+      )}
     </div>
   )
 }
