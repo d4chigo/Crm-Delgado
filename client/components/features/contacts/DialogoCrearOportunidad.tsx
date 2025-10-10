@@ -222,7 +222,7 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Etapa y Probabilidad */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-5">
               <div className="space-y-2.5">
                 <Label htmlFor="etapa" className="text-sm font-medium text-[#303030]">
                   Etapa Inicial <span className="text-red-500">*</span>
@@ -231,7 +231,7 @@ export function DialogoCrearOportunidad({
                   value={formulario.etapa}
                   onValueChange={(value) => setFormulario({ ...formulario, etapa: value as EtapaPipeline })}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 w-full">
                     <SelectValue placeholder="Seleccionar etapa" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -256,7 +256,7 @@ export function DialogoCrearOportunidad({
                   value={formulario.probabilidad?.toString()}
                   onValueChange={(value) => setFormulario({ ...formulario, probabilidad: Number(value) })}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 w-full">
                     <SelectValue placeholder="Seleccionar probabilidad" />
                   </SelectTrigger>
                   <SelectContent>
