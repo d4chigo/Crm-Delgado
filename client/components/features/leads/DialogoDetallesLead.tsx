@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
+import { ClientesAsociados } from './ClientesAsociados';
 
 interface DialogoDetallesLeadProps {
   lead: Contacto | null;
@@ -88,10 +89,11 @@ export function DialogoDetallesLead({
         </DialogHeader>
 
         <Tabs defaultValue="info" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="comercial">Comercial</TabsTrigger>
             <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>
+            <TabsTrigger value="clientes">Clientes</TabsTrigger>
             <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
             <TabsTrigger value="notas">Notas</TabsTrigger>
           </TabsList>
@@ -316,6 +318,11 @@ export function DialogoDetallesLead({
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          {/* Tab: Clientes Asociados */}
+          <TabsContent value="clientes" className="space-y-4">
+            <ClientesAsociados leadId={lead.id} />
           </TabsContent>
 
           {/* Tab: Etiquetas */}

@@ -6,7 +6,10 @@ import type {
   ActualizarContactoDTO,
   FiltrosContacto,
   RespuestaContactos,
-  EstadisticasContactos
+  EstadisticasContactos,
+  LeadCliente,
+  AsociarClienteDTO,
+  ActualizarAsociacionDTO
 } from '@/types/contacto.types';
 
 class ContactoService {
@@ -164,6 +167,83 @@ class ContactoService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ ids }),
+    });
+  }
+
+  /**
+   * Asociar un cliente a un lead
+   */
+  async asociarCliente(leadId: string, datos: AsociarClienteDTO): Promise<LeadCliente> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<LeadCliente>(`/contactos/${leadId}/clientes`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(datos),
+    });
+  }
+
+  /**
+   * Obtener clientes asociados a un lead
+   */
+  async obtenerClientesDeLeads(leadId: string): Promise<LeadCliente[]> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<LeadCliente[]>(`/contactos/${leadId}/clientes`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  /**
+   * Actualizar la asociación entre lead y cliente (notas/estado)
+   */
+  async actualizarAsociacion(
+    leadId: string, 
+    clienteId: string, 
+    datos: ActualizarAsociacionDTO
+  ): Promise<LeadCliente> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<LeadCliente>(`/contactos/${leadId}/clientes/${clienteId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(datos),
+    });
+  }
+
+  /**
+   * Desasociar un cliente de un lead
+   */
+  async desasociarCliente(leadId: string, clienteId: string): Promise<{ mensaje: string }> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<{ mensaje: string }>(`/contactos/${leadId}/clientes/${clienteId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   }
 }

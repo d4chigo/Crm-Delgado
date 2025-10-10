@@ -335,6 +335,194 @@ export class ContactoService {
       total: totalContactos + totalLeads + totalClientes
     };
   }
+
+  /**
+   * Asociar un cliente a un lead
+   */
+  async asociarCliente(
+    leadId: string,
+    clienteId: string,
+    usuarioId: string,
+    datos?: { notas?: string; estado?: string }
+  ) {
+    // Verificar que el lead existe y es un lead
+    const lead = await prisma.contacto.findFirst({
+      where: { 
+        id: leadId, 
+        usuarioId,
+        tipo: TipoContacto.LEAD 
+      }
+    });
+
+    if (!lead) {
+      throw new Error('Lead no encontrado o no es un lead válido');
+    }
+
+    // Verificar que el cliente existe y es un cliente
+    const cliente = await prisma.contacto.findFirst({
+      where: { 
+        id: clienteId, 
+        usuarioId,
+        tipo: TipoContacto.CLIENTE 
+      }
+    });
+
+    if (!cliente) {
+      throw new Error('Cliente no encontrado o no es un cliente válido');
+    }
+
+    // Verificar que no estén ya asociados
+    const asociacionExistente = await prisma.leadCliente.findUnique({
+      where: {
+        leadId_clienteId: {
+          leadId,
+          clienteId
+        }
+      }
+    });
+
+    if (asociacionExistente) {
+      throw new Error('El cliente ya está asociado a este lead');
+    }
+
+    // Crear la asociación
+    const asociacion = await prisma.leadCliente.create({
+      data: {
+        leadId,
+        clienteId,
+        notas: datos?.notas,
+        estado: datos?.estado || 'En proceso'
+      },
+      include: {
+        cliente: {
+          include: {
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      ...asociacion,
+      cliente: this.agregarEdad(asociacion.cliente)
+    };
+  }
+
+  /**
+   * Desasociar un cliente de un lead
+   */
+  async desasociarCliente(leadId: string, clienteId: string, usuarioId: string) {
+    // Verificar que el lead pertenece al usuario
+    const lead = await prisma.contacto.findFirst({
+      where: { id: leadId, usuarioId }
+    });
+
+    if (!lead) {
+      throw new Error('Lead no encontrado');
+    }
+
+    // Eliminar la asociación
+    await prisma.leadCliente.delete({
+      where: {
+        leadId_clienteId: {
+          leadId,
+          clienteId
+        }
+      }
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Actualizar notas o estado de la asociación lead-cliente
+   */
+  async actualizarAsociacion(
+    leadId: string,
+    clienteId: string,
+    usuarioId: string,
+    datos: { notas?: string; estado?: string }
+  ) {
+    // Verificar que el lead pertenece al usuario
+    const lead = await prisma.contacto.findFirst({
+      where: { id: leadId, usuarioId }
+    });
+
+    if (!lead) {
+      throw new Error('Lead no encontrado');
+    }
+
+    // Actualizar la asociación
+    const asociacion = await prisma.leadCliente.update({
+      where: {
+        leadId_clienteId: {
+          leadId,
+          clienteId
+        }
+      },
+      data: {
+        notas: datos.notas,
+        estado: datos.estado
+      },
+      include: {
+        cliente: {
+          include: {
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      ...asociacion,
+      cliente: this.agregarEdad(asociacion.cliente)
+    };
+  }
+
+  /**
+   * Obtener clientes asociados a un lead
+   */
+  async obtenerClientesDeLeads(leadId: string, usuarioId: string) {
+    // Verificar que el lead pertenece al usuario
+    const lead = await prisma.contacto.findFirst({
+      where: { id: leadId, usuarioId }
+    });
+
+    if (!lead) {
+      throw new Error('Lead no encontrado');
+    }
+
+    // Obtener asociaciones con clientes
+    const asociaciones = await prisma.leadCliente.findMany({
+      where: { leadId },
+      include: {
+        cliente: {
+          include: {
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { asociadoEn: 'desc' }
+    });
+
+    // Agregar edad a cada cliente
+    return asociaciones.map(asoc => ({
+      ...asoc,
+      cliente: this.agregarEdad(asoc.cliente)
+    }));
+  }
 }
 
 export default new ContactoService();

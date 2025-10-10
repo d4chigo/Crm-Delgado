@@ -32,6 +32,16 @@ export enum Prioridad {
   URGENTE = 'URGENTE'
 }
 
+// Interfaz para la relación Lead-Cliente
+export interface LeadCliente {
+  leadId: string;
+  clienteId: string;
+  asociadoEn: string;
+  notas?: string;
+  estado?: string;
+  cliente?: Contacto;
+}
+
 // Interfaz principal de Contacto
 export interface Contacto {
   id: string;
@@ -81,6 +91,9 @@ export interface Contacto {
       icono?: string;
     };
   }>;
+  
+  // Clientes asociados (para leads)
+  clientesAsociados?: LeadCliente[];
   
   creadoEn: string;
   actualizadoEn: string;
@@ -198,4 +211,17 @@ export interface DatosFormularioContacto {
   dni: string;
   sexo: Sexo | '';
   fechaNacimiento: string;
+}
+
+// DTO para asociar cliente a lead
+export interface AsociarClienteDTO {
+  clienteId: string;
+  notas?: string;
+  estado?: string;
+}
+
+// DTO para actualizar asociación
+export interface ActualizarAsociacionDTO {
+  notas?: string;
+  estado?: string;
 }

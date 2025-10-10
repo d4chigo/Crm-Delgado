@@ -20,6 +20,7 @@ model Usuario {
   actualizadoEn DateTime   @updatedAt
   contactos     Contacto[]
   proyectos     Proyecto[]
+  oportunidades OportunidadCliente[]
 
   @@map("usuarios")
 }
@@ -55,6 +56,9 @@ model Contacto {
   provincia        String?
   etiquetas        ContactoEtiqueta[]
   proyectos        ProyectoCliente[]
+  leadsAsociados   LeadCliente[]      @relation("LeadRelacion")
+  clientesAsociados LeadCliente[]     @relation("ClienteRelacion")
+  oportunidades    OportunidadCliente[]
   usuario          Usuario            @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
@@ -93,6 +97,46 @@ model ContactoEtiqueta {
   @@index([contactoId])
   @@index([etiquetaId])
   @@map("contacto_etiquetas")
+}
+
+model LeadCliente {
+  leadId     String
+  clienteId  String
+  asociadoEn DateTime @default(now())
+  notas      String?  @db.Text
+  estado     String?  @db.VarChar(50)
+  lead       Contacto @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
+  cliente    Contacto @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, clienteId])
+  @@index([leadId])
+  @@index([clienteId])
+  @@map("lead_clientes")
+}
+
+model OportunidadCliente {
+  id              String   @id @default(uuid())
+  clienteId       String
+  titulo          String   // Título de la oportunidad (ej: "Interés en Dpto 301")
+  proyecto        String?  // Proyecto/producto de interés
+  propiedad       String?  // Propiedad específica (ej: "Dpto 301", "Casa 22")
+  etapa           EtapaPipeline @default(LEAD)
+  valor           Decimal? @db.Decimal(12, 2) // Valor estimado de la venta
+  probabilidad    Int?     @default(25) // % de probabilidad de cierre
+  proximaAccion   String?  @db.Text // Próxima acción a realizar
+  ultimaActividad DateTime @default(now()) // Última vez que se actualizó
+  notas           String?  @db.Text
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+  usuarioId       String
+  
+  cliente         Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([etapa])
+  @@map("oportunidades_clientes")
 }
 
 enum Rol {
@@ -189,4 +233,14 @@ enum EstadoProyecto {
   VENDIDO
   CONSTRUCCION
   FINALIZADO
+}
+
+enum EtapaPipeline {
+  LEAD
+  CONTACTO
+  VISITA
+  NEGOCIACION
+  CIERRE
+  GANADO
+  PERDIDO
 }

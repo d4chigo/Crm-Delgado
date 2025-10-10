@@ -70,4 +70,28 @@ router.post(
   contactoController.convertirLeadACliente.bind(contactoController)
 );
 
+// POST /api/contactos/:id/clientes - Asociar cliente a lead
+router.post(
+  '/:id/clientes',
+  contactoController.asociarCliente.bind(contactoController)
+);
+
+// GET /api/contactos/:id/clientes - Obtener clientes de un lead
+router.get(
+  '/:id/clientes',
+  contactoController.obtenerClientesDeLeads.bind(contactoController)
+);
+
+// PUT /api/contactos/:id/clientes/:clienteId - Actualizar asociación
+router.put(
+  '/:id/clientes/:clienteId',
+  contactoController.actualizarAsociacion.bind(contactoController)
+);
+
+// DELETE /api/contactos/:id/clientes/:clienteId - Desasociar cliente
+router.delete(
+  '/:id/clientes/:clienteId',
+  contactoController.desasociarCliente.bind(contactoController)
+);
+
 export default router;

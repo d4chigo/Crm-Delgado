@@ -227,6 +227,125 @@ export class ContactoController {
       respuestaError(res, error.message || 'Error al convertir lead', 500);
     }
   }
+
+  /**
+   * POST /api/contactos/:id/clientes
+   */
+  async asociarCliente(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId } = req.params;
+      const { clienteId, notas, estado } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!clienteId) {
+        respuestaError(res, 'El ID del cliente es requerido', 400);
+        return;
+      }
+
+      const asociacion = await contactoService.asociarCliente(
+        leadId,
+        clienteId,
+        usuarioId,
+        { notas, estado }
+      );
+
+      respuestaExito(res, asociacion, 'Cliente asociado exitosamente');
+    } catch (error: any) {
+      if (error.message.includes('no encontrado') || error.message.includes('no es un')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      if (error.message.includes('ya está asociado')) {
+        respuestaError(res, error.message, 409);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al asociar cliente', 500);
+    }
+  }
+
+  /**
+   * GET /api/contactos/:id/clientes
+   */
+  async obtenerClientesDeLeads(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const clientes = await contactoService.obtenerClientesDeLeads(leadId, usuarioId);
+      respuestaExito(res, clientes);
+    } catch (error: any) {
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al obtener clientes', 500);
+    }
+  }
+
+  /**
+   * PUT /api/contactos/:id/clientes/:clienteId
+   */
+  async actualizarAsociacion(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId, clienteId } = req.params;
+      const { notas, estado } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const asociacion = await contactoService.actualizarAsociacion(
+        leadId,
+        clienteId,
+        usuarioId,
+        { notas, estado }
+      );
+
+      respuestaExito(res, asociacion, 'Asociación actualizada exitosamente');
+    } catch (error: any) {
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al actualizar asociación', 500);
+    }
+  }
+
+  /**
+   * DELETE /api/contactos/:id/clientes/:clienteId
+   */
+  async desasociarCliente(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId, clienteId } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      await contactoService.desasociarCliente(leadId, clienteId, usuarioId);
+      respuestaExito(res, null, 'Cliente desasociado exitosamente');
+    } catch (error: any) {
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al desasociar cliente', 500);
+    }
+  }
 }
 
 export default new ContactoController();
