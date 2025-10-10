@@ -184,13 +184,13 @@ export function DialogoCrearOportunidad({
                       <span className="text-muted-foreground">Sin proyecto</span>
                     </SelectItem>
                     {proyectos.map((proyecto) => (
-                      <SelectItem key={proyecto.id} value={proyecto.nombre} className="py-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-sm">{proyecto.nombre}</span>
-                          {proyecto.ubicacion && (
-                            <span className="text-xs text-muted-foreground">{proyecto.ubicacion}</span>
-                          )}
-                        </div>
+                      <SelectItem 
+                        key={proyecto.id} 
+                        value={proyecto.nombre} 
+                        className="py-2.5"
+                      >
+                        {proyecto.nombre}
+                        {proyecto.ubicacion && ` - ${proyecto.ubicacion}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -236,11 +236,12 @@ export function DialogoCrearOportunidad({
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     {ETAPAS_PIPELINE.map((etapa) => (
-                      <SelectItem key={etapa.value} value={etapa.value} className="py-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-sm">{etapa.label}</span>
-                          <span className="text-xs text-muted-foreground">{etapa.description}</span>
-                        </div>
+                      <SelectItem 
+                        key={etapa.value} 
+                        value={etapa.value} 
+                        className="py-2.5"
+                      >
+                        {etapa.label} - {etapa.description}
                       </SelectItem>
                     ))}
                   </SelectContent>
