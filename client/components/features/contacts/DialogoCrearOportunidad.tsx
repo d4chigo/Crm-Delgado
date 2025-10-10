@@ -139,9 +139,9 @@ export function DialogoCrearOportunidad({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+        <form onSubmit={handleSubmit} className="space-y-8 pt-2">
           {/* Información Básica */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
               <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
@@ -150,7 +150,7 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Título */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <Label htmlFor="titulo" className="text-sm font-medium text-[#303030]">
                 Título de la Oportunidad <span className="text-red-500">*</span>
               </Label>
@@ -165,8 +165,8 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Proyecto y Propiedad */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2.5">
                 <Label htmlFor="proyecto" className="text-sm font-medium text-[#303030]">
                   Proyecto
                 </Label>
@@ -179,14 +179,14 @@ export function DialogoCrearOportunidad({
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sin-proyecto">
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="sin-proyecto" className="py-2.5">
                       <span className="text-muted-foreground">Sin proyecto</span>
                     </SelectItem>
                     {proyectos.map((proyecto) => (
-                      <SelectItem key={proyecto.id} value={proyecto.nombre}>
-                        <div className="flex flex-col py-1">
-                          <span className="font-medium">{proyecto.nombre}</span>
+                      <SelectItem key={proyecto.id} value={proyecto.nombre} className="py-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-sm">{proyecto.nombre}</span>
                           {proyecto.ubicacion && (
                             <span className="text-xs text-muted-foreground">{proyecto.ubicacion}</span>
                           )}
@@ -197,7 +197,7 @@ export function DialogoCrearOportunidad({
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <Label htmlFor="propiedad" className="text-sm font-medium text-[#303030]">
                   Unidad/Propiedad
                 </Label>
@@ -213,7 +213,7 @@ export function DialogoCrearOportunidad({
           </div>
 
           {/* Estado y Seguimiento */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
               <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
@@ -222,8 +222,8 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Etapa y Probabilidad */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2.5">
                 <Label htmlFor="etapa" className="text-sm font-medium text-[#303030]">
                   Etapa Inicial <span className="text-red-500">*</span>
                 </Label>
@@ -234,11 +234,11 @@ export function DialogoCrearOportunidad({
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Seleccionar etapa" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px]">
                     {ETAPAS_PIPELINE.map((etapa) => (
-                      <SelectItem key={etapa.value} value={etapa.value}>
-                        <div className="flex flex-col py-1">
-                          <span className="font-medium">{etapa.label}</span>
+                      <SelectItem key={etapa.value} value={etapa.value} className="py-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-sm">{etapa.label}</span>
                           <span className="text-xs text-muted-foreground">{etapa.description}</span>
                         </div>
                       </SelectItem>
@@ -247,7 +247,7 @@ export function DialogoCrearOportunidad({
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <Label htmlFor="probabilidad" className="text-sm font-medium text-[#303030]">
                   Probabilidad de Cierre
                 </Label>
@@ -260,8 +260,8 @@ export function DialogoCrearOportunidad({
                   </SelectTrigger>
                   <SelectContent>
                     {PROBABILIDADES.map((prob) => (
-                      <SelectItem key={prob.value} value={prob.value.toString()}>
-                        {prob.label}
+                      <SelectItem key={prob.value} value={prob.value.toString()} className="py-2.5">
+                        <span className="text-sm">{prob.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -270,7 +270,7 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Valor */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <Label htmlFor="valor" className="text-sm font-medium text-[#303030]">
                 Valor Estimado
               </Label>
@@ -290,7 +290,7 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Próxima Acción */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <Label htmlFor="proximaAccion" className="text-sm font-medium text-[#303030]">
                 Próxima Acción
               </Label>
@@ -305,7 +305,7 @@ export function DialogoCrearOportunidad({
           </div>
 
           {/* Notas Adicionales */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex items-center gap-2 pb-2 border-b border-border">
               <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
               <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
@@ -313,7 +313,7 @@ export function DialogoCrearOportunidad({
               </h3>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <Label htmlFor="notas" className="text-sm font-medium text-[#303030]">
                 Observaciones
               </Label>
@@ -328,19 +328,19 @@ export function DialogoCrearOportunidad({
             </div>
           </div>
 
-          <DialogFooter className="gap-2 pt-4 border-t border-border">
+          <DialogFooter className="gap-3 pt-6 border-t border-border">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={cargando}
-              className="min-w-[120px]"
+              className="min-w-[120px] h-11"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold min-w-[180px]"
+              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold min-w-[180px] h-11"
               disabled={cargando}
             >
               {cargando ? (
