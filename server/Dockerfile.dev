@@ -6,13 +6,13 @@ WORKDIR /app
 # Instalar dependencias del sistema
 RUN apk add --no-cache curl
 
-# Instalar pnpm
-RUN npm install -g pnpm nodemon ts-node
+# Instalar pnpm y herramientas globales
+RUN npm install -g pnpm nodemon ts-node typescript tsconfig-paths
 
 # Copiar archivos de dependencias
 COPY package*.json pnpm-lock.yaml ./
 
-# Instalar dependencias (incluye tsconfig-paths)
+# Instalar dependencias
 RUN pnpm install
 
 # Copiar prisma schema

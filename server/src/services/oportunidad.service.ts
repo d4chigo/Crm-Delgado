@@ -303,6 +303,8 @@ export class OportunidadService {
       where: { usuarioId }
     });
 
+    type OportunidadValor = { valor: any; etapa: EtapaPipeline };
+
     const estadisticasPorEtapa = await prisma.oportunidadCliente.groupBy({
       by: ['etapa'],
       where: { usuarioId },
@@ -310,24 +312,25 @@ export class OportunidadService {
       _sum: { valor: true }
     });
 
-    const totalValor = oportunidades.reduce((acc, op) => {
+    const totalValor = oportunidades.reduce((acc: number, op: OportunidadValor) => {
       return acc + (op.valor ? Number(op.valor) : 0);
     }, 0);
 
     const valorGanado = oportunidades
-      .filter(op => op.etapa === EtapaPipeline.GANADO)
-      .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0);
+      .filter((op: OportunidadValor) => op.etapa === EtapaPipeline.GANADO)
+      .reduce((acc: number, op: OportunidadValor) => acc + (op.valor ? Number(op.valor) : 0), 0);
 
+    const etapasExcluidas: EtapaPipeline[] = [EtapaPipeline.GANADO, EtapaPipeline.PERDIDO];
     const valorPipeline = oportunidades
-      .filter(op => ![EtapaPipeline.GANADO, EtapaPipeline.PERDIDO].includes(op.etapa))
-      .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0);
+      .filter((op: OportunidadValor) => !etapasExcluidas.includes(op.etapa))
+      .reduce((acc: number, op: OportunidadValor) => acc + (op.valor ? Number(op.valor) : 0), 0);
 
     return {
       total: oportunidades.length,
       totalValor,
       valorGanado,
       valorPipeline,
-      porEtapa: estadisticasPorEtapa.map(stat => ({
+      porEtapa: estadisticasPorEtapa.map((stat: any) => ({
         etapa: stat.etapa,
         cantidad: stat._count.id,
         valor: stat._sum.valor ? Number(stat._sum.valor) : 0
