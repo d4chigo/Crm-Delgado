@@ -28,6 +28,8 @@ import { Plus, Loader2, Search } from "lucide-react"
 import { Sexo, type CrearContactoDTO, type Contacto } from "@/types/contacto.types"
 import { dniService } from "@/services/api/dni.service"
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from "@/lib/validaciones"
+import { SelectorEtiquetasCreacion } from './SelectorEtiquetasCreacion'
+import { etiquetaService } from '@/services/api/etiqueta.service'
 
 interface FormularioContactoProps {
   onCrear: (datos: CrearContactoDTO) => Promise<Contacto>
@@ -39,6 +41,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
   const [buscandoDNI, setBuscandoDNI] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [edad, setEdad] = useState<number | null>(null)
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([])
 
   const [formulario, setFormulario] = useState<CrearContactoDTO>({
     nombre: "",
@@ -122,6 +125,20 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
 
       await onCrear(datos)
 
+      // Si hay etiquetas seleccionadas, asignarlas al contacto
+      // Nota: El contacto recién creado debe retornar su ID
+      // Si onCrear retorna el contacto, podemos asignar las etiquetas
+      const contactoCreado = await onCrear(datos)
+      
+      if (etiquetasSeleccionadas.length > 0 && contactoCreado?.id) {
+        try {
+          await etiquetaService.asignarAContacto(contactoCreado.id, etiquetasSeleccionadas)
+        } catch (errorEtiquetas) {
+          console.error('Error al asignar etiquetas:', errorEtiquetas)
+          // No bloquear la creación si falla la asignación de etiquetas
+        }
+      }
+
       // Limpiar formulario y cerrar
       setFormulario({
         nombre: "",
@@ -134,6 +151,8 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
         sexo: undefined,
         fechaNacimiento: "",
       })
+      setEtiquetasSeleccionadas([])
+      setEdad(null)
       setAbierto(false)
     } catch (err: any) {
       setError(err.message || "Error al crear contacto")
@@ -233,6 +252,14 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               value={formulario.correo}
               onChange={(e) => handleChange("correo", e.target.value)}
               placeholder="juan@example.com (opcional)"
+            />
+          </div>
+
+          {/* Selector de Etiquetas */}
+          <div className="space-y-2">
+            <SelectorEtiquetasCreacion
+              etiquetasSeleccionadas={etiquetasSeleccionadas}
+              onCambio={setEtiquetasSeleccionadas}
             />
           </div>
 
