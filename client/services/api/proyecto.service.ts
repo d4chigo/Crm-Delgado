@@ -191,8 +191,20 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.mensaje || 'Error al asociar cliente')
+        let errorMessage = 'Error al asociar cliente';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.mensaje || error.message || errorMessage;
+          } else {
+            const textError = await response.text();
+            errorMessage = textError || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error al parsear respuesta:', e);
+        }
+        throw new Error(errorMessage);
       }
 
       const resultado = await response.json()
@@ -247,8 +259,20 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.mensaje || 'Error al desasociar cliente')
+        let errorMessage = 'Error al desasociar cliente';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.mensaje || error.message || errorMessage;
+          } else {
+            const textError = await response.text();
+            errorMessage = textError || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error al parsear respuesta:', e);
+        }
+        throw new Error(errorMessage);
       }
 
       const resultado = await response.json()

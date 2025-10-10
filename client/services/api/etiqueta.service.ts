@@ -84,11 +84,24 @@ export const etiquetaService = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ etiquetasIds }),
+      body: JSON.stringify({ etiquetaIds: etiquetasIds }),
     })
 
     if (!response.ok) {
-      throw new Error('Error al asignar etiquetas al contacto')
+      let errorMessage = 'Error al asignar etiquetas al contacto';
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.mensaje || error.message || errorMessage;
+        } else {
+          const textError = await response.text();
+          errorMessage = textError || errorMessage;
+        }
+      } catch (e) {
+        console.error('Error al parsear respuesta:', e);
+      }
+      throw new Error(errorMessage);
     }
   },
 }

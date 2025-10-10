@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
+import { ProyectosAsociados } from './ProyectosAsociados';
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
 
 interface DialogoEditarLeadProps {
@@ -206,10 +207,11 @@ export function DialogoEditarLead({
         </DialogHeader>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="profesional">Profesional</TabsTrigger>
             <TabsTrigger value="comercial">Comercial</TabsTrigger>
+            <TabsTrigger value="proyectos">Proyectos</TabsTrigger>
             <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
             <TabsTrigger value="adicional">Adicional</TabsTrigger>
           </TabsList>
@@ -483,6 +485,17 @@ export function DialogoEditarLead({
                   onChange={(e) => setDatos({ ...datos, fechaSeguimiento: e.target.value })}
                 />
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Tab: Proyectos */}
+          <TabsContent value="proyectos" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Proyectos asociados</Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Gestiona los proyectos o propiedades asociados a este cliente
+              </p>
+              <ProyectosAsociados clienteId={lead.id} />
             </div>
           </TabsContent>
 
