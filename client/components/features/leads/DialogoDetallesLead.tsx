@@ -91,13 +91,43 @@ export function DialogoDetallesLead({
         </DialogHeader>
 
         <Tabs defaultValue="info" className="w-full mt-6">
-          <TabsList className="grid w-full grid-cols-6 h-11">
-            <TabsTrigger value="info">Información</TabsTrigger>
-            <TabsTrigger value="comercial">Comercial</TabsTrigger>
-            <TabsTrigger value="seguimiento">Seguimiento</TabsTrigger>
-            <TabsTrigger value="clientes">Clientes</TabsTrigger>
-            <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
-            <TabsTrigger value="notas">Notas</TabsTrigger>
+          <TabsList className="w-full h-auto p-1 bg-gradient-to-r from-muted/50 to-muted/30 backdrop-blur-sm border border-border/50">
+            <TabsTrigger 
+              value="info" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Información
+            </TabsTrigger>
+            <TabsTrigger 
+              value="comercial" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Comercial
+            </TabsTrigger>
+            <TabsTrigger 
+              value="seguimiento" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Seguimiento
+            </TabsTrigger>
+            <TabsTrigger 
+              value="clientes" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Clientes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="etiquetas" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Etiquetas
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notas" 
+              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
+            >
+              Notas
+            </TabsTrigger>
           </TabsList>
 
           {/* Tab: Información Personal */}
