@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,6 +24,7 @@ import { TrendingUp, Loader2 } from "lucide-react"
 import { crearOportunidad } from "@/services/api/oportunidades"
 import { CrearOportunidadDTO, EtapaPipeline } from "@/types/oportunidad.types"
 import { useToast } from "@/hooks/use-toast"
+import { useProyectos } from "@/hooks/useProyectos"
 
 interface DialogoCrearOportunidadProps {
   clienteId: string
@@ -56,12 +57,20 @@ export function DialogoCrearOportunidad({
   onSuccess,
 }: DialogoCrearOportunidadProps) {
   const { toast } = useToast()
+  const { proyectos, estaCargando: cargandoProyectos, cargarProyectos } = useProyectos()
   const [cargando, setCargando] = useState(false)
   const [formulario, setFormulario] = useState<Partial<CrearOportunidadDTO>>({
     clienteId,
     etapa: "LEAD",
     probabilidad: 25,
   })
+
+  // Cargar proyectos activos cuando se abre el diálogo
+  useEffect(() => {
+    if (open) {
+      cargarProyectos({ activo: true })
+    }
+  }, [open, cargarProyectos])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,24 +158,42 @@ export function DialogoCrearOportunidad({
               <Label htmlFor="proyecto" className="text-sm font-medium">
                 Proyecto
               </Label>
-              <Input
-                id="proyecto"
-                placeholder="Ej: Torres del Norte"
+              <Select
                 value={formulario.proyecto || ""}
-                onChange={(e) => setFormulario({ ...formulario, proyecto: e.target.value })}
-              />
+                onValueChange={(value) => setFormulario({ ...formulario, proyecto: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin proyecto</SelectItem>
+                  {proyectos.map((proyecto) => (
+                    <SelectItem key={proyecto.id} value={proyecto.nombre}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{proyecto.nombre}</span>
+                        {proyecto.ubicacion && (
+                          <span className="text-xs text-muted-foreground">{proyecto.ubicacion}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="propiedad" className="text-sm font-medium">
-                Propiedad
+                Unidad/Propiedad
               </Label>
               <Input
                 id="propiedad"
-                placeholder="Ej: Dpto 301, Casa 22"
+                placeholder="Ej: Dpto 301, Casa 22, Lote 15"
                 value={formulario.propiedad || ""}
                 onChange={(e) => setFormulario({ ...formulario, propiedad: e.target.value })}
               />
+              <p className="text-xs text-muted-foreground">
+                Número o nombre de la unidad específica
+              </p>
             </div>
           </div>
 
