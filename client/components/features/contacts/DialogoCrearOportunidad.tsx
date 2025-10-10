@@ -126,186 +126,227 @@ export function DialogoCrearOportunidad({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#303030] flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-[#FCBA00]" />
+            <div className="bg-[#FCBA00] p-2 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-[#303030]" />
+            </div>
             Agregar al Pipeline
           </DialogTitle>
-          <DialogDescription>
-            Crear una oportunidad de venta para <strong>{clienteNombre}</strong>
+          <DialogDescription className="text-base pt-1">
+            Crear una oportunidad de venta para <strong className="text-[#303030]">{clienteNombre}</strong>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Título */}
-          <div className="space-y-2">
-            <Label htmlFor="titulo" className="text-sm font-medium">
-              Título de la Oportunidad *
-            </Label>
-            <Input
-              id="titulo"
-              placeholder="Ej: Interés en Departamento 301"
-              value={formulario.titulo || ""}
-              onChange={(e) => setFormulario({ ...formulario, titulo: e.target.value })}
-              required
-            />
-          </div>
-
-          {/* Proyecto y Propiedad */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="proyecto" className="text-sm font-medium">
-                Proyecto
-              </Label>
-              <Select
-                value={formulario.proyecto || "sin-proyecto"}
-                onValueChange={(value) => 
-                  setFormulario({ ...formulario, proyecto: value === "sin-proyecto" ? undefined : value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sin-proyecto">Sin proyecto</SelectItem>
-                  {proyectos.map((proyecto) => (
-                    <SelectItem key={proyecto.id} value={proyecto.nombre}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{proyecto.nombre}</span>
-                        {proyecto.ubicacion && (
-                          <span className="text-xs text-muted-foreground">{proyecto.ubicacion}</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+          {/* Información Básica */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
+              <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                Información Básica
+              </h3>
             </div>
 
+            {/* Título */}
             <div className="space-y-2">
-              <Label htmlFor="propiedad" className="text-sm font-medium">
-                Unidad/Propiedad
+              <Label htmlFor="titulo" className="text-sm font-medium text-[#303030]">
+                Título de la Oportunidad <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="propiedad"
-                placeholder="Ej: Dpto 301, Casa 22, Lote 15"
-                value={formulario.propiedad || ""}
-                onChange={(e) => setFormulario({ ...formulario, propiedad: e.target.value })}
+                id="titulo"
+                placeholder="Ej: Interés en Departamento 301"
+                value={formulario.titulo || ""}
+                onChange={(e) => setFormulario({ ...formulario, titulo: e.target.value })}
+                className="h-11"
+                required
               />
-              <p className="text-xs text-muted-foreground">
-                Número o nombre de la unidad específica
-              </p>
             </div>
-          </div>
 
-          {/* Etapa y Probabilidad */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="etapa" className="text-sm font-medium">
-                Etapa Inicial *
-              </Label>
-              <Select
-                value={formulario.etapa}
-                onValueChange={(value) => setFormulario({ ...formulario, etapa: value as EtapaPipeline })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar etapa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ETAPAS_PIPELINE.map((etapa) => (
-                    <SelectItem key={etapa.value} value={etapa.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{etapa.label}</span>
-                        <span className="text-xs text-muted-foreground">{etapa.description}</span>
-                      </div>
+            {/* Proyecto y Propiedad */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="proyecto" className="text-sm font-medium text-[#303030]">
+                  Proyecto
+                </Label>
+                <Select
+                  value={formulario.proyecto || "sin-proyecto"}
+                  onValueChange={(value) => 
+                    setFormulario({ ...formulario, proyecto: value === "sin-proyecto" ? undefined : value })
+                  }
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sin-proyecto">
+                      <span className="text-muted-foreground">Sin proyecto</span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    {proyectos.map((proyecto) => (
+                      <SelectItem key={proyecto.id} value={proyecto.nombre}>
+                        <div className="flex flex-col py-1">
+                          <span className="font-medium">{proyecto.nombre}</span>
+                          {proyecto.ubicacion && (
+                            <span className="text-xs text-muted-foreground">{proyecto.ubicacion}</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="propiedad" className="text-sm font-medium text-[#303030]">
+                  Unidad/Propiedad
+                </Label>
+                <Input
+                  id="propiedad"
+                  placeholder="Ej: Dpto 301, Casa 22"
+                  value={formulario.propiedad || ""}
+                  onChange={(e) => setFormulario({ ...formulario, propiedad: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Estado y Seguimiento */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
+              <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                Estado y Seguimiento
+              </h3>
+            </div>
+
+            {/* Etapa y Probabilidad */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="etapa" className="text-sm font-medium text-[#303030]">
+                  Etapa Inicial <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formulario.etapa}
+                  onValueChange={(value) => setFormulario({ ...formulario, etapa: value as EtapaPipeline })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Seleccionar etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ETAPAS_PIPELINE.map((etapa) => (
+                      <SelectItem key={etapa.value} value={etapa.value}>
+                        <div className="flex flex-col py-1">
+                          <span className="font-medium">{etapa.label}</span>
+                          <span className="text-xs text-muted-foreground">{etapa.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="probabilidad" className="text-sm font-medium text-[#303030]">
+                  Probabilidad de Cierre
+                </Label>
+                <Select
+                  value={formulario.probabilidad?.toString()}
+                  onValueChange={(value) => setFormulario({ ...formulario, probabilidad: Number(value) })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Seleccionar probabilidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROBABILIDADES.map((prob) => (
+                      <SelectItem key={prob.value} value={prob.value.toString()}>
+                        {prob.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Valor */}
+            <div className="space-y-2">
+              <Label htmlFor="valor" className="text-sm font-medium text-[#303030]">
+                Valor Estimado
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                  S/
+                </span>
+                <Input
+                  id="valor"
+                  type="number"
+                  placeholder="250,000"
+                  value={formulario.valor || ""}
+                  onChange={(e) => setFormulario({ ...formulario, valor: Number(e.target.value) || undefined })}
+                  className="h-11 pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Próxima Acción */}
+            <div className="space-y-2">
+              <Label htmlFor="proximaAccion" className="text-sm font-medium text-[#303030]">
+                Próxima Acción
+              </Label>
+              <Input
+                id="proximaAccion"
+                placeholder="Ej: Agendar visita al proyecto"
+                value={formulario.proximaAccion || ""}
+                onChange={(e) => setFormulario({ ...formulario, proximaAccion: e.target.value })}
+                className="h-11"
+              />
+            </div>
+          </div>
+
+          {/* Notas Adicionales */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
+              <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                Notas Adicionales
+              </h3>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="probabilidad" className="text-sm font-medium">
-                Probabilidad de Cierre
+              <Label htmlFor="notas" className="text-sm font-medium text-[#303030]">
+                Observaciones
               </Label>
-              <Select
-                value={formulario.probabilidad?.toString()}
-                onValueChange={(value) => setFormulario({ ...formulario, probabilidad: Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar probabilidad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROBABILIDADES.map((prob) => (
-                    <SelectItem key={prob.value} value={prob.value.toString()}>
-                      {prob.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Textarea
+                id="notas"
+                placeholder="Información adicional, requisitos especiales, observaciones..."
+                rows={4}
+                value={formulario.notas || ""}
+                onChange={(e) => setFormulario({ ...formulario, notas: e.target.value })}
+                className="resize-none"
+              />
             </div>
           </div>
 
-          {/* Valor */}
-          <div className="space-y-2">
-            <Label htmlFor="valor" className="text-sm font-medium">
-              Valor Estimado (S/)
-            </Label>
-            <Input
-              id="valor"
-              type="number"
-              placeholder="250000"
-              value={formulario.valor || ""}
-              onChange={(e) => setFormulario({ ...formulario, valor: Number(e.target.value) || undefined })}
-            />
-          </div>
-
-          {/* Próxima Acción */}
-          <div className="space-y-2">
-            <Label htmlFor="proximaAccion" className="text-sm font-medium">
-              Próxima Acción
-            </Label>
-            <Input
-              id="proximaAccion"
-              placeholder="Ej: Agendar visita al proyecto"
-              value={formulario.proximaAccion || ""}
-              onChange={(e) => setFormulario({ ...formulario, proximaAccion: e.target.value })}
-            />
-          </div>
-
-          {/* Notas */}
-          <div className="space-y-2">
-            <Label htmlFor="notas" className="text-sm font-medium">
-              Notas
-            </Label>
-            <Textarea
-              id="notas"
-              placeholder="Información adicional sobre la oportunidad..."
-              rows={3}
-              value={formulario.notas || ""}
-              onChange={(e) => setFormulario({ ...formulario, notas: e.target.value })}
-            />
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="gap-2 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={cargando}
+              className="min-w-[120px]"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold min-w-[180px]"
               disabled={cargando}
             >
               {cargando ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creando...
+                  Creando oportunidad...
                 </>
               ) : (
                 <>
