@@ -77,7 +77,7 @@ export function DialogoDetallesLead({
 
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl p-0">
         {/* Header con fondo amarillo */}
         <div className="bg-[#FCBA00] px-6 py-5 rounded-t-lg">
           <div className="flex items-center gap-4">
