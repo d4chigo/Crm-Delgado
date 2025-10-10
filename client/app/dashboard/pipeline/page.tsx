@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { useOportunidades } from "@/hooks/useOportunidades"
+import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
   DollarSign,
@@ -22,146 +25,81 @@ import {
   Plus,
   Trash2,
   GripVertical,
+  Loader2,
+  User,
+  User,
 } from "lucide-react"
 
-interface Deal {
-  id: string
-  clientName: string
-  email: string
-  phone: string
-  property: string
-  project: string
-  value: number
-  stage: string
-  probability: number
-  lastActivity: string
-  nextAction: string
-  assignedTo: string
-  createdAt: string
-  notes: string
-}
-
-interface Stage {
-  id: string
-  name: string
-  color: string
-  count: number
-  value?: number
-}
+// Mapeo de etapas para el pipeline
+const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
+  { id: "LEAD", nombre: "Lead", color: "bg-blue-500" },
+  { id: "CONTACTO", nombre: "Contacto Inicial", color: "bg-purple-500" },
+  { id: "VISITA", nombre: "Visita Agendada", color: "bg-indigo-500" },
+  { id: "NEGOCIACION", nombre: "Negociación", color: "bg-yellow-500" },
+  { id: "CIERRE", nombre: "Cierre", color: "bg-orange-500" },
+  { id: "GANADO", nombre: "Ganado", color: "bg-green-500" },
+  { id: "PERDIDO", nombre: "Perdido", color: "bg-red-500" },
+]
 
 export default function PaginaPipeline() {
+  const { toast } = useToast()
+  const { oportunidades, estadisticas, cargando, error, moverOportunidad, refrescar } = useOportunidades()
+  
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
-  const [isManageStagesOpen, setIsManageStagesOpen] = useState(false)
-  const [stages, setStages] = useState<Stage[]>([
-    { id: "lead", name: "Lead", color: "bg-blue-500", count: 0 },
-    { id: "contacto", name: "Contacto Inicial", color: "bg-purple-500", count: 0 },
-    { id: "visita", name: "Visita Agendada", color: "bg-indigo-500", count: 0 },
-    { id: "negociacion", name: "Negociación", color: "bg-yellow-500", count: 0 },
-    { id: "cierre", name: "Cierre", color: "bg-orange-500", count: 0 },
-    { id: "ganado", name: "Ganado", color: "bg-green-500", count: 0 },
-  ])
-  const [newStageName, setNewStageName] = useState("")
-  const [editingStageId, setEditingStageId] = useState<string | null>(null)
-  const [editingStageName, setEditingStageName] = useState("")
-
-  const [deals, setDeals] = useState<Deal[]>([])
+  const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
-  const filteredDeals = deals.filter((deal) => {
+  // Filtrar oportunidades por mes y año
+  const oportunidadesFiltradas = oportunidades.filter((op) => {
     if (selectedMonth === "all") return true
-    const dealDate = new Date(deal.createdAt)
-    const dealMonth = dealDate.getMonth() + 1
-    const dealYear = dealDate.getFullYear()
-    return dealMonth === Number.parseInt(selectedMonth) && dealYear === Number.parseInt(selectedYear)
+    const opDate = new Date(op.creadoEn)
+    const opMonth = opDate.getMonth() + 1
+    const opYear = opDate.getFullYear()
+    return opMonth === Number.parseInt(selectedMonth) && opYear === Number.parseInt(selectedYear)
   })
 
-  const stagesWithData = stages.map((stage) => {
-    const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+  // Calcular datos por etapa
+  const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
+    const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
     return {
-      ...stage,
-      count: stageDeals.length,
-      value: stageDeals.reduce((acc, deal) => acc + deal.value, 0),
+      ...etapa,
+      count: oportunidadesEtapa.length,
+      value: oportunidadesEtapa.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0),
     }
   })
 
-  const totalPipelineValue = filteredDeals
-    .filter((d) => !["ganado", "perdido"].includes(d.stage))
-    .reduce((acc, deal) => acc + deal.value, 0)
+  // Estadísticas generales
+  const valorPipeline = oportunidadesFiltradas
+    .filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const wonDeals = filteredDeals.filter((d) => d.stage === "ganado")
-  const totalWonValue = wonDeals.reduce((acc, deal) => acc + deal.value, 0)
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op) => op.etapa === "GANADO")
+  const valorGanado = oportunidadesGanadas.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const getProbabilityColor = (probability: number) => {
+  const getProbabilityColor = (probability?: number | null) => {
+    if (!probability) return "text-gray-600 bg-gray-50"
     if (probability >= 75) return "text-green-600 bg-green-50"
     if (probability >= 50) return "text-yellow-600 bg-yellow-50"
     return "text-red-600 bg-red-50"
   }
 
-  const moveDeal = (dealId: string, newStage: string) => {
-    setDeals(
-      deals.map((deal) =>
-        deal.id === dealId
-          ? {
-              ...deal,
-              stage: newStage,
-              probability: newStage === "ganado" ? 100 : newStage === "perdido" ? 0 : deal.probability,
-            }
-          : deal,
-      ),
-    )
-  }
-
-  const handleAddStage = () => {
-    if (!newStageName.trim()) return
-    const newStage: Stage = {
-      id: newStageName.toLowerCase().replace(/\s+/g, "-"),
-      name: newStageName,
-      color: "bg-gray-500",
-      count: 0,
+  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
+    const exito = await moverOportunidad(oportunidadId, nuevaEtapa)
+    
+    if (exito) {
+      toast({
+        title: "Oportunidad movida",
+        description: `La oportunidad se movió a ${ETAPAS_PIPELINE.find(e => e.id === nuevaEtapa)?.nombre}`,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo mover la oportunidad",
+        variant: "destructive",
+      })
     }
-    setStages([...stages, newStage])
-    setNewStageName("")
-  }
-
-  const handleDeleteStage = (stageId: string) => {
-    const hasDeals = deals.some((deal) => deal.stage === stageId)
-    if (hasDeals) {
-      alert("No puedes eliminar un estado que tiene oportunidades asignadas")
-      return
-    }
-    setStages(stages.filter((s) => s.id !== stageId))
-  }
-
-  const handleEditStage = (stageId: string) => {
-    const stage = stages.find((s) => s.id === stageId)
-    if (stage) {
-      setEditingStageId(stageId)
-      setEditingStageName(stage.name)
-    }
-  }
-
-  const handleSaveStageEdit = () => {
-    if (!editingStageName.trim()) return
-    setStages(stages.map((s) => (s.id === editingStageId ? { ...s, name: editingStageName } : s)))
-    setEditingStageId(null)
-    setEditingStageName("")
-  }
-
-  const moveStageUp = (index: number) => {
-    if (index === 0) return
-    const newStages = [...stages]
-    ;[newStages[index - 1], newStages[index]] = [newStages[index], newStages[index - 1]]
-    setStages(newStages)
-  }
-
-  const moveStageDown = (index: number) => {
-    if (index === stages.length - 1) return
-    const newStages = [...stages]
-    ;[newStages[index], newStages[index + 1]] = [newStages[index + 1], newStages[index]]
-    setStages(newStages)
   }
 
   return (
