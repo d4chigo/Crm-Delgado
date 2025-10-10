@@ -165,7 +165,7 @@ export function DialogoCrearOportunidad({
             </div>
 
             {/* Proyecto y Propiedad */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-5">
               <div className="space-y-2.5">
                 <Label htmlFor="proyecto" className="text-sm font-medium text-[#303030]">
                   Proyecto
@@ -176,7 +176,7 @@ export function DialogoCrearOportunidad({
                     setFormulario({ ...formulario, proyecto: value === "sin-proyecto" ? undefined : value })
                   }
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 w-full">
                     <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
