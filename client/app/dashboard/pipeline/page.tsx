@@ -1,11 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -21,13 +19,7 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  Settings,
-  Plus,
-  Trash2,
-  GripVertical,
   Loader2,
-  User,
-  User,
 } from "lucide-react"
 
 // Mapeo de etapas para el pipeline
@@ -112,13 +104,9 @@ export default function PaginaPipeline() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setIsManageStagesOpen(true)}
-            className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Gestionar Estados
+          <Button onClick={refrescar} variant="outline">
+            {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Actualizar
           </Button>
 
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -166,7 +154,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {filteredDeals.filter((d) => !["ganado", "perdido"].includes(d.stage)).length}
+                  {oportunidadesFiltradas.filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -181,7 +169,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Valor del Pipeline</p>
                 <p className="text-2xl font-bold text-[#303030] mt-1">
-                  S/ {(totalPipelineValue / 1000000).toFixed(1)}M
+                  S/ {(valorPipeline / 1000000).toFixed(1)}M
                 </p>
               </div>
               <div className="bg-yellow-50 p-3 rounded-xl">
@@ -195,7 +183,7 @@ export default function PaginaPipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ventas Ganadas</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{wonDeals.length}</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{oportunidadesGanadas.length}</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -208,7 +196,7 @@ export default function PaginaPipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valor Ganado</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(totalWonValue / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(valorGanado / 1000000).toFixed(1)}M</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -221,31 +209,31 @@ export default function PaginaPipeline() {
       {/* Kanban Board */}
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
-          {stagesWithData.map((stage) => {
-            const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+          {etapasConDatos.map((etapa) => {
+            const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
             return (
-              <div key={stage.id} className="flex-shrink-0 w-80">
+              <div key={etapa.id} className="flex-shrink-0 w-80">
                 <Card className="border-border h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-                        <CardTitle className="text-base font-semibold text-[#303030]">{stage.name}</CardTitle>
+                        <div className={`w-3 h-3 rounded-full ${etapa.color}`} />
+                        <CardTitle className="text-base font-semibold text-[#303030]">{etapa.nombre}</CardTitle>
                       </div>
                       <Badge variant="secondary" className="font-semibold">
-                        {stage.count}
+                        {etapa.count}
                       </Badge>
                     </div>
                     <div className="text-sm font-medium text-muted-foreground">
-                      S/ {(stage.value / 1000).toFixed(0)}K
+                      S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {stageDeals.map((deal) => (
+                    {oportunidadesEtapa.map((oportunidad) => (
                       <Card
-                        key={deal.id}
+                        key={oportunidad.id}
                         className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
-                        onClick={() => setSelectedDeal(deal)}
+                        onClick={() => setSelectedDeal(oportunidad)}
                       >
                         <CardContent className="p-4 space-y-3">
                           {/* Client Info */}
@@ -253,12 +241,14 @@ export default function PaginaPipeline() {
                             <div className="flex items-center gap-2">
                               <Avatar className="w-8 h-8 bg-[#FCBA00]">
                                 <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                  {deal.clientName.charAt(0)}
+                                  {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">{deal.clientName}</h4>
-                                <p className="text-xs text-muted-foreground">{deal.assignedTo}</p>
+                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
+                                  {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
+                                </h4>
+                                <p className="text-xs text-muted-foreground">{oportunidad.titulo}</p>
                               </div>
                             </div>
                           </div>
@@ -267,30 +257,30 @@ export default function PaginaPipeline() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Building2 className="w-3 h-3" />
-                              <span className="line-clamp-1">{deal.project}</span>
+                              <span className="line-clamp-1">{oportunidad.proyecto || 'Sin proyecto'}</span>
                             </div>
-                            <p className="text-sm font-medium text-[#303030]">{deal.property}</p>
+                            <p className="text-sm font-medium text-[#303030]">{oportunidad.propiedad || 'Sin propiedad'}</p>
                           </div>
 
                           {/* Value */}
                           <div className="flex items-center justify-between pt-2 border-t border-border">
                             <span className="text-lg font-bold text-[#FCBA00]">
-                              S/ {(deal.value / 1000).toFixed(0)}K
+                              S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
                             </span>
-                            <Badge className={`${getProbabilityColor(deal.probability)} font-semibold text-xs`}>
-                              {deal.probability}%
+                            <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
+                              {oportunidad.probabilidad || 0}%
                             </Badge>
                           </div>
 
                           {/* Last Activity */}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span>{deal.lastActivity}</span>
+                            <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
-                    {stageDeals.length === 0 && (
+                    {oportunidadesEtapa.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
                         <p>No hay oportunidades</p>
                       </div>
@@ -308,20 +298,22 @@ export default function PaginaPipeline() {
         <Dialog open={!!selectedDeal} onOpenChange={() => setSelectedDeal(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#303030]">{selectedDeal.clientName}</DialogTitle>
-              <DialogDescription>{selectedDeal.project}</DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-[#303030]">
+                {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
+              </DialogTitle>
+              <DialogDescription>{selectedDeal.titulo}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${stagesWithData.find((s) => s.id === selectedDeal.stage)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {stagesWithData.find((s) => s.id === selectedDeal.stage)?.name}
+                  {ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
-                <Badge className={`${getProbabilityColor(selectedDeal.probability)} font-semibold`}>
-                  Probabilidad: {selectedDeal.probability}%
+                <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
+                  Probabilidad: {selectedDeal.probabilidad || 0}%
                 </Badge>
               </div>
 
@@ -331,14 +323,14 @@ export default function PaginaPipeline() {
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Mail className="w-4 h-4" />
-                    {selectedDeal.email}
+                    {selectedDeal.cliente?.correo || 'Sin email'}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Teléfono</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Phone className="w-4 h-4" />
-                    {selectedDeal.phone}
+                    {selectedDeal.cliente?.telefono || 'Sin teléfono'}
                   </p>
                 </div>
               </div>
@@ -348,11 +340,13 @@ export default function PaginaPipeline() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Propiedad</p>
-                    <p className="font-semibold text-[#303030]">{selectedDeal.property}</p>
+                    <p className="font-semibold text-[#303030]">{selectedDeal.propiedad || 'Sin propiedad'}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Valor</p>
-                    <p className="text-2xl font-bold text-[#FCBA00]">S/ {selectedDeal.value.toLocaleString("es-PE")}</p>
+                    <p className="text-2xl font-bold text-[#FCBA00]">
+                      S/ {selectedDeal.valor ? Number(selectedDeal.valor).toLocaleString("es-PE") : '0'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -361,46 +355,52 @@ export default function PaginaPipeline() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Última Actividad</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.lastActivity}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.ultimaActividad).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Próxima Acción</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.nextAction}</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proximaAccion || 'Sin próxima acción'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Asignado a</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.assignedTo}</p>
+                  <p className="text-sm text-muted-foreground">Proyecto</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proyecto || 'Sin proyecto'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Fecha de Creación</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.createdAt}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.creadoEn).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Notas</p>
-                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">{selectedDeal.notes}</p>
+                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">
+                  {selectedDeal.notas || 'Sin notas'}
+                </p>
               </div>
 
               {/* Move Stage Actions */}
               <div className="space-y-3 pt-4 border-t">
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
-                  {stagesWithData
-                    .filter((s) => s.id !== selectedDeal.stage)
-                    .map((stage) => (
+                  {ETAPAS_PIPELINE
+                    .filter((e) => e.id !== selectedDeal.etapa)
+                    .map((etapa) => (
                       <Button
-                        key={stage.id}
+                        key={etapa.id}
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          moveDeal(selectedDeal.id, stage.id)
+                          handleMoverOportunidad(selectedDeal.id, etapa.id)
                           setSelectedDeal(null)
                         }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]"
+                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
                       >
-                        {stage.name}
+                        {etapa.nombre}
                       </Button>
                     ))}
                 </div>
@@ -408,148 +408,17 @@ export default function PaginaPipeline() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
-                  Generar Cotización
-                </Button>
-                <Button variant="outline" className="flex-1 bg-transparent">
-                  Editar Oportunidad
+                <Button 
+                  onClick={() => setSelectedDeal(null)}
+                  className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+                >
+                  Cerrar
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       )}
-
-      <Dialog open={isManageStagesOpen} onOpenChange={setIsManageStagesOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#303030]">Gestionar Estados del Pipeline</DialogTitle>
-            <DialogDescription>Personaliza los estados de tu proceso de ventas</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Add New Stage */}
-            <div className="space-y-3">
-              <Label>Agregar Nuevo Estado</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nombre del estado..."
-                  value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddStage()
-                  }}
-                />
-                <Button onClick={handleAddStage} className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar
-                </Button>
-              </div>
-            </div>
-
-            {/* Existing Stages */}
-            <div className="space-y-3">
-              <Label>Estados Actuales</Label>
-              <div className="space-y-2">
-                {stages.map((stage, index) => (
-                  <Card key={stage.id} className="border-border">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        {/* Drag Handle */}
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => moveStageUp(index)}
-                            disabled={index === 0}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => moveStageDown(index)}
-                            disabled={index === stages.length - 1}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Color Indicator */}
-                        <div className={`w-4 h-4 rounded-full ${stage.color}`} />
-
-                        {/* Stage Name */}
-                        <div className="flex-1">
-                          {editingStageId === stage.id ? (
-                            <Input
-                              value={editingStageName}
-                              onChange={(e) => setEditingStageName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveStageEdit()
-                                if (e.key === "Escape") {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <p className="font-semibold text-[#303030]">{stage.name}</p>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {editingStageId === stage.id ? (
-                            <>
-                              <Button size="sm" onClick={handleSaveStageEdit} className="bg-[#FCBA00] text-[#303030]">
-                                Guardar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditStage(stage.id)}
-                                className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteStage(stage.id)}
-                                className="border-red-200 text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t">
-              <Button onClick={() => setIsManageStagesOpen(false)} className="bg-[#FCBA00] text-[#303030]">
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
