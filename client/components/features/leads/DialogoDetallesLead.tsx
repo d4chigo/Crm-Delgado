@@ -77,194 +77,216 @@ export function DialogoDetallesLead({
 
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-            <div className="bg-[#FCBA00] p-2 rounded-lg">
-              <User className="h-5 w-5 text-[#303030]" />
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header con fondo amarillo */}
+        <div className="bg-[#FCBA00] px-6 py-5 rounded-t-lg">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/90 p-3 rounded-xl w-16 h-16 flex items-center justify-center">
+              <span className="text-3xl font-bold text-[#303030]">
+                {lead.nombre?.charAt(0).toUpperCase()}
+              </span>
             </div>
-            {lead.nombre} {lead.apellido}
-          </DialogTitle>
-          <DialogDescription className="text-base pt-1">
-            Información detallada del lead
-          </DialogDescription>
-        </DialogHeader>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold text-[#303030] mb-1">
+                {lead.nombre} {lead.apellido}
+              </DialogTitle>
+              <div className="flex gap-2 flex-wrap">
+                {lead.estadoLead && (
+                  <Badge className={obtenerColorEstado(lead.estadoLead)}>
+                    {lead.estadoLead.replace('_', ' ')}
+                  </Badge>
+                )}
+                <Badge className="bg-white/20 text-[#303030] backdrop-blur-sm">
+                  <Target className="h-3 w-3 mr-1" />
+                  Score: 85
+                </Badge>
+                {lead.etiquetas && lead.etiquetas.length > 0 && lead.etiquetas.slice(0, 2).map((et, idx) => (
+                  <Badge key={idx} className="bg-white/20 text-[#303030] backdrop-blur-sm">
+                    {et.etiqueta.nombre}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Tabs defaultValue="info" className="w-full mt-6">
-          <TabsList className="w-full h-auto p-1 bg-gradient-to-r from-muted/50 to-muted/30 backdrop-blur-sm border border-border/50">
-            <TabsTrigger 
-              value="info" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Información
-            </TabsTrigger>
-            <TabsTrigger 
-              value="comercial" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Comercial
-            </TabsTrigger>
-            <TabsTrigger 
-              value="seguimiento" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Seguimiento
-            </TabsTrigger>
-            <TabsTrigger 
-              value="clientes" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Clientes
-            </TabsTrigger>
-            <TabsTrigger 
-              value="etiquetas" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Etiquetas
-            </TabsTrigger>
-            <TabsTrigger 
-              value="notas" 
-              className="flex-1 h-10 px-4 py-2 text-sm font-medium transition-all duration-200 data-[state=active]:bg-[#FCBA00] data-[state=active]:text-[#303030] data-[state=active]:shadow-md data-[state=active]:font-semibold hover:bg-background/50"
-            >
-              Notas
-            </TabsTrigger>
-          </TabsList>
+        {/* Contenido con padding */}
+        <div className="px-6 py-5">
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="inline-flex w-auto gap-3 bg-transparent p-0 mb-5">
+              <TabsTrigger 
+                value="info"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Información
+              </TabsTrigger>
+              <TabsTrigger 
+                value="comercial"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Comercial
+              </TabsTrigger>
+              <TabsTrigger 
+                value="seguimiento"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Seguimiento
+              </TabsTrigger>
+              <TabsTrigger 
+                value="clientes"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Clientes
+              </TabsTrigger>
+              <TabsTrigger 
+                value="etiquetas"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Etiquetas
+              </TabsTrigger>
+              <TabsTrigger 
+                value="notas"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#FCBA00] rounded-none px-4 py-2 border-b-2 border-transparent"
+              >
+                Notas
+              </TabsTrigger>
+            </TabsList>
 
           {/* Tab: Información Personal */}
-          <TabsContent value="info" className="space-y-6 mt-6">
-            {/* Sección: Contacto */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
+          <TabsContent value="info" className="space-y-4">
+            {/* Card: Información de Contacto */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
-                <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                <h3 className="text-base font-bold text-[#303030]">
                   Información de Contacto
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <span className="text-sm font-medium">Correo electrónico</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Mail className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Correo electrónico</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.correo || 'No especificado'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.correo || 'No especificado'}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <span className="text-sm font-medium">Teléfono</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Phone className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Teléfono</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.telefono || 'No especificado'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.telefono || 'No especificado'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Sección: Datos Personales */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
+            {/* Card: Datos Personales */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
-                <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                <h3 className="text-base font-bold text-[#303030]">
                   Datos Personales
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span className="text-sm font-medium">DNI</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <User className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">DNI</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.dni || 'No especificado'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.dni || 'No especificado'}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span className="text-sm font-medium">Sexo</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <User className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Sexo</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.sexo || 'No especificado'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.sexo || 'No especificado'}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span className="text-sm font-medium">Fecha de nacimiento</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Calendar className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Fecha de nacimiento</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{formatearFecha(lead.fechaNacimiento)}</p>
+                  <p className="text-base text-[#303030] font-medium">{formatearFecha(lead.fechaNacimiento)}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm font-medium">Ciudad</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <MapPin className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Ciudad</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.ciudad || 'No especificada'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.ciudad || 'No especificada'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Sección: Ubicación */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
+            {/* Card: Ubicación */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
-                <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                <h3 className="text-base font-bold text-[#303030]">
                   Ubicación
                 </h3>
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm font-medium">Dirección completa</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <MapPin className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Dirección completa</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.direccion || 'No especificada'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.direccion || 'No especificada'}</p>
                 </div>
 
                 {(lead.departamento || lead.provincia || lead.distrito) && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Departamento</p>
-                      <p className="text-base text-[#303030]">{lead.departamento || '-'}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 border-t border-gray-100">
+                    <div className="pt-3">
+                      <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Departamento</p>
+                      <p className="text-base text-[#303030] font-medium">{lead.departamento || '-'}</p>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Provincia</p>
-                      <p className="text-base text-[#303030]">{lead.provincia || '-'}</p>
+                    <div className="pt-3">
+                      <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Provincia</p>
+                      <p className="text-base text-[#303030] font-medium">{lead.provincia || '-'}</p>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Distrito</p>
-                      <p className="text-base text-[#303030]">{lead.distrito || '-'}</p>
+                    <div className="pt-3">
+                      <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Distrito</p>
+                      <p className="text-base text-[#303030] font-medium">{lead.distrito || '-'}</p>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sección: Información Laboral */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
+            {/* Card: Información Laboral */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-[#FCBA00] rounded-full" />
-                <h3 className="text-sm font-semibold text-[#303030] uppercase tracking-wide">
+                <h3 className="text-base font-bold text-[#303030]">
                   Información Laboral
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Briefcase className="h-4 w-4" />
-                    <span className="text-sm font-medium">Empresa</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Briefcase className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Empresa</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.empresa || 'No especificada'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.empresa || 'No especificada'}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Briefcase className="h-4 w-4" />
-                    <span className="text-sm font-medium">Cargo</span>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-500 mb-2">
+                    <Briefcase className="h-4 w-4 text-[#FCBA00]" />
+                    <span className="text-xs font-semibold uppercase text-gray-400">Cargo</span>
                   </div>
-                  <p className="text-base text-[#303030] pl-6">{lead.cargo || 'No especificado'}</p>
+                  <p className="text-base text-[#303030] font-medium">{lead.cargo || 'No especificado'}</p>
                 </div>
               </div>
             </div>
@@ -511,6 +533,7 @@ export function DialogoDetallesLead({
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
