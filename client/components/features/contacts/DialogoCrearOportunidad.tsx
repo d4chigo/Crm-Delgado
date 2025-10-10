@@ -159,14 +159,16 @@ export function DialogoCrearOportunidad({
                 Proyecto
               </Label>
               <Select
-                value={formulario.proyecto || ""}
-                onValueChange={(value) => setFormulario({ ...formulario, proyecto: value })}
+                value={formulario.proyecto || "sin-proyecto"}
+                onValueChange={(value) => 
+                  setFormulario({ ...formulario, proyecto: value === "sin-proyecto" ? undefined : value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder={cargandoProyectos ? "Cargando proyectos..." : "Seleccionar proyecto"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin proyecto</SelectItem>
+                  <SelectItem value="sin-proyecto">Sin proyecto</SelectItem>
                   {proyectos.map((proyecto) => (
                     <SelectItem key={proyecto.id} value={proyecto.nombre}>
                       <div className="flex flex-col">
