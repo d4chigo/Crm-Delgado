@@ -47,7 +47,10 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       console.log('❌ Error en OAuth:', error);
       console.log('❌ Descripción del error:', req.query.error_description);
       const errorCode = Array.isArray(error) ? error[0] : (typeof error === 'string' ? error : 'unknown');
-      const errorDesc = req.query.error_description ? (Array.isArray(req.query.error_description) ? req.query.error_description[0] : (typeof req.query.error_description === 'string' ? req.query.error_description : '')) : '';
+      const errorDescRaw = req.query.error_description;
+      const errorDesc = errorDescRaw 
+        ? (Array.isArray(errorDescRaw) ? String(errorDescRaw[0]) : String(errorDescRaw))
+        : '';
       return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/contacts?google_error=${errorCode}&description=${encodeURIComponent(errorDesc)}`);
     }
 

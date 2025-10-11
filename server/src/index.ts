@@ -27,10 +27,10 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting - más permisivo en desarrollo
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // límite de 100 requests por ventana
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 1000, // límite de 1000 requests por ventana (muy permisivo para desarrollo)
   message: 'Demasiadas solicitudes desde esta IP, intenta de nuevo más tarde'
 });
 app.use('/api/', limiter);

@@ -34,6 +34,7 @@ export default function PaginaContactos() {
     iniciarImportacionGoogle,
     completarImportacionGoogle,
     cambiarPagina,
+    filtrarPorTipo,
   } = useContactos()
 
   const { toast } = useToast()
@@ -48,8 +49,15 @@ export default function PaginaContactos() {
     errores: number
   } | null>(null)
 
-  // Filtrar solo contactos tipo CONTACTO (no leads ni clientes)
-  const contactosFiltrados = contactos.filter(c => c.tipo === TipoContacto.CONTACTO)
+  // NO filtrar en el frontend - el backend ya envía solo contactos tipo CONTACTO
+  const contactosFiltrados = contactos
+
+  // Cargar contactos con filtro CONTACTO al montar el componente
+  useEffect(() => {
+    console.log('🎯 Cargando contactos iniciales con filtro: solo CONTACTO')
+    cargarContactos({ tipo: TipoContacto.CONTACTO, pagina: 1, limite: 6 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Verificar si hay un callback de Google al cargar la página
   useEffect(() => {
@@ -90,14 +98,17 @@ export default function PaginaContactos() {
     procesarCallbackGoogle()
   }, [completarImportacionGoogle, toast])
 
-  // Efecto para buscar con delay (debounce)
+  // Efecto para buscar con delay (debounce) - solo después del montaje inicial
   useEffect(() => {
+    // No ejecutar en el montaje inicial (cuando busqueda está vacía)
+    if (busqueda === '') return
+    
     const timer = setTimeout(() => {
       buscarContactos(busqueda)
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [busqueda])
+  }, [busqueda, buscarContactos])
 
   const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusqueda(e.target.value)

@@ -39,12 +39,28 @@ export default function PaginaLeads() {
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
   const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
   const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
+  const [totalLeads, setTotalLeads] = useState(0)
+  const [totalClientes, setTotalClientes] = useState(0)
 
-  // Cargar leads, clientes y etiquetas al montar
+  // Cargar leads/clientes según el tab activo
   useEffect(() => {
-    cargarContactos()
+    const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
+    cargarContactos({ tipo, pagina: 1, limite: 6 })
+  }, [tabActivo])
+
+  // Cargar etiquetas al montar
+  useEffect(() => {
     cargarEtiquetas()
   }, [])
+
+  // Actualizar totales cuando cambie la paginación
+  useEffect(() => {
+    if (tabActivo === 'leads') {
+      setTotalLeads(paginacion.total)
+    } else {
+      setTotalClientes(paginacion.total)
+    }
+  }, [paginacion.total, tabActivo])
 
   const cargarEtiquetas = async () => {
     try {
@@ -62,31 +78,36 @@ export default function PaginaLeads() {
     }
   }
 
-  // Filtrar leads y clientes
-  const leadsSinFiltrar = contactos.filter(c => c.tipo === TipoContacto.LEAD)
-  const clientesSinFiltrar = contactos.filter(c => c.tipo === TipoContacto.CLIENTE)
+  // El backend ya filtra por tipo según el tab activo
+  // Solo aplicar filtro por etiqueta si es necesario
+  const contactosFiltrados = tabActivo === 'leads'
+    ? (etiquetaFiltroLeads === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)))
+    : (etiquetaFiltroClientes === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)))
 
-  // Aplicar filtro por etiqueta
-  const leads = etiquetaFiltroLeads === "todas" 
-    ? leadsSinFiltrar 
-    : leadsSinFiltrar.filter(lead => 
-        lead.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)
-      )
-
-  const clientes = etiquetaFiltroClientes === "todas" 
-    ? clientesSinFiltrar 
-    : clientesSinFiltrar.filter(cliente => 
-        cliente.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)
-      )
+  // Para mantener compatibilidad con el código existente
+  const leads = tabActivo === 'leads' ? contactosFiltrados : []
+  const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      buscarContactos(busqueda)
-    }, 500)
+    if (busqueda === '') return // No ejecutar en el montaje inicial
     
+    const timer = setTimeout(() => {
+      const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
+      if (busqueda.trim()) {
+        buscarContactos(busqueda)
+      } else {
+        // Si no hay búsqueda, recargar con filtro de tipo
+        cargarContactos({ tipo, pagina: 1, limite: 6 })
+      }
+    }, 500)
+
     return () => clearTimeout(timer)
-  }, [busqueda])
+  }, [busqueda, tabActivo, buscarContactos, cargarContactos])
 
   const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusqueda(e.target.value)
@@ -151,8 +172,8 @@ export default function PaginaLeads() {
         description: `El lead ahora es un cliente y aparece en la pestaña "Clientes"`,
       })
 
-      cargarContactos()
-      setTabActivo('clientes') // Cambiar a la pestaña de clientes
+      // Cambiar a la pestaña de clientes (esto recargará automáticamente con el filtro correcto)
+      setTabActivo('clientes')
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -201,46 +222,44 @@ export default function PaginaLeads() {
       </div>
 
       {/* Estadísticas */}
-      {estadisticas && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Leads Activos</CardTitle>
-              <TrendingUp className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{leads.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">En proceso de conversión</p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Leads Activos</CardTitle>
+            <TrendingUp className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{totalLeads}</div>
+            <p className="text-xs text-muted-foreground mt-1">En proceso de conversión</p>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-              <Users className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{clientes.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Leads convertidos</p>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+            <Users className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{totalClientes}</div>
+            <p className="text-xs text-muted-foreground mt-1">Leads convertidos</p>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {(leads.length + clientes.length) > 0 
-                  ? Math.round((clientes.length / (leads.length + clientes.length)) * 100)
-                  : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Leads → Clientes</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {(totalLeads + totalClientes) > 0 
+                ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100)
+                : 0}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Leads → Clientes</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Tabs: Leads y Clientes */}
       <Tabs value={tabActivo} onValueChange={(value) => setTabActivo(value as 'leads' | 'clientes')}>
@@ -774,7 +793,7 @@ export default function PaginaLeads() {
         abierto={dialogoEditarAbierto}
         onCerrar={() => setDialogoEditarAbierto(false)}
         onActualizado={() => {
-          cargarContactos()
+          cargarContactos({}) // Recargar todos los contactos sin filtro
           setDialogoEditarAbierto(false)
         }}
       />

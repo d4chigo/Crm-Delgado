@@ -23,7 +23,7 @@ export function useContactos() {
   const [error, setError] = useState<string | null>(null)
   const [paginacion, setPaginacion] = useState({
     pagina: 1,
-    limite: 9,
+    limite: 6,
     total: 0,
     totalPaginas: 0
   })
@@ -31,7 +31,7 @@ export function useContactos() {
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosContacto>({
     pagina: 1,
-    limite: 9
+    limite: 6
   })
 
   /**
@@ -40,17 +40,24 @@ export function useContactos() {
   const cargarContactos = async (nuevosFiltros?: FiltrosContacto) => {
     setEstaCargando(true)
     setError(null)
-    
+
     try {
-      const filtrosAplicar = nuevosFiltros || filtros
+      // Si no se pasan filtros, usar filtros vacíos para cargar todos los contactos
+      const filtrosAplicar = nuevosFiltros !== undefined ? nuevosFiltros : filtros
+      console.log('🔍 Cargando contactos con filtros:', filtrosAplicar)
       const respuesta = await contactoService.obtenerContactos(filtrosAplicar)
-      
+
       setContactos(respuesta.contactos)
       setPaginacion(respuesta.paginacion)
-      
-      if (nuevosFiltros) {
+
+      // Siempre actualizar los filtros si se pasaron nuevos (incluyendo objeto vacío)
+      if (nuevosFiltros !== undefined) {
         setFiltros(filtrosAplicar)
+        console.log('💾 Filtros guardados en estado:', filtrosAplicar)
       }
+      
+      // Cargar estadísticas también
+      await cargarEstadisticas()
     } catch (err: any) {
       setError(err.message || 'Error al cargar contactos')
       setContactos([])
@@ -130,20 +137,16 @@ export function useContactos() {
     try {
       await contactoService.eliminarContacto(id)
       
-      // Eliminar de la lista local
-      const nuevosContactos = contactos.filter(c => c.id !== id)
-      setContactos(nuevosContactos)
+      // Recarga inteligente para evitar páginas vacías y llenar espacios automáticamente
+      const paginaActual = paginacion.pagina;
+      const elementosEnPagina = contactos.length;
       
-      // Si la página queda vacía y no es la primera, ir a la página anterior
-      if (nuevosContactos.length === 0 && paginacion.pagina > 1) {
-        const nuevaPagina = paginacion.pagina - 1
-        await cargarContactos({ ...filtros, pagina: nuevaPagina })
-      } else if (nuevosContactos.length === 0 && paginacion.pagina === 1) {
-        // Si es la primera página y queda vacía, recargar para actualizar
-        await cargarContactos()
+      if (elementosEnPagina === 1 && paginaActual > 1) {
+        // Si era el último elemento y no es la primera página, ir a página anterior
+        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
       } else {
-        // Si aún hay elementos, solo recargar la misma página para llenar
-        await cargarContactos({ ...filtros, pagina: paginacion.pagina })
+        // Recargar la página actual para llenar automáticamente con más elementos
+        await cargarContactos({ ...filtros, pagina: paginaActual });
       }
       
       await cargarEstadisticas()
@@ -163,12 +166,26 @@ export function useContactos() {
     setError(null)
     
     try {
+      console.log(`🔄 Convirtiendo contacto ${id} a lead...`)
       const contactoConvertido = await contactoService.convertirALead(id)
+      console.log(`✅ Contacto convertido a tipo: ${contactoConvertido.tipo}`)
       
-      // Actualizar en la lista local
-      setContactos(prev =>
-        prev.map(c => c.id === id ? contactoConvertido : c)
-      )
+      // Recarga inteligente para evitar páginas vacías y llenar el espacio
+      const paginaActual = paginacion.pagina;
+      const elementosEnPagina = contactos.length;
+      
+      console.log(`📄 Recargando página ${paginaActual} con filtros:`, filtros)
+      
+      // Esperar un momento para asegurar que la DB se actualizó
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      if (elementosEnPagina === 1 && paginaActual > 1) {
+        // Si era el último elemento y no es la primera página, ir a página anterior
+        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
+      } else {
+        // Recargar la página actual para llenar con más elementos
+        await cargarContactos({ ...filtros, pagina: paginaActual });
+      }
       
       await cargarEstadisticas()
       
@@ -191,8 +208,22 @@ export function useContactos() {
     try {
       const resultado = await contactoService.convertirVariosALeads(ids)
       
-      // Recargar la lista completa después de la conversión masiva
-      await cargarContactos()
+      // Esperar un momento para asegurar que la DB se actualizó
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      // Recarga inteligente después de conversión masiva
+      const paginaActual = paginacion.pagina;
+      const elementosEnPagina = contactos.length;
+      const convertidosEnEstaPagina = ids.filter(id => contactos.some(c => c.id === id)).length;
+      
+      if (convertidosEnEstaPagina === elementosEnPagina && paginaActual > 1) {
+        // Si se convirtieron todos los elementos de esta página, ir a la anterior
+        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
+      } else {
+        // Recargar la página actual para llenar con más elementos
+        await cargarContactos({ ...filtros, pagina: paginaActual });
+      }
+      
       await cargarEstadisticas()
       
       return resultado
@@ -274,11 +305,11 @@ export function useContactos() {
     }
   };
 
-  // Cargar contactos al montar el componente
-  useEffect(() => {
-    cargarContactos()
-    cargarEstadisticas()
-  }, [])
+  // NO cargar automáticamente - dejar que el componente padre controle la carga inicial
+  // useEffect(() => {
+  //   cargarContactos()
+  //   cargarEstadisticas()
+  // }, [])
 
   return {
     // Estado

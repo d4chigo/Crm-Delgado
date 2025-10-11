@@ -109,15 +109,15 @@ export class OportunidadService {
 
     if (busqueda) {
       where.OR = [
-        { titulo: { contains: busqueda, mode: 'insensitive' } },
-        { proyecto: { contains: busqueda, mode: 'insensitive' } },
-        { propiedad: { contains: busqueda, mode: 'insensitive' } },
+        { titulo: { contains: busqueda } },
+        { proyecto: { contains: busqueda } },
+        { propiedad: { contains: busqueda } },
         {
           cliente: {
             OR: [
-              { nombre: { contains: busqueda, mode: 'insensitive' } },
-              { apellido: { contains: busqueda, mode: 'insensitive' } },
-              { correo: { contains: busqueda, mode: 'insensitive' } }
+              { nombre: { contains: busqueda } },
+              { apellido: { contains: busqueda } },
+              { correo: { contains: busqueda } }
             ]
           }
         }

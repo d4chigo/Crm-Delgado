@@ -1,6 +1,6 @@
 import prisma from '@/config/database';
 import { CrearContactoDTO, ActualizarContactoDTO, FiltrosContacto, Contacto } from '@/types';
-import { TipoContacto } from '@prisma/client';
+import { TipoContacto, EstadoLead } from '@prisma/client';
 import googleAuthService from './google-auth.service';
 
 export class ContactoService {
@@ -41,7 +41,7 @@ export class ContactoService {
       ciudad,
       busqueda,
       pagina = 1,
-      limite = 10
+      limite = 6
     } = filtros;
 
     const skip = (pagina - 1) * limite;
@@ -51,17 +51,18 @@ export class ContactoService {
 
     if (tipo) {
       where.tipo = tipo;
+      console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
     }
 
     if (ciudad) {
-      where.ciudad = { contains: ciudad, mode: 'insensitive' };
+      where.ciudad = { contains: ciudad };
     }
 
     if (busqueda) {
       where.OR = [
-        { nombre: { contains: busqueda, mode: 'insensitive' } },
-        { apellido: { contains: busqueda, mode: 'insensitive' } },
-        { correo: { contains: busqueda, mode: 'insensitive' } }
+        { nombre: { contains: busqueda } },
+        { apellido: { contains: busqueda } },
+        { correo: { contains: busqueda } }
       ];
     }
 
@@ -82,6 +83,7 @@ export class ContactoService {
       }),
       prisma.contacto.count({ where })
     ]);
+
 
     // Agregar edad a cada contacto
     const contactosConEdad = contactos.map(c => this.agregarEdad(c));
@@ -238,14 +240,27 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    if (contacto.tipo === TipoContacto.LEAD || contacto.tipo === TipoContacto.CLIENTE) {
-      throw new Error('Este contacto ya es un lead o cliente');
+    console.log(`🔄 Intentando convertir contacto ${id} - Tipo actual: ${contacto.tipo}`);
+
+    if (contacto.tipo === TipoContacto.LEAD) {
+      console.log(`⚠️ Contacto ${id} ya es un LEAD, retornando sin cambios`);
+      return this.agregarEdad(contacto);
+    }
+
+    if (contacto.tipo === TipoContacto.CLIENTE) {
+      console.log(`❌ Error: Contacto ${id} ya es un CLIENTE`);
+      throw new Error('Este contacto ya es un cliente y no puede convertirse a lead');
     }
 
     const contactoActualizado = await prisma.contacto.update({
       where: { id },
-      data: { tipo: TipoContacto.LEAD }
+      data: { 
+        tipo: TipoContacto.LEAD,
+        estadoLead: contacto.estadoLead || EstadoLead.NUEVO
+      }
     });
+
+    console.log(`✅ Contacto ${id} convertido de ${contacto.tipo} a ${contactoActualizado.tipo}`);
 
     return this.agregarEdad(contactoActualizado);
   }
@@ -254,6 +269,8 @@ export class ContactoService {
    * Convertir múltiples contactos a leads
    */
   async convertirVariosALeads(ids: string[], usuarioId: string) {
+    console.log(`🔄 Intentando convertir ${ids.length} contactos a leads...`);
+    
     // Verificar que todos los contactos existen y pertenecen al usuario
     const contactos = await prisma.contacto.findMany({
       where: {
@@ -263,8 +280,10 @@ export class ContactoService {
       }
     });
 
+    console.log(`✅ Encontrados ${contactos.length} contactos válidos para convertir`);
+
     if (contactos.length === 0) {
-      throw new Error('No se encontraron contactos válidos para convertir');
+      throw new Error('No se encontraron contactos válidos para convertir. Verifica que los contactos seleccionados no sean ya leads o clientes.');
     }
 
     // Convertir todos a leads
@@ -273,9 +292,12 @@ export class ContactoService {
         id: { in: contactos.map(c => c.id) }
       },
       data: {
-        tipo: TipoContacto.LEAD
+        tipo: TipoContacto.LEAD,
+        estadoLead: EstadoLead.NUEVO
       }
     });
+
+    console.log(`✅ ${resultado.count} contactos convertidos a leads exitosamente`);
 
     return {
       convertidos: resultado.count,
@@ -339,6 +361,7 @@ export class ContactoService {
 
   /**
    * Asociar un cliente a un lead
+   * NOTA: Requiere tabla leadCliente en el schema de Prisma
    */
   async asociarCliente(
     leadId: string,
@@ -372,6 +395,8 @@ export class ContactoService {
       throw new Error('Cliente no encontrado o no es un cliente válido');
     }
 
+    // TODO: Descomentar cuando exista la tabla leadCliente en Prisma
+    /*
     // Verificar que no estén ya asociados
     const asociacionExistente = await prisma.leadCliente.findUnique({
       where: {
@@ -411,10 +436,14 @@ export class ContactoService {
       ...asociacion,
       cliente: this.agregarEdad(asociacion.cliente)
     };
+    */
+    
+    throw new Error('Funcionalidad no disponible: tabla leadCliente no configurada en Prisma');
   }
 
   /**
    * Desasociar un cliente de un lead
+   * NOTA: Requiere tabla leadCliente en el schema de Prisma
    */
   async desasociarCliente(leadId: string, clienteId: string, usuarioId: string) {
     // Verificar que el lead pertenece al usuario
@@ -426,6 +455,8 @@ export class ContactoService {
       throw new Error('Lead no encontrado');
     }
 
+    // TODO: Descomentar cuando exista la tabla leadCliente en Prisma
+    /*
     // Eliminar la asociación
     await prisma.leadCliente.delete({
       where: {
@@ -437,11 +468,16 @@ export class ContactoService {
     });
 
     return { success: true };
+    */
+    
+    throw new Error('Funcionalidad no disponible: tabla leadCliente no configurada en Prisma');
   }
 
   /**
    * Actualizar notas o estado de la asociación lead-cliente
    */
+  // TODO: Descomentar cuando exista la tabla leadCliente en Prisma
+  /*
   async actualizarAsociacion(
     leadId: string,
     clienteId: string,
@@ -487,10 +523,21 @@ export class ContactoService {
       cliente: this.agregarEdad(asociacion.cliente)
     };
   }
+  */
+  async actualizarAsociacion(
+    leadId: string,
+    clienteId: string,
+    usuarioId: string,
+    datos: { notas?: string; estado?: string }
+  ) {
+    throw new Error('Funcionalidad no disponible: tabla leadCliente no configurada en Prisma');
+  }
 
   /**
    * Obtener clientes asociados a un lead
    */
+  // TODO: Descomentar cuando exista la tabla leadCliente en Prisma
+  /*
   async obtenerClientesDeLeads(leadId: string, usuarioId: string) {
     // Verificar que el lead pertenece al usuario
     const lead = await prisma.contacto.findFirst({
@@ -523,6 +570,10 @@ export class ContactoService {
       ...asoc,
       cliente: this.agregarEdad(asoc.cliente)
     }));
+  }
+  */
+  async obtenerClientesDeLeads(leadId: string, usuarioId: string) {
+    throw new Error('Funcionalidad no disponible: tabla leadCliente no configurada en Prisma');
   }
 
   /**
@@ -560,13 +611,28 @@ export class ContactoService {
           // Si no tiene correo, usar un correo temporal basado en el nombre
           let correoFinal = correo;
           if (!correo) {
+            // Primero verificar si ya existe un contacto con el mismo nombre y apellido
+            const contactoPorNombre = await prisma.contacto.findFirst({
+              where: {
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
+                usuarioId
+              }
+            });
+
+            if (contactoPorNombre) {
+              console.log(`🔄 Contacto duplicado (por nombre): ${nombre} ${apellido}`);
+              duplicados++;
+              continue;
+            }
+
             // Generar un identificador único basado en nombre y timestamp
             const identificador = `${nombre}${apellido}`.toLowerCase().replace(/\s+/g, '');
             correoFinal = `${identificador}_${Date.now()}@importado.local`;
             console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
           }
 
-          // Verificar si ya existe un contacto con ese correo
+          // Verificar si ya existe un contacto con ese correo (independiente del tipo)
           const contactoExistente = await prisma.contacto.findFirst({
             where: {
               correo: correoFinal!.toLowerCase().trim(),
@@ -575,7 +641,7 @@ export class ContactoService {
           });
 
           if (contactoExistente) {
-            console.log(`🔄 Contacto duplicado: ${nombre} ${apellido} (${correoFinal})`);
+            console.log(`🔄 Contacto duplicado: ${nombre} ${apellido} (${correoFinal}) - Tipo: ${contactoExistente.tipo}`);
             duplicados++;
             continue;
           }
