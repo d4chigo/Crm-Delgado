@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
@@ -256,10 +257,33 @@ export default function PaginaContactos() {
                       onCheckedChange={() => handleSeleccionarContacto(contacto.id)}
                       className="mt-1"
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-2">
                       <CardTitle className="text-lg">
                         {contacto.nombre} {contacto.apellido}
                       </CardTitle>
+                      
+                      {/* Etiquetas */}
+                      {contacto.etiquetas && contacto.etiquetas.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {contacto.etiquetas.slice(0, 3).map((et) => (
+                            <Badge
+                              key={et.etiqueta.id}
+                              variant="secondary"
+                              style={{ backgroundColor: et.etiqueta.color }}
+                              className="text-white text-xs py-0 px-2"
+                            >
+                              {et.etiqueta.icono && <span className="mr-1">{et.etiqueta.icono}</span>}
+                              {et.etiqueta.nombre}
+                            </Badge>
+                          ))}
+                          {contacto.etiquetas.length > 3 && (
+                            <Badge variant="outline" className="text-xs py-0 px-2">
+                              +{contacto.etiquetas.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      
                       <p className="text-sm text-muted-foreground">{contacto.correo}</p>
                     </div>
                   </div>

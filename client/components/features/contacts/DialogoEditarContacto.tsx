@@ -22,6 +22,8 @@ import {
 import { Loader2, Search } from "lucide-react"
 import { Sexo, type ActualizarContactoDTO, type Contacto } from "@/types/contacto.types"
 import { dniService } from "@/services/api/dni.service"
+import { etiquetaService } from "@/services/api/etiqueta.service"
+import { SelectorEtiquetasCreacion } from "./SelectorEtiquetasCreacion"
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from "@/lib/validaciones"
 
 interface DialogoEditarContactoProps {
@@ -41,6 +43,7 @@ export function DialogoEditarContacto({
   const [buscandoDNI, setBuscandoDNI] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [edad, setEdad] = useState<number | null>(null)
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([])
   const [formulario, setFormulario] = useState<ActualizarContactoDTO>({
     nombre: "",
     apellido: "",
@@ -77,6 +80,20 @@ export function DialogoEditarContacto({
         setEdad(calcularEdad(fechaNacimiento))
       } else {
         setEdad(null)
+      }
+
+      // Cargar etiquetas del contacto
+      if (contacto.etiquetas) {
+        const etiquetasIds = contacto.etiquetas.map(e => e.etiqueta.id)
+        console.log('Cargando etiquetas del contacto:', {
+          contacto: contacto.nombre,
+          etiquetas: contacto.etiquetas,
+          etiquetasIds
+        })
+        setEtiquetasSeleccionadas(etiquetasIds)
+      } else {
+        console.log('Contacto sin etiquetas:', contacto.nombre)
+        setEtiquetasSeleccionadas([])
       }
       
       setError(null)
@@ -149,6 +166,24 @@ export function DialogoEditarContacto({
       }
 
       await onActualizar(contacto.id, datos)
+
+      // Actualizar etiquetas después de actualizar el contacto
+      if (etiquetasSeleccionadas.length >= 0) {
+        try {
+          console.log('Actualizando etiquetas:', {
+            contactoId: contacto.id,
+            etiquetas: etiquetasSeleccionadas
+          })
+          await etiquetaService.asignarAContacto(contacto.id, etiquetasSeleccionadas)
+          console.log('Etiquetas actualizadas correctamente')
+        } catch (errorEtiquetas: any) {
+          console.error('Error al actualizar etiquetas:', errorEtiquetas)
+          // Mostrar advertencia pero no bloquear el guardado
+          setError(`Contacto actualizado, pero error con etiquetas: ${errorEtiquetas.message}`)
+          setTimeout(() => setError(null), 3000)
+        }
+      }
+
       onCancelar()
     } catch (err: any) {
       setError(err.message || "Error al actualizar contacto")
@@ -238,6 +273,14 @@ export function DialogoEditarContacto({
               value={formulario.correo}
               onChange={(e) => handleChange("correo", e.target.value)}
               placeholder="juan@example.com (opcional)"
+            />
+          </div>
+
+          {/* Selector de Etiquetas */}
+          <div className="space-y-2">
+            <SelectorEtiquetasCreacion
+              etiquetasSeleccionadas={etiquetasSeleccionadas}
+              onCambio={setEtiquetasSeleccionadas}
             />
           </div>
 

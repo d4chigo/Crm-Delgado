@@ -123,13 +123,10 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
         datos.fechaNacimiento = fecha.toISOString()
       }
 
-      await onCrear(datos)
-
-      // Si hay etiquetas seleccionadas, asignarlas al contacto
-      // Nota: El contacto recién creado debe retornar su ID
-      // Si onCrear retorna el contacto, podemos asignar las etiquetas
+      // Crear el contacto
       const contactoCreado = await onCrear(datos)
-      
+
+      // Si hay etiquetas seleccionadas, asignarlas al contacto recién creado
       if (etiquetasSeleccionadas.length > 0 && contactoCreado?.id) {
         try {
           await etiquetaService.asignarAContacto(contactoCreado.id, etiquetasSeleccionadas)
