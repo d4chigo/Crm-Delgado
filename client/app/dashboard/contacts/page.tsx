@@ -27,6 +27,7 @@ export default function PaginaContactos() {
     eliminarContacto,
     convertirALead,
     convertirVariosALeads,
+    cargarContactos,
   } = useContactos()
 
   const { toast } = useToast()
@@ -377,6 +378,7 @@ export default function PaginaContactos() {
         abierto={!!contactoEditando}
         onActualizar={actualizarContacto}
         onCancelar={() => setContactoEditando(null)}
+        onRecargar={cargarContactos}
       />
 
       <DialogoEliminarContacto

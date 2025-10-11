@@ -31,6 +31,7 @@ interface DialogoEditarContactoProps {
   abierto: boolean
   onActualizar: (id: string, datos: ActualizarContactoDTO) => Promise<Contacto>
   onCancelar: () => void
+  onRecargar?: () => Promise<void>
 }
 
 export function DialogoEditarContacto({
@@ -38,6 +39,7 @@ export function DialogoEditarContacto({
   abierto,
   onActualizar,
   onCancelar,
+  onRecargar,
 }: DialogoEditarContactoProps) {
   const [estaCargando, setEstaCargando] = useState(false)
   const [buscandoDNI, setBuscandoDNI] = useState(false)
@@ -176,6 +178,12 @@ export function DialogoEditarContacto({
           })
           await etiquetaService.asignarAContacto(contacto.id, etiquetasSeleccionadas)
           console.log('Etiquetas actualizadas correctamente')
+          
+          // Recargar los contactos para obtener las etiquetas actualizadas
+          if (onRecargar) {
+            console.log('Recargando lista de contactos...')
+            await onRecargar()
+          }
         } catch (errorEtiquetas: any) {
           console.error('Error al actualizar etiquetas:', errorEtiquetas)
           // Mostrar advertencia pero no bloquear el guardado
