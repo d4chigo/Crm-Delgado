@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag } from "lucide-react"
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
 import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
@@ -21,9 +21,11 @@ export default function PaginaLeads() {
     estadisticas,
     estaCargando,
     error,
+    paginacion,
     buscarContactos,
     filtrarPorTipo,
-    cargarContactos
+    cargarContactos,
+    cambiarPagina,
   } = useContactos()
 
   const [busqueda, setBusqueda] = useState("")
@@ -454,6 +456,41 @@ export default function PaginaLeads() {
             </div>
           )}
 
+          {/* Paginación para Leads */}
+          {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {leads.length} de {paginacion.total} leads
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Estado vacío */}
           {!estaCargando && leads.length === 0 && !error && (
             <Card>
@@ -670,6 +707,41 @@ export default function PaginaLeads() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {/* Paginación para Clientes */}
+          {!estaCargando && clientes.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {clientes.length} de {paginacion.total} clientes
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
 

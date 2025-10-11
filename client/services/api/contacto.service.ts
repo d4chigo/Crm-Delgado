@@ -246,6 +246,26 @@ class ContactoService {
       },
     });
   }
+
+  /**
+   * Importar contactos desde Google
+   */
+  async importarDesdeGoogle(accessToken: string): Promise<{ importados: number; duplicados: number; errores: number }> {
+    const token = authService.obtenerToken();
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    return fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ accessToken }),
+    });
+  }
 }
 
 export default new ContactoService();

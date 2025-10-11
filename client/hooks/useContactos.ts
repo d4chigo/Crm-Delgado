@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from "react"
 import contactoService from "@/services/api/contacto.service"
+import googleAuthService from "@/services/api/google-auth.service"
 import type {
   Contacto,
   CrearContactoDTO,
@@ -22,7 +23,7 @@ export function useContactos() {
   const [error, setError] = useState<string | null>(null)
   const [paginacion, setPaginacion] = useState({
     pagina: 1,
-    limite: 10,
+    limite: 9,
     total: 0,
     totalPaginas: 0
   })
@@ -30,7 +31,7 @@ export function useContactos() {
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosContacto>({
     pagina: 1,
-    limite: 10
+    limite: 9
   })
 
   /**
@@ -130,7 +131,20 @@ export function useContactos() {
       await contactoService.eliminarContacto(id)
       
       // Eliminar de la lista local
-      setContactos(prev => prev.filter(c => c.id !== id))
+      const nuevosContactos = contactos.filter(c => c.id !== id)
+      setContactos(nuevosContactos)
+      
+      // Si la página queda vacía y no es la primera, ir a la página anterior
+      if (nuevosContactos.length === 0 && paginacion.pagina > 1) {
+        const nuevaPagina = paginacion.pagina - 1
+        await cargarContactos({ ...filtros, pagina: nuevaPagina })
+      } else if (nuevosContactos.length === 0 && paginacion.pagina === 1) {
+        // Si es la primera página y queda vacía, recargar para actualizar
+        await cargarContactos()
+      } else {
+        // Si aún hay elementos, solo recargar la misma página para llenar
+        await cargarContactos({ ...filtros, pagina: paginacion.pagina })
+      }
       
       await cargarEstadisticas()
     } catch (err: any) {
@@ -219,12 +233,46 @@ export function useContactos() {
   }
 
   /**
-   * Importar desde Google (placeholder)
+   * Iniciar flujo de importación desde Google
    */
-  const importarDesdeGoogle = async () => {
-    // TODO: Implementar OAuth de Google y importación
-    console.log('Función de importación desde Google pendiente')
-  }
+  const iniciarImportacionGoogle = async () => {
+    try {
+      console.log('🚀 Iniciando importación desde Google...');
+      await googleAuthService.startAuthFlow();
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar la autenticación con Google');
+      throw err;
+    }
+  };
+
+  /**
+   * Completar importación desde Google (después del callback)
+   */
+  const completarImportacionGoogle = async (accessToken: string) => {
+    setEstaCargando(true);
+    setError(null);
+    
+    try {
+      console.log('📥 Importando contactos con el token recibido...');
+      
+      // Importar contactos con el token
+      const resultado = await contactoService.importarDesdeGoogle(accessToken);
+      
+      console.log('✅ Contactos importados:', resultado);
+      
+      // Recargar la lista de contactos y estadísticas
+      await cargarContactos();
+      await cargarEstadisticas();
+      
+      return resultado;
+    } catch (err: any) {
+      setError(err.message || 'Error al importar contactos desde Google');
+      throw err;
+    } finally {
+      setEstaCargando(false);
+      googleAuthService.clearPendingImport();
+    }
+  };
 
   // Cargar contactos al montar el componente
   useEffect(() => {
@@ -255,7 +303,8 @@ export function useContactos() {
     cambiarPagina,
     cargarContactos,
     
-    // Importación
-    importarDesdeGoogle
+    // Importación desde Google
+    iniciarImportacionGoogle,
+    completarImportacionGoogle
   }
 }

@@ -346,6 +346,31 @@ export class ContactoController {
       respuestaError(res, error.message || 'Error al desasociar cliente', 500);
     }
   }
+
+  /**
+   * POST /api/contactos/importar/google
+   */
+  async importarDesdeGoogle(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { accessToken } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!accessToken) {
+        respuestaError(res, 'Token de acceso de Google requerido', 400);
+        return;
+      }
+
+      const resultado = await contactoService.importarDesdeGoogle(usuarioId, accessToken);
+      respuestaExito(res, resultado, 'Importación completada');
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al importar contactos desde Google', 500);
+    }
+  }
 }
 
 export default new ContactoController();

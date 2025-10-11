@@ -39,6 +39,12 @@ router.post(
   contactoController.crearContacto.bind(contactoController)
 );
 
+// POST /api/contactos/importar/google - Importar contactos desde Google
+router.post(
+  '/importar/google',
+  contactoController.importarDesdeGoogle.bind(contactoController)
+);
+
 // PUT /api/contactos/:id - Actualizar contacto
 router.put(
   '/:id',

@@ -5,13 +5,16 @@ import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto"
 import { DialogoEditarContacto } from "@/components/features/contacts/DialogoEditarContacto"
 import { DialogoEliminarContacto } from "@/components/features/contacts/DialogoEliminarContacto"
+import { DialogoImportarGoogle } from "@/components/features/contacts/DialogoImportarGoogle"
+import googleAuthService from "@/services/api/google-auth.service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle } from "lucide-react"
+import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
 
 export default function PaginaContactos() {
@@ -28,6 +31,9 @@ export default function PaginaContactos() {
     convertirALead,
     convertirVariosALeads,
     cargarContactos,
+    iniciarImportacionGoogle,
+    completarImportacionGoogle,
+    cambiarPagina,
   } = useContactos()
 
   const { toast } = useToast()
@@ -36,9 +42,53 @@ export default function PaginaContactos() {
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
   const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
   const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
+  const [resultadoImportacion, setResultadoImportacion] = useState<{
+    importados: number
+    duplicados: number
+    errores: number
+  } | null>(null)
 
   // Filtrar solo contactos tipo CONTACTO (no leads ni clientes)
   const contactosFiltrados = contactos.filter(c => c.tipo === TipoContacto.CONTACTO)
+
+  // Verificar si hay un callback de Google al cargar la página
+  useEffect(() => {
+    const procesarCallbackGoogle = async () => {
+      // Verificar si hay un error en el callback
+      const error = googleAuthService.getErrorFromCallback()
+      if (error) {
+        toast({
+          title: "Error al importar",
+          description: googleAuthService.getErrorMessage(error.error) + (error.message ? `: ${error.message}` : ''),
+          variant: "destructive",
+        })
+        googleAuthService.clearPendingImport()
+        return
+      }
+
+      // Verificar si hay un token en el callback y una importación pendiente
+      const token = googleAuthService.getTokenFromCallback()
+      if (token && googleAuthService.isPendingImport()) {
+        try {
+          console.log('📥 Completando importación de Google con token recibido...')
+          const resultado = await completarImportacionGoogle(token)
+          setResultadoImportacion(resultado)
+          toast({
+            title: "✅ Importación completada",
+            description: `Se importaron ${resultado.importados} contactos correctamente`,
+          })
+        } catch (err: any) {
+          toast({
+            title: "Error al importar",
+            description: err.message || "No se pudieron importar los contactos",
+            variant: "destructive",
+          })
+        }
+      }
+    }
+
+    procesarCallbackGoogle()
+  }, [completarImportacionGoogle, toast])
 
   // Efecto para buscar con delay (debounce)
   useEffect(() => {
@@ -141,8 +191,47 @@ export default function PaginaContactos() {
             Gestiona tus contactos y conviértelos en leads
           </p>
         </div>
-        <FormularioContacto onCrear={crearContacto} />
+        <div className="flex gap-2">
+          <DialogoImportarGoogle onImportar={iniciarImportacionGoogle} />
+          <FormularioContacto onCrear={crearContacto} />
+        </div>
       </div>
+
+      {/* Resultado de importación */}
+      {resultadoImportacion && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <strong>¡Importación completada!</strong>
+            <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Importados:</span>
+                <span className="ml-2 font-semibold text-green-600">{resultadoImportacion.importados}</span>
+              </div>
+              {resultadoImportacion.duplicados > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Duplicados:</span>
+                  <span className="ml-2 font-semibold text-amber-600">{resultadoImportacion.duplicados}</span>
+                </div>
+              )}
+              {resultadoImportacion.errores > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Errores:</span>
+                  <span className="ml-2 font-semibold text-red-600">{resultadoImportacion.errores}</span>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => setResultadoImportacion(null)}
+            >
+              Cerrar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Estadísticas */}
       {estadisticas && (
@@ -347,10 +436,36 @@ export default function PaginaContactos() {
 
           {/* Paginación */}
           {paginacion.totalPaginas > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="flex items-center justify-between mt-6">
               <p className="text-sm text-muted-foreground">
-                Página {paginacion.pagina} de {paginacion.totalPaginas} ({paginacion.total} contactos)
+                Mostrando {contactosFiltrados.length} de {paginacion.total} contactos
               </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

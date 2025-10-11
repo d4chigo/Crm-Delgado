@@ -6,6 +6,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
+import googleAuthRoutes from '@/routes/google-auth.routes';
 import contactoRoutes from '@/routes/contacto.routes';
 import dniRoutes from '@/routes/dni.routes';
 import etiquetaRoutes from '@/routes/etiqueta.routes';
@@ -50,6 +51,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', googleAuthRoutes);
 app.use('/api/contactos', contactoRoutes);
 app.use('/api/dni', dniRoutes);
 app.use('/api/etiquetas', etiquetaRoutes);

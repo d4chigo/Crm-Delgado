@@ -1,6 +1,7 @@
 import prisma from '@/config/database';
 import { CrearContactoDTO, ActualizarContactoDTO, FiltrosContacto, Contacto } from '@/types';
 import { TipoContacto } from '@prisma/client';
+import googleAuthService from './google-auth.service';
 
 export class ContactoService {
   /**
@@ -522,6 +523,93 @@ export class ContactoService {
       ...asoc,
       cliente: this.agregarEdad(asoc.cliente)
     }));
+  }
+
+  /**
+   * Importar contactos desde Google
+   */
+  async importarDesdeGoogle(usuarioId: string, accessToken: string): Promise<{
+    importados: number;
+    duplicados: number;
+    errores: number;
+  }> {
+    let importados = 0;
+    let duplicados = 0;
+    let errores = 0;
+
+    try {
+      // Obtener contactos de Google usando el access token
+      const contactosGoogle = await googleAuthService.getContacts(accessToken);
+      
+      console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle.length}`);
+
+      for (const person of contactosGoogle) {
+        try {
+          const nombre = person.names?.[0]?.givenName || '';
+          const apellido = person.names?.[0]?.familyName || '';
+          const correo = person.emailAddresses?.[0]?.value;
+          const telefono = person.phoneNumbers?.[0]?.value;
+          
+          // Saltar si no tiene nombre ni apellido
+          if (!nombre && !apellido) {
+            console.log('⚠️ Contacto sin nombre ni apellido, saltando...');
+            errores++;
+            continue;
+          }
+
+          // Si no tiene correo, usar un correo temporal basado en el nombre
+          let correoFinal = correo;
+          if (!correo) {
+            // Generar un identificador único basado en nombre y timestamp
+            const identificador = `${nombre}${apellido}`.toLowerCase().replace(/\s+/g, '');
+            correoFinal = `${identificador}_${Date.now()}@importado.local`;
+            console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
+          }
+
+          // Verificar si ya existe un contacto con ese correo
+          const contactoExistente = await prisma.contacto.findFirst({
+            where: {
+              correo: correoFinal!.toLowerCase().trim(),
+              usuarioId
+            }
+          });
+
+          if (contactoExistente) {
+            console.log(`🔄 Contacto duplicado: ${nombre} ${apellido} (${correoFinal})`);
+            duplicados++;
+            continue;
+          }
+
+          // Crear el nuevo contacto
+          await this.crearContacto({
+            nombre: nombre.trim() || 'Sin nombre',
+            apellido: apellido.trim() || '',
+            correo: correoFinal!.toLowerCase().trim(),
+            telefono: telefono?.trim()
+          }, usuarioId);
+
+          console.log(`✅ Importado: ${nombre} ${apellido}`);
+          importados++;
+        } catch (error: any) {
+          console.error('❌ Error al importar contacto individual:', {
+            nombre: person.names?.[0]?.givenName,
+            apellido: person.names?.[0]?.familyName,
+            error: error.message
+          });
+          errores++;
+        }
+      }
+
+      console.log(`\n📈 Resultado de importación:`);
+      console.log(`   ✅ Importados: ${importados}`);
+      console.log(`   🔄 Duplicados: ${duplicados}`);
+      console.log(`   ❌ Errores: ${errores}`);
+
+      return { importados, duplicados, errores };
+    } catch (error: any) {
+      console.error('Error al importar contactos desde Google:', error);
+      throw new Error(`No se pudieron importar los contactos: ${error.message}`);
+    }
   }
 }
 
