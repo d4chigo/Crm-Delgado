@@ -58,7 +58,7 @@ export const FormularioCotizacion = ({
     cuotaInicial: 0,
     plazoMeses: 120,
     tipoCuota: 'FIJA',
-    tasaInteresAnual: 8.5,
+    tasaInteresAnual: 0,
     permitePostergar: false,
     cuotasPostergables: 0,
     permiteDoble: false,
@@ -73,20 +73,20 @@ export const FormularioCotizacion = ({
       setDatos({
         contactoId: cotizacion.contactoId,
         nombreProyecto: cotizacion.nombreProyecto,
-        tipoInmueble: cotizacion.tipoInmueble,
-        descripcion: cotizacion.descripcion,
+        tipoInmueble: cotizacion.tipoInmueble || '',
+        descripcion: cotizacion.descripcion || '',
         precioInmueble: cotizacion.precioInmueble,
         cuotaInicial: cotizacion.cuotaInicial,
         plazoMeses: cotizacion.plazoMeses,
         tipoCuota: cotizacion.tipoCuota,
         tasaInteresAnual: cotizacion.tasaInteresAnual,
         permitePostergar: cotizacion.permitePostergar,
-        cuotasPostergables: cotizacion.cuotasPostergables,
+        cuotasPostergables: cotizacion.cuotasPostergables || 0,
         permiteDoble: cotizacion.permiteDoble,
-        cuotasDoblesAnuales: cotizacion.cuotasDoblesAnuales,
+        cuotasDoblesAnuales: cotizacion.cuotasDoblesAnuales || 0,
         permiteCambioFecha: cotizacion.permiteCambioFecha,
-        notas: cotizacion.notas,
-        fechaValidez: cotizacion.fechaValidez
+        notas: cotizacion.notas || '',
+        fechaValidez: cotizacion.fechaValidez || ''
       });
     } else {
       setDatos(prev => ({ ...prev, contactoId }));
@@ -237,16 +237,20 @@ export const FormularioCotizacion = ({
               </div>
 
               <div>
-                <Label htmlFor="tasaInteresAnual">Tasa Interés Anual (%) *</Label>
+                <Label htmlFor="tasaInteresAnual">TEA - Tasa Efectiva Anual (%) *</Label>
                 <Input
                   id="tasaInteresAnual"
                   type="number"
                   step="0.1"
+                  min="0"
                   value={datos.tasaInteresAnual}
                   onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })}
-                  placeholder="8.5"
+                  placeholder="0 (sin interés) o ej: 8.5"
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ingresa 0 para cotizaciones sin interés
+                </p>
               </div>
             </div>
           </div>

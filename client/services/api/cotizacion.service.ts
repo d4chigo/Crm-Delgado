@@ -40,22 +40,41 @@ export const cotizacionService = {
     plazoMeses: number
   ) {
     if (monto <= 0 || tasaAnual < 0 || plazoMeses <= 0) return [];
-    const tasaMensual = tasaAnual / 100 / 12;
+    
     const cuota = this.calcularCuotaMensual(monto, tasaAnual, plazoMeses);
     let saldo = monto;
     const cronograma = [];
-    for (let mes = 1; mes <= plazoMeses; mes++) {
-      const interes = Math.round(saldo * tasaMensual * 100) / 100;
-      const capital = Math.round((cuota - interes) * 100) / 100;
-      saldo = Math.round((saldo - capital) * 100) / 100;
-      cronograma.push({
-        mes,
-        cuota,
-        interes,
-        capital,
-        saldo: saldo < 0.01 ? 0 : saldo
-      });
+    
+    // Si no hay interés (TEA = 0%)
+    if (tasaAnual === 0) {
+      for (let mes = 1; mes <= plazoMeses; mes++) {
+        const capital = Math.round(cuota * 100) / 100;
+        saldo = Math.round((saldo - capital) * 100) / 100;
+        cronograma.push({
+          mes,
+          cuota,
+          interes: 0,
+          capital,
+          saldo: saldo < 0.01 ? 0 : saldo
+        });
+      }
+    } else {
+      // Con interés, usar amortización francesa
+      const tasaMensual = tasaAnual / 100 / 12;
+      for (let mes = 1; mes <= plazoMeses; mes++) {
+        const interes = Math.round(saldo * tasaMensual * 100) / 100;
+        const capital = Math.round((cuota - interes) * 100) / 100;
+        saldo = Math.round((saldo - capital) * 100) / 100;
+        cronograma.push({
+          mes,
+          cuota,
+          interes,
+          capital,
+          saldo: saldo < 0.01 ? 0 : saldo
+        });
+      }
     }
+    
     return cronograma;
   },
   /**
@@ -179,8 +198,14 @@ export const cotizacionService = {
     tasaAnual: number,
     plazoMeses: number
   ): number {
-    if (monto <= 0 || tasaAnual <= 0 || plazoMeses <= 0) return 0;
+    if (monto <= 0 || plazoMeses <= 0) return 0;
     
+    // Si no hay interés (TEA = 0%), la cuota es simplemente monto / plazo
+    if (tasaAnual === 0) {
+      return Math.round((monto / plazoMeses) * 100) / 100;
+    }
+    
+    // Con interés, usar fórmula de amortización francesa
     const tasaMensual = tasaAnual / 100 / 12;
     const factor = Math.pow(1 + tasaMensual, plazoMeses);
     const cuota = monto * (tasaMensual * factor) / (factor - 1);
