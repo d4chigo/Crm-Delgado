@@ -1,6 +1,6 @@
 # 📖 Guía de Ejecución - CRM Inmobiliario
 
-Esta guía te explica paso a paso cómo ejecutar el proyecto en desarrollo y producción usando Docker.
+Esta guía te explica **paso a paso** cómo ejecutar el proyecto desde cero, incluyendo la configuración inicial de usuarios y etiquetas.
 
 ---
 
@@ -11,7 +11,7 @@ Antes de empezar, asegúrate de tener instalado:
 - ✅ **Docker Desktop** - [Descargar aquí](https://www.docker.com/products/docker-desktop)
 - ✅ **Git** - Para clonar el repositorio
 - ✅ **4GB RAM** disponible mínimo
-- ✅ **Puertos libres**: 3000, 5000, 3306, 80
+- ✅ **Puertos libres**: 3000, 5000, 3306, 80, 8080
 
 ### Verificar instalación:
 ```bash
@@ -21,48 +21,214 @@ docker-compose --version
 
 ---
 
-## 🚀 MODO DESARROLLO (con hot reload)
+## 🚀 INICIO RÁPIDO - PRIMERA VEZ
 
-Ideal para programar. Los cambios en el código se reflejan automáticamente.
+Si es la primera vez que ejecutas el proyecto, sigue estos pasos:
 
-### Paso 1: Copiar variables de entorno
+### 1️⃣ Clonar el repositorio
 
 ```bash
+git clone https://github.com/tu-usuario/Crm-Delgado.git
+cd Crm-Delgado
+```
+
+### 2️⃣ Copiar variables de entorno
+
+```bash
+# Windows (PowerShell)
+Copy-Item .env.docker .env
+
 # Linux/Mac
 cp .env.docker .env
 
 # Windows (CMD)
 copy .env.docker .env
-
-# Windows (PowerShell)
-Copy-Item .env.docker .env
 ```
 
-### Paso 2: Iniciar todos los servicios
+### 3️⃣ Iniciar todos los servicios
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d
 ```
 
 **Esto iniciará:**
-- MySQL en el puerto 3306
-- Backend en el puerto 5000
-- Frontend en el puerto 3000
-- Adminer (gestor BD) en el puerto 8080
+- 🗄️ MySQL en el puerto 3306
+- 🔧 Backend en el puerto 5000
+- 🎨 Frontend en el puerto 3000
+- 📊 Adminer (gestor BD) en el puerto 8080
 
-### Paso 3: Ver los logs
+### 4️⃣ Esperar a que todo inicie (30-60 segundos)
 
 ```bash
-# Ver logs de todos los servicios
+# Ver logs en tiempo real
 docker-compose -f docker-compose.dev.yml logs -f
 
-# Ver logs de un servicio específico
-docker-compose -f docker-compose.dev.yml logs -f backend
-docker-compose -f docker-compose.dev.yml logs -f frontend
-docker-compose -f docker-compose.dev.yml logs -f mysql
+# Espera a ver estos mensajes:
+# ✅ MySQL: "ready for connections"
+# ✅ Backend: "Server running on port 5000"
+# ✅ Frontend: "Ready in X ms"
 ```
 
-### Paso 4: Acceder a la aplicación
+### 5️⃣ Ejecutar migraciones de base de datos
+
+```bash
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate deploy
+```
+
+### 6️⃣ Crear datos iniciales (usuarios y etiquetas)
+
+```bash
+docker-compose -f docker-compose.dev.yml exec backend npx prisma db seed
+```
+
+**Esto creará:**
+- ✅ Usuario administrador por defecto
+- ✅ Etiquetas predefinidas para el CRM
+- ✅ Datos de ejemplo (opcional)
+
+### 7️⃣ Acceder a la aplicación
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+- **Adminer (BD)**: http://localhost:8080
+
+### 8️⃣ Iniciar sesión
+
+Usa las credenciales creadas en el seed (revisa `server/prisma/seed.ts` para ver los usuarios creados).
+
+**Usuario por defecto:**
+- Email: Ver en `server/prisma/seed.ts`
+- Password: Ver en `server/prisma/seed.ts`
+
+---
+
+## 🔄 EJECUCIÓN NORMAL (después de la primera vez)
+
+Una vez que ya configuraste todo, solo necesitas:
+
+```bash
+# Iniciar servicios
+docker-compose -f docker-compose.dev.yml up -d
+
+# Ver logs (opcional)
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Detener cuando termines
+docker-compose -f docker-compose.dev.yml down
+```
+
+---
+
+## 👤 CREAR PRIMER USUARIO MANUALMENTE
+
+Si el seed no funcionó o quieres crear un usuario manualmente:
+
+### Opción 1: Desde Adminer (Visual)
+
+1. Abre http://localhost:8080
+2. Inicia sesión:
+   - Servidor: `mysql`
+   - Usuario: `crm_user`
+   - Password: `crm_pass`
+   - Base de datos: `crm_delgado`
+3. Ve a la tabla `usuarios`
+4. Click en "Nuevo registro"
+5. Completa los campos:
+   - `nombre`: Tu nombre
+   - `email`: tu@email.com
+   - `password`: (usa bcrypt hash - ver abajo)
+   - `rol`: `ADMIN`
+6. Guardar
+
+**Generar hash de contraseña:**
+```bash
+docker-compose -f docker-compose.dev.yml exec backend node -e "const bcrypt = require('bcryptjs'); console.log(bcrypt.hashSync('tuPassword123', 10))"
+```
+
+### Opción 2: Desde MySQL CLI
+
+```bash
+# Conectarse a MySQL
+docker-compose -f docker-compose.dev.yml exec mysql mysql -u crm_user -pcrm_pass crm_delgado
+
+# Dentro de MySQL, ejecutar:
+INSERT INTO usuarios (id, nombre, email, password, rol, activo, creadoEn, actualizadoEn)
+VALUES (
+  UUID(),
+  'Admin',
+  'admin@crm.com',
+  '$2a$10$hash_generado_arriba',
+  'ADMIN',
+  1,
+  NOW(),
+  NOW()
+);
+```
+
+---
+
+## 🏷️ CREAR ETIQUETAS INICIALES
+
+Si necesitas crear etiquetas manualmente:
+
+### Opción 1: Desde Adminer (Visual)
+
+1. Abre http://localhost:8080
+2. Ve a la tabla `etiquetas`
+3. Click en "Nuevo registro"
+4. Completa:
+   - `nombre`: Nombre de la etiqueta (ej: "VIP")
+   - `color`: Color en hex (ej: "#FF5733")
+   - `icono`: Emoji opcional (ej: "⭐")
+   - `descripcion`: Descripción opcional
+5. Guardar
+
+### Opción 2: Desde el Frontend
+
+1. Inicia sesión en http://localhost:3000
+2. Ve a la sección de configuración/etiquetas
+3. Crea las etiquetas desde la interfaz
+
+### Opción 3: Script SQL
+
+```bash
+# Conectarse a MySQL
+docker-compose -f docker-compose.dev.yml exec mysql mysql -u crm_user -pcrm_pass crm_delgado
+
+# Ejecutar:
+INSERT INTO etiquetas (id, nombre, color, icono, descripcion, creadoEn, actualizadoEn) VALUES
+(UUID(), 'VIP', '#FF5733', '⭐', 'Cliente VIP', NOW(), NOW()),
+(UUID(), 'Urgente', '#FF0000', '🔥', 'Requiere atención urgente', NOW(), NOW()),
+(UUID(), 'Interesado', '#00FF00', '✅', 'Cliente interesado', NOW(), NOW()),
+(UUID(), 'Seguimiento', '#FFA500', '📞', 'Requiere seguimiento', NOW(), NOW());
+```
+
+---
+
+## 🚀 MODO DESARROLLO (con hot reload)
+
+Ideal para programar. Los cambios en el código se reflejan automáticamente.
+
+### Iniciar servicios
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+### Ver logs en tiempo real
+
+```bash
+# Todos los servicios
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Solo backend
+docker-compose -f docker-compose.dev.yml logs -f backend
+
+# Solo frontend
+docker-compose -f docker-compose.dev.yml logs -f frontend
+```
+
+### Acceder a la aplicación
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
@@ -99,6 +265,138 @@ docker-compose -f docker-compose.dev.yml restart
 
 ```bash
 docker-compose -f docker-compose.dev.yml ps
+```
+
+---
+
+## 🔷 COMANDOS PRISMA (Base de Datos)
+
+Prisma es el ORM que usamos para gestionar la base de datos. Aquí están todos los comandos importantes:
+
+### 📊 Migraciones (Cambios en la estructura de BD)
+
+```bash
+# 1. Aplicar migraciones pendientes (SIEMPRE ejecutar después de iniciar por primera vez)
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate deploy
+
+# 2. Crear una nueva migración (cuando cambias el schema.prisma)
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev --name nombre_descriptivo
+
+# Ejemplo: agregar campo "telefono2" a contactos
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev --name agregar_telefono2_contactos
+
+# 3. Ver estado de migraciones
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate status
+
+# 4. Resetear base de datos completa (CUIDADO: borra todo)
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate reset
+```
+
+### 🌱 Seed (Datos iniciales)
+
+```bash
+# Ejecutar seed (crear usuarios, etiquetas, datos de ejemplo)
+docker-compose -f docker-compose.dev.yml exec backend npx prisma db seed
+
+# El seed se ejecuta automáticamente:
+# - La primera vez que inicias el proyecto
+# - Después de un "prisma migrate reset"
+```
+
+### 🎨 Prisma Studio (Interfaz visual para ver/editar datos)
+
+```bash
+# Abrir Prisma Studio
+docker-compose -f docker-compose.dev.yml exec backend npx prisma studio
+
+# Luego abre en tu navegador: http://localhost:5555
+```
+
+### 🔄 Generar Cliente Prisma (después de cambiar schema.prisma)
+
+```bash
+# Regenerar el cliente de Prisma
+docker-compose -f docker-compose.dev.yml exec backend npx prisma generate
+```
+
+### 📝 Formatear schema.prisma
+
+```bash
+# Formatear el archivo schema.prisma
+docker-compose -f docker-compose.dev.yml exec backend npx prisma format
+```
+
+### 🔍 Validar schema.prisma
+
+```bash
+# Validar que el schema esté correcto
+docker-compose -f docker-compose.dev.yml exec backend npx prisma validate
+```
+
+### 📋 Ver información de la BD
+
+```bash
+# Ver información de la conexión
+docker-compose -f docker-compose.dev.yml exec backend npx prisma db pull
+```
+
+---
+
+## 📝 FLUJO TÍPICO DE TRABAJO CON PRISMA
+
+### Cuando modificas el modelo de datos:
+
+1. **Editar** `server/prisma/schema.prisma`
+   ```prisma
+   model Contacto {
+     id       String @id @default(uuid())
+     nombre   String
+     telefono String?
+     telefono2 String? // ← Nuevo campo
+     // ...
+   }
+   ```
+
+2. **Crear migración**
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate dev --name agregar_telefono2
+   ```
+
+3. **Verificar** que se creó correctamente
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate status
+   ```
+
+4. **Listo!** El cambio ya está aplicado en la BD
+
+### Cuando clonas el proyecto por primera vez:
+
+1. **Iniciar servicios**
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+
+2. **Aplicar migraciones**
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate deploy
+   ```
+
+3. **Crear datos iniciales**
+   ```bash
+   docker-compose -f docker-compose.dev.yml exec backend npx prisma db seed
+   ```
+
+### Cuando quieres resetear todo (desarrollo):
+
+```bash
+# Opción 1: Resetear con Prisma (mantiene estructura, borra datos)
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate reset
+
+# Opción 2: Borrar todo y empezar de cero
+docker-compose -f docker-compose.dev.yml down -v
+docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml exec backend npx prisma migrate deploy
+docker-compose -f docker-compose.dev.yml exec backend npx prisma db seed
 ```
 
 ---
