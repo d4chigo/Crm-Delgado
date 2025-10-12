@@ -8,10 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight } from "lucide-react"
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
 import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
+import { CotizacionesContacto } from "@/components/features/cotizaciones"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
 
@@ -33,6 +40,8 @@ export default function PaginaLeads() {
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [dialogoCotizacionesAbierto, setDialogoCotizacionesAbierto] = useState(false)
+  const [contactoCotizaciones, setContactoCotizaciones] = useState<Contacto | null>(null)
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -121,6 +130,11 @@ export default function PaginaLeads() {
   const handleEditar = (lead: Contacto) => {
     setLeadSeleccionado(lead)
     setDialogoEditarAbierto(true)
+  }
+
+  const handleAbrirCotizaciones = (contacto: Contacto) => {
+    setContactoCotizaciones(contacto)
+    setDialogoCotizacionesAbierto(true)
   }
 
   const handleConvertirCliente = async (leadId: string) => {
@@ -446,11 +460,11 @@ export default function PaginaLeads() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditar(lead)}
-                          className="flex-1"
+                          onClick={() => handleAbrirCotizaciones(lead)}
+                          className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                         >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
+                          <FileText className="h-4 w-4 mr-1" />
+                          Cotizar
                         </Button>
                         <Button
                           size="sm"
@@ -704,11 +718,11 @@ export default function PaginaLeads() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleEditar(cliente)}
-                          className="flex-1"
+                          onClick={() => handleAbrirCotizaciones(cliente)}
+                          className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                         >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
+                          <FileText className="h-4 w-4 mr-1" />
+                          Cotizar
                         </Button>
                       </div>
                       <Button
@@ -815,6 +829,24 @@ export default function PaginaLeads() {
           }}
         />
       )}
+
+      {/* Modal de Cotizaciones */}
+      <Dialog open={dialogoCotizacionesAbierto} onOpenChange={setDialogoCotizacionesAbierto}>
+        <DialogContent className="!max-w-6xl !w-[90vw] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Cotizaciones - {contactoCotizaciones?.nombre} {contactoCotizaciones?.apellido}
+            </DialogTitle>
+          </DialogHeader>
+          {contactoCotizaciones && (
+            <CotizacionesContacto
+              contactoId={contactoCotizaciones.id}
+              nombreContacto={`${contactoCotizaciones.nombre} ${contactoCotizaciones.apellido}`}
+              tipoContacto={contactoCotizaciones.tipo as 'LEAD' | 'CLIENTE'}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

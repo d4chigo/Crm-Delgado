@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useOportunidades } from "@/hooks/useOportunidades"
+import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
 import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
@@ -20,6 +22,8 @@ import {
   CheckCircle2,
   Calendar,
   Loader2,
+  Search,
+  Tag,
 } from "lucide-react"
 
 // Mapeo de etapas para el pipeline
@@ -40,16 +44,63 @@ export default function PaginaPipeline() {
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
   const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
+  const [busqueda, setBusqueda] = useState<string>("")
+  const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
-  // Filtrar oportunidades por mes y año
+  // Cargar etiquetas al montar
+  useEffect(() => {
+    const cargarEtiquetas = async () => {
+      try {
+        const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+        if (Array.isArray(etiquetasObtenidas)) {
+          setEtiquetas(etiquetasObtenidas)
+        }
+      } catch (error) {
+        console.error('Error al cargar etiquetas:', error)
+      }
+    }
+    cargarEtiquetas()
+  }, [])
+
+  // Filtrar oportunidades por mes, año, búsqueda y etiqueta
   const oportunidadesFiltradas = oportunidades.filter((op) => {
-    if (selectedMonth === "all") return true
-    const opDate = new Date(op.creadoEn)
-    const opMonth = opDate.getMonth() + 1
-    const opYear = opDate.getFullYear()
-    return opMonth === Number.parseInt(selectedMonth) && opYear === Number.parseInt(selectedYear)
+    // Filtro por mes y año
+    if (selectedMonth !== "all") {
+      const opDate = new Date(op.creadoEn)
+      const opMonth = opDate.getMonth() + 1
+      const opYear = opDate.getFullYear()
+      if (opMonth !== Number.parseInt(selectedMonth) || opYear !== Number.parseInt(selectedYear)) {
+        return false
+      }
+    }
+
+    // Filtro por búsqueda (nombre, apellido, correo, empresa)
+    if (busqueda.trim()) {
+      const searchLower = busqueda.toLowerCase()
+      const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
+      const correo = op.cliente?.correo?.toLowerCase() || ''
+      const empresa = op.cliente?.empresa?.toLowerCase() || ''
+      const titulo = op.titulo?.toLowerCase() || ''
+      
+      if (!nombreCompleto.includes(searchLower) && 
+          !correo.includes(searchLower) && 
+          !empresa.includes(searchLower) &&
+          !titulo.includes(searchLower)) {
+        return false
+      }
+    }
+
+    // Nota: El filtro por etiqueta requiere que el backend incluya las etiquetas del cliente
+    // Por ahora, este filtro está deshabilitado hasta que se actualice el tipo OportunidadCliente
+    if (etiquetaFiltro !== "todas") {
+      // TODO: Agregar soporte de etiquetas en el backend para oportunidades
+      return true
+    }
+
+    return true
   })
 
   // Calcular datos por etapa
@@ -97,48 +148,85 @@ export default function PaginaPipeline() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
-          <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
+            <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={refrescar} variant="outline">
+              {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Actualizar
+            </Button>
+
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[180px]">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Seleccionar mes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los meses</SelectItem>
+                <SelectItem value="1">Enero</SelectItem>
+                <SelectItem value="2">Febrero</SelectItem>
+                <SelectItem value="3">Marzo</SelectItem>
+                <SelectItem value="4">Abril</SelectItem>
+                <SelectItem value="5">Mayo</SelectItem>
+                <SelectItem value="6">Junio</SelectItem>
+                <SelectItem value="7">Julio</SelectItem>
+                <SelectItem value="8">Agosto</SelectItem>
+                <SelectItem value="9">Septiembre</SelectItem>
+                <SelectItem value="10">Octubre</SelectItem>
+                <SelectItem value="11">Noviembre</SelectItem>
+                <SelectItem value="12">Diciembre</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button onClick={refrescar} variant="outline">
-            {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-            Actualizar
-          </Button>
-
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Seleccionar mes" />
+        {/* Barra de búsqueda y filtros */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, correo, empresa o título..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
+            <SelectTrigger className="w-[220px]">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <SelectValue placeholder="Todas las etiquetas" />
+              </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los meses</SelectItem>
-              <SelectItem value="1">Enero</SelectItem>
-              <SelectItem value="2">Febrero</SelectItem>
-              <SelectItem value="3">Marzo</SelectItem>
-              <SelectItem value="4">Abril</SelectItem>
-              <SelectItem value="5">Mayo</SelectItem>
-              <SelectItem value="6">Junio</SelectItem>
-              <SelectItem value="7">Julio</SelectItem>
-              <SelectItem value="8">Agosto</SelectItem>
-              <SelectItem value="9">Septiembre</SelectItem>
-              <SelectItem value="10">Octubre</SelectItem>
-              <SelectItem value="11">Noviembre</SelectItem>
-              <SelectItem value="12">Diciembre</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
+              <SelectItem value="todas">Todas las etiquetas</SelectItem>
+              {etiquetas.map((etiqueta) => (
+                <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: etiqueta.color }}
+                    />
+                    {etiqueta.nombre}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -228,7 +316,7 @@ export default function PaginaPipeline() {
                       S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+                  <CardContent className="space-y-3 h-[600px] overflow-y-auto pr-2 scrollbar-visible">
                     {oportunidadesEtapa.map((oportunidad) => (
                       <Card
                         key={oportunidad.id}

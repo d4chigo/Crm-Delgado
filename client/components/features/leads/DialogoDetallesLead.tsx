@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
 import { ClientesAsociados } from './ClientesAsociados';
+import { CotizacionesContacto } from '@/components/features/cotizaciones';
 
 interface DialogoDetallesLeadProps {
   lead: Contacto | null;
@@ -125,6 +126,12 @@ export function DialogoDetallesLead({
                 className="text-sm px-4 py-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-[#303030] data-[state=active]:shadow-sm rounded-md transition-all"
               >
                 Comercial
+              </TabsTrigger>
+              <TabsTrigger
+                value="cotizaciones"
+                className="text-sm px-4 py-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:text-[#303030] data-[state=active]:shadow-sm rounded-md transition-all"
+              >
+                Cotizaciones
               </TabsTrigger>
               <TabsTrigger
                 value="seguimiento"
@@ -363,6 +370,15 @@ export function DialogoDetallesLead({
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Tab: Cotizaciones */}
+          <TabsContent value="cotizaciones" className="space-y-6">
+            <CotizacionesContacto
+              contactoId={lead.id}
+              nombreContacto={`${lead.nombre} ${lead.apellido}`}
+              tipoContacto="LEAD"
+            />
           </TabsContent>
 
           {/* Tab: Seguimiento */}

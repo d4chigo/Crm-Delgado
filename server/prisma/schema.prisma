@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model Usuario {
@@ -59,6 +60,7 @@ model Contacto {
   leadsAsociados   LeadCliente[]      @relation("LeadRelacion")
   clientesAsociados LeadCliente[]     @relation("ClienteRelacion")
   oportunidades    OportunidadCliente[]
+  cotizaciones     Cotizacion[]
   usuario          Usuario            @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
@@ -243,4 +245,73 @@ enum EtapaPipeline {
   CIERRE
   GANADO
   PERDIDO
+}
+
+// Modelo de Cotización Inmobiliaria
+model Cotizacion {
+  id                    String            @id @default(uuid())
+  contactoId            String
+  numeroReferencia      String            @unique // Número de cotización (ej: COT-2024-001)
+  
+  // Información del inmueble
+  nombreProyecto        String
+  tipoInmueble          String?           // Departamento, Casa, Terreno, etc.
+  descripcion           String?           @db.Text
+  precioInmueble        Decimal           @db.Decimal(12, 2)
+  
+  // Financiamiento
+  cuotaInicial          Decimal           @db.Decimal(12, 2)
+  porcentajeCuotaInicial Decimal          @db.Decimal(5, 2) // Porcentaje de cuota inicial
+  montoFinanciar        Decimal           @db.Decimal(12, 2)
+  plazoMeses            Int               // Plazo en meses
+  
+  // Tipo de cuota
+  tipoCuota             TipoCuota         @default(FIJA)
+  tasaInteresAnual      Decimal           @db.Decimal(5, 2) // Tasa de interés anual %
+  
+  // Opciones para Flexible Especial
+  permitePostergar      Boolean           @default(false)
+  cuotasPostergables    Int?              // Cuántas cuotas se pueden postergar al año
+  permiteDoble          Boolean           @default(false)
+  cuotasDoblesAnuales   Int?              // Cuántas cuotas dobles se pueden hacer al año
+  permiteCambioFecha    Boolean           @default(false)
+  
+  // Cálculos
+  cuotaMensualEstimada  Decimal           @db.Decimal(12, 2)
+  totalIntereses        Decimal           @db.Decimal(12, 2)
+  totalPagar            Decimal           @db.Decimal(12, 2)
+  
+  // Estado de la cotización
+  estado                EstadoCotizacion  @default(BORRADOR)
+  
+  // Notas y observaciones
+  notas                 String?           @db.Text
+  observaciones         String?           @db.Text
+  
+  // Fechas
+  fechaValidez          DateTime?         // Hasta cuándo es válida la cotización
+  creadoEn              DateTime          @default(now())
+  actualizadoEn         DateTime          @updatedAt
+  
+  // Relación
+  contacto              Contacto          @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+
+  @@index([contactoId])
+  @@index([estado])
+  @@index([tipoCuota])
+  @@map("cotizaciones")
+}
+
+enum TipoCuota {
+  FIJA
+  FLEXIBLE
+  FLEXIBLE_ESPECIAL
+}
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+  VENCIDA
 }

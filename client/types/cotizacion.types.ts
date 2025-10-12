@@ -1,101 +1,140 @@
 /**
- * Tipos relacionados con cotizaciones
+ * Tipos relacionados con cotizaciones inmobiliarias
  */
 
-import type { Moneda } from './proyecto.types'
+export type TipoCuota = 'FIJA' | 'FLEXIBLE' | 'FLEXIBLE_ESPECIAL';
+export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'VENCIDA';
+
+export interface CrearCotizacionDTO {
+  contactoId: string;
+  nombreProyecto: string;
+  tipoInmueble?: string;
+  descripcion?: string;
+  precioInmueble: number;
+  cuotaInicial: number;
+  plazoMeses: number;
+  tipoCuota: TipoCuota;
+  tasaInteresAnual: number;
+  permitePostergar?: boolean;
+  cuotasPostergables?: number;
+  permiteDoble?: boolean;
+  cuotasDoblesAnuales?: number;
+  permiteCambioFecha?: boolean;
+  notas?: string;
+  fechaValidez?: string;
+}
+
+export interface ActualizarCotizacionDTO {
+  nombreProyecto?: string;
+  tipoInmueble?: string;
+  descripcion?: string;
+  precioInmueble?: number;
+  cuotaInicial?: number;
+  plazoMeses?: number;
+  tipoCuota?: TipoCuota;
+  tasaInteresAnual?: number;
+  permitePostergar?: boolean;
+  cuotasPostergables?: number;
+  permiteDoble?: boolean;
+  cuotasDoblesAnuales?: number;
+  permiteCambioFecha?: boolean;
+  notas?: string;
+  fechaValidez?: string;
+}
 
 export interface Cotizacion {
-  id: string
-  numeroCotizacion: string
-  idLead: string
-  nombreLead: string
-  idProyecto: string
-  nombreProyecto: string
-  tipoUnidad?: string
-  numeroUnidad?: string
-  precioBase: number
-  descuento?: number
-  tipoDescuento?: TipoDescuento
-  precioFinal: number
-  moneda: Moneda
-  planPago?: PlanPago
-  estado: EstadoCotizacion
-  validoHasta: Date
-  notas?: string
-  elementos?: ElementoCotizacion[]
-  creadoPor: string
-  creadoEn: Date
-  actualizadoEn?: Date
-}
-
-export interface ElementoCotizacion {
-  id: string
-  descripcion: string
-  cantidad: number
-  precioUnitario: number
-  total: number
-}
-
-export enum EstadoCotizacion {
-  BORRADOR = 'borrador',
-  ENVIADO = 'enviado',
-  VISTO = 'visto',
-  ACEPTADO = 'aceptado',
-  RECHAZADO = 'rechazado',
-  EXPIRADO = 'expirado'
-}
-
-export enum TipoDescuento {
-  PORCENTAJE = 'porcentaje',
-  FIJO = 'fijo'
-}
-
-export interface PlanPago {
-  tipo: TipoPlanPago
-  pagoInicial: number
-  cuotas?: number
-  montoCuota?: number
-  descripcion?: string
-}
-
-export enum TipoPlanPago {
-  CONTADO = 'contado',
-  FINANCIADO = 'financiado',
-  PERSONALIZADO = 'personalizado'
-}
-
-export interface DatosFormularioCotizacion {
-  idLead: string
-  idProyecto: string
-  tipoUnidad?: string
-  numeroUnidad?: string
-  precioBase: number
-  descuento?: number
-  tipoDescuento?: TipoDescuento
-  moneda: Moneda
-  planPago?: PlanPago
-  validoHasta: Date
-  notas?: string
-  elementos?: Omit<ElementoCotizacion, 'id'>[]
+  id: string;
+  contactoId: string;
+  numeroReferencia: string;
+  nombreProyecto: string;
+  tipoInmueble?: string;
+  descripcion?: string;
+  precioInmueble: number;
+  cuotaInicial: number;
+  montoFinanciar: number;
+  plazoMeses: number;
+  tipoCuota: TipoCuota;
+  tasaInteresAnual: number;
+  permitePostergar: boolean;
+  cuotasPostergables?: number;
+  permiteDoble: boolean;
+  cuotasDoblesAnuales?: number;
+  permiteCambioFecha: boolean;
+  cuotaMensualEstimada: number;
+  totalIntereses: number;
+  totalPagar: number;
+  estado: EstadoCotizacion;
+  notas?: string;
+  fechaValidez?: string;
+  creadoEn: string;
+  actualizadoEn: string;
+  porcentajeCuotaInicial?: number;
+  contacto?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    email?: string;
+    telefono?: string;
+  };
 }
 
 export interface FiltrosCotizacion {
-  busqueda?: string
-  estado?: EstadoCotizacion
-  idProyecto?: string
-  idLead?: string
-  fechaDesde?: Date
-  fechaHasta?: Date
-  precioMin?: number
-  precioMax?: number
+  contactoId?: string;
+  estado?: EstadoCotizacion;
+  tipoCuota?: TipoCuota;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  busqueda?: string;
+  pagina?: number;
+  limite?: number;
 }
 
-export interface EstadisticasCotizacion {
-  total: number
-  porEstado: Record<EstadoCotizacion, number>
-  valorTotal: number
-  valorPromedio: number
-  tasaConversion: number
+export interface RespuestaPaginadaCotizaciones {
+  cotizaciones: Cotizacion[];
+  paginacion: {
+    total: number;
+    pagina: number;
+    limite: number;
+    totalPaginas: number;
+  };
 }
 
-export type CampoOrdenCotizacion = 'numeroCotizacion' | 'precioFinal' | 'creadoEn' | 'validoHasta'
+export const TIPOS_CUOTA_LABELS: Record<TipoCuota, string> = {
+  FIJA: 'Cuota Fija',
+  FLEXIBLE: 'Cuota Flexible',
+  FLEXIBLE_ESPECIAL: 'Cuota Flexible Especial'
+};
+
+export const ESTADOS_COTIZACION_LABELS: Record<EstadoCotizacion, string> = {
+  BORRADOR: 'Borrador',
+  ENVIADA: 'Enviada',
+  ACEPTADA: 'Aceptada',
+  RECHAZADA: 'Rechazada',
+  VENCIDA: 'Vencida'
+};
+
+export const ESTADOS_COTIZACION_STYLES: Record<EstadoCotizacion, {
+  badge: string;
+  dot: string;
+}> = {
+  BORRADOR: {
+    badge: 'bg-gray-100 text-gray-800 border-gray-300',
+    dot: 'bg-gray-500'
+  },
+  ENVIADA: {
+    badge: 'bg-blue-100 text-blue-800 border-blue-300',
+    dot: 'bg-blue-500'
+  },
+  ACEPTADA: {
+    badge: 'bg-green-100 text-green-800 border-green-300',
+    dot: 'bg-green-500'
+  },
+  RECHAZADA: {
+    badge: 'bg-red-100 text-red-800 border-red-300',
+    dot: 'bg-red-500'
+  },
+  VENCIDA: {
+    badge: 'bg-orange-100 text-orange-800 border-orange-300',
+    dot: 'bg-orange-500'
+  }
+};

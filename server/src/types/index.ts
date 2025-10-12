@@ -119,3 +119,6 @@ export interface FiltrosContacto {
   pagina?: number;
   limite?: number;
 }
+
+// ==================== COTIZACIONES ====================
+export * from './cotizacion.types';
