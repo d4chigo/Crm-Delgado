@@ -64,6 +64,10 @@ export const FormularioCotizacion = ({
     permiteDoble: false,
     cuotasDoblesAnuales: 0,
     permiteCambioFecha: false,
+    // opciones para cuota especial (solo si tipoCuota === 'FLEXIBLE_ESPECIAL')
+    frecuenciaCuotaEspecial: undefined,
+    cuotaEspecialTipo: undefined,
+    cuotaEspecialValor: undefined,
     notas: '',
     fechaValidez: ''
   });
@@ -99,7 +103,19 @@ export const FormularioCotizacion = ({
       datos.precioInmueble,
       datos.cuotaInicial,
       datos.tasaInteresAnual,
-      datos.plazoMeses
+      datos.plazoMeses,
+      {
+        modalidadPago: datos.modalidadPago as any,
+        flexibleOverridesText: (datos as any).flexibleOverridesText,
+        escalonadoIncrementoMensual: (datos as any).escalonadoIncrementoMensual,
+        escalonadoPorcentaje: (datos as any).escalonadoPorcentaje,
+        escalonadoCadaMeses: (datos as any).escalonadoCadaMeses,
+        periodoGraciaTipo: (datos as any).periodoGraciaTipo,
+        periodoGraciaMeses: (datos as any).periodoGraciaMeses,
+        frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
+        cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
+        cuotaEspecialValor: datos.cuotaEspecialValor as any
+      }
     );
   }, [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses]);
 
@@ -108,9 +124,14 @@ export const FormularioCotizacion = ({
       return cotizacionService.calcularCronogramaPagos(
         calculosEnVivo.montoFinanciar,
         datos.tasaInteresAnual,
-        datos.plazoMeses
+        datos.plazoMeses,
+        {
+          frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
+          cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
+          cuotaEspecialValor: datos.cuotaEspecialValor as any
+        }
       );
-    }, [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses]);
+    }, [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,75 +303,129 @@ export const FormularioCotizacion = ({
 
             {/* Opciones Especiales */}
             {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
-              <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-                <p className="text-sm font-medium">Opciones Flexibles</p>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="permitePostergar"
-                    checked={datos.permitePostergar}
-                    onCheckedChange={(checked) => 
-                      setDatos({ ...datos, permitePostergar: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="permitePostergar" className="text-sm font-normal">
-                    Permitir postergar pagos
-                  </Label>
-                </div>
-                
-                {datos.permitePostergar && (
-                  <div className="ml-6">
-                    <Label htmlFor="cuotasPostergables">Cuotas postergables por año</Label>
-                    <Input
-                      id="cuotasPostergables"
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={datos.cuotasPostergables}
-                      onChange={(e) => setDatos({ ...datos, cuotasPostergables: parseInt(e.target.value) || 0 })}
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg bg-gray-50">
+                  <p className="text-sm font-medium">Opciones Flexibles</p>
+
+                  <div className="flex items-center space-x-2 mt-3">
+                    <Checkbox
+                      id="permitePostergar"
+                      checked={datos.permitePostergar}
+                      onCheckedChange={(checked) => 
+                        setDatos({ ...datos, permitePostergar: checked as boolean })
+                      }
                     />
+                    <Label htmlFor="permitePostergar" className="text-sm font-normal">
+                      Permitir postergar pagos
+                    </Label>
+                  </div>
+                  {datos.permitePostergar && (
+                    <div className="ml-6 mt-2">
+                      <Label htmlFor="cuotasPostergables">Cuotas postergables por año</Label>
+                      <Input
+                        id="cuotasPostergables"
+                        type="number"
+                        min="0"
+                        max="12"
+                        value={datos.cuotasPostergables}
+                        onChange={(e) => setDatos({ ...datos, cuotasPostergables: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="permiteDoble"
+                      checked={datos.permiteDoble}
+                      onCheckedChange={(checked) => 
+                        setDatos({ ...datos, permiteDoble: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="permiteDoble" className="text-sm font-normal">
+                      Permitir cuotas dobles
+                    </Label>
+                  </div>
+                  {datos.permiteDoble && (
+                    <div className="ml-6 mt-2">
+                      <Label htmlFor="cuotasDoblesAnuales">Cuotas dobles permitidas por año</Label>
+                      <Input
+                        id="cuotasDoblesAnuales"
+                        type="number"
+                        min="0"
+                        max="12"
+                        value={datos.cuotasDoblesAnuales}
+                        onChange={(e) => setDatos({ ...datos, cuotasDoblesAnuales: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="permiteCambioFecha"
+                      checked={datos.permiteCambioFecha}
+                      onCheckedChange={(checked) => 
+                        setDatos({ ...datos, permiteCambioFecha: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="permiteCambioFecha" className="text-sm font-normal">
+                      Permitir cambio de fecha de pago
+                    </Label>
+                  </div>
+                </div>
+
+                {datos.tipoCuota === 'FLEXIBLE_ESPECIAL' && (
+                  <div className="p-4 border rounded-lg bg-white">
+                    <h4 className="text-sm font-medium">Cuota Flexible Especial</h4>
+                    <div className="grid grid-cols-1 gap-3 mt-3">
+                      <div>
+                        <Label htmlFor="frecuenciaCuotaEspecial">Frecuencia</Label>
+                        <Select
+                          value={datos.frecuenciaCuotaEspecial as any || ''}
+                          onValueChange={(value) => setDatos({ ...datos, frecuenciaCuotaEspecial: value as any })}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="TRIMESTRAL">Trimestral (cada 3 meses)</SelectItem>
+                            <SelectItem value="SEMESTRAL">Semestral (cada 6 meses)</SelectItem>
+                            <SelectItem value="ANUAL">Anual (cada 12 meses)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="cuotaEspecialTipo">Tipo de monto</Label>
+                        <Select
+                          value={datos.cuotaEspecialTipo as any || ''}
+                          onValueChange={(value) => setDatos({ ...datos, cuotaEspecialTipo: value as any })}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FIJO">Fijo (+ monto)</SelectItem>
+                            <SelectItem value="PORCENTAJE">Porcentaje (sobre cuota)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="cuotaEspecialValor">Valor</Label>
+                        <Input
+                          id="cuotaEspecialValor"
+                          type="number"
+                          step="0.01"
+                          className="w-full"
+                          value={(datos.cuotaEspecialValor as any) ?? ''}
+                          onChange={(e) => setDatos({ ...datos, cuotaEspecialValor: parseFloat(e.target.value) || 0 })}
+                          placeholder="Ej: 500 o 150"
+                        />
+                        <p className="text-xs text-muted-foreground">Si eliges % escribe 150 para 150% (cuota x1.5)</p>
+                      </div>
+                    </div>
                   </div>
                 )}
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="permiteDoble"
-                    checked={datos.permiteDoble}
-                    onCheckedChange={(checked) => 
-                      setDatos({ ...datos, permiteDoble: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="permiteDoble" className="text-sm font-normal">
-                    Permitir cuotas dobles
-                  </Label>
-                </div>
-
-                {datos.permiteDoble && (
-                  <div className="ml-6">
-                    <Label htmlFor="cuotasDoblesAnuales">Cuotas dobles permitidas por año</Label>
-                    <Input
-                      id="cuotasDoblesAnuales"
-                      type="number"
-                      min="0"
-                      max="12"
-                      value={datos.cuotasDoblesAnuales}
-                      onChange={(e) => setDatos({ ...datos, cuotasDoblesAnuales: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                )}
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="permiteCambioFecha"
-                    checked={datos.permiteCambioFecha}
-                    onCheckedChange={(checked) => 
-                      setDatos({ ...datos, permiteCambioFecha: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="permiteCambioFecha" className="text-sm font-normal">
-                    Permitir cambio de fecha de pago
-                  </Label>
-                </div>
               </div>
             )}
           </div>
@@ -389,6 +464,7 @@ export const FormularioCotizacion = ({
                     <tr>
                       <th className="px-2 py-1 border">Mes</th>
                       <th className="px-2 py-1 border">Cuota</th>
+                      <th className="px-2 py-1 border">Especial</th>
                       <th className="px-2 py-1 border">Interés</th>
                       <th className="px-2 py-1 border">Capital</th>
                       <th className="px-2 py-1 border">Saldo</th>
@@ -396,9 +472,22 @@ export const FormularioCotizacion = ({
                   </thead>
                   <tbody>
                     {cronogramaPagos.map((pago) => (
-                      <tr key={pago.mes} className="odd:bg-white even:bg-blue-50">
+                      <tr key={pago.mes} className={`odd:bg-white even:bg-blue-50 ${pago.esCuotaEspecial ? 'bg-yellow-50 font-medium' : ''}`}>
                         <td className="px-2 py-1 border text-center">{pago.mes}</td>
                         <td className="px-2 py-1 border text-right">{formatearMoneda(pago.cuota)}</td>
+                        <td className="px-2 py-1 border text-right">
+                          {pago.esCuotaEspecial ? (
+                            <div className="text-right">
+                              {(() => {
+                                const cuotaBase = pago.cuotaBase ?? 0;
+                                const inferredApplied = Math.max(0, Math.round((pago.cuota - cuotaBase) * 100) / 100);
+                                const applied = (pago.pagoEspecialAplicado ?? pago.pagoEspecial ?? 0) || inferredApplied;
+                                return <div>Aplicado: {formatearMoneda(applied)}</div>;
+                              })()}
+                              {pago.pagoEspecialNoUtilizado ? <div className="text-xs text-muted-foreground">No usado: {formatearMoneda(pago.pagoEspecialNoUtilizado)}</div> : null}
+                            </div>
+                          ) : '-'}
+                        </td>
                         <td className="px-2 py-1 border text-right">{formatearMoneda(pago.interes)}</td>
                         <td className="px-2 py-1 border text-right">{formatearMoneda(pago.capital)}</td>
                         <td className="px-2 py-1 border text-right">{formatearMoneda(pago.saldo)}</td>
@@ -408,6 +497,25 @@ export const FormularioCotizacion = ({
                 </table>
               </div>
             </div>
+            {/* Totales por tipo de cuota */}
+            {cronogramaPagos.length > 0 && (
+              <div className="mt-4 p-3 bg-white border rounded text-sm">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-gray-600">Total en cuotas normales:</span>
+                    <p className="font-semibold">{formatearMoneda(cronogramaPagos.reduce((s, p) => s + (p.esCuotaEspecial ? 0 : p.cuota), 0))}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Total en cuotas especiales (aplicado):</span>
+                    <p className="font-semibold">{formatearMoneda(cronogramaPagos.reduce((s, p) => s + (p.esCuotaEspecial ? (p.pagoEspecialAplicado ?? p.pagoEspecial ?? 0) : 0), 0))}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Ahorro / Reducción plazo:</span>
+                    <p className="font-semibold">{cronogramaPagos[cronogramaPagos.length -1].mes < datos.plazoMeses ? `${datos.plazoMeses - cronogramaPagos[cronogramaPagos.length -1].mes} meses` : '-'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Notas y Validez */}

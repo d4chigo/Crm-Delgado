@@ -1,10 +1,25 @@
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+
+// Intentar cargar .env de la carpeta del servidor; si no existe, cargar desde la raiz del repo
+const serverEnv = path.resolve(__dirname, '../../.env');
+const localEnv = path.resolve(__dirname, '../.env');
+if (fs.existsSync(localEnv)) {
+  dotenv.config({ path: localEnv });
+} else if (fs.existsSync(serverEnv)) {
+  dotenv.config({ path: serverEnv });
+} else {
+  // fallback: carga normal (buscará en process.cwd())
+  dotenv.config();
+}
+
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import authRoutes from '@/routes/auth.routes';
 import googleAuthRoutes from '@/routes/google-auth.routes';
 import contactoRoutes from '@/routes/contacto.routes';

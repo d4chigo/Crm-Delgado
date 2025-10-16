@@ -5,6 +5,8 @@
 export type TipoCuota = 'FIJA' | 'FLEXIBLE' | 'FLEXIBLE_ESPECIAL';
 export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'VENCIDA';
 
+export type ModalidadPago = 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL';
+
 export interface CrearCotizacionDTO {
   contactoId: string;
   nombreProyecto: string;
@@ -15,6 +17,21 @@ export interface CrearCotizacionDTO {
   plazoMeses: number;
   tipoCuota: TipoCuota;
   tasaInteresAnual: number;
+  // Modalidad avanzada de cuotas (client-side)
+  modalidadPago?: ModalidadPago;
+  // FLEXIBLE_TRADICIONAL: lista simple de sobrescrituras mes:monto (ej: "3:500\n6:300")
+  flexibleOverridesText?: string;
+  // ESCALONADA
+  escalonadoIncrementoMensual?: number; // monto fijo a añadir cada mes
+  escalonadoPorcentaje?: number; // porcentaje a aplicar
+  escalonadoCadaMeses?: number; // cada cuantos meses aplicar el porcentaje
+  // GRACIA
+  periodoGraciaTipo?: 'SIN_PAGO' | 'SOLO_INTERES';
+  periodoGraciaMeses?: number;
+  // FLEXIBLE_ESPECIAL (ya existían campos, se reusan):
+  frecuenciaCuotaEspecial?: 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
+  cuotaEspecialTipo?: 'FIJO' | 'PORCENTAJE';
+  cuotaEspecialValor?: number;
   permitePostergar?: boolean;
   cuotasPostergables?: number;
   permiteDoble?: boolean;
