@@ -126,7 +126,7 @@ export function DialogoCrearOportunidad({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#303030] flex items-center gap-2">
             <div className="bg-[#FCBA00] p-2 rounded-lg">

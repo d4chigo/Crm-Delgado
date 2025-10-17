@@ -204,7 +204,7 @@ export function DialogoEditarContacto({
 
   return (
     <Dialog open={abierto} onOpenChange={onCancelar}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Contacto</DialogTitle>
           <DialogDescription>

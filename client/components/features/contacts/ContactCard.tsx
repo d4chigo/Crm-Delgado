@@ -1,86 +1,120 @@
-/**
- * Componente ContactCard - Tarjeta individual de contacto
- */
+'use client'
 
-"use client"
-
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Mail, Phone, MapPin } from "lucide-react"
-import type { Contacto, FuenteContacto } from "@/types/contacto.types"
+import { Button } from "@/components/ui/button"
+import { Edit, Trash2, ArrowRightCircle } from "lucide-react"
+import type { Contacto } from "@/types/contacto.types"
 
 interface ContactCardProps {
-  contact: Contacto
+  contacto: Contacto
   isSelected: boolean
-  onToggleSelection: (id: string) => void
+  onSeleccionar: (id: string) => void
+  onConvertir: (contacto: Contacto) => void
+  onEditar: (contacto: Contacto) => void
+  onEliminar: (contacto: Contacto) => void
 }
 
-const getSourceBadge = (source: FuenteContacto) => {
-  const badges = {
-    manual: { label: "Manual", className: "bg-blue-100 text-blue-700" },
-    google: { label: "Google", className: "bg-green-100 text-green-700" },
-    import: { label: "Importado", className: "bg-purple-100 text-purple-700" },
-    form: { label: "Formulario", className: "bg-orange-100 text-orange-700" },
-    referral: { label: "Referido", className: "bg-pink-100 text-pink-700" },
-    social: { label: "Redes Sociales", className: "bg-indigo-100 text-indigo-700" },
-  }
-  return badges[source]
-}
-
-export function ContactCard({ contact, isSelected, onToggleSelection }: ContactCardProps) {
-  const sourceBadge = getSourceBadge(contact.fuente)
-
+export function ContactCard({
+  contacto,
+  isSelected,
+  onSeleccionar,
+  onConvertir,
+  onEditar,
+  onEliminar,
+}: ContactCardProps) {
   return (
-    <Card
-      className={`border-border hover:shadow-md transition-all cursor-pointer ${
-        isSelected ? "ring-2 ring-[#FCBA00] bg-[#FCBA00]/5" : ""
-      }`}
-      onClick={() => onToggleSelection(contact.id)}
-    >
-      <CardContent className="p-6 space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-12 h-12 bg-[#FCBA00]">
-              <AvatarFallback className="bg-[#FCBA00] text-[#303030] font-bold">
-                {contact.nombre.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold text-[#303030]">{contact.nombre}</h3>
-              {contact.empresa && (
-                <p className="text-xs text-muted-foreground">{contact.empresa}</p>
-              )}
-            </div>
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`contacto-${contacto.id}`}
+            checked={isSelected}
+            onCheckedChange={() => onSeleccionar(contacto.id)}
+            className="mt-1"
+          />
+          <div className="flex-1 space-y-2">
+            <CardTitle className="text-lg">
+              {contacto.nombre} {contacto.apellido}
+            </CardTitle>
+            
+            {/* Etiquetas */}
+            {contacto.etiquetas && contacto.etiquetas.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {contacto.etiquetas.slice(0, 3).map((et) => (
+                  <Badge
+                    key={et.etiqueta.id}
+                    variant="secondary"
+                    style={{ backgroundColor: et.etiqueta.color }}
+                    className="text-white text-xs py-0 px-2"
+                  >
+                    {et.etiqueta.icono && <span className="mr-1">{et.etiqueta.icono}</span>}
+                    {et.etiqueta.nombre}
+                  </Badge>
+                ))}
+                {contacto.etiquetas.length > 3 && (
+                  <Badge variant="outline" className="text-xs py-0 px-2">
+                    +{contacto.etiquetas.length - 3}
+                  </Badge>
+                )}
+              </div>
+            )}
+            
+            <p className="text-sm text-muted-foreground">{contacto.correo}</p>
           </div>
-          <Badge className={sourceBadge.className}>{sourceBadge.label}</Badge>
         </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Mail className="w-4 h-4" />
-            <span className="truncate">{contact.email}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="w-4 h-4" />
-            <span>{contact.telefono}</span>
-          </div>
-          {contact.ubicacion && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4" />
-              <span>{contact.ubicacion}</span>
-            </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2 text-sm">
+          {contacto.telefono && (
+            <p className="text-muted-foreground">📞 {contacto.telefono}</p>
           )}
-        </div>
-
-        {contact.notas && (
-          <p className="text-xs text-muted-foreground line-clamp-2 pt-2 border-t border-border">
-            {contact.notas}
-          </p>
-        )}
-
-        <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-          Agregado: {contact.creadoEn.toLocaleDateString('es-PE')}
+          {contacto.ciudad && (
+            <p className="text-muted-foreground">📍 {contacto.ciudad}</p>
+          )}
+          {contacto.edad && (
+            <p className="text-muted-foreground">🎂 {contacto.edad} años</p>
+          )}
+          <div className="flex items-center gap-2 mt-3">
+            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+              {contacto.tipo}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 mt-4">
+            {/* Botón convertir a lead */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onConvertir(contacto)}
+              className="w-full bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] border-[#FCBA00]"
+            >
+              <ArrowRightCircle className="w-3 h-3 mr-1" />
+              Convertir a Lead
+            </Button>
+            
+            {/* Botones editar/eliminar */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEditar(contacto)}
+                className="flex-1"
+              >
+                <Edit className="w-3 h-3 mr-1" />
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEliminar(contacto)}
+                className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Eliminar
+              </Button>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

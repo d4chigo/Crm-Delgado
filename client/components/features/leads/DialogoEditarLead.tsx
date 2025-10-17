@@ -198,7 +198,7 @@ export function DialogoEditarLead({
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && onCerrar()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="2xl" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Lead</DialogTitle>
           <DialogDescription>

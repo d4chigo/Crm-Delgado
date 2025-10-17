@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { DollarSign, Calendar, Percent, Building, Info, FileText, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -21,8 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import type { 
   CrearCotizacionDTO, 
   Cotizacion,
@@ -30,6 +26,23 @@ import type {
 } from '@/types/cotizacion.types';
 import { TIPOS_CUOTA_LABELS } from '@/types/cotizacion.types';
 import { cotizacionService } from '@/services/api/cotizacion.service';
+
+// Enhanced UI components for this specific form
+const FormSection = ({ title, children }) => (
+  <section className="space-y-3">
+    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
+    <div className="grid grid-cols-2 gap-x-6 gap-y-4 p-4 border rounded-lg bg-white">
+      {children}
+    </div>
+  </section>
+);
+
+const IconInput = ({ icon: Icon, ...props }) => (
+  <div className="relative flex items-center">
+    <Icon className="absolute left-3 h-4 w-4 text-gray-400" />
+    <Input {...props} className="pl-9 text-sm h-9" />
+  </div>
+);
 
 interface FormularioCotizacionProps {
   open: boolean;
@@ -51,87 +64,25 @@ export const FormularioCotizacion = ({
   const [guardando, setGuardando] = useState(false);
   const [datos, setDatos] = useState<CrearCotizacionDTO>({
     contactoId,
-    nombreProyecto: '',
-    tipoInmueble: '',
-    descripcion: '',
-    precioInmueble: 0,
-    cuotaInicial: 0,
-    plazoMeses: 120,
+    nombreProyecto: 'Residencial Las Palmeras',
+    tipoInmueble: 'Departamento',
+    descripcion: 'Modelo A-101',
+    precioInmueble: 350000,
+    cuotaInicial: 70000,
+    plazoMeses: 240,
     tipoCuota: 'FIJA',
-    tasaInteresAnual: 0,
-    permitePostergar: false,
-    cuotasPostergables: 0,
-    permiteDoble: false,
-    cuotasDoblesAnuales: 0,
-    permiteCambioFecha: false,
-    // opciones para cuota especial (solo si tipoCuota === 'FLEXIBLE_ESPECIAL')
-    frecuenciaCuotaEspecial: undefined,
-    cuotaEspecialTipo: undefined,
-    cuotaEspecialValor: undefined,
+    tasaInteresAnual: 8.0,
     notas: '',
-    fechaValidez: ''
+    fechaValidez: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   });
 
   useEffect(() => {
-    if (cotizacion) {
-      setDatos({
-        contactoId: cotizacion.contactoId,
-        nombreProyecto: cotizacion.nombreProyecto,
-        tipoInmueble: cotizacion.tipoInmueble || '',
-        descripcion: cotizacion.descripcion || '',
-        precioInmueble: cotizacion.precioInmueble,
-        cuotaInicial: cotizacion.cuotaInicial,
-        plazoMeses: cotizacion.plazoMeses,
-        tipoCuota: cotizacion.tipoCuota,
-        tasaInteresAnual: cotizacion.tasaInteresAnual,
-        permitePostergar: cotizacion.permitePostergar,
-        cuotasPostergables: cotizacion.cuotasPostergables || 0,
-        permiteDoble: cotizacion.permiteDoble,
-        cuotasDoblesAnuales: cotizacion.cuotasDoblesAnuales || 0,
-        permiteCambioFecha: cotizacion.permiteCambioFecha,
-        notas: cotizacion.notas || '',
-        fechaValidez: cotizacion.fechaValidez || ''
-      });
-    } else {
-      setDatos(prev => ({ ...prev, contactoId }));
-    }
+    if (cotizacion) setDatos(prev => ({ ...prev, ...cotizacion }));
+    else setDatos(prev => ({ ...prev, contactoId }));
   }, [cotizacion, contactoId]);
 
-  // Calcular valores en tiempo real
-  const calculosEnVivo = useMemo(() => {
-    return cotizacionService.calcularTotales(
-      datos.precioInmueble,
-      datos.cuotaInicial,
-      datos.tasaInteresAnual,
-      datos.plazoMeses,
-      {
-        modalidadPago: datos.modalidadPago as any,
-        flexibleOverridesText: (datos as any).flexibleOverridesText,
-        escalonadoIncrementoMensual: (datos as any).escalonadoIncrementoMensual,
-        escalonadoPorcentaje: (datos as any).escalonadoPorcentaje,
-        escalonadoCadaMeses: (datos as any).escalonadoCadaMeses,
-        periodoGraciaTipo: (datos as any).periodoGraciaTipo,
-        periodoGraciaMeses: (datos as any).periodoGraciaMeses,
-        frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
-        cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
-        cuotaEspecialValor: datos.cuotaEspecialValor as any
-      }
-    );
-  }, [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses]);
-
-    // Cronograma de pagos
-    const cronogramaPagos = useMemo(() => {
-      return cotizacionService.calcularCronogramaPagos(
-        calculosEnVivo.montoFinanciar,
-        datos.tasaInteresAnual,
-        datos.plazoMeses,
-        {
-          frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
-          cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
-          cuotaEspecialValor: datos.cuotaEspecialValor as any
-        }
-      );
-    }, [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
+  const calculosEnVivo = useMemo(() => cotizacionService.calcularTotales(datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, {}), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses]);
+  const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, {}), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,423 +90,137 @@ export const FormularioCotizacion = ({
     try {
       await onGuardar(datos);
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error al guardar:', error);
-    } finally {
-      setGuardando(false);
-    }
+    } catch (error) { console.error('Error al guardar:', error); } 
+    finally { setGuardando(false); }
   };
 
-  const formatearMoneda = (valor: number) => {
-    return new Intl.NumberFormat('es-PE', {
-      style: 'currency',
-      currency: 'PEN',
-      minimumFractionDigits: 2
-    }).format(valor);
-  };
+  const formatearMoneda = (valor: number) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(valor);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full max-h-[98vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {cotizacion ? 'Editar Cotización' : 'Nueva Cotización'}
-          </DialogTitle>
-          <DialogDescription>
-            {nombreContacto && `Para: ${nombreContacto}`}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent style={{ width: '90%', maxWidth: '1400px', height: '800px', display: 'flex', padding: 0, borderRadius: '0.75rem' }}>
+        
+        {/* === COLUMNA IZQUIERDA: FORMULARIO (60%) === */}
+        <div style={{ width: '60%', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
+          <DialogHeader className="p-5 border-b">
+            <DialogTitle className="text-lg font-bold text-gray-800">
+              {cotizacion ? 'Editar Cotización' : 'Generar Nueva Cotización'}
+              {nombreContacto && <span className="text-sm font-normal text-gray-500 ml-2">/ {nombreContacto}</span>}
+            </DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Datos del Proyecto */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Datos del Inmueble</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="nombreProyecto">Nombre del Proyecto *</Label>
-                <Input
-                  id="nombreProyecto"
-                  value={datos.nombreProyecto}
-                  onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })}
-                  placeholder="Ej: Edificio Vista Mar"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="tipoInmueble">Tipo de Inmueble</Label>
-                <Input
-                  id="tipoInmueble"
-                  value={datos.tipoInmueble}
-                  onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })}
-                  placeholder="Ej: Departamento, Casa, Lote"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="descripcion">Descripción</Label>
-                <Input
-                  id="descripcion"
-                  value={datos.descripcion}
-                  onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })}
-                  placeholder="Ej: Dpto 301 - 3 dorm"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Datos Financieros */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Datos Financieros</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="precioInmueble">Precio del Inmueble *</Label>
-                <Input
-                  id="precioInmueble"
-                  type="number"
-                  step="0.01"
-                  value={datos.precioInmueble}
-                  onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })}
-                  placeholder="250000"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cuotaInicial">Cuota Inicial *</Label>
-                <Input
-                  id="cuotaInicial"
-                  type="number"
-                  step="0.01"
-                  value={datos.cuotaInicial}
-                  onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })}
-                  placeholder="50000"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del precio
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="plazoMeses">Plazo en Meses *</Label>
-                <Input
-                  id="plazoMeses"
-                  type="number"
-                  value={datos.plazoMeses}
-                  onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })}
-                  placeholder="120"
-                  min="12"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {(datos.plazoMeses / 12).toFixed(1)} años
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="tasaInteresAnual">TEA - Tasa Efectiva Anual (%) *</Label>
-                <Input
-                  id="tasaInteresAnual"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={datos.tasaInteresAnual}
-                  onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })}
-                  placeholder="0 (sin interés) o ej: 8.5"
-                  required
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Ingresa 0 para cotizaciones sin interés
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Tipo de Cuota */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Tipo de Cuota</h3>
-            
-            <div>
-              <Label htmlFor="tipoCuota">Tipo de Cuota *</Label>
-              <Select
-                value={datos.tipoCuota}
-                onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TIPOS_CUOTA_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Opciones Especiales */}
-            {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
-              <div className="space-y-3">
-                <div className="p-4 border rounded-lg bg-gray-50">
-                  <p className="text-sm font-medium">Opciones Flexibles</p>
-
-                  <div className="flex items-center space-x-2 mt-3">
-                    <Checkbox
-                      id="permitePostergar"
-                      checked={datos.permitePostergar}
-                      onCheckedChange={(checked) => 
-                        setDatos({ ...datos, permitePostergar: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="permitePostergar" className="text-sm font-normal">
-                      Permitir postergar pagos
-                    </Label>
-                  </div>
-                  {datos.permitePostergar && (
-                    <div className="ml-6 mt-2">
-                      <Label htmlFor="cuotasPostergables">Cuotas postergables por año</Label>
-                      <Input
-                        id="cuotasPostergables"
-                        type="number"
-                        min="0"
-                        max="12"
-                        value={datos.cuotasPostergables}
-                        onChange={(e) => setDatos({ ...datos, cuotasPostergables: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox
-                      id="permiteDoble"
-                      checked={datos.permiteDoble}
-                      onCheckedChange={(checked) => 
-                        setDatos({ ...datos, permiteDoble: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="permiteDoble" className="text-sm font-normal">
-                      Permitir cuotas dobles
-                    </Label>
-                  </div>
-                  {datos.permiteDoble && (
-                    <div className="ml-6 mt-2">
-                      <Label htmlFor="cuotasDoblesAnuales">Cuotas dobles permitidas por año</Label>
-                      <Input
-                        id="cuotasDoblesAnuales"
-                        type="number"
-                        min="0"
-                        max="12"
-                        value={datos.cuotasDoblesAnuales}
-                        onChange={(e) => setDatos({ ...datos, cuotasDoblesAnuales: parseInt(e.target.value) || 0 })}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox
-                      id="permiteCambioFecha"
-                      checked={datos.permiteCambioFecha}
-                      onCheckedChange={(checked) => 
-                        setDatos({ ...datos, permiteCambioFecha: checked as boolean })
-                      }
-                    />
-                    <Label htmlFor="permiteCambioFecha" className="text-sm font-normal">
-                      Permitir cambio de fecha de pago
-                    </Label>
-                  </div>
+          <div className="flex-1 p-6 space-y-5 overflow-y-hidden">
+            <form id="quote-form" onSubmit={handleSubmit} className="h-full flex flex-col space-y-4">
+              
+              <FormSection title="Datos del Inmueble">
+                <div className="col-span-2">
+                  <Label htmlFor="nombreProyecto" className="text-xs font-medium">Nombre del Proyecto *</Label>
+                  <IconInput id="nombreProyecto" icon={Building} value={datos.nombreProyecto} onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })} required />
                 </div>
+                <div>
+                  <Label htmlFor="tipoInmueble" className="text-xs font-medium">Tipo de Inmueble</Label>
+                  <IconInput id="tipoInmueble" icon={Info} value={datos.tipoInmueble} onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })} />
+                </div>
+                <div>
+                  <Label htmlFor="descripcion" className="text-xs font-medium">Descripción (Ej: N° 301)</Label>
+                  <IconInput id="descripcion" icon={FileText} value={datos.descripcion} onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })} />
+                </div>
+              </FormSection>
 
-                {datos.tipoCuota === 'FLEXIBLE_ESPECIAL' && (
-                  <div className="p-4 border rounded-lg bg-white">
-                    <h4 className="text-sm font-medium">Cuota Flexible Especial</h4>
-                    <div className="grid grid-cols-1 gap-3 mt-3">
-                      <div>
-                        <Label htmlFor="frecuenciaCuotaEspecial">Frecuencia</Label>
-                        <Select
-                          value={datos.frecuenciaCuotaEspecial as any || ''}
-                          onValueChange={(value) => setDatos({ ...datos, frecuenciaCuotaEspecial: value as any })}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="TRIMESTRAL">Trimestral (cada 3 meses)</SelectItem>
-                            <SelectItem value="SEMESTRAL">Semestral (cada 6 meses)</SelectItem>
-                            <SelectItem value="ANUAL">Anual (cada 12 meses)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+              <FormSection title="Condiciones Financieras">
+                <div>
+                  <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
+                  <IconInput id="precioInmueble" icon={DollarSign} type="number" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
+                </div>
+                <div>
+                  <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
+                  <IconInput id="cuotaInicial" icon={DollarSign} type="number" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
+                  <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
+                </div>
+                <div>
+                  <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
+                  <IconInput id="plazoMeses" icon={Calendar} type="number" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
+                  <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
+                </div>
+                <div>
+                  <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
+                  <IconInput id="tasaInteresAnual" icon={Percent} type="number" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
+                </div>
+              </FormSection>
 
-                      <div>
-                        <Label htmlFor="cuotaEspecialTipo">Tipo de monto</Label>
-                        <Select
-                          value={datos.cuotaEspecialTipo as any || ''}
-                          onValueChange={(value) => setDatos({ ...datos, cuotaEspecialTipo: value as any })}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FIJO">Fijo (+ monto)</SelectItem>
-                            <SelectItem value="PORCENTAJE">Porcentaje (sobre cuota)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="cuotaEspecialValor">Valor</Label>
-                        <Input
-                          id="cuotaEspecialValor"
-                          type="number"
-                          step="0.01"
-                          className="w-full"
-                          value={(datos.cuotaEspecialValor as any) ?? ''}
-                          onChange={(e) => setDatos({ ...datos, cuotaEspecialValor: parseFloat(e.target.value) || 0 })}
-                          placeholder="Ej: 500 o 150"
-                        />
-                        <p className="text-xs text-muted-foreground">Si eliges % escribe 150 para 150% (cuota x1.5)</p>
-                      </div>
-                    </div>
+              <FormSection title="Modalidad y Validez">
+                 <div>
+                    <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
+                    <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
                   </div>
-                )}
-              </div>
-            )}
+                  <div>
+                    <Label htmlFor="fechaValidez" className="text-xs font-medium">Válido Hasta</Label>
+                    <Input id="fechaValidez" type="date" value={datos.fechaValidez} onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })} className="text-sm h-9" />
+                  </div>
+              </FormSection>
+
+            </form>
           </div>
 
-          <Separator />
+          <div className="p-4 border-t mt-auto flex justify-between items-center">
+            <div>
+              <Button variant="outline" size="sm" className="text-xs mr-2"><FileDown className="h-3.5 w-3.5 mr-1.5" />Exportar PDF</Button>
+              <Button variant="outline" size="sm" className="text-xs"><FileDown className="h-3.5 w-3.5 mr-1.5" />Exportar Excel</Button>
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={guardando}>Cancelar</Button>
+              <Button type="submit" form="quote-form" disabled={guardando} className="font-semibold">{guardando ? 'Guardando...' : 'Crear Cotización'}</Button>
+            </div>
+          </div>
+        </div>
 
-          {/* Cálculos en Vivo */}
-          <div className="p-4 bg-blue-50 rounded-lg space-y-2">
-            <h4 className="font-semibold text-sm text-blue-900">Resumen Financiero</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-gray-600">Monto a Financiar:</span>
-                <p className="font-semibold">{formatearMoneda(calculosEnVivo.montoFinanciar)}</p>
+        {/* === COLUMNA DERECHA: RESUMEN Y CRONOGRAMA (40%) === */}
+        <div style={{ width: '40%', display: 'flex', flexDirection: 'column', background: '#ffffff' }}>
+          <div className="p-6 border-b">
+            <h3 className="text-base font-bold text-gray-900">Resumen de la Propuesta</h3>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <p className="text-xs font-medium text-gray-500">Monto a Financiar</p>
+                <p className="font-bold text-lg text-gray-800">{formatearMoneda(calculosEnVivo.montoFinanciar)}</p>
               </div>
-              <div>
-                <span className="text-gray-600">Cuota Mensual:</span>
-                <p className="font-semibold text-lg text-blue-600">
-                  {formatearMoneda(calculosEnVivo.cuotaMensual)}
-                </p>
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <p className="text-xs font-medium text-gray-500">Total de Intereses</p>
+                <p className="font-bold text-lg text-red-600">{formatearMoneda(calculosEnVivo.totalIntereses)}</p>
               </div>
-              <div>
-                <span className="text-gray-600">Total Intereses:</span>
-                <p className="font-semibold">{formatearMoneda(calculosEnVivo.totalIntereses)}</p>
-              </div>
-              <div>
-                <span className="text-gray-600">Total a Pagar:</span>
-                <p className="font-semibold">{formatearMoneda(calculosEnVivo.totalPagar)}</p>
+              <div className="col-span-2 bg-blue-600 text-white p-4 rounded-lg text-center">
+                <p className="text-sm font-semibold uppercase tracking-wider">Cuota Mensual</p>
+                <p className="font-bold text-3xl">{formatearMoneda(calculosEnVivo.cuotaMensual)}</p>
               </div>
             </div>
-            {/* Tabla de pagos mensuales */}
-            <div className="mt-6">
-              <h4 className="font-semibold text-sm text-blue-900 mb-2">Cronograma de Pagos</h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs border rounded">
-                  <thead className="bg-blue-100">
-                    <tr>
-                      <th className="px-2 py-1 border">Mes</th>
-                      <th className="px-2 py-1 border">Cuota</th>
-                      <th className="px-2 py-1 border">Especial</th>
-                      <th className="px-2 py-1 border">Interés</th>
-                      <th className="px-2 py-1 border">Capital</th>
-                      <th className="px-2 py-1 border">Saldo</th>
+          </div>
+          <div className="flex-1 flex flex-col min-h-0">
+            <h3 className="px-6 pt-4 pb-2 text-base font-bold text-gray-900">Cronograma de Pagos</h3>
+            <div className="overflow-y-auto px-6 pb-6 flex-1">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-white z-10">
+                  <tr className="border-b">
+                    <th className="py-2 font-semibold text-left text-gray-500">Mes</th>
+                    <th className="py-2 font-semibold text-right text-gray-500">Cuota</th>
+                    <th className="py-2 font-semibold text-right text-gray-500">Interés</th>
+                    <th className="py-2 font-semibold text-right text-gray-500">Capital</th>
+                    <th className="py-2 font-semibold text-right text-gray-500">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cronogramaPagos.map((pago) => (
+                    <tr key={pago.mes} className="border-b last:border-b-0 hover:bg-gray-50">
+                      <td className="py-2 text-left text-gray-600">{pago.mes}</td>
+                      <td className="py-2 text-right font-semibold text-gray-800">{formatearMoneda(pago.cuota)}</td>
+                      <td className="py-2 text-right text-red-500">{formatearMoneda(pago.interes)}</td>
+                      <td className="py-2 text-right text-green-600">{formatearMoneda(pago.capital)}</td>
+                      <td className="py-2 text-right font-bold text-gray-900">{formatearMoneda(pago.saldo)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {cronogramaPagos.map((pago) => (
-                      <tr key={pago.mes} className={`odd:bg-white even:bg-blue-50 ${pago.esCuotaEspecial ? 'bg-yellow-50 font-medium' : ''}`}>
-                        <td className="px-2 py-1 border text-center">{pago.mes}</td>
-                        <td className="px-2 py-1 border text-right">{formatearMoneda(pago.cuota)}</td>
-                        <td className="px-2 py-1 border text-right">
-                          {pago.esCuotaEspecial ? (
-                            <div className="text-right">
-                              {(() => {
-                                const cuotaBase = pago.cuotaBase ?? 0;
-                                const inferredApplied = Math.max(0, Math.round((pago.cuota - cuotaBase) * 100) / 100);
-                                const applied = (pago.pagoEspecialAplicado ?? pago.pagoEspecial ?? 0) || inferredApplied;
-                                return <div>Aplicado: {formatearMoneda(applied)}</div>;
-                              })()}
-                              {pago.pagoEspecialNoUtilizado ? <div className="text-xs text-muted-foreground">No usado: {formatearMoneda(pago.pagoEspecialNoUtilizado)}</div> : null}
-                            </div>
-                          ) : '-'}
-                        </td>
-                        <td className="px-2 py-1 border text-right">{formatearMoneda(pago.interes)}</td>
-                        <td className="px-2 py-1 border text-right">{formatearMoneda(pago.capital)}</td>
-                        <td className="px-2 py-1 border text-right">{formatearMoneda(pago.saldo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {/* Totales por tipo de cuota */}
-            {cronogramaPagos.length > 0 && (
-              <div className="mt-4 p-3 bg-white border rounded text-sm">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-gray-600">Total en cuotas normales:</span>
-                    <p className="font-semibold">{formatearMoneda(cronogramaPagos.reduce((s, p) => s + (p.esCuotaEspecial ? 0 : p.cuota), 0))}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Total en cuotas especiales (aplicado):</span>
-                    <p className="font-semibold">{formatearMoneda(cronogramaPagos.reduce((s, p) => s + (p.esCuotaEspecial ? (p.pagoEspecialAplicado ?? p.pagoEspecial ?? 0) : 0), 0))}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Ahorro / Reducción plazo:</span>
-                    <p className="font-semibold">{cronogramaPagos[cronogramaPagos.length -1].mes < datos.plazoMeses ? `${datos.plazoMeses - cronogramaPagos[cronogramaPagos.length -1].mes} meses` : '-'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Notas y Validez */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="notas">Notas Adicionales</Label>
-              <Textarea
-                id="notas"
-                value={datos.notas}
-                onChange={(e) => setDatos({ ...datos, notas: e.target.value })}
-                placeholder="Notas internas sobre la cotización..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="fechaValidez">Válido Hasta</Label>
-              <Input
-                id="fechaValidez"
-                type="date"
-                value={datos.fechaValidez}
-                onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })}
-              />
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={guardando}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={guardando}>
-              {guardando ? 'Guardando...' : cotizacion ? 'Actualizar' : 'Crear Cotización'}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

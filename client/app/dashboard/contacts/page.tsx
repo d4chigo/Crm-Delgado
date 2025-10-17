@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react"
 import { useContactos } from "@/hooks/useContactos"
-import { FormularioContacto } from "@/components/features/contacts/FormularioContacto"
+import { FormularioContacto } from "@/components/features/contacts/FormularioContacto";
+import { ContactCard } from "@/components/features/contacts/ContactCard";
 import { DialogoEditarContacto } from "@/components/features/contacts/DialogoEditarContacto"
 import { DialogoEliminarContacto } from "@/components/features/contacts/DialogoEliminarContacto"
-import { DialogoImportarGoogle } from "@/components/features/contacts/DialogoImportarGoogle"
-import googleAuthService from "@/services/api/google-auth.service"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DialogoImportarGoogle } from "@/components/features/contacts/DialogoImportarGoogle";
+import { PageHeader } from "@/components/layout";
+import googleAuthService from "@/services/api/google-auth.service";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { StatCard } from "@/components/ui/stat-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -194,19 +197,13 @@ export default function PaginaContactos() {
 
   return (
     <div className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Contactos</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona tus contactos y conviértelos en leads
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <DialogoImportarGoogle onImportar={iniciarImportacionGoogle} />
-          <FormularioContacto onCrear={crearContacto} />
-        </div>
-      </div>
+      <PageHeader
+        title="Contactos"
+        description="Gestiona tus contactos y conviértelos en leads"
+      >
+        <DialogoImportarGoogle onImportar={iniciarImportacionGoogle} />
+        <FormularioContacto onCrear={crearContacto} />
+      </PageHeader>
 
       {/* Resultado de importación */}
       {resultadoImportacion && (
@@ -247,27 +244,20 @@ export default function PaginaContactos() {
       {/* Estadísticas */}
       {estadisticas && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Registros</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{estadisticas.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">Todos los contactos registrados</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Solo Contactos</CardTitle>
-              <Users className="h-4 w-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{estadisticas.totalContactos}</div>
-              <p className="text-xs text-muted-foreground mt-1">Sin convertir a leads</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total de Registros"
+            value={estadisticas.total}
+            description="Todos los contactos registrados"
+            icon={Users}
+          />
+          <StatCard
+            title="Solo Contactos"
+            value={estadisticas.totalContactos}
+            description="Sin convertir a leads"
+            icon={Users}
+            iconColor="text-blue-500"
+            valueColor="text-blue-600"
+          />
         </div>
       )}
 
@@ -349,99 +339,15 @@ export default function PaginaContactos() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {contactosFiltrados.map((contacto) => (
-              <Card key={contacto.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id={`contacto-${contacto.id}`}
-                      checked={contactosSeleccionados.includes(contacto.id)}
-                      onCheckedChange={() => handleSeleccionarContacto(contacto.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 space-y-2">
-                      <CardTitle className="text-lg">
-                        {contacto.nombre} {contacto.apellido}
-                      </CardTitle>
-                      
-                      {/* Etiquetas */}
-                      {contacto.etiquetas && contacto.etiquetas.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {contacto.etiquetas.slice(0, 3).map((et) => (
-                            <Badge
-                              key={et.etiqueta.id}
-                              variant="secondary"
-                              style={{ backgroundColor: et.etiqueta.color }}
-                              className="text-white text-xs py-0 px-2"
-                            >
-                              {et.etiqueta.icono && <span className="mr-1">{et.etiqueta.icono}</span>}
-                              {et.etiqueta.nombre}
-                            </Badge>
-                          ))}
-                          {contacto.etiquetas.length > 3 && (
-                            <Badge variant="outline" className="text-xs py-0 px-2">
-                              +{contacto.etiquetas.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                      
-                      <p className="text-sm text-muted-foreground">{contacto.correo}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    {contacto.telefono && (
-                      <p className="text-muted-foreground">📞 {contacto.telefono}</p>
-                    )}
-                    {contacto.ciudad && (
-                      <p className="text-muted-foreground">📍 {contacto.ciudad}</p>
-                    )}
-                    {contacto.edad && (
-                      <p className="text-muted-foreground">🎂 {contacto.edad} años</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                        {contacto.tipo}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-2 mt-4">
-                      {/* Botón convertir a lead */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleConvertirALead(contacto)}
-                        className="w-full bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] border-[#FCBA00]"
-                      >
-                        <ArrowRightCircle className="w-3 h-3 mr-1" />
-                        Convertir a Lead
-                      </Button>
-                      
-                      {/* Botones editar/eliminar */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setContactoEditando(contacto)}
-                          className="flex-1"
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setContactoEliminando(contacto)}
-                          className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Eliminar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ContactCard
+                key={contacto.id}
+                contacto={contacto}
+                isSelected={contactosSeleccionados.includes(contacto.id)}
+                onSeleccionar={handleSeleccionarContacto}
+                onConvertir={handleConvertirALead}
+                onEditar={setContactoEditando}
+                onEliminar={setContactoEliminando}
+              />
             ))}
           </div>
 

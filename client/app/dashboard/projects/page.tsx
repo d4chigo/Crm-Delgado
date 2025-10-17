@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, Search, Filter, Tag, Loader2 } from "lucide-react"
+import { Plus, Search, Filter, Tag, Loader2, Building2, CheckCircle2, Clock, DollarSign, Wrench } from "lucide-react";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
 import { useProyectos } from "@/hooks/useProyectos"
 import { TarjetaProyecto } from "@/components/features/projects/TarjetaProyecto"
 import { DialogoProyecto } from "@/components/features/projects/DialogoProyecto"
@@ -108,13 +111,10 @@ export default function PaginaProyectos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Proyectos</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestiona tus proyectos inmobiliarios
-          </p>
-        </div>
+      <PageHeader
+        title="Proyectos"
+        description="Gestiona tus proyectos inmobiliarios"
+      >
         <Button
           onClick={() => handleAbrirDialogo()}
           className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
@@ -122,39 +122,50 @@ export default function PaginaProyectos() {
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Proyecto
         </Button>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg p-4 border shadow-sm">
-          <p className="text-sm text-muted-foreground">Total</p>
-          <p className="text-2xl font-bold">{estadisticas.total}</p>
-        </div>
-        <div className="bg-green-50 rounded-lg p-4 border border-green-200 shadow-sm">
-          <p className="text-sm text-green-700">Disponibles</p>
-          <p className="text-2xl font-bold text-green-800">{estadisticas.disponibles}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 shadow-sm">
-          <p className="text-sm text-yellow-700">Reservados</p>
-          <p className="text-2xl font-bold text-yellow-800">{estadisticas.reservados}</p>
-        </div>
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 shadow-sm">
-          <p className="text-sm text-blue-700">Vendidos</p>
-          <p className="text-2xl font-bold text-blue-800">{estadisticas.vendidos}</p>
-        </div>
-        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200 shadow-sm">
-          <p className="text-sm text-orange-700">En Construcción</p>
-          <p className="text-2xl font-bold text-orange-800">{estadisticas.construccion}</p>
-        </div>
+        <StatCard
+          title="Total"
+          value={estadisticas.total}
+          icon={Building2}
+        />
+        <StatCard
+          title="Disponibles"
+          value={estadisticas.disponibles}
+          icon={CheckCircle2}
+          iconColor="text-green-700"
+          valueColor="text-green-800"
+        />
+        <StatCard
+          title="Reservados"
+          value={estadisticas.reservados}
+          icon={Clock}
+          iconColor="text-yellow-700"
+          valueColor="text-yellow-800"
+        />
+        <StatCard
+          title="Vendidos"
+          value={estadisticas.vendidos}
+          icon={DollarSign}
+          iconColor="text-blue-700"
+          valueColor="text-blue-800"
+        />
+        <StatCard
+          title="En Construcción"
+          value={estadisticas.construccion}
+          icon={Wrench}
+          iconColor="text-orange-700"
+          valueColor="text-orange-800"
+        />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+        <div className="flex-1">
+          <SearchInput
             placeholder="Buscar proyectos..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-10"
           />
         </div>
 

@@ -168,7 +168,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
           Nuevo Contacto
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Agregar Nuevo Contacto</DialogTitle>
           <DialogDescription>

@@ -402,7 +402,7 @@ export function ProyectosAsociados({ clienteId }: ProyectosAsociadosProps) {
           }
         }}
       >
-        <AlertDialogContent className="max-w-2xl">
+        <AlertDialogContent size="lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
