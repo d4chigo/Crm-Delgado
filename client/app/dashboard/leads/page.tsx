@@ -226,6 +226,19 @@ export default function PaginaLeads() {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
+  const handleWhatsApp = (telefono: string) => {
+    if (telefono) {
+      window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank');
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre}`;
+    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    window.open(calendarUrl, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -339,6 +352,8 @@ export default function PaginaLeads() {
                   onCotizar={handleAbrirCotizaciones}
                   onConvertir={handleConvertirCliente}
                   onEditar={handleEditar}
+                  onWhatsApp={handleWhatsApp}
+                  onScheduleMeeting={handleScheduleMeeting}
                 />
               ))}
             </div>
@@ -462,6 +477,8 @@ export default function PaginaLeads() {
                   onVerDetalles={handleVerDetalles}
                   onCotizar={handleAbrirCotizaciones}
                   onEditar={handleEditar}
+                  onWhatsApp={handleWhatsApp}
+                  onScheduleMeeting={handleScheduleMeeting}
                   onAgregarOportunidad={() => {
                     setClienteParaOportunidad(cliente)
                     setDialogoOportunidadAbierto(true)

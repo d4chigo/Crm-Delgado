@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface ClientCardProps {
@@ -12,6 +12,8 @@ interface ClientCardProps {
   onCotizar: (cliente: Contacto) => void
   onAgregarOportunidad: (cliente: Contacto) => void
   onEditar: (cliente: Contacto) => void
+  onWhatsApp: (telefono: string) => void
+  onScheduleMeeting: (nombre: string, correo: string) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -38,7 +40,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar }: ClientCardProps) {
+export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting }: ClientCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow border-green-200">
       <CardHeader>
@@ -142,6 +144,10 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
           </div>
 
           {/* Botones de acción para clientes */}
+          <div className="grid grid-cols-2 gap-2 pt-2">
+             <Button variant="outline" size="sm" onClick={() => onWhatsApp(cliente.telefono)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+             <Button variant="outline" size="sm" onClick={() => onScheduleMeeting(cliente.nombre, cliente.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+          </div>
           <div className="grid grid-cols-3 gap-2 pt-2">
             <Button
               variant="outline"

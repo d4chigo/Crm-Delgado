@@ -145,6 +145,19 @@ export default function PaginaPipeline() {
     }
   }
 
+  const handleWhatsApp = (telefono: string) => {
+    if (telefono) {
+      window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank');
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre}`;
+    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    window.open(calendarUrl, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -421,6 +434,10 @@ export default function PaginaPipeline() {
                     {selectedDeal.cliente?.telefono || 'Sin teléfono'}
                   </p>
                 </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
               {/* Property Details */}
