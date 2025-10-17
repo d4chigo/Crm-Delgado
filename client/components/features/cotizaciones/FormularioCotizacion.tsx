@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { 
   CrearCotizacionDTO, 
   Cotizacion,
@@ -29,9 +30,9 @@ import { cotizacionService } from '@/services/api/cotizacion.service';
 
 // Enhanced UI components for this specific form
 const FormSection = ({ title, children }) => (
-  <section className="space-y-3">
-    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
-    <div className="grid grid-cols-2 gap-x-6 gap-y-4 p-4 border rounded-lg bg-white">
+  <section>
+    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{title}</h3>
+    <div className="p-4 border rounded-lg bg-white space-y-4">
       {children}
     </div>
   </section>
@@ -72,6 +73,14 @@ export const FormularioCotizacion = ({
     plazoMeses: 240,
     tipoCuota: 'FIJA',
     tasaInteresAnual: 8.0,
+    permitePostergar: false,
+    cuotasPostergables: 0,
+    permiteDoble: false,
+    cuotasDoblesAnuales: 0,
+    permiteCambioFecha: false,
+    frecuenciaCuotaEspecial: undefined,
+    cuotaEspecialTipo: undefined,
+    cuotaEspecialValor: undefined,
     notas: '',
     fechaValidez: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   });
@@ -81,8 +90,18 @@ export const FormularioCotizacion = ({
     else setDatos(prev => ({ ...prev, contactoId }));
   }, [cotizacion, contactoId]);
 
-  const calculosEnVivo = useMemo(() => cotizacionService.calcularTotales(datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, {}), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses]);
-  const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, {}), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses]);
+  const calculosEnVivo = useMemo(() => cotizacionService.calcularTotales(datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, { 
+    modalidadPago: datos.tipoCuota as any,
+    frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
+    cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
+    cuotaEspecialValor: datos.cuotaEspecialValor as any
+  }), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
+  
+  const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, { 
+    frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
+    cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
+    cuotaEspecialValor: datos.cuotaEspecialValor as any
+  }), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,54 +128,102 @@ export const FormularioCotizacion = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 p-6 space-y-5 overflow-y-hidden">
-            <form id="quote-form" onSubmit={handleSubmit} className="h-full flex flex-col space-y-4">
+          <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+            <form id="quote-form" onSubmit={handleSubmit} className="space-y-4">
               
               <FormSection title="Datos del Inmueble">
-                <div className="col-span-2">
-                  <Label htmlFor="nombreProyecto" className="text-xs font-medium">Nombre del Proyecto *</Label>
-                  <IconInput id="nombreProyecto" icon={Building} value={datos.nombreProyecto} onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })} required />
-                </div>
-                <div>
-                  <Label htmlFor="tipoInmueble" className="text-xs font-medium">Tipo de Inmueble</Label>
-                  <IconInput id="tipoInmueble" icon={Info} value={datos.tipoInmueble} onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })} />
-                </div>
-                <div>
-                  <Label htmlFor="descripcion" className="text-xs font-medium">Descripción (Ej: N° 301)</Label>
-                  <IconInput id="descripcion" icon={FileText} value={datos.descripcion} onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })} />
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div className="col-span-2">
+                        <Label htmlFor="nombreProyecto" className="text-xs font-medium">Nombre del Proyecto *</Label>
+                        <IconInput id="nombreProyecto" icon={Building} value={datos.nombreProyecto} onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })} required />
+                    </div>
+                    <div>
+                        <Label htmlFor="tipoInmueble" className="text-xs font-medium">Tipo de Inmueble</Label>
+                        <IconInput id="tipoInmueble" icon={Info} value={datos.tipoInmueble} onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })} />
+                    </div>
+                    <div>
+                        <Label htmlFor="descripcion" className="text-xs font-medium">Descripción (Ej: N° 301)</Label>
+                        <IconInput id="descripcion" icon={FileText} value={datos.descripcion} onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })} />
+                    </div>
                 </div>
               </FormSection>
 
               <FormSection title="Condiciones Financieras">
-                <div>
-                  <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
-                  <IconInput id="precioInmueble" icon={DollarSign} type="number" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
-                </div>
-                <div>
-                  <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
-                  <IconInput id="cuotaInicial" icon={DollarSign} type="number" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
-                  <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
-                </div>
-                <div>
-                  <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
-                  <IconInput id="plazoMeses" icon={Calendar} type="number" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
-                  <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
-                </div>
-                <div>
-                  <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
-                  <IconInput id="tasaInteresAnual" icon={Percent} type="number" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                        <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
+                        <IconInput id="precioInmueble" icon={DollarSign} type="number" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
+                    </div>
+                    <div>
+                        <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
+                        <IconInput id="cuotaInicial" icon={DollarSign} type="number" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
+                        <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
+                    </div>
+                    <div>
+                        <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
+                        <IconInput id="plazoMeses" icon={Calendar} type="number" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
+                        <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
+                    </div>
+                    <div>
+                        <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
+                        <IconInput id="tasaInteresAnual" icon={Percent} type="number" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
+                    </div>
                 </div>
               </FormSection>
 
-              <FormSection title="Modalidad y Validez">
-                 <div>
-                    <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
-                    <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="fechaValidez" className="text-xs font-medium">Válido Hasta</Label>
-                    <Input id="fechaValidez" type="date" value={datos.fechaValidez} onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })} className="text-sm h-9" />
-                  </div>
+              <FormSection title="Modalidad y Beneficios">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                        <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
+                        <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
+                    </div>
+                    <div>
+                        <Label htmlFor="fechaValidez" className="text-xs font-medium">Válido Hasta</Label>
+                        <Input id="fechaValidez" type="date" value={datos.fechaValidez} onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })} className="text-sm h-9" />
+                    </div>
+                </div>
+                
+                {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
+                    <div className="pt-4 mt-4 border-t">
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Beneficios Flexibles</h4>
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="permitePostergar" checked={datos.permitePostergar} onCheckedChange={(c) => setDatos({...datos, permitePostergar: c as boolean})} /><Label htmlFor="permitePostergar" className="text-sm font-normal">Permitir postergar pagos</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="permiteDoble" checked={datos.permiteDoble} onCheckedChange={(c) => setDatos({...datos, permiteDoble: c as boolean})} /><Label htmlFor="permiteDoble" className="text-sm font-normal">Permitir cuotas dobles</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="permiteCambioFecha" checked={datos.permiteCambioFecha} onCheckedChange={(c) => setDatos({...datos, permiteCambioFecha: c as boolean})} /><Label htmlFor="permiteCambioFecha" className="text-sm font-normal">Permitir cambio de fecha de pago</Label>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {datos.tipoCuota === 'FLEXIBLE_ESPECIAL' && (
+                    <div className="pt-4 mt-4 border-t">
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Especial</h4>
+                        <div className="grid grid-cols-3 gap-x-4">
+                            <div>
+                                <Label className="text-xs">Frecuencia</Label>
+                                <Select value={datos.frecuenciaCuotaEspecial as any || ''} onValueChange={(v) => setDatos({ ...datos, frecuenciaCuotaEspecial: v as any})}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="TRIMESTRAL">Trimestral</SelectItem><SelectItem value="SEMESTRAL">Semestral</SelectItem><SelectItem value="ANUAL">Anual</SelectItem></SelectContent></Select>
+                            </div>
+                            <div>
+                                <Label className="text-xs">Tipo</Label>
+                                <Select value={datos.cuotaEspecialTipo as any || ''} onValueChange={(v) => setDatos({ ...datos, cuotaEspecialTipo: v as any})}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="FIJO">Monto Fijo</SelectItem><SelectItem value="PORCENTAJE">Porcentaje</SelectItem></SelectContent></Select>
+                            </div>
+                            <div>
+                                <Label className="text-xs">Valor</Label>
+                                <Input type="number" className="h-9 text-sm" value={(datos.cuotaEspecialValor as any) ?? ''} onChange={(e) => setDatos({ ...datos, cuotaEspecialValor: parseFloat(e.target.value) || 0 })} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                 <div className="pt-4 mt-4 border-t">
+                    <Label htmlFor="notas" className="text-xs font-medium">Notas Adicionales</Label>
+                    <Textarea id="notas" value={datos.notas} onChange={(e) => setDatos({ ...datos, notas: e.target.value })} placeholder="Condiciones especiales, acuerdos, etc." rows={2} className="text-sm" />
+                </div>
               </FormSection>
 
             </form>
