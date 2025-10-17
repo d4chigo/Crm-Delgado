@@ -338,6 +338,7 @@ export default function PaginaLeads() {
                   onVerDetalles={handleVerDetalles}
                   onCotizar={handleAbrirCotizaciones}
                   onConvertir={handleConvertirCliente}
+                  onEditar={handleEditar}
                 />
               ))}
             </div>
@@ -460,6 +461,7 @@ export default function PaginaLeads() {
                   cliente={cliente}
                   onVerDetalles={handleVerDetalles}
                   onCotizar={handleAbrirCotizaciones}
+                  onEditar={handleEditar}
                   onAgregarOportunidad={() => {
                     setClienteParaOportunidad(cliente)
                     setDialogoOportunidadAbierto(true)
@@ -569,6 +571,7 @@ export default function PaginaLeads() {
               contactoId={contactoCotizaciones.id}
               nombreContacto={`${contactoCotizaciones.nombre} ${contactoCotizaciones.apellido}`}
               tipoContacto={contactoCotizaciones.tipo as 'LEAD' | 'CLIENTE'}
+              abrirFormularioPorDefecto={true}
             />
           )}
         </DialogContent>

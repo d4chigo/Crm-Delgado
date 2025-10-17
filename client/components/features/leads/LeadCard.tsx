@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin } from "lucide-react"
+import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface LeadCardProps {
@@ -12,6 +12,7 @@ interface LeadCardProps {
   onVerDetalles: (lead: Contacto) => void
   onCotizar: (lead: Contacto) => void
   onConvertir: (id: string) => void
+  onEditar: (lead: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -38,7 +39,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir }: LeadCardProps) {
+export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar }: LeadCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -142,12 +143,11 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
           </div>
 
           {/* Botones de acción */}
-          <div className="flex gap-2 pt-2">
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onVerDetalles(lead)}
-              className="flex-1"
             >
               <Eye className="h-4 w-4 mr-1" />
               Ver
@@ -155,8 +155,16 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
             <Button
               variant="outline"
               size="sm"
+              onClick={() => onEditar(lead)}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onCotizar(lead)}
-              className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+              className="col-span-2 border-blue-300 text-blue-700 hover:bg-blue-50"
             >
               <FileText className="h-4 w-4 mr-1" />
               Cotizar
@@ -165,14 +173,14 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
               size="sm"
               onClick={() => onConvertir(lead.id)}
               disabled={isConverting}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              className="col-span-2 bg-green-600 hover:bg-green-700 text-white"
             >
               {isConverting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
                   <ArrowRight className="h-4 w-4 mr-1" />
-                  Cliente
+                  Convertir a Cliente
                 </>
               )}
             </Button>

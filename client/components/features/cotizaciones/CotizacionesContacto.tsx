@@ -17,12 +17,14 @@ interface CotizacionesContactoProps {
   contactoId: string;
   nombreContacto: string;
   tipoContacto?: 'LEAD' | 'CLIENTE';
+  abrirFormularioPorDefecto?: boolean;
 }
 
 export const CotizacionesContacto = ({
   contactoId,
   nombreContacto,
-  tipoContacto
+  tipoContacto,
+  abrirFormularioPorDefecto = false
 }: CotizacionesContactoProps) => {
   const {
     cotizaciones,
@@ -48,6 +50,13 @@ export const CotizacionesContacto = ({
       cargarPorContacto(contactoId);
     }
   }, [contactoId, cargarPorContacto]);
+
+  // Abrir formulario por defecto si se indica
+  useEffect(() => {
+    if (abrirFormularioPorDefecto) {
+      handleNueva();
+    }
+  }, [abrirFormularioPorDefecto]);
 
   const handleNueva = () => {
     setCotizacionEditando(null);

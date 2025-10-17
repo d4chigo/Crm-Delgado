@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface ClientCardProps {
@@ -11,6 +11,7 @@ interface ClientCardProps {
   onVerDetalles: (cliente: Contacto) => void
   onCotizar: (cliente: Contacto) => void
   onAgregarOportunidad: (cliente: Contacto) => void
+  onEditar: (cliente: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -37,7 +38,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad }: ClientCardProps) {
+export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar }: ClientCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow border-green-200">
       <CardHeader>
@@ -141,12 +142,11 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
           </div>
 
           {/* Botones de acción para clientes */}
-          <div className="flex gap-2 pt-2">
+          <div className="grid grid-cols-3 gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onVerDetalles(cliente)}
-              className="flex-1"
             >
               <Eye className="h-4 w-4 mr-1" />
               Ver
@@ -154,8 +154,16 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
             <Button
               variant="outline"
               size="sm"
+              onClick={() => onEditar(cliente)}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Editar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onCotizar(cliente)}
-              className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
             >
               <FileText className="h-4 w-4 mr-1" />
               Cotizar
