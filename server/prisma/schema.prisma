@@ -275,6 +275,7 @@ model Cotizacion {
   permiteDoble          Boolean           @default(false)
   cuotasDoblesAnuales   Int?              // Cuántas cuotas dobles se pueden hacer al año
   permiteCambioFecha    Boolean           @default(false)
+  montoCuotaManual      Decimal?          @db.Decimal(12, 2)
   
   // Cálculos
   cuotaMensualEstimada  Decimal           @db.Decimal(12, 2)

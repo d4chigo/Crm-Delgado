@@ -50,37 +50,49 @@ class AuthService {
    * Cerrar sesión
    */
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
   }
 
   /**
    * Guardar token en localStorage
    */
   private guardarToken(token: string): void {
-    localStorage.setItem(TOKEN_KEY, token);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
   }
 
   /**
    * Guardar usuario en localStorage
    */
   private guardarUsuario(usuario: Usuario): void {
-    localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+    }
   }
 
   /**
    * Obtener token guardado
    */
   obtenerToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return null;
   }
 
   /**
    * Obtener usuario guardado
    */
   obtenerUsuario(): Usuario | null {
-    const userData = localStorage.getItem(USER_KEY);
-    return userData ? JSON.parse(userData) : null;
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem(USER_KEY);
+      return userData ? JSON.parse(userData) : null;
+    }
+    return null;
   }
 
   /**

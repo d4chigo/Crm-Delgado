@@ -1,5 +1,5 @@
 // Configuración base de la API
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000/api';
 
 // Tipos de respuesta del backend
 interface RespuestaExito<T> {
@@ -19,12 +19,12 @@ type RespuestaAPI<T> = RespuestaExito<T> | RespuestaError;
 
 // Función para cerrar sesión y redirigir al login
 function cerrarSesionYRedirigir() {
-  // Limpiar localStorage
-  localStorage.removeItem('crm_token');
-  localStorage.removeItem('crm_user');
-  
-  // Redirigir al login
   if (typeof window !== 'undefined') {
+    // Limpiar localStorage
+    localStorage.removeItem('crm_token');
+    localStorage.removeItem('crm_user');
+    
+    // Redirigir al login
     window.location.href = '/login';
   }
 }

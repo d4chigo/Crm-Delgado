@@ -128,34 +128,27 @@ export default function PaginaPipeline() {
     return "text-red-600 bg-red-50"
   }
 
-  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
-    const exito = await moverOportunidad(oportunidadId, nuevaEtapa)
-    
-    if (exito) {
-      toast({
-        title: "Oportunidad movida",
-        description: `La oportunidad se movió a ${ETAPAS_PIPELINE.find(e => e.id === nuevaEtapa)?.nombre}`,
-      })
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo mover la oportunidad",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleWhatsApp = (telefono: string) => {
+  const handleWhatsApp = (telefono: string, nombre: string) => {
     if (telefono) {
-      window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank');
+      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
+      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      if (window.electron) {
+        window.electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
     }
   };
 
   const handleScheduleMeeting = (nombre: string, correo: string) => {
     const asunto = `Reunión con ${nombre}`;
     const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
-    window.open(calendarUrl, '_blank');
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    if (window.electron) {
+      window.electron.shell.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   return (
@@ -436,7 +429,7 @@ export default function PaginaPipeline() {
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
                 <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 

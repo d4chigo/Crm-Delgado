@@ -32,6 +32,7 @@ export interface CrearCotizacionDTO {
   frecuenciaCuotaEspecial?: 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   cuotaEspecialTipo?: 'FIJO' | 'PORCENTAJE';
   cuotaEspecialValor?: number;
+  montoCuotaManual?: number;
   permitePostergar?: boolean;
   cuotasPostergables?: number;
   permiteDoble?: boolean;

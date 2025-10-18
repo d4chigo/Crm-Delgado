@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from "react"
 import { useContactos } from "@/hooks/useContactos"
@@ -19,6 +19,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
+
+export const dynamic = 'force-dynamic'
 
 export default function PaginaContactos() {
   const {

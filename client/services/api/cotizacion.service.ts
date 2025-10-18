@@ -57,11 +57,15 @@ export const cotizacionService = {
       frecuenciaCuotaEspecial?: 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
       cuotaEspecialTipo?: 'FIJO' | 'PORCENTAJE';
       cuotaEspecialValor?: number;
+      montoCuotaManual?: number;
     }
   ) {
     if (monto <= 0 || tasaAnual < 0 || plazoMeses <= 0) return [];
 
   let cuota = this.calcularCuotaMensual(monto, tasaAnual, plazoMeses);
+  if (options?.montoCuotaManual && options.montoCuotaManual > 0) {
+    cuota = options.montoCuotaManual;
+  }
     let saldo = monto;
     const cronograma: Array<any> = [];
 
@@ -198,7 +202,10 @@ export const cotizacionService = {
       // Si la cuota programada (cuotaMes) es mayor al total adeudado (interes + saldo), ajustar
       const adeudado = Math.round((saldo + interes) * 100) / 100;
 
-      if (cuotaMes > adeudado) {
+      if (options?.montoCuotaManual && options.montoCuotaManual > 0 && mes === plazoMeses) {
+        capital = saldo;
+        cuotaMes = saldo + interes;
+      } else if (cuotaMes > adeudado) {
         // sólo se debe pagar lo que falta (adeudado). Ajustar cuotaMes y capital en consecuencia
         const cuotaOriginal = cuotaMes;
         cuotaMes = adeudado;
@@ -421,11 +428,15 @@ export const cotizacionService = {
     }
   ) {
     const montoFinanciar = precioInmueble - cuotaInicial;
-    const cuotaMensual = this.calcularCuotaMensual(
+    let cuotaMensual = this.calcularCuotaMensual(
       montoFinanciar,
       tasaAnual,
       plazoMeses
     );
+
+    if (options?.montoCuotaManual && options.montoCuotaManual > 0) {
+      cuotaMensual = options.montoCuotaManual;
+    }
 
     // If no special options provided, fallback to simple estimate
     if (!options) {

@@ -226,17 +226,27 @@ export default function PaginaLeads() {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
-  const handleWhatsApp = (telefono: string) => {
+  const handleWhatsApp = (telefono: string, nombre: string) => {
     if (telefono) {
-      window.open(`https://wa.me/${telefono.replace(/\D/g, '')}`, '_blank');
+      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
+      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      if (window.electron) {
+        window.electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
     }
   };
 
   const handleScheduleMeeting = (nombre: string, correo: string) => {
     const asunto = `Reunión con ${nombre}`;
     const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
-    window.open(calendarUrl, '_blank');
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    if (window.electron) {
+      window.electron.shell.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   return (

@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { ElectronHelper } from '@/components/layout/ElectronHelper'
 
 export const metadata: Metadata = {
   title: 'CRM Delgado Propiedades',
@@ -17,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <ElectronHelper />
         {children}
         <Analytics />
       </body>

@@ -81,6 +81,7 @@ export const FormularioCotizacion = ({
     frecuenciaCuotaEspecial: undefined,
     cuotaEspecialTipo: undefined,
     cuotaEspecialValor: undefined,
+    montoCuotaManual: undefined,
     notas: '',
     fechaValidez: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   });
@@ -94,14 +95,16 @@ export const FormularioCotizacion = ({
     modalidadPago: datos.tipoCuota as any,
     frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
     cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
-    cuotaEspecialValor: datos.cuotaEspecialValor as any
-  }), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
+    cuotaEspecialValor: datos.cuotaEspecialValor as any,
+    montoCuotaManual: datos.montoCuotaManual
+  }), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
   
   const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, { 
     frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
     cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
-    cuotaEspecialValor: datos.cuotaEspecialValor as any
-  }), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor]);
+    cuotaEspecialValor: datos.cuotaEspecialValor as any,
+    montoCuotaManual: datos.montoCuotaManual
+  }), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,7 +188,20 @@ export const FormularioCotizacion = ({
                 
                 {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
                     <div className="pt-4 mt-4 border-t">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Beneficios Flexibles</h4>
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Flexible</h4>
+                        <div>
+                            <Label htmlFor="montoCuotaManual" className="text-xs font-medium">Monto de Cuota Manual</Label>
+                            <IconInput 
+                                id="montoCuotaManual" 
+                                icon={DollarSign} 
+                                type="number" 
+                                value={datos.montoCuotaManual || ''} 
+                                onChange={(e) => setDatos({ ...datos, montoCuotaManual: parseFloat(e.target.value) || undefined })}
+                                placeholder="Ej: 1000"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Dejar en blanco para cuota calculada automáticamente.</p>
+                        </div>
+                        <h4 className="text-xs font-semibold text-gray-600 my-3">Beneficios Flexibles</h4>
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                                 <Checkbox id="permitePostergar" checked={datos.permitePostergar} onCheckedChange={(c) => setDatos({...datos, permitePostergar: c as boolean})} /><Label htmlFor="permitePostergar" className="text-sm font-normal">Permitir postergar pagos</Label>

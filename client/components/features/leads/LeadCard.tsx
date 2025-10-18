@@ -146,7 +146,7 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
           {/* Botones de acción */}
           <div className="grid grid-cols-2 gap-2 pt-2">
-             <Button variant="outline" size="sm" onClick={() => onWhatsApp(lead.telefono)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+             <Button variant="outline" size="sm" onClick={() => onWhatsApp(lead.telefono, lead.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
              <Button variant="outline" size="sm" onClick={() => onScheduleMeeting(lead.nombre, lead.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
           </div>
           <div className="grid grid-cols-2 gap-2 pt-2">
