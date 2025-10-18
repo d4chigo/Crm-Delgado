@@ -155,21 +155,21 @@ export const FormularioCotizacion = ({
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                         <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
-                        <IconInput id="precioInmueble" icon={DollarSign} type="number" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
+                        <IconInput id="precioInmueble" icon={DollarSign} type="text" inputMode="decimal" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
                     </div>
                     <div>
                         <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
-                        <IconInput id="cuotaInicial" icon={DollarSign} type="number" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
+                        <IconInput id="cuotaInicial" icon={DollarSign} type="text" inputMode="decimal" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
                         <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
                     </div>
                     <div>
                         <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
-                        <IconInput id="plazoMeses" icon={Calendar} type="number" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
+                        <IconInput id="plazoMeses" icon={Calendar} type="text" inputMode="decimal" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
                         <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
                     </div>
                     <div>
                         <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
-                        <IconInput id="tasaInteresAnual" icon={Percent} type="number" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
+                        <IconInput id="tasaInteresAnual" icon={Percent} type="text" inputMode="decimal" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
                     </div>
                 </div>
               </FormSection>

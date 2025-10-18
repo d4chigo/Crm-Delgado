@@ -8,6 +8,9 @@ import { ElectronHelper } from '@/components/layout/ElectronHelper'
 export const metadata: Metadata = {
   title: 'CRM Delgado Propiedades',
   description: 'Proyecto de Innovación para Delgado Propiedades',
+  icons: {
+    icon: '/propiedadedelgado.png',
+  },
 }
 
 export default function RootLayout({

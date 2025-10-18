@@ -181,18 +181,18 @@ export const cotizacionService = {
       // Determinar si este mes toca un pago especial
       if ((modalidad === 'FLEXIBLE_ESPECIAL' || (modalidad === 'FIJA' && freq)) && freq && freq > 0 && mes % freq === 0) {
         esCuotaEspecial = true;
+        const cuotaBaseRounded = Math.round(cuota * 100) / 100;
+        let cuotaFinalEspecial = cuotaBaseRounded;
+
         if (extraTipo === 'FIJO') {
-          pagoEspecial = Math.round(extraValor * 100) / 100;
+          cuotaFinalEspecial = Math.round(extraValor * 100) / 100;
         } else if (extraTipo === 'PORCENTAJE') {
-          // Interpretación: X% significa cuota total = cuotaBase * (X/100)
-          const cuotaBaseRounded = Math.round(cuota * 100) / 100;
-          const cuotaTotalDeseada = Math.round(cuotaBaseRounded * (extraValor / 100) * 100) / 100;
-          pagoEspecial = Math.round((cuotaTotalDeseada - cuotaBaseRounded) * 100) / 100;
+          cuotaFinalEspecial = Math.round(cuotaBaseRounded * (extraValor / 100) * 100) / 100;
         }
-        // by default, applied special equals the intended special (may be adjusted later if last payment)
+        
+        pagoEspecial = Math.round((cuotaFinalEspecial - cuotaBaseRounded) * 100) / 100;
         pagoEspecialAplicado = pagoEspecial;
-        // aplicar pago especial sumado a la cuota del mes
-        cuotaMes = Math.round((cuotaMes + pagoEspecial) * 100) / 100;
+        cuotaMes = cuotaFinalEspecial;
       }
 
 
@@ -249,6 +249,14 @@ export const cotizacionService = {
       // Si saldo se hizo cero antes del plazo, truncar el cronograma (amortización anticipada)
       if (saldo <= 0) {
         break;
+      }
+
+      // After a special payment, recompute cuota for remaining months
+      if (esCuotaEspecial) {
+        const mesesRestantes = plazoMeses - mes;
+        if (mesesRestantes > 0) {
+          cuota = this.calcularCuotaMensual(saldo, tasaAnual, mesesRestantes);
+        }
       }
 
       // After certain events (override applied), recompute cuota for remaining months to keep amortization
