@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2 as IconoEdificio, Lock as IconoCandado, Mail as IconoCorreo } from "lucide-react"
+import authService from "@/services/api/auth.service"
 
 export default function PaginaLogin() {
   const enrutador = useRouter()
@@ -16,33 +17,35 @@ export default function PaginaLogin() {
   const [contrasena, setContrasena] = useState("")
   const [estaCargando, setEstaCargando] = useState(false)
   const [error, setError] = useState("")
+  const [exito, setExito] = useState(false)
 
   const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setExito(false)
     setEstaCargando(true)
 
-    // Simulate login - replace with real authentication later
-    setTimeout(() => {
-      if (correo && contrasena) {
-        localStorage.setItem(
-          "crm_user",
-          JSON.stringify({
-            email: correo,
-            name: "Usuario Demo",
-            role: "Agente",
-          }),
-        )
+    try {
+      // Login real contra el backend
+      const respuesta = await authService.login({
+        email: correo,
+        password: contrasena,
+      })
 
-        // Create session cookie for middleware
-        document.cookie = "crm_session=true; path=/; max-age=86400" // 24 hours
+      // Mostrar mensaje de éxito
+      setExito(true)
 
+      // Crear cookie de sesión para middleware
+      document.cookie = "crm_session=true; path=/; max-age=86400" // 24 horas
+
+      // Redirigir al dashboard después de un breve delay
+      setTimeout(() => {
         enrutador.push("/dashboard")
-      } else {
-        setError("Por favor ingresa email y contraseña")
-        setEstaCargando(false)
-      }
-    }, 1000)
+      }, 500)
+    } catch (error: any) {
+      setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.")
+      setEstaCargando(false)
+    }
   }
 
   return (
@@ -95,7 +98,41 @@ export default function PaginaLogin() {
               </div>
             </div>
 
-            {error && <div className="text-sm text-danger bg-red-50 border border-red-200 rounded-lg p-3">{error}</div>}
+            {exito && (
+              <div className="text-sm text-green-700 bg-green-50 border border-green-300 rounded-lg p-3.5 flex items-start gap-2">
+                <svg
+                  className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>¡Login exitoso! Redirigiendo...</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-sm text-red-700 bg-red-50 border border-red-300 rounded-lg p-3.5 flex items-start gap-2">
+                <svg
+                  className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
 
             <Button
               type="submit"

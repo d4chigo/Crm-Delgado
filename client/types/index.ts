@@ -18,6 +18,9 @@ export type * from './lead.types'
 // Tipos de proyectos
 export type * from './proyecto.types'
 
+// Tipos de oportunidades
+export type * from './oportunidad.types'
+
 // Tipos de cotizaciones
 export type * from './cotizacion.types'
 

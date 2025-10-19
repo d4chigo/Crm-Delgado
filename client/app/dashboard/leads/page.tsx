@@ -1,308 +1,608 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
+import { useContactos } from "@/hooks/useContactos";
+import { PageHeader } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
+import { TipoContacto, Contacto } from "@/types/contacto.types"
+import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
+import { CotizacionesContacto } from "@/components/features/cotizaciones"
 import {
-  Plus as IconoMas,
-  Search as IconoBuscar,
-  Filter as IconoFiltro,
-  Mail as IconoCorreo,
-  Phone as IconoTelefono,
-  MapPin as IconoUbicacion,
-  Calendar as IconoCalendario,
-  DollarSign as IconoDolar,
-  TrendingUp as IconoTendencia,
-  User as IconoUsuario,
-  Edit as IconoEditar,
-  Trash2 as IconoEliminar,
-  Tag as IconoEtiqueta,
-  XIcon as IconoCerrar,
-} from "lucide-react"
-import { useLeads, type LeadSimple } from "@/hooks/useLeads"
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { toast } from "@/hooks/use-toast"
+import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
 
 export default function PaginaLeads() {
   const {
-    leads,
-    leadsSeleccionados,
-    agregarLead,
-    eliminarLead,
-    alternarSeleccionLead,
-    seleccionarTodos,
-    eliminarEtiqueta,
-    leadsFiltrados: obtenerLeadsFiltrados,
-  } = useLeads()
+    contactos,
+    estadisticas,
+    estaCargando,
+    error,
+    paginacion,
+    buscarContactos,
+    filtrarPorTipo,
+    cargarContactos,
+    cambiarPagina,
+  } = useContactos()
 
-  const [terminoBusqueda, setTerminoBusqueda] = useState("")
-  const [filtroEstado, setFiltroEstado] = useState("all")
-  const [filtroEtiqueta, setFiltroEtiqueta] = useState("all")
+  const [busqueda, setBusqueda] = useState("")
+  const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
+  const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
+  const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
+  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [dialogoCotizacionesAbierto, setDialogoCotizacionesAbierto] = useState(false)
+  const [contactoCotizaciones, setContactoCotizaciones] = useState<Contacto | null>(null)
+  const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
+  const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
+  const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
+  const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
+  const [totalLeads, setTotalLeads] = useState(0)
+  const [totalClientes, setTotalClientes] = useState(0)
 
-  const configuracionEstados = {
-    nuevo: { etiqueta: "Nuevo", color: "bg-blue-100 text-blue-700 border-blue-200" },
-    contactado: { etiqueta: "Contactado", color: "bg-purple-100 text-purple-700 border-purple-200" },
-    calificado: { etiqueta: "Calificado", color: "bg-green-100 text-green-700 border-green-200" },
-    negociacion: { etiqueta: "Negociación", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-    cerrado: { etiqueta: "Cerrado", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-    perdido: { etiqueta: "Perdido", color: "bg-red-100 text-red-700 border-red-200" },
+  // Cargar leads/clientes según el tab activo
+  useEffect(() => {
+    const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
+    cargarContactos({ tipo, pagina: 1, limite: 6 })
+  }, [tabActivo])
+
+  // Cargar etiquetas al montar
+  useEffect(() => {
+    cargarEtiquetas()
+  }, [])
+
+  // Actualizar totales cuando cambie la paginación
+  useEffect(() => {
+    if (tabActivo === 'leads') {
+      setTotalLeads(paginacion.total)
+    } else {
+      setTotalClientes(paginacion.total)
+    }
+  }, [paginacion.total, tabActivo])
+
+  const cargarEtiquetas = async () => {
+    try {
+      const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+      // Asegurarse de que sea un array
+      if (Array.isArray(etiquetasObtenidas)) {
+        setEtiquetas(etiquetasObtenidas)
+      } else {
+        console.error('Las etiquetas obtenidas no son un array:', etiquetasObtenidas)
+        setEtiquetas([])
+      }
+    } catch (error) {
+      console.error('Error al cargar etiquetas:', error)
+      setEtiquetas([]) // Establecer array vacío en caso de error
+    }
   }
 
-  const coloresEtiquetas: Record<string, string> = {
-    "Techo Propio": "bg-orange-100 text-orange-700 border-orange-200",
-    "Mi Vivienda": "bg-cyan-100 text-cyan-700 border-cyan-200",
-    Compra: "bg-green-100 text-green-700 border-green-200",
-    Venta: "bg-purple-100 text-purple-700 border-purple-200",
+  // El backend ya filtra por tipo según el tab activo
+  // Solo aplicar filtro por etiqueta si es necesario
+  const contactosFiltrados = tabActivo === 'leads'
+    ? (etiquetaFiltroLeads === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)))
+    : (etiquetaFiltroClientes === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)))
+
+  // Para mantener compatibilidad con el código existente
+  const leads = tabActivo === 'leads' ? contactosFiltrados : []
+  const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
+
+  // Efecto para buscar con delay (debounce)
+  useEffect(() => {
+    if (busqueda === '') return // No ejecutar en el montaje inicial
+    
+    const timer = setTimeout(() => {
+      const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
+      if (busqueda.trim()) {
+        buscarContactos(busqueda)
+      } else {
+        // Si no hay búsqueda, recargar con filtro de tipo
+        cargarContactos({ tipo, pagina: 1, limite: 6 })
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [busqueda, tabActivo, buscarContactos, cargarContactos])
+
+  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusqueda(e.target.value)
   }
 
-  const obtenerColorPuntaje = (puntaje: number) => {
-    if (puntaje >= 70) return "text-green-600 bg-green-50 border-green-200"
-    if (puntaje >= 50) return "text-yellow-600 bg-yellow-50 border-yellow-200"
-    return "text-red-600 bg-red-50 border-red-200"
+  const handleVerDetalles = (lead: Contacto) => {
+    setLeadSeleccionado(lead)
+    setDialogoDetallesAbierto(true)
   }
 
-  const leadsFiltrados = obtenerLeadsFiltrados(terminoBusqueda, filtroEstado, filtroEtiqueta)
+  const handleEditar = (lead: Contacto) => {
+    setLeadSeleccionado(lead)
+    setDialogoEditarAbierto(true)
+  }
+
+  const handleAbrirCotizaciones = (contacto: Contacto) => {
+    setContactoCotizaciones(contacto)
+    setDialogoCotizacionesAbierto(true)
+  }
+
+  const handleConvertirCliente = async (leadId: string) => {
+    setConvirtiendoCliente(leadId)
+    try {
+      const token = localStorage.getItem('crm_token')
+      if (!token) {
+        toast({
+          title: 'Sesión expirada',
+          description: 'Por favor inicia sesión nuevamente',
+          variant: 'destructive',
+        })
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return
+      }
+
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}/convertir-cliente`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      // Si el token expiró
+      if (respuesta.status === 401) {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+        toast({
+          title: 'Sesión expirada',
+          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          variant: 'destructive',
+        });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
+
+      const resultado = await respuesta.json()
+
+      if (!respuesta.ok) {
+        throw new Error(resultado.mensaje || 'Error al convertir lead')
+      }
+
+      toast({
+        title: 'Lead convertido a Cliente',
+        description: `El lead ahora es un cliente y aparece en la pestaña "Clientes"`,
+      })
+
+      // Cambiar a la pestaña de clientes (esto recargará automáticamente con el filtro correcto)
+      setTabActivo('clientes')
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo convertir el lead',
+        variant: 'destructive',
+      })
+    } finally {
+      setConvirtiendoCliente(null)
+    }
+  }
+
+  const obtenerColorEstado = (estado?: string): string => {
+    const colores: Record<string, string> = {
+      'NUEVO': 'bg-blue-100 text-blue-800 border-blue-200',
+      'CONTACTADO': 'bg-purple-100 text-purple-800 border-purple-200',
+      'CALIFICADO': 'bg-green-100 text-green-800 border-green-200',
+      'NEGOCIACION': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'PROPUESTA': 'bg-orange-100 text-orange-800 border-orange-200',
+      'GANADO': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'PERDIDO': 'bg-red-100 text-red-800 border-red-200',
+      'EN_ESPERA': 'bg-gray-100 text-gray-800 border-gray-200',
+    }
+    return estado ? colores[estado] : 'bg-gray-100 text-gray-800 border-gray-200'
+  }
+
+  const obtenerColorPrioridad = (prioridad?: string): string => {
+    const colores: Record<string, string> = {
+      'BAJA': 'bg-gray-100 text-gray-700 border-gray-200',
+      'MEDIA': 'bg-blue-100 text-blue-700 border-blue-200',
+      'ALTA': 'bg-orange-100 text-orange-700 border-orange-200',
+      'URGENTE': 'bg-red-100 text-red-700 border-red-200',
+    }
+    return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
+  }
+
+  const handleWhatsApp = (telefono: string, nombre: string) => {
+    if (telefono) {
+      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
+      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      if (window.electron) {
+        window.electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre}`;
+    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    if (window.electron) {
+      window.electron.shell.openExternal(url);
+    } else {
+      window.open(url, '_blank');
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Gestión de Leads</h1>
-          <p className="text-muted-foreground mt-1">Administra y califica tus prospectos</p>
-        </div>
+      <PageHeader
+        title="Leads & Clientes"
+        description="Gestiona tus leads y clientes en un solo lugar"
+      />
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Leads Activos"
+          value={totalLeads}
+          description="En proceso de conversión"
+          icon={TrendingUp}
+          iconColor="text-yellow-500"
+          valueColor="text-yellow-600"
+        />
+        <StatCard
+          title="Clientes"
+          value={totalClientes}
+          description="Leads convertidos"
+          icon={Users}
+          iconColor="text-green-500"
+          valueColor="text-green-600"
+        />
+        <StatCard
+          title="Tasa de Conversión"
+          value={`${(totalLeads + totalClientes) > 0 
+              ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100)
+              : 0}%`}
+          description="Leads → Clientes"
+          icon={TrendingUp}
+          iconColor="text-blue-500"
+          valueColor="text-blue-600"
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Leads</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">{leads.length}</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <IconoUsuario className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Calificados</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {leads.filter((l) => l.estado === "calificado").length}
-                </p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <IconoTendencia className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En Negociación</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {leads.filter((l) => l.estado === "negociacion").length}
-                </p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-xl">
-                <IconoDolar className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Score Promedio</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {Math.round(leads.reduce((acc, l) => acc + l.puntaje, 0) / leads.length) || 0}
-                </p>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-xl">
-                <IconoTendencia className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Tabs: Leads y Clientes */}
+      <Tabs value={tabActivo} onValueChange={(value) => setTabActivo(value as 'leads' | 'clientes')}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Leads ({leads.length})
+          </TabsTrigger>
+          <TabsTrigger value="clientes" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Clientes ({clientes.length})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Filters */}
-      <Card className="border-border">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <IconoBuscar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={terminoBusqueda}
-                onChange={(e) => setTerminoBusqueda(e.target.value)}
-                className="pl-10"
+        {/* TAB: LEADS */}
+        <TabsContent value="leads" className="space-y-4">
+          {/* Barra de búsqueda y filtros */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <SearchInput
+                placeholder="Buscar leads por nombre, apellido o correo..."
+                value={busqueda}
+                onChange={handleBusqueda}
               />
             </div>
-            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <IconoFiltro className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filtrar por estado" />
+            <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
+                </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="nuevo">Nuevos</SelectItem>
-                <SelectItem value="contactado">Contactados</SelectItem>
-                <SelectItem value="calificado">Calificados</SelectItem>
-                <SelectItem value="negociacion">En Negociación</SelectItem>
-                <SelectItem value="cerrado">Cerrados</SelectItem>
-                <SelectItem value="perdido">Perdidos</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filtroEtiqueta} onValueChange={setFiltroEtiqueta}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <IconoEtiqueta className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filtrar por etiqueta" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las etiquetas</SelectItem>
-                <SelectItem value="Techo Propio">Techo Propio</SelectItem>
-                <SelectItem value="Mi Vivienda">Mi Vivienda</SelectItem>
-                <SelectItem value="Compra">Compra</SelectItem>
-                <SelectItem value="Venta">Venta</SelectItem>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      {leadsFiltrados.length > 0 && (
-        <div className="flex items-center gap-2 px-2">
-          <Checkbox
-            id="select-all"
-            checked={leadsSeleccionados.length === leadsFiltrados.length && leadsFiltrados.length > 0}
-            onCheckedChange={() => seleccionarTodos(leadsFiltrados)}
-          />
-          <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
-            Seleccionar todos ({leadsFiltrados.length})
-          </Label>
-        </div>
-      )}
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
 
-      {/* Leads List */}
-      <div className="grid grid-cols-1 gap-4">
-        {leadsFiltrados.map((lead) => (
-          <Card key={lead.id} className="border-border hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                <div className="flex items-start gap-4 flex-1">
-                  <Checkbox
-                    checked={leadsSeleccionados.includes(lead.id)}
-                    onCheckedChange={() => alternarSeleccionLead(lead.id)}
-                    className="mt-1"
-                  />
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
+              </CardContent>
+            </Card>
+          )}
 
-                  {/* Lead Info */}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="text-xl font-bold text-[#303030]">{lead.nombre}</h3>
-                          <Badge className={`${configuracionEstados[lead.estado].color} border font-medium`}>
-                            {configuracionEstados[lead.estado].etiqueta}
-                          </Badge>
-                          <Badge className={`${obtenerColorPuntaje(lead.puntaje)} border font-bold`}>
-                            Score: {lead.puntaje}
-                          </Badge>
-                        </div>
-                        {lead.etiquetas.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap mt-2">
-                            {lead.etiquetas.map((etiqueta) => (
-                              <Badge key={etiqueta} className={`${coloresEtiquetas[etiqueta]} border text-xs`}>
-                                {etiqueta}
-                                <button
-                                  onClick={() => eliminarEtiqueta(lead.id, etiqueta)}
-                                  className="ml-1 hover:text-red-600"
-                                >
-                                  <IconoCerrar className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <IconoCorreo className="w-4 h-4" />
-                            {lead.email}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <IconoTelefono className="w-4 h-4" />
-                            {lead.telefono}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+          {/* Lista de leads */}
+          {!estaCargando && leads.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {leads.map((lead) => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  isConverting={convirtiendoCliente === lead.id}
+                  onVerDetalles={handleVerDetalles}
+                  onCotizar={handleAbrirCotizaciones}
+                  onConvertir={handleConvertirCliente}
+                  onEditar={handleEditar}
+                  onWhatsApp={handleWhatsApp}
+                  onScheduleMeeting={handleScheduleMeeting}
+                />
+              ))}
+            </div>
+          )}
 
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <IconoCalendario className="w-3 h-3" />
-                        Creado: {lead.fechaCreacion}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <IconoCalendario className="w-3 h-3" />
-                        Último contacto: {lead.ultimoContacto}
-                      </span>
-                      <span className="px-2 py-1 bg-muted rounded text-[#303030]">Fuente: {lead.fuente}</span>
-                    </div>
-
-                    {lead.notas && (
-                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">{lead.notas}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex lg:flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 lg:flex-none border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00] hover:text-[#303030]"
-                  >
-                    <IconoEditar className="w-4 h-4 mr-2" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => eliminarLead(lead.id)}
-                    className="flex-1 lg:flex-none border-red-200 text-red-600 hover:bg-red-50"
-                  >
-                    <IconoEliminar className="w-4 h-4 mr-2" />
-                    Eliminar
-                  </Button>
-                </div>
+          {/* Paginación para Leads */}
+          {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {leads.length} de {paginacion.total} leads
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          )}
 
-      {leadsFiltrados.length === 0 && (
-        <Card className="border-border">
-          <CardContent className="p-12 text-center">
-            <IconoUsuario className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-[#303030] mb-2">No se encontraron leads</h3>
-            <p className="text-muted-foreground">Intenta ajustar los filtros o agrega un nuevo lead</p>
-          </CardContent>
-        </Card>
+          {/* Estado vacío */}
+          {!estaCargando && leads.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {busqueda 
+                    ? "No se encontraron leads con ese criterio de búsqueda"
+                    : "Convierte tus contactos en leads para comenzar a gestionarlos"}
+                </p>
+                <Button
+                  onClick={() => window.location.href = '/dashboard/contacts'}
+                  className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+                >
+                  Ir a Contactos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* TAB: CLIENTES */}
+        <TabsContent value="clientes" className="space-y-4">
+          {/* Barra de búsqueda y filtros */}
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <SearchInput
+                placeholder="Buscar clientes por nombre, apellido o correo..."
+                value={busqueda}
+                onChange={handleBusqueda}
+              />
+            </div>
+            <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de clientes */}
+          {!estaCargando && clientes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clientes.map((cliente) => (
+                <ClientCard
+                  key={cliente.id}
+                  cliente={cliente}
+                  onVerDetalles={handleVerDetalles}
+                  onCotizar={handleAbrirCotizaciones}
+                  onEditar={handleEditar}
+                  onWhatsApp={handleWhatsApp}
+                  onScheduleMeeting={handleScheduleMeeting}
+                  onAgregarOportunidad={() => {
+                    setClienteParaOportunidad(cliente)
+                    setDialogoOportunidadAbierto(true)
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Paginación para Clientes */}
+          {!estaCargando && clientes.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {clientes.length} de {paginacion.total} clientes
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Estado vacío */}
+          {!estaCargando && clientes.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay clientes</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {busqueda 
+                    ? "No se encontraron clientes con ese criterio de búsqueda"
+                    : "Convierte tus leads en clientes para comenzar"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Diálogos */}
+      <DialogoDetallesLead
+        lead={leadSeleccionado}
+        abierto={dialogoDetallesAbierto}
+        onCerrar={() => setDialogoDetallesAbierto(false)}
+      />
+
+      <DialogoEditarLead
+        lead={leadSeleccionado}
+        abierto={dialogoEditarAbierto}
+        onCerrar={() => setDialogoEditarAbierto(false)}
+        onActualizado={() => {
+          cargarContactos({}) // Recargar todos los contactos sin filtro
+          setDialogoEditarAbierto(false)
+        }}
+      />
+
+      {/* Diálogo para crear oportunidad */}
+      {clienteParaOportunidad && (
+        <DialogoCrearOportunidad
+          clienteId={clienteParaOportunidad.id}
+          clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
+          open={dialogoOportunidadAbierto}
+          onOpenChange={setDialogoOportunidadAbierto}
+          onSuccess={() => {
+            toast({
+              title: "¡Oportunidad creada!",
+              description: "El cliente ha sido agregado al pipeline exitosamente",
+            })
+            setDialogoOportunidadAbierto(false)
+            setClienteParaOportunidad(null)
+          }}
+        />
       )}
+
+      {/* Modal de Cotizaciones */}
+      <Dialog open={dialogoCotizacionesAbierto} onOpenChange={setDialogoCotizacionesAbierto}>
+        <DialogContent size="4xl" className="!w-[90vw] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              Cotizaciones - {contactoCotizaciones?.nombre} {contactoCotizaciones?.apellido}
+            </DialogTitle>
+          </DialogHeader>
+          {contactoCotizaciones && (
+            <CotizacionesContacto
+              contactoId={contactoCotizaciones.id}
+              nombreContacto={`${contactoCotizaciones.nombre} ${contactoCotizaciones.apellido}`}
+              tipoContacto={contactoCotizaciones.tipo as 'LEAD' | 'CLIENTE'}
+              abrirFormularioPorDefecto={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

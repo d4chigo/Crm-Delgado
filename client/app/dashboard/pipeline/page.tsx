@@ -1,14 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { useOportunidades } from "@/hooks/useOportunidades"
+import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
+import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
   DollarSign,
@@ -18,201 +21,218 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  Settings,
-  Plus,
-  Trash2,
-  GripVertical,
+  Loader2,
+  Search,
+  Tag,
 } from "lucide-react"
 
-interface Deal {
-  id: string
-  clientName: string
-  email: string
-  phone: string
-  property: string
-  project: string
-  value: number
-  stage: string
-  probability: number
-  lastActivity: string
-  nextAction: string
-  assignedTo: string
-  createdAt: string
-  notes: string
-}
-
-interface Stage {
-  id: string
-  name: string
-  color: string
-  count: number
-  value?: number
-}
+// Mapeo de etapas para el pipeline
+const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
+  { id: "LEAD", nombre: "Lead", color: "bg-blue-500" },
+  { id: "CONTACTO", nombre: "Contacto Inicial", color: "bg-purple-500" },
+  { id: "VISITA", nombre: "Visita Agendada", color: "bg-indigo-500" },
+  { id: "NEGOCIACION", nombre: "Negociación", color: "bg-yellow-500" },
+  { id: "CIERRE", nombre: "Cierre", color: "bg-orange-500" },
+  { id: "GANADO", nombre: "Ganado", color: "bg-green-500" },
+  { id: "PERDIDO", nombre: "Perdido", color: "bg-red-500" },
+]
 
 export default function PaginaPipeline() {
+  const { toast } = useToast()
+  const { oportunidades, estadisticas, cargando, error, moverOportunidad, refrescar } = useOportunidades()
+  
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
-  const [isManageStagesOpen, setIsManageStagesOpen] = useState(false)
-  const [stages, setStages] = useState<Stage[]>([
-    { id: "lead", name: "Lead", color: "bg-blue-500", count: 0 },
-    { id: "contacto", name: "Contacto Inicial", color: "bg-purple-500", count: 0 },
-    { id: "visita", name: "Visita Agendada", color: "bg-indigo-500", count: 0 },
-    { id: "negociacion", name: "Negociación", color: "bg-yellow-500", count: 0 },
-    { id: "cierre", name: "Cierre", color: "bg-orange-500", count: 0 },
-    { id: "ganado", name: "Ganado", color: "bg-green-500", count: 0 },
-  ])
-  const [newStageName, setNewStageName] = useState("")
-  const [editingStageId, setEditingStageId] = useState<string | null>(null)
-  const [editingStageName, setEditingStageName] = useState("")
-
-  const [deals, setDeals] = useState<Deal[]>([])
+  const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
+  const [busqueda, setBusqueda] = useState<string>("")
+  const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
-  const filteredDeals = deals.filter((deal) => {
-    if (selectedMonth === "all") return true
-    const dealDate = new Date(deal.createdAt)
-    const dealMonth = dealDate.getMonth() + 1
-    const dealYear = dealDate.getFullYear()
-    return dealMonth === Number.parseInt(selectedMonth) && dealYear === Number.parseInt(selectedYear)
+  // Cargar etiquetas al montar
+  useEffect(() => {
+    const cargarEtiquetas = async () => {
+      try {
+        const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+        if (Array.isArray(etiquetasObtenidas)) {
+          setEtiquetas(etiquetasObtenidas)
+        }
+      } catch (error) {
+        console.error('Error al cargar etiquetas:', error)
+      }
+    }
+    cargarEtiquetas()
+  }, [])
+
+  // Filtrar oportunidades por mes, año, búsqueda y etiqueta
+  const oportunidadesFiltradas = oportunidades.filter((op) => {
+    // Filtro por mes y año
+    if (selectedMonth !== "all") {
+      const opDate = new Date(op.creadoEn)
+      const opMonth = opDate.getMonth() + 1
+      const opYear = opDate.getFullYear()
+      if (opMonth !== Number.parseInt(selectedMonth) || opYear !== Number.parseInt(selectedYear)) {
+        return false
+      }
+    }
+
+    // Filtro por búsqueda (nombre, apellido, correo, empresa)
+    if (busqueda.trim()) {
+      const searchLower = busqueda.toLowerCase()
+      const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
+      const correo = op.cliente?.correo?.toLowerCase() || ''
+      const empresa = op.cliente?.empresa?.toLowerCase() || ''
+      const titulo = op.titulo?.toLowerCase() || ''
+      
+      if (!nombreCompleto.includes(searchLower) && 
+          !correo.includes(searchLower) && 
+          !empresa.includes(searchLower) &&
+          !titulo.includes(searchLower)) {
+        return false
+      }
+    }
+
+    // Nota: El filtro por etiqueta requiere que el backend incluya las etiquetas del cliente
+    // Por ahora, este filtro está deshabilitado hasta que se actualice el tipo OportunidadCliente
+    if (etiquetaFiltro !== "todas") {
+      // TODO: Agregar soporte de etiquetas en el backend para oportunidades
+      return true
+    }
+
+    return true
   })
 
-  const stagesWithData = stages.map((stage) => {
-    const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+  // Calcular datos por etapa
+  const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
+    const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
     return {
-      ...stage,
-      count: stageDeals.length,
-      value: stageDeals.reduce((acc, deal) => acc + deal.value, 0),
+      ...etapa,
+      count: oportunidadesEtapa.length,
+      value: oportunidadesEtapa.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0),
     }
   })
 
-  const totalPipelineValue = filteredDeals
-    .filter((d) => !["ganado", "perdido"].includes(d.stage))
-    .reduce((acc, deal) => acc + deal.value, 0)
+  // Estadísticas generales
+  const valorPipeline = oportunidadesFiltradas
+    .filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const wonDeals = filteredDeals.filter((d) => d.stage === "ganado")
-  const totalWonValue = wonDeals.reduce((acc, deal) => acc + deal.value, 0)
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op) => op.etapa === "GANADO")
+  const valorGanado = oportunidadesGanadas.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const getProbabilityColor = (probability: number) => {
+  const getProbabilityColor = (probability?: number | null) => {
+    if (!probability) return "text-gray-600 bg-gray-50"
     if (probability >= 75) return "text-green-600 bg-green-50"
     if (probability >= 50) return "text-yellow-600 bg-yellow-50"
     return "text-red-600 bg-red-50"
   }
 
-  const moveDeal = (dealId: string, newStage: string) => {
-    setDeals(
-      deals.map((deal) =>
-        deal.id === dealId
-          ? {
-              ...deal,
-              stage: newStage,
-              probability: newStage === "ganado" ? 100 : newStage === "perdido" ? 0 : deal.probability,
-            }
-          : deal,
-      ),
-    )
-  }
-
-  const handleAddStage = () => {
-    if (!newStageName.trim()) return
-    const newStage: Stage = {
-      id: newStageName.toLowerCase().replace(/\s+/g, "-"),
-      name: newStageName,
-      color: "bg-gray-500",
-      count: 0,
+  const handleWhatsApp = (telefono: string, nombre: string) => {
+    if (telefono) {
+      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
+      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      if (window.electron) {
+        window.electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
     }
-    setStages([...stages, newStage])
-    setNewStageName("")
-  }
+  };
 
-  const handleDeleteStage = (stageId: string) => {
-    const hasDeals = deals.some((deal) => deal.stage === stageId)
-    if (hasDeals) {
-      alert("No puedes eliminar un estado que tiene oportunidades asignadas")
-      return
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre}`;
+    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
+    if (window.electron) {
+      window.electron.shell.openExternal(url);
+    } else {
+      window.open(url, '_blank');
     }
-    setStages(stages.filter((s) => s.id !== stageId))
-  }
-
-  const handleEditStage = (stageId: string) => {
-    const stage = stages.find((s) => s.id === stageId)
-    if (stage) {
-      setEditingStageId(stageId)
-      setEditingStageName(stage.name)
-    }
-  }
-
-  const handleSaveStageEdit = () => {
-    if (!editingStageName.trim()) return
-    setStages(stages.map((s) => (s.id === editingStageId ? { ...s, name: editingStageName } : s)))
-    setEditingStageId(null)
-    setEditingStageName("")
-  }
-
-  const moveStageUp = (index: number) => {
-    if (index === 0) return
-    const newStages = [...stages]
-    ;[newStages[index - 1], newStages[index]] = [newStages[index], newStages[index - 1]]
-    setStages(newStages)
-  }
-
-  const moveStageDown = (index: number) => {
-    if (index === stages.length - 1) return
-    const newStages = [...stages]
-    ;[newStages[index], newStages[index + 1]] = [newStages[index + 1], newStages[index]]
-    setStages(newStages)
-  }
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
-          <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
+            <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={refrescar} variant="outline">
+              {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Actualizar
+            </Button>
+
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[180px]">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Seleccionar mes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los meses</SelectItem>
+                <SelectItem value="1">Enero</SelectItem>
+                <SelectItem value="2">Febrero</SelectItem>
+                <SelectItem value="3">Marzo</SelectItem>
+                <SelectItem value="4">Abril</SelectItem>
+                <SelectItem value="5">Mayo</SelectItem>
+                <SelectItem value="6">Junio</SelectItem>
+                <SelectItem value="7">Julio</SelectItem>
+                <SelectItem value="8">Agosto</SelectItem>
+                <SelectItem value="9">Septiembre</SelectItem>
+                <SelectItem value="10">Octubre</SelectItem>
+                <SelectItem value="11">Noviembre</SelectItem>
+                <SelectItem value="12">Diciembre</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setIsManageStagesOpen(true)}
-            className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Gestionar Estados
-          </Button>
-
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Seleccionar mes" />
+        {/* Barra de búsqueda y filtros */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, correo, empresa o título..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
+            <SelectTrigger className="w-[220px]">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <SelectValue placeholder="Todas las etiquetas" />
+              </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los meses</SelectItem>
-              <SelectItem value="1">Enero</SelectItem>
-              <SelectItem value="2">Febrero</SelectItem>
-              <SelectItem value="3">Marzo</SelectItem>
-              <SelectItem value="4">Abril</SelectItem>
-              <SelectItem value="5">Mayo</SelectItem>
-              <SelectItem value="6">Junio</SelectItem>
-              <SelectItem value="7">Julio</SelectItem>
-              <SelectItem value="8">Agosto</SelectItem>
-              <SelectItem value="9">Septiembre</SelectItem>
-              <SelectItem value="10">Octubre</SelectItem>
-              <SelectItem value="11">Noviembre</SelectItem>
-              <SelectItem value="12">Diciembre</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
+              <SelectItem value="todas">Todas las etiquetas</SelectItem>
+              {etiquetas.map((etiqueta) => (
+                <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: etiqueta.color }}
+                    />
+                    {etiqueta.nombre}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -228,7 +248,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {filteredDeals.filter((d) => !["ganado", "perdido"].includes(d.stage)).length}
+                  {oportunidadesFiltradas.filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -243,7 +263,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Valor del Pipeline</p>
                 <p className="text-2xl font-bold text-[#303030] mt-1">
-                  S/ {(totalPipelineValue / 1000000).toFixed(1)}M
+                  S/ {(valorPipeline / 1000000).toFixed(1)}M
                 </p>
               </div>
               <div className="bg-yellow-50 p-3 rounded-xl">
@@ -257,7 +277,7 @@ export default function PaginaPipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ventas Ganadas</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{wonDeals.length}</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{oportunidadesGanadas.length}</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -270,7 +290,7 @@ export default function PaginaPipeline() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valor Ganado</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(totalWonValue / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(valorGanado / 1000000).toFixed(1)}M</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -283,31 +303,31 @@ export default function PaginaPipeline() {
       {/* Kanban Board */}
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
-          {stagesWithData.map((stage) => {
-            const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+          {etapasConDatos.map((etapa) => {
+            const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
             return (
-              <div key={stage.id} className="flex-shrink-0 w-80">
+              <div key={etapa.id} className="flex-shrink-0 w-80">
                 <Card className="border-border h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-                        <CardTitle className="text-base font-semibold text-[#303030]">{stage.name}</CardTitle>
+                        <div className={`w-3 h-3 rounded-full ${etapa.color}`} />
+                        <CardTitle className="text-base font-semibold text-[#303030]">{etapa.nombre}</CardTitle>
                       </div>
                       <Badge variant="secondary" className="font-semibold">
-                        {stage.count}
+                        {etapa.count}
                       </Badge>
                     </div>
                     <div className="text-sm font-medium text-muted-foreground">
-                      S/ {(stage.value / 1000).toFixed(0)}K
+                      S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {stageDeals.map((deal) => (
+                  <CardContent className="space-y-3 h-[600px] overflow-y-auto pr-2 scrollbar-visible">
+                    {oportunidadesEtapa.map((oportunidad) => (
                       <Card
-                        key={deal.id}
+                        key={oportunidad.id}
                         className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
-                        onClick={() => setSelectedDeal(deal)}
+                        onClick={() => setSelectedDeal(oportunidad)}
                       >
                         <CardContent className="p-4 space-y-3">
                           {/* Client Info */}
@@ -315,12 +335,14 @@ export default function PaginaPipeline() {
                             <div className="flex items-center gap-2">
                               <Avatar className="w-8 h-8 bg-[#FCBA00]">
                                 <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                  {deal.clientName.charAt(0)}
+                                  {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">{deal.clientName}</h4>
-                                <p className="text-xs text-muted-foreground">{deal.assignedTo}</p>
+                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
+                                  {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
+                                </h4>
+                                <p className="text-xs text-muted-foreground">{oportunidad.titulo}</p>
                               </div>
                             </div>
                           </div>
@@ -329,30 +351,30 @@ export default function PaginaPipeline() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Building2 className="w-3 h-3" />
-                              <span className="line-clamp-1">{deal.project}</span>
+                              <span className="line-clamp-1">{oportunidad.proyecto || 'Sin proyecto'}</span>
                             </div>
-                            <p className="text-sm font-medium text-[#303030]">{deal.property}</p>
+                            <p className="text-sm font-medium text-[#303030]">{oportunidad.propiedad || 'Sin propiedad'}</p>
                           </div>
 
                           {/* Value */}
                           <div className="flex items-center justify-between pt-2 border-t border-border">
                             <span className="text-lg font-bold text-[#FCBA00]">
-                              S/ {(deal.value / 1000).toFixed(0)}K
+                              S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
                             </span>
-                            <Badge className={`${getProbabilityColor(deal.probability)} font-semibold text-xs`}>
-                              {deal.probability}%
+                            <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
+                              {oportunidad.probabilidad || 0}%
                             </Badge>
                           </div>
 
                           {/* Last Activity */}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span>{deal.lastActivity}</span>
+                            <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
-                    {stageDeals.length === 0 && (
+                    {oportunidadesEtapa.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
                         <p>No hay oportunidades</p>
                       </div>
@@ -370,20 +392,22 @@ export default function PaginaPipeline() {
         <Dialog open={!!selectedDeal} onOpenChange={() => setSelectedDeal(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#303030]">{selectedDeal.clientName}</DialogTitle>
-              <DialogDescription>{selectedDeal.project}</DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-[#303030]">
+                {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
+              </DialogTitle>
+              <DialogDescription>{selectedDeal.titulo}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${stagesWithData.find((s) => s.id === selectedDeal.stage)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {stagesWithData.find((s) => s.id === selectedDeal.stage)?.name}
+                  {ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
-                <Badge className={`${getProbabilityColor(selectedDeal.probability)} font-semibold`}>
-                  Probabilidad: {selectedDeal.probability}%
+                <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
+                  Probabilidad: {selectedDeal.probabilidad || 0}%
                 </Badge>
               </div>
 
@@ -393,16 +417,20 @@ export default function PaginaPipeline() {
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Mail className="w-4 h-4" />
-                    {selectedDeal.email}
+                    {selectedDeal.cliente?.correo || 'Sin email'}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Teléfono</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Phone className="w-4 h-4" />
-                    {selectedDeal.phone}
+                    {selectedDeal.cliente?.telefono || 'Sin teléfono'}
                   </p>
                 </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
               {/* Property Details */}
@@ -410,11 +438,13 @@ export default function PaginaPipeline() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Propiedad</p>
-                    <p className="font-semibold text-[#303030]">{selectedDeal.property}</p>
+                    <p className="font-semibold text-[#303030]">{selectedDeal.propiedad || 'Sin propiedad'}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Valor</p>
-                    <p className="text-2xl font-bold text-[#FCBA00]">S/ {selectedDeal.value.toLocaleString("es-PE")}</p>
+                    <p className="text-2xl font-bold text-[#FCBA00]">
+                      S/ {selectedDeal.valor ? Number(selectedDeal.valor).toLocaleString("es-PE") : '0'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -423,46 +453,52 @@ export default function PaginaPipeline() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Última Actividad</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.lastActivity}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.ultimaActividad).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Próxima Acción</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.nextAction}</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proximaAccion || 'Sin próxima acción'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Asignado a</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.assignedTo}</p>
+                  <p className="text-sm text-muted-foreground">Proyecto</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proyecto || 'Sin proyecto'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Fecha de Creación</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.createdAt}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.creadoEn).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Notas</p>
-                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">{selectedDeal.notes}</p>
+                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">
+                  {selectedDeal.notas || 'Sin notas'}
+                </p>
               </div>
 
               {/* Move Stage Actions */}
               <div className="space-y-3 pt-4 border-t">
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
-                  {stagesWithData
-                    .filter((s) => s.id !== selectedDeal.stage)
-                    .map((stage) => (
+                  {ETAPAS_PIPELINE
+                    .filter((e) => e.id !== selectedDeal.etapa)
+                    .map((etapa) => (
                       <Button
-                        key={stage.id}
+                        key={etapa.id}
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          moveDeal(selectedDeal.id, stage.id)
+                          handleMoverOportunidad(selectedDeal.id, etapa.id)
                           setSelectedDeal(null)
                         }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]"
+                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
                       >
-                        {stage.name}
+                        {etapa.nombre}
                       </Button>
                     ))}
                 </div>
@@ -470,148 +506,17 @@ export default function PaginaPipeline() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
-                  Generar Cotización
-                </Button>
-                <Button variant="outline" className="flex-1 bg-transparent">
-                  Editar Oportunidad
+                <Button 
+                  onClick={() => setSelectedDeal(null)}
+                  className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+                >
+                  Cerrar
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
       )}
-
-      <Dialog open={isManageStagesOpen} onOpenChange={setIsManageStagesOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#303030]">Gestionar Estados del Pipeline</DialogTitle>
-            <DialogDescription>Personaliza los estados de tu proceso de ventas</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Add New Stage */}
-            <div className="space-y-3">
-              <Label>Agregar Nuevo Estado</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nombre del estado..."
-                  value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddStage()
-                  }}
-                />
-                <Button onClick={handleAddStage} className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar
-                </Button>
-              </div>
-            </div>
-
-            {/* Existing Stages */}
-            <div className="space-y-3">
-              <Label>Estados Actuales</Label>
-              <div className="space-y-2">
-                {stages.map((stage, index) => (
-                  <Card key={stage.id} className="border-border">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        {/* Drag Handle */}
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => moveStageUp(index)}
-                            disabled={index === 0}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => moveStageDown(index)}
-                            disabled={index === stages.length - 1}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Color Indicator */}
-                        <div className={`w-4 h-4 rounded-full ${stage.color}`} />
-
-                        {/* Stage Name */}
-                        <div className="flex-1">
-                          {editingStageId === stage.id ? (
-                            <Input
-                              value={editingStageName}
-                              onChange={(e) => setEditingStageName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveStageEdit()
-                                if (e.key === "Escape") {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <p className="font-semibold text-[#303030]">{stage.name}</p>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {editingStageId === stage.id ? (
-                            <>
-                              <Button size="sm" onClick={handleSaveStageEdit} className="bg-[#FCBA00] text-[#303030]">
-                                Guardar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditStage(stage.id)}
-                                className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteStage(stage.id)}
-                                className="border-red-200 text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t">
-              <Button onClick={() => setIsManageStagesOpen(false)} className="bg-[#FCBA00] text-[#303030]">
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

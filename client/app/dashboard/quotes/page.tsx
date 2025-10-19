@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
@@ -136,12 +139,10 @@ export default function PaginaCotizaciones() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Generador de Cotizaciones</h1>
-          <p className="text-muted-foreground mt-1">Crea y gestiona cotizaciones para tus clientes</p>
-        </div>
+      <PageHeader
+        title="Generador de Cotizaciones"
+        description="Crea y gestiona cotizaciones para tus clientes"
+      >
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
@@ -149,7 +150,7 @@ export default function PaginaCotizaciones() {
               Nueva Cotización
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-[#303030]">Crear Nueva Cotización</DialogTitle>
               <DialogDescription>Completa los datos para generar la cotización</DialogDescription>
@@ -318,89 +319,53 @@ export default function PaginaCotizaciones() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+      </PageHeader>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Cotizaciones</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">{stats.total}</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Borradores</p>
-                <p className="text-3xl font-bold text-gray-600 mt-1">{stats.draft}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-xl">
-                <FileText className="w-6 h-6 text-gray-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Enviadas</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">{stats.sent}</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <Send className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Aceptadas</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{stats.accepted}</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Valor Total</p>
-                <p className="text-2xl font-bold text-[#303030] mt-1">S/ {(stats.totalValue / 1000000).toFixed(1)}M</p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-xl">
-                <DollarSign className="w-6 h-6 text-[#FCBA00]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Cotizaciones"
+          value={stats.total}
+          icon={FileText}
+          iconColor="text-blue-600"
+        />
+        <StatCard
+          title="Borradores"
+          value={stats.draft}
+          icon={FileText}
+          iconColor="text-gray-600"
+          valueColor="text-gray-600"
+        />
+        <StatCard
+          title="Enviadas"
+          value={stats.sent}
+          icon={Send}
+          iconColor="text-blue-600"
+          valueColor="text-blue-600"
+        />
+        <StatCard
+          title="Aceptadas"
+          value={stats.accepted}
+          icon={TrendingUp}
+          iconColor="text-green-600"
+          valueColor="text-green-600"
+        />
+        <StatCard
+          title="Valor Total"
+          value={`S/ ${(stats.totalValue / 1000000).toFixed(1)}M`}
+          icon={DollarSign}
+          iconColor="text-[#FCBA00]"
+        />
       </div>
 
       {/* Search */}
       <Card className="border-border">
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por número, cliente o proyecto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar por número, cliente o proyecto..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </CardContent>
       </Card>
 

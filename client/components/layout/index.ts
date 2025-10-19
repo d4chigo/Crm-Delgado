@@ -5,6 +5,7 @@
 export { BarraLateral } from './BarraLateral'
 export { PerfilUsuario } from './PerfilUsuario'
 export { Encabezado } from './Encabezado'
+export { PageHeader } from './PageHeader'
 
 // Exportaciones para compatibilidad (deprecadas)
 export { BarraLateral as Sidebar } from './BarraLateral'

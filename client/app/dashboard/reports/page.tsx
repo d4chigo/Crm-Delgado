@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageHeader } from "@/components/layout";
+import { ReportStatCard } from "@/components/features/reports/ReportStatCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp as IconoTendenciaArriba, TrendingDown as IconoTendenciaAbajo, DollarSign as IconoDolar, Users as IconoUsuarios, Building2 as IconoEdificio, Target as IconoObjetivo, Calendar as IconoCalendario, Download as IconoDescargar } from "lucide-react"
@@ -29,12 +31,10 @@ export default function PaginaReportes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Reportes y Analytics</h1>
-          <p className="text-muted-foreground mt-1">Análisis detallado del desempeño de ventas</p>
-        </div>
+      <PageHeader
+        title="Reportes y Analytics"
+        description="Análisis detallado del desempeño de ventas"
+      >
         <div className="flex gap-3">
           <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
             <SelectTrigger className="w-[150px]">
@@ -62,37 +62,22 @@ export default function PaginaReportes() {
             Exportar
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricas.map((metrica) => {
-          const Icono = metrica.icon
-          return (
-            <Card key={metrica.title} className="border-border">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`${metrica.bgColor} p-3 rounded-xl`}>
-                    <Icono className={`w-6 h-6 ${metrica.color}`} />
-                  </div>
-                  <Badge
-                    variant="secondary"
-                    className={`${metrica.trend === "up" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
-                  >
-                    {metrica.trend === "up" ? (
-                      <IconoTendenciaArriba className="w-3 h-3 mr-1" />
-                    ) : (
-                      <IconoTendenciaAbajo className="w-3 h-3 mr-1" />
-                    )}
-                    {metrica.change}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{metrica.title}</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">{metrica.value}</p>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {metricas.map((metrica) => (
+          <ReportStatCard
+            key={metrica.title}
+            title={metrica.title}
+            value={metrica.value}
+            change={metrica.change}
+            trend={metrica.trend as 'up' | 'down'}
+            icon={metrica.icon}
+            color={metrica.color}
+            bgColor={metrica.bgColor}
+          />
+        ))}
       </div>
 
       {/* Charts Row */}

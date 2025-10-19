@@ -1,83 +1,70 @@
 /**
  * Tipos relacionados con proyectos inmobiliarios
+ * Sincronizado con schema Prisma
  */
+
+import { Etiqueta } from './etiqueta.types'
+import { Contacto } from './contacto.types'
 
 export interface Proyecto {
   id: string
   nombre: string
   descripcion?: string
-  ubicacion: string
+  imagen?: string
+  precio?: number
+  ubicacion?: string
   estado: EstadoProyecto
-  tipo: TipoProyecto
-  totalUnidades: number
-  unidadesDisponibles: number
-  unidadesVendidas: number
-  precioDesde: number
-  precioHasta: number
-  moneda: Moneda
-  amenidades?: string[]
-  imagenes?: string[]
-  fechaInicio?: Date
-  fechaFin?: Date
+  activo: boolean
   creadoEn: Date
-  actualizadoEn?: Date
+  actualizadoEn: Date
+  usuarioId: string
+  etiquetas?: ProyectoEtiqueta[]
+  clientes?: ProyectoCliente[]
+}
+
+export interface ProyectoEtiqueta {
+  proyectoId: string
+  etiquetaId: string
+  asignadoEn: Date
+  etiqueta: Etiqueta
+}
+
+export interface ProyectoCliente {
+  proyectoId: string
+  clienteId: string
+  asociadoEn: Date
+  notas?: string
+  cliente: Contacto
 }
 
 export enum EstadoProyecto {
-  PLANIFICACION = 'planificacion',
-  CONSTRUCCION = 'construccion',
-  LISTO = 'listo',
-  VENDIENDO = 'vendiendo',
-  AGOTADO = 'agotado',
-  COMPLETADO = 'completado'
-}
-
-export enum TipoProyecto {
-  DEPARTAMENTO = 'departamento',
-  CASA = 'casa',
-  COMERCIAL = 'comercial',
-  TERRENO = 'terreno',
-  OFICINA = 'oficina',
-  MIXTO = 'mixto'
-}
-
-export enum Moneda {
-  USD = 'USD',
-  PEN = 'PEN',
-  EUR = 'EUR'
+  DISPONIBLE = 'DISPONIBLE',
+  RESERVADO = 'RESERVADO',
+  VENDIDO = 'VENDIDO',
+  CONSTRUCCION = 'CONSTRUCCION',
+  FINALIZADO = 'FINALIZADO'
 }
 
 export interface DatosFormularioProyecto {
   nombre: string
   descripcion?: string
-  ubicacion: string
+  imagen?: string
+  precio?: number
+  ubicacion?: string
   estado: EstadoProyecto
-  tipo: TipoProyecto
-  totalUnidades: number
-  precioDesde: number
-  precioHasta: number
-  moneda: Moneda
-  amenidades?: string[]
-  fechaInicio?: Date
-  fechaFin?: Date
+  etiquetaIds?: string[]
+}
+
+export interface DatosAsociarCliente {
+  clienteId: string
+  notas?: string
 }
 
 export interface FiltrosProyecto {
   busqueda?: string
   estado?: EstadoProyecto
-  tipo?: TipoProyecto
-  ubicacion?: string
-  precioMin?: number
-  precioMax?: number
+  etiquetaId?: string
+  activo?: boolean
 }
 
-export interface EstadisticasProyecto {
-  total: number
-  porEstado: Record<EstadoProyecto, number>
-  porTipo: Record<TipoProyecto, number>
-  totalUnidades: number
-  unidadesDisponibles: number
-  tasaOcupacion: number
-}
-
-export type CampoOrdenProyecto = 'nombre' | 'ubicacion' | 'precioDesde' | 'creadoEn'
+export type CampoOrdenProyecto = 'nombre' | 'ubicacion' | 'precio' | 'creadoEn'

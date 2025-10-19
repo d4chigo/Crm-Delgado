@@ -44,3 +44,8 @@ export function cerrarSesion() {
 export function estaAutenticado(): boolean {
   return obtenerUsuario() !== null
 }
+
+export function obtenerToken(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem("crm_token")
+}

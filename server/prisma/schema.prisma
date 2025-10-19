@@ -1,0 +1,318 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Usuario {
+  id            String     @id @default(uuid())
+  nombre        String
+  email         String     @unique
+  password      String
+  rol           Rol        @default(AGENTE)
+  avatar        String?
+  telefono      String?
+  activo        Boolean    @default(true)
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+  contactos     Contacto[]
+  proyectos     Proyecto[]
+  oportunidades OportunidadCliente[]
+
+  @@map("usuarios")
+}
+
+model Contacto {
+  id               String             @id @default(uuid())
+  nombre           String
+  apellido         String?
+  correo           String?
+  telefono         String?
+  direccion        String?
+  ciudad           String?
+  dni              String?
+  sexo             Sexo?
+  fechaNacimiento  DateTime?
+  tipo             TipoContacto       @default(CONTACTO)
+  creadoEn         DateTime           @default(now())
+  actualizadoEn    DateTime           @updatedAt
+  usuarioId        String
+  cargo            String?
+  departamento     String?
+  distrito         String?
+  empresa          String?
+  estadoLead       EstadoLead?
+  fechaConversion  DateTime?
+  fechaSeguimiento DateTime?
+  fuente           String?
+  intereses        String?            @db.Text
+  notas            String?            @db.Text
+  presupuesto      Decimal?           @db.Decimal(10, 2)
+  prioridad        Prioridad          @default(MEDIA)
+  probabilidad     Int?
+  provincia        String?
+  etiquetas        ContactoEtiqueta[]
+  proyectos        ProyectoCliente[]
+  leadsAsociados   LeadCliente[]      @relation("LeadRelacion")
+  clientesAsociados LeadCliente[]     @relation("ClienteRelacion")
+  oportunidades    OportunidadCliente[]
+  cotizaciones     Cotizacion[]
+  usuario          Usuario            @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([correo])
+  @@index([estadoLead])
+  @@index([prioridad])
+  @@map("contactos")
+}
+
+model Etiqueta {
+  id            String             @id @default(uuid())
+  nombre        String             @unique
+  color         String
+  descripcion   String?
+  icono         String?
+  activa        Boolean            @default(true)
+  orden         Int                @default(0)
+  creadoEn      DateTime           @default(now())
+  actualizadoEn DateTime           @updatedAt
+  contactos     ContactoEtiqueta[]
+  proyectos     ProyectoEtiqueta[]
+
+  @@index([activa])
+  @@map("etiquetas")
+}
+
+model ContactoEtiqueta {
+  contactoId String
+  etiquetaId String
+  asignadoEn DateTime @default(now())
+  contacto   Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([contactoId, etiquetaId])
+  @@index([contactoId])
+  @@index([etiquetaId])
+  @@map("contacto_etiquetas")
+}
+
+model LeadCliente {
+  leadId     String
+  clienteId  String
+  asociadoEn DateTime @default(now())
+  notas      String?  @db.Text
+  estado     String?  @db.VarChar(50)
+  lead       Contacto @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
+  cliente    Contacto @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@id([leadId, clienteId])
+  @@index([leadId])
+  @@index([clienteId])
+  @@map("lead_clientes")
+}
+
+model OportunidadCliente {
+  id              String   @id @default(uuid())
+  clienteId       String
+  titulo          String   // Título de la oportunidad (ej: "Interés en Dpto 301")
+  proyecto        String?  // Proyecto/producto de interés
+  propiedad       String?  // Propiedad específica (ej: "Dpto 301", "Casa 22")
+  etapa           EtapaPipeline @default(LEAD)
+  valor           Decimal? @db.Decimal(12, 2) // Valor estimado de la venta
+  probabilidad    Int?     @default(25) // % de probabilidad de cierre
+  proximaAccion   String?  @db.Text // Próxima acción a realizar
+  ultimaActividad DateTime @default(now()) // Última vez que se actualizó
+  notas           String?  @db.Text
+  creadoEn        DateTime @default(now())
+  actualizadoEn   DateTime @updatedAt
+  usuarioId       String
+  
+  cliente         Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([clienteId])
+  @@index([usuarioId])
+  @@index([etapa])
+  @@map("oportunidades_clientes")
+}
+
+enum Rol {
+  ADMIN
+  SUPERVISOR
+  AGENTE
+  ASISTENTE
+}
+
+enum Sexo {
+  MASCULINO
+  FEMENINO
+}
+
+enum TipoContacto {
+  CONTACTO
+  LEAD
+  CLIENTE
+}
+
+enum EstadoLead {
+  NUEVO
+  CONTACTADO
+  CALIFICADO
+  NEGOCIACION
+  PROPUESTA
+  GANADO
+  PERDIDO
+  EN_ESPERA
+}
+
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+// Modelo de Proyecto Inmobiliario
+model Proyecto {
+  id            String              @id @default(uuid())
+  nombre        String
+  descripcion   String?             @db.Text
+  imagen        String?             // URL de la imagen del proyecto
+  precio        Decimal?            @db.Decimal(12, 2)
+  ubicacion     String?
+  estado        EstadoProyecto      @default(DISPONIBLE)
+  activo        Boolean             @default(true)
+  creadoEn      DateTime            @default(now())
+  actualizadoEn DateTime            @updatedAt
+  usuarioId     String
+  usuario       Usuario             @relation(fields: [usuarioId], references: [id])
+  etiquetas     ProyectoEtiqueta[]
+  clientes      ProyectoCliente[]
+
+  @@index([usuarioId])
+  @@index([estado])
+  @@index([activo])
+  @@map("proyectos")
+}
+
+// Relación muchos a muchos: Proyecto - Etiqueta
+model ProyectoEtiqueta {
+  proyectoId String
+  etiquetaId String
+  asignadoEn DateTime @default(now())
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, etiquetaId])
+  @@index([proyectoId])
+  @@index([etiquetaId])
+  @@map("proyecto_etiquetas")
+}
+
+// Relación muchos a muchos: Proyecto - Cliente (Contacto tipo CLIENTE)
+model ProyectoCliente {
+  proyectoId  String
+  clienteId   String
+  asociadoEn  DateTime @default(now())
+  notas       String?  @db.Text
+  proyecto    Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  cliente     Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, clienteId])
+  @@index([proyectoId])
+  @@index([clienteId])
+  @@map("proyecto_clientes")
+}
+
+enum EstadoProyecto {
+  DISPONIBLE
+  RESERVADO
+  VENDIDO
+  CONSTRUCCION
+  FINALIZADO
+}
+
+enum EtapaPipeline {
+  LEAD
+  CONTACTO
+  VISITA
+  NEGOCIACION
+  CIERRE
+  GANADO
+  PERDIDO
+}
+
+// Modelo de Cotización Inmobiliaria
+model Cotizacion {
+  id                    String            @id @default(uuid())
+  contactoId            String
+  numeroReferencia      String            @unique // Número de cotización (ej: COT-2024-001)
+  
+  // Información del inmueble
+  nombreProyecto        String
+  tipoInmueble          String?           // Departamento, Casa, Terreno, etc.
+  descripcion           String?           @db.Text
+  precioInmueble        Decimal           @db.Decimal(12, 2)
+  
+  // Financiamiento
+  cuotaInicial          Decimal           @db.Decimal(12, 2)
+  porcentajeCuotaInicial Decimal          @db.Decimal(5, 2) // Porcentaje de cuota inicial
+  montoFinanciar        Decimal           @db.Decimal(12, 2)
+  plazoMeses            Int               // Plazo en meses
+  
+  // Tipo de cuota
+  tipoCuota             TipoCuota         @default(FIJA)
+  tasaInteresAnual      Decimal           @db.Decimal(5, 2) // Tasa de interés anual %
+  
+  // Opciones para Flexible Especial
+  permitePostergar      Boolean           @default(false)
+  cuotasPostergables    Int?              // Cuántas cuotas se pueden postergar al año
+  permiteDoble          Boolean           @default(false)
+  cuotasDoblesAnuales   Int?              // Cuántas cuotas dobles se pueden hacer al año
+  permiteCambioFecha    Boolean           @default(false)
+  montoCuotaManual      Decimal?          @db.Decimal(12, 2)
+  
+  // Cálculos
+  cuotaMensualEstimada  Decimal           @db.Decimal(12, 2)
+  totalIntereses        Decimal           @db.Decimal(12, 2)
+  totalPagar            Decimal           @db.Decimal(12, 2)
+  
+  // Estado de la cotización
+  estado                EstadoCotizacion  @default(BORRADOR)
+  
+  // Notas y observaciones
+  notas                 String?           @db.Text
+  observaciones         String?           @db.Text
+  
+  // Fechas
+  fechaValidez          DateTime?         // Hasta cuándo es válida la cotización
+  creadoEn              DateTime          @default(now())
+  actualizadoEn         DateTime          @updatedAt
+  
+  // Relación
+  contacto              Contacto          @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+
+  @@index([contactoId])
+  @@index([estado])
+  @@index([tipoCuota])
+  @@map("cotizaciones")
+}
+
+enum TipoCuota {
+  FIJA
+  FLEXIBLE
+  FLEXIBLE_ESPECIAL
+}
+
+enum EstadoCotizacion {
+  BORRADOR
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+  VENCIDA
+}

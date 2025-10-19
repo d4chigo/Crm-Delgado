@@ -1,0 +1,31 @@
+import { Router } from 'express';
+import cotizacionController from '@/controllers/cotizacion.controller';
+import { autenticar } from '@/middlewares/autenticacion.middleware';
+
+const router = Router();
+
+// Todas las rutas requieren autenticación
+router.use(autenticar);
+
+// Crear cotización
+router.post('/', cotizacionController.crearCotizacion);
+
+// Obtener todas las cotizaciones (con filtros)
+router.get('/', cotizacionController.obtenerCotizaciones);
+
+// Obtener cotización por ID
+router.get('/:id', cotizacionController.obtenerCotizacionPorId);
+
+// Obtener cotizaciones de un contacto específico
+router.get('/contacto/:contactoId', cotizacionController.obtenerCotizacionesPorContacto);
+
+// Actualizar cotización
+router.put('/:id', cotizacionController.actualizarCotizacion);
+
+// Cambiar estado de cotización
+router.patch('/:id/estado', cotizacionController.cambiarEstado);
+
+// Eliminar cotización
+router.delete('/:id', cotizacionController.eliminarCotizacion);
+
+export default router;
