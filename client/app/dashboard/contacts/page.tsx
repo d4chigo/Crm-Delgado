@@ -29,21 +29,22 @@ export default function PaginaContactos() {
     estaCargando,
     error,
     paginacion,
+    filtros,
     buscarContactos,
     crearContacto,
     actualizarContacto,
     eliminarContacto,
     convertirALead,
     convertirVariosALeads,
-    cargarContactos,
+    refrescarContactos,
     iniciarImportacionGoogle,
     completarImportacionGoogle,
     cambiarPagina,
     filtrarPorTipo,
+    setFiltros,
   } = useContactos()
 
   const { toast } = useToast()
-  const [busqueda, setBusqueda] = useState("")
   const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
   const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
@@ -60,7 +61,13 @@ export default function PaginaContactos() {
   // Cargar contactos con filtro CONTACTO al montar el componente
   useEffect(() => {
     console.log('🎯 Cargando contactos iniciales con filtro: solo CONTACTO')
-    cargarContactos({ tipo: TipoContacto.CONTACTO, pagina: 1, limite: 6 })
+    setFiltros(prev => ({
+      ...prev,
+      tipo: TipoContacto.CONTACTO,
+      pagina: 1,
+      limite: 6,
+      busqueda: ''
+    }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -103,20 +110,11 @@ export default function PaginaContactos() {
     procesarCallbackGoogle()
   }, [completarImportacionGoogle, toast])
 
-  // Efecto para buscar con delay (debounce) - solo después del montaje inicial
-  useEffect(() => {
-    // No ejecutar en el montaje inicial (cuando busqueda está vacía)
-    if (busqueda === '') return
-    
-    const timer = setTimeout(() => {
-      buscarContactos(busqueda)
-    }, 500)
-    
-    return () => clearTimeout(timer)
-  }, [busqueda, buscarContactos])
-
-  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBusqueda(e.target.value)
+  // Manejador de búsqueda que se pasa al componente de búsqueda
+  const handleBusqueda = (query: string) => {
+    console.log('⌨️ Tecla presionada:', query);
+    // Llamar directamente a buscarContactos sin debounce para mejor respuesta
+    buscarContactos(query);
   }
 
   const handleConfirmarEliminar = async () => {
@@ -268,9 +266,13 @@ export default function PaginaContactos() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, apellido o correo..."
-            value={busqueda}
-            onChange={handleBusqueda}
+            placeholder="Buscar por nombre, apellido, correo o DNI..."
+            value={filtros?.busqueda || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              console.log('📝 Valor del input:', value);
+              handleBusqueda(value);
+            }}
             className="pl-9"
           />
         </div>
@@ -397,7 +399,7 @@ export default function PaginaContactos() {
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No hay contactos</h3>
             <p className="text-muted-foreground text-center mb-4">
-              {busqueda 
+              {filtros.busqueda && filtros.busqueda.trim() !== ''
                 ? "No se encontraron contactos con ese criterio de búsqueda"
                 : "Comienza agregando tu primer contacto para gestionar tus relaciones"}
             </p>
@@ -412,7 +414,7 @@ export default function PaginaContactos() {
         abierto={!!contactoEditando}
         onActualizar={actualizarContacto}
         onCancelar={() => setContactoEditando(null)}
-        onRecargar={cargarContactos}
+        onRecargar={refrescarContactos}
       />
 
       <DialogoEliminarContacto

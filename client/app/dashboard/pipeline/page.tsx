@@ -65,8 +65,13 @@ export default function PaginaPipeline() {
     cargarEtiquetas()
   }, [])
 
+  // Cargar oportunidades al montar
+  useEffect(() => {
+    refrescar()
+  }, [refrescar])
+
   // Filtrar oportunidades por mes, año, búsqueda y etiqueta
-  const oportunidadesFiltradas = oportunidades.filter((op) => {
+  const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
     // Filtro por mes y año
     if (selectedMonth !== "all") {
       const opDate = new Date(op.creadoEn)
@@ -83,12 +88,14 @@ export default function PaginaPipeline() {
       const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
       const correo = op.cliente?.correo?.toLowerCase() || ''
       const empresa = op.cliente?.empresa?.toLowerCase() || ''
+      const dni = op.cliente?.dni?.toLowerCase() || ''
       const titulo = op.titulo?.toLowerCase() || ''
       
       if (!nombreCompleto.includes(searchLower) && 
           !correo.includes(searchLower) && 
           !empresa.includes(searchLower) &&
-          !titulo.includes(searchLower)) {
+          !titulo.includes(searchLower) &&
+          !dni.includes(searchLower)) {
         return false
       }
     }
@@ -105,21 +112,21 @@ export default function PaginaPipeline() {
 
   // Calcular datos por etapa
   const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
-    const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
+    const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
     return {
       ...etapa,
       count: oportunidadesEtapa.length,
-      value: oportunidadesEtapa.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0),
+      value: oportunidadesEtapa.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0),
     }
   })
 
   // Estadísticas generales
   const valorPipeline = oportunidadesFiltradas
-    .filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa))
-    .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
+    .filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const oportunidadesGanadas = oportunidadesFiltradas.filter((op) => op.etapa === "GANADO")
-  const valorGanado = oportunidadesGanadas.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "GANADO")
+  const valorGanado = oportunidadesGanadas.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
   const getProbabilityColor = (probability?: number | null) => {
     if (!probability) return "text-gray-600 bg-gray-50"
@@ -129,13 +136,39 @@ export default function PaginaPipeline() {
   }
 
   const handleWhatsApp = (telefono: string, nombre: string) => {
+    console.log('[WA] handler called with', telefono, nombre)
+    if (!telefono) {
+      toast({ title: 'Teléfono no disponible', description: 'El contacto no tiene teléfono registrado.' })
+      return
+    }
     if (telefono) {
       const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
-      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      if (window.electron) {
-        window.electron.shell.openExternal(url);
-      } else {
-        window.open(url, '_blank');
+      // Normalize phone (digits only) and build wa.me URL so it opens in browser
+      const phone = telefono.replace(/\D/g, '')
+      if (!phone) return
+      let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      // map whatsapp:// scheme (if somehow provided) to web wa.me
+      try {
+        if (telefono.startsWith('whatsapp:') || telefono.startsWith('whatsapp://')) {
+          // in case telefono contains a whatsapp://... URL, extract digits
+          const digits = telefono.replace(/\D/g, '')
+          url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
+        }
+      } catch (e) {
+        // ignore
+      }
+      try {
+        console.log('[WA] opening url:', url)
+        // show a small toast to give user feedback
+        toast({ title: 'Abriendo WhatsApp', description: url })
+        if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+          ;(window as any).electron.shell.openExternal(url)
+        } else if (typeof window !== 'undefined') {
+          window.open(url, '_blank')
+        }
+      } catch (e) {
+        // fallback
+        try { window.open(url, '_blank') } catch (_) { /* ignore */ }
       }
     }
   };
@@ -143,11 +176,26 @@ export default function PaginaPipeline() {
   const handleScheduleMeeting = (nombre: string, correo: string) => {
     const asunto = `Reunión con ${nombre}`;
     const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
-    if (window.electron) {
-      window.electron.shell.openExternal(url);
-    } else {
-      window.open(url, '_blank');
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`
+    try {
+      toast({ title: 'Abriendo calendario', description: url })
+      if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+        ;(window as any).electron.shell.openExternal(url)
+      } else if (typeof window !== 'undefined') {
+        window.open(url, '_blank')
+      }
+    } catch (e) {
+      try { window.open(url, '_blank') } catch (_) { /* ignore */ }
+    }
+  };
+
+  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
+    try {
+      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await refrescar()
+      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
     }
   };
 
@@ -209,9 +257,9 @@ export default function PaginaPipeline() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, correo, empresa o título..."
+              placeholder="Buscar por nombre, correo, empresa, título o DNI..."
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -224,7 +272,7 @@ export default function PaginaPipeline() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas las etiquetas</SelectItem>
-              {etiquetas.map((etiqueta) => (
+              {etiquetas.map((etiqueta: Etiqueta) => (
                 <SelectItem key={etiqueta.id} value={etiqueta.id}>
                   <div className="flex items-center gap-2">
                     <div 
@@ -248,7 +296,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {oportunidadesFiltradas.filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
+                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -304,7 +352,7 @@ export default function PaginaPipeline() {
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {etapasConDatos.map((etapa) => {
-            const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
+            const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
             return (
               <div key={etapa.id} className="flex-shrink-0 w-80">
                 <Card className="border-border h-full">
@@ -323,7 +371,7 @@ export default function PaginaPipeline() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 h-[600px] overflow-y-auto pr-2 scrollbar-visible">
-                    {oportunidadesEtapa.map((oportunidad) => (
+                    {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
                       <Card
                         key={oportunidad.id}
                         className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
@@ -402,9 +450,9 @@ export default function PaginaPipeline() {
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.nombre}
+                  {ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
                 <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
                   Probabilidad: {selectedDeal.probabilidad || 0}%
@@ -429,7 +477,7 @@ export default function PaginaPipeline() {
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
                 <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
@@ -486,8 +534,8 @@ export default function PaginaPipeline() {
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
                   {ETAPAS_PIPELINE
-                    .filter((e) => e.id !== selectedDeal.etapa)
-                    .map((etapa) => (
+                    .filter((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
+                    .map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => (
                       <Button
                         key={etapa.id}
                         size="sm"

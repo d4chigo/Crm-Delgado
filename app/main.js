@@ -27,31 +27,30 @@ const createWindow = () => {
 app.whenReady().then(() => {
   createWindow()
 
-  // Global handler: whenever any webContents attempts to open a new window
-  // or navigate to an external url, prefer opening in the external browser.
-  const { webContents } = require('electron')
-  webContents.on('new-window', (event, url) => {
-    try {
-      event.preventDefault()
-      shell.openExternal(url)
-    } catch (e) {
-      console.error('Failed to open external url from new-window', e)
-    }
-  })
-
-  webContents.on('will-navigate', (event, url) => {
-    try {
-      // If navigation is to an external origin, open externally
-      const win = BrowserWindow.getFocusedWindow()
-      if (!win) return
-      const origin = new URL(win.webContents.getURL()).origin
-      if (new URL(url).origin !== origin) {
+  app.on('web-contents-created', (event, contents) => {
+    contents.on('new-window', (event, url) => {
+      try {
         event.preventDefault()
         shell.openExternal(url)
+      } catch (e) {
+        console.error('Failed to open external url from new-window', e)
       }
-    } catch (e) {
-      // ignore errors
-    }
+    })
+
+    contents.on('will-navigate', (event, url) => {
+      try {
+        // If navigation is to an external origin, open externally
+        const win = BrowserWindow.getFocusedWindow()
+        if (!win) return
+        const origin = new URL(win.webContents.getURL()).origin
+        if (new URL(url).origin !== origin) {
+          event.preventDefault()
+          shell.openExternal(url)
+        }
+      } catch (e) {
+        // ignore errors
+      }
+    })
   })
 
   app.on('activate', () => {

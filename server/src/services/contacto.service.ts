@@ -58,14 +58,14 @@ export class ContactoService {
       where.ciudad = { contains: ciudad };
     }
 
-    if (busqueda) {
-      where.OR = [
-        { nombre: { contains: busqueda } },
-        { apellido: { contains: busqueda } },
-        { correo: { contains: busqueda } }
-      ];
-    }
-
+        if (busqueda) {
+          where.OR = [
+            { nombre: { contains: busqueda } },
+            { apellido: { contains: busqueda } },
+            { correo: { contains: busqueda } },
+            { dni: { contains: busqueda } }
+          ];
+        }
     // Obtener contactos y total
     const [contactos, total] = await Promise.all([
       prisma.contacto.findMany({

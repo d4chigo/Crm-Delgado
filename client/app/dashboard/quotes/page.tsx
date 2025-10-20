@@ -40,6 +40,7 @@ interface Quote {
   quoteNumber: string
   clientName: string
   clientEmail: string
+  clientDni: string
   property: string
   project: string
   basePrice: number
@@ -63,6 +64,7 @@ export default function PaginaCotizaciones() {
   const [newQuote, setNewQuote] = useState({
     clientName: "",
     clientEmail: "",
+    clientDni: "",
     property: "",
     project: "",
     basePrice: "",
@@ -88,7 +90,8 @@ export default function PaginaCotizaciones() {
     (quote) =>
       quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quote.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.project.toLowerCase().includes(searchTerm.toLowerCase()),
+      quote.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.clientDni.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const stats = {
@@ -112,6 +115,7 @@ export default function PaginaCotizaciones() {
       quoteNumber: `COT-2025-${String(quotes.length + 1).padStart(3, "0")}`,
       clientName: newQuote.clientName,
       clientEmail: newQuote.clientEmail,
+      clientDni: newQuote.clientDni,
       property: newQuote.property,
       project: newQuote.project,
       basePrice: Number.parseFloat(newQuote.basePrice),
@@ -180,6 +184,15 @@ export default function PaginaCotizaciones() {
                       value={newQuote.clientEmail}
                       onChange={(e) => setNewQuote({ ...newQuote, clientEmail: e.target.value })}
                       placeholder="email@ejemplo.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientDni">DNI del Cliente</Label>
+                    <Input
+                      id="clientDni"
+                      value={newQuote.clientDni}
+                      onChange={(e) => setNewQuote({ ...newQuote, clientDni: e.target.value })}
+                      placeholder="12345678"
                     />
                   </div>
                 </div>
@@ -362,7 +375,7 @@ export default function PaginaCotizaciones() {
       <Card className="border-border">
         <CardContent className="p-4">
           <SearchInput
-            placeholder="Buscar por número, cliente o proyecto..."
+            placeholder="Buscar por número, cliente, proyecto o DNI..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
