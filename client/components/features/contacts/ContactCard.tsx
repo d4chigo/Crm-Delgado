@@ -25,7 +25,7 @@ export function ContactCard({
   onEliminar,
 }: ContactCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow max-w-full overflow-hidden">
       <CardHeader>
         <div className="flex items-start gap-3">
           <Checkbox
@@ -61,7 +61,23 @@ export function ContactCard({
               </div>
             )}
             
-            <p className="text-sm text-muted-foreground">{contacto.correo}</p>
+            <div className="w-full max-w-full overflow-hidden">
+              <p 
+                className="text-sm text-muted-foreground truncate w-full" 
+                title={contacto.correo}
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {contacto.correo}
+              </p>
+            </div>
           </div>
         </div>
       </CardHeader>

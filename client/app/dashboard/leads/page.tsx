@@ -36,9 +36,10 @@ export default function PaginaLeads() {
     filtrarPorTipo,
     cargarContactos,
     cambiarPagina,
+    filtros,
   } = useContactos()
 
-  const [busqueda, setBusqueda] = useState("")
+  // Usamos el estado de filtros del hook useContactos
   const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
@@ -104,26 +105,12 @@ export default function PaginaLeads() {
   const leads = tabActivo === 'leads' ? contactosFiltrados : []
   const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
 
-  // Efecto para buscar con delay (debounce)
-  useEffect(() => {
-    if (busqueda === '') return // No ejecutar en el montaje inicial
-    
-    const timer = setTimeout(() => {
-      const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
-      if (busqueda.trim()) {
-        buscarContactos(busqueda)
-      } else {
-        // Si no hay búsqueda, recargar con filtro de tipo
-        cargarContactos({ tipo, pagina: 1, limite: 6 })
-      }
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [busqueda, tabActivo, buscarContactos, cargarContactos])
-
-  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBusqueda(e.target.value)
+  // Manejador de búsqueda que se pasa al componente de búsqueda
+  const handleBusqueda = (query: string) => {
+    console.log('⌨️ Buscando leads:', query);
+    buscarContactos(query);
   }
+
 
   const handleVerDetalles = (lead: Contacto) => {
     setLeadSeleccionado(lead)
@@ -303,11 +290,17 @@ export default function PaginaLeads() {
         <TabsContent value="leads" className="space-y-4">
           {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
-            <div className="flex-1">
-              <SearchInput
-                placeholder="Buscar leads por nombre, apellido o correo..."
-                value={busqueda}
-                onChange={handleBusqueda}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, apellido, correo o DNI..."
+                value={filtros?.busqueda || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  console.log('📝 Valor del input:', value);
+                  handleBusqueda(value);
+                }}
+                className="pl-9"
               />
             </div>
             <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
@@ -411,7 +404,7 @@ export default function PaginaLeads() {
                 <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  {busqueda 
+                  {filtros?.busqueda 
                     ? "No se encontraron leads con ese criterio de búsqueda"
                     : "Convierte tus contactos en leads para comenzar a gestionarlos"}
                 </p>
@@ -431,11 +424,15 @@ export default function PaginaLeads() {
           {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
             <div className="flex-1">
-              <SearchInput
-                placeholder="Buscar clientes por nombre, apellido o correo..."
-                value={busqueda}
-                onChange={handleBusqueda}
-              />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar clientes por nombre, apellido o correo..."
+                  value={filtros?.busqueda || ''}
+                  onChange={(e) => handleBusqueda(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
             <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
               <SelectTrigger className="w-[220px]">
@@ -540,7 +537,7 @@ export default function PaginaLeads() {
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No hay clientes</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  {busqueda 
+                  {filtros?.busqueda 
                     ? "No se encontraron clientes con ese criterio de búsqueda"
                     : "Convierte tus leads en clientes para comenzar"}
                 </p>
