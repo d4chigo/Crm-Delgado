@@ -36,11 +36,14 @@ async function fetchAPI<T>(
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
   
+  const token = typeof window !== 'undefined' ? localStorage.getItem('crm_token') : null;
+  
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options?.headers,
       },
     });
@@ -54,6 +57,12 @@ async function fetchAPI<T>(
     // Si no hay respuesta o el servidor no responde
     if (!response.ok && response.status >= 500) {
       throw new Error('Error del servidor. Intenta de nuevo más tarde.');
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Respuesta inesperada del servidor');
     }
 
     const data: RespuestaAPI<T> = await response.json();

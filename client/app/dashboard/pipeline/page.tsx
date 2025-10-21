@@ -59,7 +59,11 @@ export default function PaginaPipeline() {
           setEtiquetas(etiquetasObtenidas)
         }
       } catch (error) {
-        console.error('Error al cargar etiquetas:', error)
+        toast({ 
+          title: 'Error al cargar etiquetas',
+          description: (error as Error).message,
+          variant: 'destructive',
+        });
       }
     }
     cargarEtiquetas()
@@ -370,7 +374,7 @@ export default function PaginaPipeline() {
                       S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 h-[600px] overflow-y-auto pr-2 scrollbar-visible">
+                  <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
                     {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
                       <Card
                         key={oportunidad.id}
