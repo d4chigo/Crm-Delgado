@@ -31,7 +31,20 @@ export const proyectoService = {
       }
 
       const resultado = await response.json()
-      return resultado.datos || []
+      const proyectos = resultado.datos || [];
+      
+      // Procesar las rutas de las imágenes para Electron
+      if (typeof window !== 'undefined' && window.electron) {
+        return proyectos.map((proyecto: any) => ({
+          ...proyecto,
+          // Si la imagen es una ruta local, convertirla a formato file://
+          imagen: proyecto.imagen && !proyecto.imagen.startsWith('http') 
+            ? `file://${proyecto.imagen.replace(/\\/g, '/')}`
+            : proyecto.imagen
+        }));
+      }
+      
+      return proyectos;
     } catch (error) {
       console.error('Error al obtener proyectos:', error)
       throw error
@@ -56,7 +69,17 @@ export const proyectoService = {
       }
 
       const resultado = await response.json()
-      return resultado.datos
+      const proyecto = resultado.datos;
+      
+      // Procesar la ruta de la imagen para Electron
+      if (proyecto?.imagen && typeof window !== 'undefined' && window.electron && !proyecto.imagen.startsWith('http')) {
+        return {
+          ...proyecto,
+          imagen: `file://${proyecto.imagen.replace(/\\/g, '/')}`
+        };
+      }
+      
+      return proyecto;
     } catch (error) {
       console.error('Error al obtener proyecto:', error)
       throw error
