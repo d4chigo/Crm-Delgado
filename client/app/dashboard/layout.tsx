@@ -19,7 +19,6 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
   { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
-  { nombre: "Cotizaciones", href: "/dashboard/quotes", icono: IconoArchivo },
   { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
 ]
 

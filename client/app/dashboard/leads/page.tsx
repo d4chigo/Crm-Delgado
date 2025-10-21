@@ -15,7 +15,6 @@ import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
 import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
-import { CotizacionesContacto } from "@/components/features/cotizaciones"
 import {
   Dialog,
   DialogContent,
@@ -44,8 +43,6 @@ export default function PaginaLeads() {
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
-  const [dialogoCotizacionesAbierto, setDialogoCotizacionesAbierto] = useState(false)
-  const [contactoCotizaciones, setContactoCotizaciones] = useState<Contacto | null>(null)
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -120,11 +117,6 @@ export default function PaginaLeads() {
   const handleEditar = (lead: Contacto) => {
     setLeadSeleccionado(lead)
     setDialogoEditarAbierto(true)
-  }
-
-  const handleAbrirCotizaciones = (contacto: Contacto) => {
-    setContactoCotizaciones(contacto)
-    setDialogoCotizacionesAbierto(true)
   }
 
   const handleConvertirCliente = async (leadId: string) => {
@@ -352,7 +344,6 @@ export default function PaginaLeads() {
                   lead={lead}
                   isConverting={convirtiendoCliente === lead.id}
                   onVerDetalles={handleVerDetalles}
-                  onCotizar={handleAbrirCotizaciones}
                   onConvertir={handleConvertirCliente}
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsApp}
@@ -482,7 +473,6 @@ export default function PaginaLeads() {
                   key={cliente.id}
                   cliente={cliente}
                   onVerDetalles={handleVerDetalles}
-                  onCotizar={handleAbrirCotizaciones}
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsApp}
                   onScheduleMeeting={handleScheduleMeeting}
@@ -581,25 +571,6 @@ export default function PaginaLeads() {
           }}
         />
       )}
-
-      {/* Modal de Cotizaciones */}
-      <Dialog open={dialogoCotizacionesAbierto} onOpenChange={setDialogoCotizacionesAbierto}>
-        <DialogContent size="4xl" className="!w-[90vw] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
-              Cotizaciones - {contactoCotizaciones?.nombre} {contactoCotizaciones?.apellido}
-            </DialogTitle>
-          </DialogHeader>
-          {contactoCotizaciones && (
-            <CotizacionesContacto
-              contactoId={contactoCotizaciones.id}
-              nombreContacto={`${contactoCotizaciones.nombre} ${contactoCotizaciones.apellido}`}
-              tipoContacto={contactoCotizaciones.tipo as 'LEAD' | 'CLIENTE'}
-              abrirFormularioPorDefecto={true}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
