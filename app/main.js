@@ -1,4 +1,5 @@
 const { app, BrowserWindow, shell } = require('electron/main')
+const { session } = require('electron')
 const path = require('node:path')
 
 const createWindow = () => {
@@ -25,6 +26,32 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
+  // Allow autoplay without user gesture so TTS can play immediately
+  try { app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') } catch {}
+
+  // Grant microphone permission inside Electron for getUserMedia
+  try {
+    const ses = session.defaultSession
+    if (ses && typeof ses.setPermissionRequestHandler === 'function') {
+      ses.setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone') {
+          return callback(true)
+        }
+        return callback(false)
+      })
+    }
+    if (ses && typeof ses.setPermissionCheckHandler === 'function') {
+      ses.setPermissionCheckHandler((_webContents, permission) => {
+        if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone') {
+          return true
+        }
+        return false
+      })
+    }
+  } catch (e) {
+    // ignore
+  }
+
   createWindow()
 
   app.on('web-contents-created', (event, contents) => {

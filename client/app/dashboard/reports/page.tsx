@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { PageHeader } from "@/components/layout";
 import { ReportStatCard } from "@/components/features/reports/ReportStatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,26 +8,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp as IconoTendenciaArriba, TrendingDown as IconoTendenciaAbajo, DollarSign as IconoDolar, Users as IconoUsuarios, Building2 as IconoEdificio, Target as IconoObjetivo, Calendar as IconoCalendario, Download as IconoDescargar } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
+import { obtenerMetricas, type MetricasResponse } from "@/services/api/analytics.service"
 
 export default function PaginaReportes() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("month")
   const [anioSeleccionado, setAnioSeleccionado] = useState("2025")
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
-  const metricas: Array<{
-    title: string
-    value: string
-    change: string
-    trend: string
-    icon: any
-    color: string
-    bgColor: string
-  }> = []
+  const [metricas, setMetricas] = useState<MetricasResponse["metricas"]>([])
+  const [ventasPorProyecto, setVentasPorProyecto] = useState<MetricasResponse["ventasPorProyecto"]>([])
+  const [ventasPorPrograma, setVentasPorPrograma] = useState<MetricasResponse["ventasPorPrograma"]>([])
+  const [mejoresAgentes, setMejoresAgentes] = useState<MetricasResponse["mejoresAgentes"]>([])
+  const [ventasMensuales, setVentasMensuales] = useState<MetricasResponse["ventasMensuales"]>([])
 
-  const ventasPorProyecto: Array<{ project: string; sales: number; value: number; percentage: number }> = []
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const datos = await obtenerMetricas({ period: periodoSeleccionado, year: anioSeleccionado })
+        setMetricas(datos.metricas)
+        setVentasPorProyecto(datos.ventasPorProyecto)
+        setVentasPorPrograma(datos.ventasPorPrograma)
+        setMejoresAgentes(datos.mejoresAgentes)
+        setVentasMensuales(datos.ventasMensuales)
+      } catch (e) {
+        // noop: mantener placeholders vacíos
+      }
+    }
+    cargar()
+  }, [periodoSeleccionado, anioSeleccionado])
 
-  const ventasPorPrograma: Array<{ program: string; count: number; percentage: number }> = []
-
-  const mejoresAgentes: Array<{ name: string; sales: number; value: number; conversion: number }> = []
+  
 
   return (
     <div className="space-y-6">
@@ -66,7 +78,7 @@ export default function PaginaReportes() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricas.map((metrica) => (
+        {metricas.map((metrica: any) => (
           <ReportStatCard
             key={metrica.title}
             title={metrica.title}
@@ -93,7 +105,7 @@ export default function PaginaReportes() {
                 <p className="text-sm">No hay datos de ventas por proyecto</p>
               </div>
             ) : (
-              ventasPorProyecto.map((proyecto) => (
+              ventasPorProyecto.map((proyecto: any) => (
               <div key={proyecto.project} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium text-[#303030]">{proyecto.project}</span>
@@ -124,7 +136,7 @@ export default function PaginaReportes() {
                 <p className="text-sm">No hay datos de ventas por programa</p>
               </div>
             ) : (
-              ventasPorPrograma.map((programa) => (
+              ventasPorPrograma.map((programa: any) => (
               <div key={programa.program} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
                   <p className="font-semibold text-[#303030]">{programa.program}</p>
@@ -152,7 +164,7 @@ export default function PaginaReportes() {
                 <p className="text-sm">No hay datos de agentes</p>
               </div>
             ) : (
-              mejoresAgentes.map((agente, indice) => (
+              mejoresAgentes.map((agente: any, indice: number) => (
               <div key={agente.name} className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#FCBA00] text-[#303030] font-bold">
                   #{indice + 1}
@@ -179,20 +191,30 @@ export default function PaginaReportes() {
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-end justify-between gap-2">
-            {[65, 78, 82, 90, 75, 88, 95, 85, 92, 88, 94, 100].map((altura, indice) => (
-              <div key={indice} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-[#FCBA00] rounded-t-lg hover:bg-[#E0A800] transition-colors cursor-pointer"
-                  style={{ height: `${altura}%` }}
-                />
-                <span className="text-xs text-muted-foreground">
-                  {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][indice]}
-                </span>
-              </div>
-            ))}
+            {(() => {
+              const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
+              const max = Math.max(1, ...ventasMensuales.map(v => v.count))
+              return (ventasMensuales.length ? ventasMensuales : Array.from({length:12}, (_,i)=>({month:i+1,count:0,value:0}))).map((m:any, idx:number) => {
+                const altura = Math.round((m.count / max) * 100)
+                const label = months[(m.month ? m.month-1 : idx) % 12]
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                    <div
+                      title={`${m.count} ventas`}
+                      className="w-full bg-[#FCBA00] rounded-t-lg hover:bg-[#E0A800] transition-colors cursor-pointer"
+                      style={{ height: `${altura}%` }}
+                    />
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                  </div>
+                )
+              })
+            })()}
           </div>
         </CardContent>
       </Card>
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

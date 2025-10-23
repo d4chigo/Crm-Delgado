@@ -20,6 +20,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import authRoutes from '@/routes/auth.routes';
 import googleAuthRoutes from '@/routes/google-auth.routes';
 import contactoRoutes from '@/routes/contacto.routes';
@@ -28,7 +30,10 @@ import etiquetaRoutes from '@/routes/etiqueta.routes';
 import proyectoRoutes from '@/routes/proyecto.routes';
 import oportunidadRoutes from '@/routes/oportunidad.routes';
 import cotizacionRoutes from '@/routes/cotizacion.routes';
+import analyticsRoutes from '@/routes/analytics.routes';
+import assistantRoutes from '@/routes/assistant.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
+import { handleVoiceSession } from '@/controllers/voice.controller';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -74,15 +79,28 @@ app.use('/api/etiquetas', etiquetaRoutes);
 app.use('/api/proyectos', proyectoRoutes);
 app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);
 
 // ==================== INICIAR SERVIDOR ====================
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+// WebSocket Server para sesiones de voz
+const wss = new WebSocketServer({ server: httpServer, path: '/api/voice' });
+
+wss.on('connection', (ws) => {
+  console.log('[Voice] New WebSocket connection');
+  handleVoiceSession(ws);
+});
+
+httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant`);
 });
 
 export default app;
