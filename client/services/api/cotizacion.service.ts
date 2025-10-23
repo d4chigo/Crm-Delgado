@@ -154,6 +154,7 @@ export const cotizacionService = {
           // saldo no cambia
           continue;
         }
+        continue; // Add this line
       }
 
       // FLEXIBLE_TRADICIONAL overrides: if exists an override for this month, use it and recompute remaining cuota
@@ -252,7 +253,7 @@ export const cotizacionService = {
       }
 
       // After a special payment, recompute cuota for remaining months
-      if (esCuotaEspecial) {
+      if (esCuotaEspecial && !(options?.montoCuotaManual && options.montoCuotaManual > 0)) {
         const mesesRestantes = plazoMeses - mes;
         if (mesesRestantes > 0) {
           cuota = this.calcularCuotaMensual(saldo, tasaAnual, mesesRestantes);

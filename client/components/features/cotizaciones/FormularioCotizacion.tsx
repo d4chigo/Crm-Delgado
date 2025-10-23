@@ -100,6 +100,7 @@ export const FormularioCotizacion = ({
   }), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
   
   const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, { 
+    modalidadPago: datos.tipoCuota as any,
     frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
     cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
     cuotaEspecialValor: datos.cuotaEspecialValor as any,

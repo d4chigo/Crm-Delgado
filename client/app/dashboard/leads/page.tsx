@@ -14,7 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
-import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
+import { FormularioCotizacion } from "@/components/features/cotizaciones";
+import { cotizacionService } from "@/services/api/cotizacion.service";
+import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +46,8 @@ export default function PaginaLeads() {
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
+  const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -205,6 +210,29 @@ export default function PaginaLeads() {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
+  const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
+    try {
+      await cotizacionService.crear(datos);
+      toast({
+        title: "Cotización guardada",
+        description: "La cotización ha sido creada exitosamente.",
+      });
+      setDialogoCotizacionAbierto(false);
+    } catch (error) {
+      console.error("Error al guardar la cotización:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la cotización.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCotizar = (lead: Contacto) => {
+    setLeadParaCotizar(lead);
+    setDialogoCotizacionAbierto(true);
+  };
+
   const handleWhatsApp = (telefono: string, nombre: string) => {
     if (telefono) {
       const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
@@ -348,6 +376,7 @@ export default function PaginaLeads() {
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsApp}
                   onScheduleMeeting={handleScheduleMeeting}
+                  onCotizar={handleCotizar}
                 />
               ))}
             </div>
@@ -569,6 +598,17 @@ export default function PaginaLeads() {
             setDialogoOportunidadAbierto(false)
             setClienteParaOportunidad(null)
           }}
+        />
+      )}
+
+      {/* Diálogo para cotización */}
+      {leadParaCotizar && (
+        <FormularioCotizacion
+          open={dialogoCotizacionAbierto}
+          onOpenChange={setDialogoCotizacionAbierto}
+          onGuardar={handleGuardarCotizacion}
+          contactoId={leadParaCotizar.id}
+          nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`}
         />
       )}
     </div>
