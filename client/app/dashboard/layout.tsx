@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
+import { Calendar as IconoCalendario } from "lucide-react"
 
 const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
@@ -20,6 +21,7 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
   { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
+  { nombre: "Calendario", href: "/dashboard/calendar", icono: IconoCalendario },
 ]
 
 export default function LayoutDashboard({ children }: { children: React.ReactNode }) {

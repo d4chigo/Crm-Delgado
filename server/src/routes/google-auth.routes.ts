@@ -2,6 +2,9 @@ import { Router, Request, Response } from 'express';
 import { autenticar } from '@/middlewares/autenticacion.middleware';
 import googleAuthService from '@/services/google-auth.service';
 import { respuestaExito, respuestaError } from '@/utils/respuesta.util';
+import prisma from '@/config/database';
+import cryptoUtil from '@/utils/crypto.util';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
@@ -21,7 +24,14 @@ router.get('/google', autenticar, (req: Request, res: Response) => {
       return;
     }
 
-    const authUrl = googleAuthService.getAuthUrl();
+    // Incluir state con el usuario para permitir callback seguro
+    const stateToken = jwt.sign({
+      sub: req.usuario!.id,
+      purpose: 'contacts_oauth',
+      exp: Math.floor(Date.now() / 1000) + 10 * 60 // 10 minutos
+    }, process.env.JWT_SECRET || 'secret-super-secreto-cambiar-en-produccion');
+
+    const authUrl = googleAuthService.getAuthUrl(stateToken);
     respuestaExito(res, { authUrl }, 'URL de autorización generada');
   } catch (error: any) {
     console.error('Error al generar URL de autorización:', error);
@@ -37,6 +47,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
   try {
     const code = req.query.code as string;
     const error = req.query.error as string;
+    const state = req.query.state as string | undefined;
 
     console.log('📥 Callback recibido de Google');
     console.log('Code:', code ? 'Recibido' : 'No recibido');
@@ -64,8 +75,50 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const tokens = await googleAuthService.getTokens(code);
     console.log('✅ Tokens obtenidos exitosamente');
 
-    // Redirigir al frontend con el access token
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+
+    // Si el state corresponde a flujo de calendario/contactos, guardamos tokens y redirigimos sin exponerlos
+    if (state) {
+      try {
+        const decoded: any = jwt.verify(state, process.env.JWT_SECRET || 'secret-super-secreto-cambiar-en-produccion');
+        const userId: string | undefined = decoded?.sub;
+        const purpose: string | undefined = decoded?.purpose;
+        if (userId && (purpose === 'calendar_oauth' || purpose === 'contacts_oauth')) {
+          const accessEnc = tokens.access_token ? cryptoUtil.encrypt(tokens.access_token) : null;
+          const refreshEnc = tokens.refresh_token ? cryptoUtil.encrypt(tokens.refresh_token) : null;
+          // Guardar/actualizar cuenta calendario cuando el propósito sea calendario
+          if (purpose === 'calendar_oauth') {
+            await prisma.calendarioCuenta.upsert({
+              where: { usuarioId_proveedor: { usuarioId: userId, proveedor: 'GOOGLE' } },
+              create: {
+                usuarioId: userId,
+                proveedor: 'GOOGLE',
+                proveedorUsuarioId: null,
+                email: null,
+                accessTokenEnc: accessEnc || '',
+                refreshTokenEnc: refreshEnc,
+                tokenExpiraEn: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+                scope: tokens.scope || null,
+                calendarioPrimarioId: 'primary',
+              },
+              update: {
+                accessTokenEnc: accessEnc || '',
+                refreshTokenEnc: refreshEnc,
+                tokenExpiraEn: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+                scope: tokens.scope || null,
+              }
+            });
+            return res.redirect(`${clientUrl}/dashboard/calendar?connected=1`);
+          }
+          // En caso de contactos, mantenemos compatibilidad con import basado en frontend token si no implementado
+          return res.redirect(`${clientUrl}/dashboard/contacts?connected=1`);
+        }
+      } catch (e) {
+        console.warn('State inválido en callback de Google:', (e as any).message);
+      }
+    }
+
+    // Fallback legacy: redirigir con token para flujos antiguos (contactos)
     const redirectUrl = `${clientUrl}/dashboard/contacts?google_token=${encodeURIComponent(tokens.access_token || '')}`;
     console.log('🔀 Redirigiendo al frontend...');
     res.redirect(redirectUrl);

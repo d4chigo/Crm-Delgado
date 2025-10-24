@@ -15,17 +15,18 @@ class GoogleAuthService {
   /**
    * Generar URL de autorización de Google
    */
-  getAuthUrl(): string {
+  getAuthUrl(state?: string): string {
     const scopes = [
-      'https://www.googleapis.com/auth/contacts.readonly',
       'https://www.googleapis.com/auth/userinfo.profile',
-      'https://www.googleapis.com/auth/userinfo.email'
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/calendar'
     ];
 
     const authUrl = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: scopes,
-      prompt: 'consent'
+      prompt: 'consent',
+      state
     });
 
     console.log('🔗 URL de autorización generada');

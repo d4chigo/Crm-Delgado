@@ -247,6 +247,101 @@ enum EtapaPipeline {
   PERDIDO
 }
 
+// ==========================
+// Calendario y sincronización
+// ==========================
+
+model CalendarioCuenta {
+  id                 String          @id @default(uuid())
+  usuarioId          String
+  proveedor          ProveedorCal    @default(GOOGLE)
+  proveedorUsuarioId String?         // Sub o id del usuario en el proveedor
+  email              String?
+  // Tokens OAuth cifrados (AES-GCM). Nunca almacenar tokens en texto plano
+  accessTokenEnc     String          @db.Text
+  refreshTokenEnc    String?         @db.Text
+  tokenExpiraEn      DateTime?
+  scope              String?
+
+  // Estado de sincronización incremental
+  syncToken          String?         @db.Text
+  ultimaSincronizacion DateTime?
+
+  // Webhooks (Google Calendar push notifications)
+  canalId            String?         // X-Goog-Channel-ID
+  recursoId          String?         // X-Goog-Resource-ID
+  canalExpiraEn      DateTime?
+  webhookSecreto     String?
+
+  calendarioPrimarioId String?       // Para Google suele ser "primary"
+
+  creadoEn           DateTime        @default(now())
+  actualizadoEn      DateTime        @updatedAt
+
+  usuario            Usuario         @relation(fields: [usuarioId], references: [id])
+  eventos            CalendarioEvento[]
+
+  @@index([usuarioId])
+  @@unique([usuarioId, proveedor])
+  @@map("calendario_cuentas")
+}
+
+model CalendarioEvento {
+  id               String        @id @default(uuid())
+  usuarioId        String
+  cuentaId         String
+  proveedor        ProveedorCal  @default(GOOGLE)
+  proveedorEventoId String       // ID del evento en el proveedor
+  iCalUid          String?       // iCalUID de Google para series
+  etag             String?       // Para detectar cambios
+  htmlLink         String?
+  estado           EstadoEvento  @default(CONFIRMADO)
+  cancelado        Boolean       @default(false)
+
+  resumen          String
+  descripcion      String?       @db.Text
+  ubicacion        String?
+  todoElDia        Boolean       @default(false)
+  zonaHoraria      String?       // Time zone si aplica
+
+  inicio           DateTime      // Siempre almacenado en UTC
+  fin              DateTime      // Siempre almacenado en UTC
+
+  recurrenciaRRule String?       @db.Text // RRULE si aplica
+  recurrenciaExDates String?     @db.Text // Fechas excluidas
+
+  asistentes       Json?         // Lista de asistentes [{email, responseStatus}]
+  recordatoriosMinutos Int?      // Recordatorio predeterminado en minutos
+
+  remotoCreadoEn   DateTime?     // Fechas del proveedor
+  remotoActualizadoEn DateTime?
+
+  ultimaSincronizacion DateTime? 
+
+  creadoEn         DateTime      @default(now())
+  actualizadoEn    DateTime      @updatedAt
+
+  usuario          Usuario       @relation(fields: [usuarioId], references: [id])
+  cuenta           CalendarioCuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([cuentaId])
+  @@index([proveedorEventoId])
+  @@map("calendario_eventos")
+}
+
+enum ProveedorCal {
+  GOOGLE
+  OUTLOOK
+  ICLOUD
+}
+
+enum EstadoEvento {
+  CONFIRMADO
+  TENTATIVO
+  CANCELADO
+}
+
 // Modelo de Cotización Inmobiliaria
 model Cotizacion {
   id                    String            @id @default(uuid())

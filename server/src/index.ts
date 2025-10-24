@@ -22,6 +22,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import authRoutes from '@/routes/auth.routes';
 import googleAuthRoutes from '@/routes/google-auth.routes';
+import calendarRoutes from '@/routes/calendar.routes';
 import contactoRoutes from '@/routes/contacto.routes';
 import dniRoutes from '@/routes/dni.routes';
 import etiquetaRoutes from '@/routes/etiqueta.routes';
@@ -68,6 +69,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
+app.use('/api/calendar', calendarRoutes);
 app.use('/api/contactos', contactoRoutes);
 app.use('/api/dni', dniRoutes);
 app.use('/api/etiquetas', etiquetaRoutes);
@@ -82,7 +84,7 @@ app.use(manejarErrores);
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/calendar, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones`);
 });
 
 export default app;
