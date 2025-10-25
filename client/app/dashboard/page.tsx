@@ -6,18 +6,17 @@ import { obtenerUsuario } from "@/lib/autenticacion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { fetchAPI } from "@/services/api/config"
+import WebPreview from "@/components/WebPreview"
 import {
-  Users as IconoUsuarios,
   Building2 as IconoEdificio,
   TrendingUp as IconoTendencia,
   DollarSign as IconoDolar,
-  Phone as IconoTelefono,
-  Mail as IconoCorreo,
   Calendar as IconoCalendario,
   ArrowUpRight as FlechaArriba,
   ArrowDownRight as FlechaAbajo,
   RefreshCcw as IconoActualizar,
   Eye as IconoVer,
+  Users as IconoUsuarios,
 } from "lucide-react"
 
 export default function PaginaDashboard() {
@@ -26,6 +25,8 @@ export default function PaginaDashboard() {
   const [metricas, setMetricas] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [leadsRecientes, setLeadsRecientes] = useState<any[]>([])
+  const [cargandoLeads, setCargandoLeads] = useState(false)
 
   useEffect(() => {
     const usuarioActual = obtenerUsuario()
@@ -34,6 +35,7 @@ export default function PaginaDashboard() {
     } else {
       setUsuario(usuarioActual)
       cargarMetricas()
+      cargarLeadsRecientes()
     }
   }, [enrutador])
 
@@ -48,6 +50,18 @@ export default function PaginaDashboard() {
       setError('Error cargando métricas del dashboard')
     } finally {
       setCargando(false)
+    }
+  }
+
+  async function cargarLeadsRecientes() {
+    try {
+      setCargandoLeads(true)
+      const datos = await fetchAPI<any>('/contactos/recientes?tipo=LEAD')
+      setLeadsRecientes(datos.contactos || [])
+    } catch (err: any) {
+      console.error('Error cargando leads recientes:', err)
+    } finally {
+      setCargandoLeads(false)
     }
   }
 
@@ -75,7 +89,6 @@ export default function PaginaDashboard() {
 
   const obtenerIcono = (iconName: string) => {
     const iconos: { [key: string]: any } = {
-      users: IconoUsuarios,
       building: IconoEdificio,
       dollar: IconoDolar,
       trending: IconoTendencia,
@@ -83,38 +96,6 @@ export default function PaginaDashboard() {
     return iconos[iconName] || IconoTendencia
   }
 
-  const leadsRecientes: Array<{
-    name: string
-    email: string
-    phone: string
-    project: string
-    score: number
-    status: string
-    date: string
-  }> = []
-
-  const actividadesProximas: Array<{
-    type: string
-    client: string
-    project: string
-    time: string
-    icon: any
-  }> = []
-
-  const obtenerColorPuntaje = (puntaje: number) => {
-    if (puntaje >= 70) return "text-green-600 bg-green-50"
-    if (puntaje >= 50) return "text-yellow-600 bg-yellow-50"
-    return "text-red-600 bg-red-50"
-  }
-
-  const obtenerEstiloBadge = (estado: string) => {
-    const estilos = {
-      hot: "bg-red-100 text-red-700 border-red-200",
-      warm: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      cold: "bg-blue-100 text-blue-700 border-blue-200",
-    }
-    return estilos[estado as keyof typeof estilos] || estilos.cold
-  }
 
   return (
     <div className="space-y-6">
@@ -150,189 +131,109 @@ export default function PaginaDashboard() {
         </div>
       )}
 
-      {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metricas.length === 0 ? (
-          <div className="col-span-full">
-            <Card className="border-border">
-              <CardContent className="p-12">
-                <div className="text-center text-muted-foreground">
-                  <IconoTendencia className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">No hay métricas disponibles</p>
-                  <p className="text-xs mt-1">Las estadísticas aparecerán cuando haya datos en el sistema</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          metricas.map((metrica, indice) => {
-          const Icono = obtenerIcono(metrica.icon)
-          return (
-            <Card key={indice} className="border-border hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">{metrica.title}</p>
-                    <p className="text-3xl font-bold text-[#303030]">{metrica.value}</p>
-                    <div className="flex items-center gap-1">
-                      {metrica.trend === "up" ? (
-                        <FlechaArriba className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <FlechaAbajo className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className={`text-sm font-medium ${metrica.trend === "up" ? "text-green-600" : "text-red-600"}`}>
-                        {metrica.change}
-                      </span>
-                      <span className="text-sm text-muted-foreground">vs mes anterior</span>
-                    </div>
-                  </div>
-                  <div className={`${metrica.bgColor} p-3 rounded-xl`}>
-                    <Icono className={`w-6 h-6 ${metrica.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })
-        )}
-      </div>
 
-      {/* Acciones Rápidas */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-[#303030]">Acciones Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-              onClick={() => enrutador.push('/dashboard/contacts')}
-            >
-              <IconoUsuarios className="w-6 h-6" />
-              <span className="text-sm font-medium">Contactos</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-              onClick={() => enrutador.push('/dashboard/leads')}
-            >
-              <IconoTendencia className="w-6 h-6" />
-              <span className="text-sm font-medium">Leads</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-              onClick={() => enrutador.push('/dashboard/actividades')}
-            >
-              <IconoCalendario className="w-6 h-6" />
-              <span className="text-sm font-medium">Actividades</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-              onClick={() => enrutador.push('/dashboard/reports')}
-            >
-              <IconoVer className="w-6 h-6" />
-              <span className="text-sm font-medium">Reportes</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Leads */}
-        <Card className="lg:col-span-2 border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-[#303030]">Leads Recientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {leadsRecientes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">No hay leads recientes</p>
-                  <p className="text-xs mt-1">Los nuevos leads aparecerán aquí</p>
-                </div>
-              ) : (
-                leadsRecientes.map((lead, indice) => (
-                <div
-                  key={indice}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h4 className="font-semibold text-[#303030]">{lead.name}</h4>
-                      <span
-                        className={`px-2 py-0.5 text-xs font-medium rounded-full border ${obtenerEstiloBadge(lead.status)}`}
-                      >
-                        {lead.status.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{lead.project}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <IconoCorreo className="w-3 h-3" />
-                        {lead.email}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <IconoTelefono className="w-3 h-3" />
-                        {lead.phone}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${obtenerColorPuntaje(lead.score)}`}>
-                      Score: {lead.score}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{lead.date}</span>
-                  </div>
-                </div>
-              ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Activities */}
+      {/* Leads Recientes y Link Delgado lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leads Recientes */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-[#303030]">Próximas Actividades</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-bold text-[#303030] flex items-center gap-2">
+                <IconoUsuarios className="w-5 h-5 text-[#FCBA00]" />
+                Leads Recientes
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cargarLeadsRecientes}
+                className="bg-[#FCBA00] text-[#303030] border-[#FCBA00] hover:shadow-lg hover:shadow-[#FCBA00]/30 transition-all duration-200"
+              >
+                <IconoActualizar className="w-4 h-4 mr-1" />
+                Actualizar
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {actividadesProximas.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">No hay actividades programadas</p>
-                  <p className="text-xs mt-1">Las próximas actividades aparecerán aquí</p>
-                </div>
-              ) : (
-                actividadesProximas.map((actividad, indice) => {
-                const Icono = actividad.icon
-                return (
+            {cargandoLeads ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FCBA00]"></div>
+                <span className="ml-2 text-sm text-muted-foreground">Cargando leads...</span>
+              </div>
+            ) : leadsRecientes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <IconoUsuarios className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No hay leads recientes</p>
+                <p className="text-xs mt-1">Los nuevos leads aparecerán aquí</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {leadsRecientes.slice(0, 5).map((lead, indice) => (
                   <div
-                    key={indice}
-                    className="flex gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                    key={lead.id || indice}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 hover:border-[#FCBA00]/30 hover:shadow-md transition-all duration-200"
                   >
-                    <div className="bg-[#FCBA00] p-2 rounded-lg h-fit">
-                      <Icono className="w-4 h-4 text-[#303030]" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#FCBA00]/10 rounded-full flex items-center justify-center">
+                      <span className="text-[#FCBA00] font-semibold text-sm">
+                        {lead.nombre ? lead.nombre.charAt(0).toUpperCase() : '?'}
+                      </span>
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm text-[#303030]">{actividad.type}</h4>
-                      <p className="text-sm text-muted-foreground">{actividad.client}</p>
-                      <p className="text-xs text-muted-foreground">{actividad.project}</p>
-                      <div className="flex items-center gap-1 text-xs text-[#FCBA00] font-medium pt-1">
-                        <IconoCalendario className="w-3 h-3" />
-                        {actividad.time}
-                      </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-[#303030] truncate">
+                        {lead.nombre || 'Sin nombre'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {lead.email || lead.telefono || 'Sin información de contacto'}
+                      </p>
+                      {lead.empresa && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {lead.empresa}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {lead.fechaCreacion ? new Date(lead.fechaCreacion).toLocaleDateString() : 'Reciente'}
+                      </span>
+                      {lead.estado && (
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          lead.estado === 'activo' 
+                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            : 'bg-gray-100 text-gray-700 border border-gray-200'
+                        }`}>
+                          {lead.estado}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )
-              })
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+            
+            {leadsRecientes.length > 5 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                <Button
+                  variant="outline"
+                  onClick={() => enrutador.push('/dashboard/leads')}
+                  className="bg-[#FCBA00] text-[#303030] border-[#FCBA00] hover:shadow-lg hover:shadow-[#FCBA00]/30 transition-all duration-200"
+                >
+                  Ver todos los leads
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Link Delgado */}
+        <WebPreview
+          url="https://linkdelgado.netlify.app/"
+          title="Link Delgado"
+          description="Portal principal de servicios digitales"
+        />
       </div>
+
     </div>
   )
 }

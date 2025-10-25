@@ -360,6 +360,45 @@ export class ContactoService {
   }
 
   /**
+   * Obtener contactos recientes
+   */
+  async obtenerContactosRecientes(usuarioId: string, limite: number = 10, tipo?: string) {
+    const where: any = { usuarioId };
+    
+    if (tipo) {
+      where.tipo = tipo;
+    }
+
+    const contactos = await prisma.contacto.findMany({
+      where,
+      orderBy: { creadoEn: 'desc' },
+      take: limite,
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        telefono: true,
+        empresa: true,
+        tipo: true,
+        estadoLead: true,
+        creadoEn: true
+      }
+    });
+
+    return contactos.map(contacto => ({
+      id: contacto.id,
+      nombre: `${contacto.nombre} ${contacto.apellido}`.trim(),
+      email: contacto.correo,
+      telefono: contacto.telefono,
+      empresa: contacto.empresa,
+      tipo: contacto.tipo,
+      estado: contacto.estadoLead,
+      fechaCreacion: contacto.creadoEn
+    }));
+  }
+
+  /**
    * Asociar un cliente a un lead
    * NOTA: Requiere tabla leadCliente en el schema de Prisma
    */

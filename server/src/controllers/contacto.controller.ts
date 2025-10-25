@@ -51,6 +51,27 @@ export class ContactoController {
   }
 
   /**
+   * GET /api/contactos/recientes
+   */
+  async obtenerContactosRecientes(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const limite = req.query.limite ? Number(req.query.limite) : 10;
+      const tipo = req.query.tipo as string;
+      const contactos = await contactoService.obtenerContactosRecientes(usuarioId, limite, tipo);
+      respuestaExito(res, { contactos });
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al obtener contactos recientes', 500);
+    }
+  }
+
+  /**
    * GET /api/contactos/:id
    */
   async obtenerContactoPorId(req: Request, res: Response): Promise<void> {
