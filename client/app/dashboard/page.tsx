@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { obtenerUsuario } from "@/lib/autenticacion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { fetchAPI } from "@/services/api/config"
 import {
   Users as IconoUsuarios,
   Building2 as IconoEdificio,
@@ -14,11 +16,16 @@ import {
   Calendar as IconoCalendario,
   ArrowUpRight as FlechaArriba,
   ArrowDownRight as FlechaAbajo,
+  RefreshCcw as IconoActualizar,
+  Eye as IconoVer,
 } from "lucide-react"
 
 export default function PaginaDashboard() {
   const enrutador = useRouter()
   const [usuario, setUsuario] = useState<any>(null)
+  const [metricas, setMetricas] = useState<any[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const usuarioActual = obtenerUsuario()
@@ -26,8 +33,23 @@ export default function PaginaDashboard() {
       enrutador.push("/login")
     } else {
       setUsuario(usuarioActual)
+      cargarMetricas()
     }
   }, [enrutador])
+
+  async function cargarMetricas() {
+    try {
+      setCargando(true)
+      setError(null)
+      const datos = await fetchAPI<any>('/analytics/metrics')
+      setMetricas(datos.metricas || [])
+    } catch (err: any) {
+      console.error('Error cargando métricas:', err)
+      setError('Error cargando métricas del dashboard')
+    } finally {
+      setCargando(false)
+    }
+  }
 
   if (!usuario) {
     return (
@@ -37,15 +59,29 @@ export default function PaginaDashboard() {
     )
   }
 
-  const kpis: Array<{
-    title: string
-    value: string
-    change: string
-    trend: string
-    icon: any
-    color: string
-    bgColor: string
-  }> = []
+  if (cargando) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Cargando métricas...</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FCBA00]"></div>
+        </div>
+      </div>
+    )
+  }
+
+  const obtenerIcono = (iconName: string) => {
+    const iconos: { [key: string]: any } = {
+      users: IconoUsuarios,
+      building: IconoEdificio,
+      dollar: IconoDolar,
+      trending: IconoTendencia,
+    }
+    return iconos[iconName] || IconoTendencia
+  }
 
   const leadsRecientes: Array<{
     name: string
@@ -83,14 +119,40 @@ export default function PaginaDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Bienvenido de vuelta, {usuario.name}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Bienvenido de vuelta, {usuario.name}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={cargarMetricas}
+            className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+          >
+            <IconoActualizar className="w-4 h-4 mr-2" />
+            Actualizar
+          </Button>
+        </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cargarMetricas}
+            className="text-red-600 border-red-300 hover:bg-red-50"
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.length === 0 ? (
+        {metricas.length === 0 ? (
           <div className="col-span-full">
             <Card className="border-border">
               <CardContent className="p-12">
@@ -103,29 +165,29 @@ export default function PaginaDashboard() {
             </Card>
           </div>
         ) : (
-          kpis.map((kpi, indice) => {
-          const Icono = kpi.icon
+          metricas.map((metrica, indice) => {
+          const Icono = obtenerIcono(metrica.icon)
           return (
             <Card key={indice} className="border-border hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
-                    <p className="text-3xl font-bold text-[#303030]">{kpi.value}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{metrica.title}</p>
+                    <p className="text-3xl font-bold text-[#303030]">{metrica.value}</p>
                     <div className="flex items-center gap-1">
-                      {kpi.trend === "up" ? (
+                      {metrica.trend === "up" ? (
                         <FlechaArriba className="w-4 h-4 text-green-600" />
                       ) : (
                         <FlechaAbajo className="w-4 h-4 text-red-600" />
                       )}
-                      <span className={`text-sm font-medium ${kpi.trend === "up" ? "text-green-600" : "text-red-600"}`}>
-                        {kpi.change}
+                      <span className={`text-sm font-medium ${metrica.trend === "up" ? "text-green-600" : "text-red-600"}`}>
+                        {metrica.change}
                       </span>
                       <span className="text-sm text-muted-foreground">vs mes anterior</span>
                     </div>
                   </div>
-                  <div className={`${kpi.bgColor} p-3 rounded-xl`}>
-                    <Icono className={`w-6 h-6 ${kpi.color}`} />
+                  <div className={`${metrica.bgColor} p-3 rounded-xl`}>
+                    <Icono className={`w-6 h-6 ${metrica.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -134,6 +196,49 @@ export default function PaginaDashboard() {
         })
         )}
       </div>
+
+      {/* Acciones Rápidas */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-[#303030]">Acciones Rápidas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+              onClick={() => enrutador.push('/dashboard/contacts')}
+            >
+              <IconoUsuarios className="w-6 h-6" />
+              <span className="text-sm font-medium">Contactos</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+              onClick={() => enrutador.push('/dashboard/leads')}
+            >
+              <IconoTendencia className="w-6 h-6" />
+              <span className="text-sm font-medium">Leads</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+              onClick={() => enrutador.push('/dashboard/actividades')}
+            >
+              <IconoCalendario className="w-6 h-6" />
+              <span className="text-sm font-medium">Actividades</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center gap-2 border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+              onClick={() => enrutador.push('/dashboard/reports')}
+            >
+              <IconoVer className="w-6 h-6" />
+              <span className="text-sm font-medium">Reportes</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Leads */}

@@ -9,6 +9,7 @@ import {
   FileText as IconoArchivo,
   BarChart3 as IconoGrafico,
   UserCircle as IconoContacto,
+  Calendar as IconoCalendario,
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
@@ -20,6 +21,7 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
   { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
+  { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
   { nombre: "Ayuda", href: "/dashboard/help", icono: IconoArchivo },
 ]
 

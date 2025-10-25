@@ -39,11 +39,32 @@ export default function PaginaAyuda() {
         </section>
 
         <section className="border rounded-lg p-5 bg-background">
+          <h2 className="text-lg font-semibold text-[#303030] mb-2">Conectar Google Calendar</h2>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+            <li>Ve a <strong>Actividades</strong> y haz clic en <strong>Conectar con Google Calendar</strong>.</li>
+            <li>Inicia sesión con tu cuenta de Google.</li>
+            <li>Autoriza el acceso a tu calendario.</li>
+            <li>¡Tus eventos aparecerán automáticamente!</li>
+          </ol>
+        </section>
+
+        <section className="border rounded-lg p-5 bg-background">
+          <h2 className="text-lg font-semibold text-[#303030] mb-2">Gestionar Actividades</h2>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+            <li>Navega por meses con los botones <strong>‹</strong> y <strong>›</strong>.</li>
+            <li>Haz clic en eventos para programar recordatorios.</li>
+            <li>Configura notificaciones (5, 10, 15 o 30 minutos antes).</li>
+            <li>Usa <strong>Sync</strong> para actualizar eventos.</li>
+          </ol>
+        </section>
+
+        <section className="border rounded-lg p-5 bg-background">
           <h2 className="text-lg font-semibold text-[#303030] mb-2">Consejos</h2>
           <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
             <li>Usa etiquetas para segmentar contactos y proyectos.</li>
             <li>Mantén actualizada la etapa de oportunidades.</li>
             <li>Consulta <strong>Reportes</strong> y el <strong>Asistente</strong> para insights.</li>
+            <li>Sincroniza tu calendario para no perder citas importantes.</li>
           </ul>
         </section>
       </div>

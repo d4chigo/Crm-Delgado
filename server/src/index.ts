@@ -32,6 +32,7 @@ import oportunidadRoutes from '@/routes/oportunidad.routes';
 import cotizacionRoutes from '@/routes/cotizacion.routes';
 import analyticsRoutes from '@/routes/analytics.routes';
 import assistantRoutes from '@/routes/assistant.routes';
+import calendarRoutes from '@/routes/calendar.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -81,6 +82,7 @@ app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);
@@ -100,7 +102,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar`);
 });
 
 export default app;
