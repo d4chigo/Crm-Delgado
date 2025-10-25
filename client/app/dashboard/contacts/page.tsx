@@ -19,6 +19,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +50,7 @@ export default function PaginaContactos() {
   const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
   const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
   const [resultadoImportacion, setResultadoImportacion] = useState<{
     importados: number
@@ -423,6 +426,9 @@ export default function PaginaContactos() {
         onConfirmar={handleConfirmarEliminar}
         onCancelar={() => setContactoEliminando(null)}
       />
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

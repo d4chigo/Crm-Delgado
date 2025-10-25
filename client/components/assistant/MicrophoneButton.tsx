@@ -16,13 +16,18 @@ export default function MicrophoneButton({ isActive, isListening, onClick }: Mic
     ? "ring-2 ring-red-400/70 shadow-[0_0_25px_rgba(239,68,68,0.55)]"
     : "ring-2 ring-[#FCBA00]/70 shadow-[0_0_25px_rgba(252,186,0,0.45)]";
 
+  const handleClick = () => {
+    console.log('MicrophoneButton clicked, isActive:', isActive);
+    onClick();
+  };
+
   return (
     <div className="relative">
       {isListening && (
         <div className="absolute inset-0 rounded-full blur-md opacity-70 animate-pulse bg-[#FCBA00]/40" />
       )}
       <button
-        onClick={onClick}
+        onClick={handleClick}
         className={`${baseClasses} ${isActive ? gradientActive : gradientIdle} ${ringClasses}`}
         aria-label={isActive ? 'Detener voz' : 'Iniciar voz'}
         title={isActive ? 'Detener voz' : 'Iniciar voz'}

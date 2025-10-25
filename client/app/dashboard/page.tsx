@@ -18,6 +18,8 @@ import {
   Eye as IconoVer,
   Users as IconoUsuarios,
 } from "lucide-react"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 export default function PaginaDashboard() {
   const enrutador = useRouter()
@@ -27,6 +29,7 @@ export default function PaginaDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [leadsRecientes, setLeadsRecientes] = useState<any[]>([])
   const [cargandoLeads, setCargandoLeads] = useState(false)
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
   useEffect(() => {
     const usuarioActual = obtenerUsuario()
@@ -234,6 +237,8 @@ export default function PaginaDashboard() {
         />
       </div>
 
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

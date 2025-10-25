@@ -25,6 +25,8 @@ import {
   Search,
   Tag,
 } from "lucide-react"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 // Mapeo de etapas para el pipeline
 const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
@@ -47,6 +49,7 @@ export default function PaginaPipeline() {
   const [busqueda, setBusqueda] = useState<string>("")
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
@@ -569,6 +572,9 @@ export default function PaginaPipeline() {
           </DialogContent>
         </Dialog>
       )}
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

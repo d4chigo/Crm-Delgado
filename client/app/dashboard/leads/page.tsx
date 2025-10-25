@@ -15,6 +15,8 @@ import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
 import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 import {
   Dialog,
   DialogContent,
@@ -50,6 +52,7 @@ export default function PaginaLeads() {
   const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
   const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
   const [totalLeads, setTotalLeads] = useState(0)
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [totalClientes, setTotalClientes] = useState(0)
 
   // Cargar leads/clientes según el tab activo
@@ -571,6 +574,9 @@ export default function PaginaLeads() {
           }}
         />
       )}
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

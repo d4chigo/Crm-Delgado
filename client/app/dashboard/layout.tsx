@@ -20,7 +20,7 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
   { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
-  { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
+  { nombre: "Estadísticas", href: "/dashboard/reports", icono: IconoGrafico },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
   { nombre: "Ayuda", href: "/dashboard/help", icono: IconoArchivo },
 ]

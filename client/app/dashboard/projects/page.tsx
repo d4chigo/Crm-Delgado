@@ -20,6 +20,8 @@ import { DialogoProyecto } from "@/components/features/projects/DialogoProyecto"
 import { DatosFormularioProyecto, Proyecto, EstadoProyecto } from "@/types/proyecto.types"
 import { Etiqueta } from "@/types/etiqueta.types"
 import { etiquetaService } from "@/services/api/etiqueta.service"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 export default function PaginaProyectos() {
   const [busqueda, setBusqueda] = useState("")
@@ -28,6 +30,7 @@ export default function PaginaProyectos() {
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [proyectoEditar, setProyectoEditar] = useState<Proyecto | undefined>(undefined)
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [cargandoEtiquetas, setCargandoEtiquetas] = useState(false)
 
   const {
@@ -236,6 +239,9 @@ export default function PaginaProyectos() {
         etiquetas={etiquetas}
         estaCargando={estaCargando}
       />
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

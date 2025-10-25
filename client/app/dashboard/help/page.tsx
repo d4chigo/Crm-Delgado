@@ -1,6 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import AssistantFab from "@/components/assistant/AssistantFab";
+import AssistantPanel from "@/components/assistant/AssistantPanel";
+
 export default function PaginaAyuda() {
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false);
   return (
     <div className="space-y-6">
       <div>
@@ -68,6 +73,9 @@ export default function PaginaAyuda() {
           </ul>
         </section>
       </div>
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }
