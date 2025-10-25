@@ -85,8 +85,8 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
           {lead.correo && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span className="truncate">{lead.correo}</span>
+              <Mail className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate min-w-0 flex-1" title={lead.correo}>{lead.correo}</span>
             </div>
           )}
           

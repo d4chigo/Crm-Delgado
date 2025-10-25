@@ -471,15 +471,19 @@ export default function PaginaPipeline() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {selectedDeal.cliente?.correo || 'Sin email'}
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1" title={selectedDeal.cliente?.correo || 'Sin email'}>
+                      {selectedDeal.cliente?.correo || 'Sin email'}
+                    </span>
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Teléfono</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1">
+                      {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                    </span>
                   </p>
                 </div>
               </div>

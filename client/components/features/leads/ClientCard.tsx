@@ -84,8 +84,8 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
 
           {cliente.correo && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span className="truncate">{cliente.correo}</span>
+              <Mail className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate min-w-0 flex-1" title={cliente.correo}>{cliente.correo}</span>
             </div>
           )}
           

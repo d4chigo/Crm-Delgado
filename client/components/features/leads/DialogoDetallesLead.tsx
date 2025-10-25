@@ -17,7 +17,19 @@ import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones
 const DetailItem = ({ label, value }) => (
     <div style={{ marginBottom: '1rem' }}>
         <p style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-        <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1f2937', marginTop: '0.25rem' }}>{value || '-'}</p>
+        <p 
+            style={{ 
+                fontSize: '0.875rem', 
+                fontWeight: 500, 
+                color: '#1f2937', 
+                marginTop: '0.25rem',
+                wordBreak: 'break-all',
+                overflowWrap: 'break-word'
+            }}
+            title={value}
+        >
+            {value || '-'}
+        </p>
     </div>
 );
 
