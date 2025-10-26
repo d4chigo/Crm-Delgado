@@ -146,8 +146,53 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
           {/* Botones de acción */}
           <div className="grid grid-cols-2 gap-2 pt-2">
-             <Button variant="outline" size="sm" onClick={() => onWhatsApp(lead.telefono, lead.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
-             <Button variant="outline" size="sm" onClick={() => onScheduleMeeting(lead.nombre, lead.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+            {(() => {
+              const raw = (lead.telefono || '').replace(/\D/g, '');
+              const phone = raw.length === 9 ? `51${raw}` : raw;
+              const msg = `Hola ${lead.nombre || ''}, te contacto desde CRM Delgado para hacer seguimiento.`.trim();
+              const waUrl = `https://wa.me/${phone}${phone ? `?text=${encodeURIComponent(msg)}` : ''}`;
+              return (
+                <Button asChild variant="outline" size="sm" className="cursor-pointer">
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      // Fallback para entornos que interceptan enlaces externos
+                      try { window.open(waUrl, '_blank'); } catch (_) { /* ignore */ }
+                    }}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    WhatsApp
+                  </a>
+                </Button>
+              );
+            })()}
+            {(() => {
+              const asunto = `Reunión con ${lead.nombre} - CRM Delgado`;
+              const descripcion = `Reunión de seguimiento con ${lead.nombre} ${lead.apellido || ''}. Email: ${lead.correo || ''}`;
+              const start = new Date();
+              start.setHours(9, 0, 0, 0);
+              const end = new Date(start);
+              end.setHours(10, 0, 0, 0);
+              const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+              const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fmt(start)}%2F${fmt(end)}${lead.correo ? `&add=${encodeURIComponent(lead.correo)}` : ''}`;
+              return (
+                <Button asChild variant="outline" size="sm" className="cursor-pointer">
+                  <a
+                    href={calUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      try { window.open(calUrl, '_blank'); } catch (_) { /* ignore */ }
+                    }}
+                  >
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Agendar
+                  </a>
+                </Button>
+              );
+            })()}
           </div>
           <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
