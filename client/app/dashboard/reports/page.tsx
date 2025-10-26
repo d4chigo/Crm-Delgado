@@ -67,10 +67,7 @@ export default function PaginaEstadisticas() {
               <SelectItem value="2025">2025</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10 bg-transparent">
-            <IconoDescargar className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
+        
         </div>
       </PageHeader>
 
