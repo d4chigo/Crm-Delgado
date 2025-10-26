@@ -142,11 +142,6 @@ export default function PaginaLogin() {
               {estaCargando ? "Ingresando..." : "Iniciar Sesión"}
             </Button>
 
-            <div className="text-center text-sm text-muted-foreground pt-2">
-              <button type="button" className="text-[#FCBA00] hover:text-[#E0A800] font-medium transition-colors">
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
           </form>
         </CardContent>
       </Card>
