@@ -120,7 +120,7 @@ export const FormularioCotizacion = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={{ width: '90%', maxWidth: '1400px', height: '800px', display: 'flex', padding: 0, borderRadius: '0.75rem' }}>
+      <DialogContent style={{ width: '85%', maxWidth: '1000px', height: '700px', display: 'flex', padding: 0, borderRadius: '0.75rem' }}>
         
         {/* === COLUMNA IZQUIERDA: FORMULARIO (60%) === */}
         <div style={{ width: '60%', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>

@@ -14,9 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
-import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad"
-import AssistantFab from "@/components/assistant/AssistantFab"
-import AssistantPanel from "@/components/assistant/AssistantPanel"
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
+import { FormularioCotizacion } from "@/components/features/cotizaciones";
+import { cotizacionService } from "@/services/api/cotizacion.service";
+import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
-import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
+import { etiquetaService } from "@/services/api/etiqueta.service"
+import type { Etiqueta } from "@/types/etiqueta.types"
 
 export default function PaginaLeads() {
   const {
@@ -45,6 +47,8 @@ export default function PaginaLeads() {
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
+  const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -52,7 +56,6 @@ export default function PaginaLeads() {
   const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
   const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
   const [totalLeads, setTotalLeads] = useState(0)
-  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [totalClientes, setTotalClientes] = useState(0)
 
   // Cargar leads/clientes según el tab activo
@@ -208,26 +211,102 @@ export default function PaginaLeads() {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
-  const handleWhatsApp = (telefono: string, nombre: string) => {
+  const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
+    try {
+      await cotizacionService.crear(datos);
+      toast({
+        title: "Cotización guardada",
+        description: "La cotización ha sido creada exitosamente.",
+      });
+      setDialogoCotizacionAbierto(false);
+    } catch (error) {
+      console.error("Error al guardar la cotización:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la cotización.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCotizar = (lead: Contacto) => {
+    setLeadParaCotizar(lead);
+    setDialogoCotizacionAbierto(true);
+  };
+
+  const handleWhatsApp = (telefono: string, nombre?: string) => {
     if (telefono) {
-      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
-      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+      // Limpiar el teléfono y asegurar que tenga el código de país
+      let telefonoLimpio = telefono.replace(/\D/g, '');
+      
+      // Si no tiene código de país, agregar +51 (Perú)
+      if (telefonoLimpio.length === 9) {
+        telefonoLimpio = '51' + telefonoLimpio;
+      }
+      
+      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado para hacer seguimiento.`;
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
+      
+      // Intentar abrir en la aplicación de WhatsApp
+      try {
+        if (window.electron) {
+          window.electron.shell.openExternal(url);
+        } else {
+          window.open(url, '_blank');
+        }
+      } catch (error) {
+        console.error('Error al abrir WhatsApp:', error);
+        // Fallback: copiar al portapapeles
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "WhatsApp",
+          description: "Enlace copiado al portapapeles. Pega en WhatsApp.",
+        });
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay número de teléfono disponible para este contacto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Wrapper para ClientCard que solo recibe el teléfono
+  const handleWhatsAppCliente = (telefono: string) => {
+    handleWhatsApp(telefono);
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre} - CRM Delgado`;
+    const descripcion = `Reunión de seguimiento para discutir detalles de la oportunidad con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
+    
+    // Crear URL para Google Calendar con más detalles
+    const fechaInicio = new Date();
+    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
+    
+    try {
       if (window.electron) {
         window.electron.shell.openExternal(url);
       } else {
         window.open(url, '_blank');
       }
-    }
-  };
-
-  const handleScheduleMeeting = (nombre: string, correo: string) => {
-    const asunto = `Reunión con ${nombre}`;
-    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
-    if (window.electron) {
-      window.electron.shell.openExternal(url);
-    } else {
-      window.open(url, '_blank');
+      
+      toast({
+        title: "Google Calendar",
+        description: "Abriendo Google Calendar para agendar la reunión.",
+      });
+    } catch (error) {
+      console.error('Error al abrir Google Calendar:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo abrir Google Calendar. Intenta copiar el enlace manualmente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -349,8 +428,9 @@ export default function PaginaLeads() {
                   onVerDetalles={handleVerDetalles}
                   onConvertir={handleConvertirCliente}
                   onEditar={handleEditar}
-                  onWhatsApp={handleWhatsApp}
+                  onWhatsApp={handleWhatsAppCliente}
                   onScheduleMeeting={handleScheduleMeeting}
+                  onCotizar={handleCotizar}
                 />
               ))}
             </div>
@@ -476,8 +556,9 @@ export default function PaginaLeads() {
                   key={cliente.id}
                   cliente={cliente}
                   onVerDetalles={handleVerDetalles}
+                  onCotizar={handleCotizar}
                   onEditar={handleEditar}
-                  onWhatsApp={handleWhatsApp}
+                  onWhatsApp={handleWhatsAppCliente}
                   onScheduleMeeting={handleScheduleMeeting}
                   onAgregarOportunidad={() => {
                     setClienteParaOportunidad(cliente)
@@ -575,8 +656,16 @@ export default function PaginaLeads() {
         />
       )}
 
-      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
-      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
+      {/* Diálogo para cotización */}
+      {leadParaCotizar && (
+        <FormularioCotizacion
+          open={dialogoCotizacionAbierto}
+          onOpenChange={setDialogoCotizacionAbierto}
+          onGuardar={handleGuardarCotizacion}
+          contactoId={leadParaCotizar.id}
+          nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`}
+        />
+      )}
     </div>
   )
 }
