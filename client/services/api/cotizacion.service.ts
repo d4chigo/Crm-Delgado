@@ -8,7 +8,7 @@ import type {
   EstadoCotizacion
 } from '@/types/cotizacion.types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // Crear instancia específica de axios para cotizaciones
 const axiosInstance = axios.create({
@@ -433,6 +433,7 @@ export const cotizacionService = {
       frecuenciaCuotaEspecial?: 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
       cuotaEspecialTipo?: 'FIJO' | 'PORCENTAJE';
       cuotaEspecialValor?: number;
+      montoCuotaManual?: number;
     }
   ) {
     const montoFinanciar = precioInmueble - cuotaInicial;

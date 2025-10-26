@@ -58,6 +58,18 @@ export const CotizacionesContacto = ({
     }
   }, [abrirFormularioPorDefecto]);
 
+  // Si hay un borrador guardado para este contacto, abrir el formulario automáticamente
+  useEffect(() => {
+    try {
+      const key = `cotizacion_draft_${contactoId}`;
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      if (raw && !modalFormulario) {
+        setCotizacionEditando(null);
+        setModalFormulario(true);
+      }
+    } catch {}
+  }, [contactoId]);
+
   const handleNueva = () => {
     setCotizacionEditando(null);
     setModalFormulario(true);
@@ -76,12 +88,22 @@ export const CotizacionesContacto = ({
   const handleGuardar = async (datos: any) => {
     try {
       if (cotizacionEditando) {
-        await actualizar(cotizacionEditando.id, datos);
+        const actualizada = await actualizar(cotizacionEditando.id, datos);
+        setModalFormulario(false);
+        setCotizacionEditando(null);
+        // Abrir detalle actualizado
+        setCotizacionActual(actualizada);
+        setModalDetalle(true);
       } else {
-        await crear(datos);
+        const nueva = await crear(datos);
+        setModalFormulario(false);
+        setCotizacionEditando(null);
+        // Abrir detalle de la nueva cotización para habilitar exportar
+        setCotizacionActual(nueva);
+        setModalDetalle(true);
       }
-      setModalFormulario(false);
-      setCotizacionEditando(null);
+      // refrescar listado
+      await cargarPorContacto(contactoId);
     } catch (error) {
       console.error('Error al guardar cotización:', error);
     }

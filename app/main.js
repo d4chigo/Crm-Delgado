@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell } = require('electron/main')
+const { app, BrowserWindow, shell, ipcMain } = require('electron/main')
+const fs = require('node:fs')
 const { session } = require('electron')
 const path = require('node:path')
 
@@ -85,6 +86,46 @@ app.whenReady().then(() => {
       createWindow()
     }
   })
+
+  // IPC: Generate PDF from HTML and return base64 string
+  try {
+    ipcMain.handle('generate-pdf', async (_event, { html }) => {
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: { offscreen: true }
+      })
+      try {
+        await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+        const pdfBuffer = await win.webContents.printToPDF({
+          printBackground: true,
+          pageSize: 'A4',
+        })
+        return pdfBuffer.toString('base64')
+      } finally {
+        try { win.destroy() } catch {}
+      }
+    })
+  } catch (e) {
+    // ignore
+  }
+
+  // IPC: Read public asset as data URL (only from client/public)
+  try {
+    ipcMain.handle('get-public-asset-dataurl', async (_event, relPath) => {
+      try {
+        if (typeof relPath !== 'string') return ''
+        const safeRel = relPath.replace(/\\/g, '/').replace(/^\//, '')
+        const abs = path.join(__dirname, '..', 'client', 'public', safeRel)
+        const ext = path.extname(abs).toLowerCase()
+        const mime = ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.svg' ? 'image/svg+xml' : ''
+        const buf = await fs.promises.readFile(abs)
+        const base64 = buf.toString('base64')
+        return mime ? `data:${mime};base64,${base64}` : `data:application/octet-stream;base64,${base64}`
+      } catch (e) {
+        return ''
+      }
+    })
+  } catch {}
 })
 
 app.on('window-all-closed', () => {

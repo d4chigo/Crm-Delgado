@@ -1,4 +1,4 @@
-const { contextBridge, shell } = require('electron')
+const { contextBridge, shell, ipcRenderer } = require('electron')
 
 // Expose a minimal, safe API to the renderer process. This allows renderer
 // code to call window.electron.shell.openExternal(url) to open links in the
@@ -12,6 +12,27 @@ contextBridge.exposeInMainWorld('electron', {
         // swallow errors to avoid breaking renderer
         console.error('Failed to open external URL:', e)
         return Promise.resolve(false)
+      }
+    }
+  },
+  pdf: {
+    generate: async (html) => {
+      try {
+        const base64 = await ipcRenderer.invoke('generate-pdf', { html })
+        return base64
+      } catch (e) {
+        console.error('Failed to generate PDF', e)
+        throw e
+      }
+    }
+  },
+  assets: {
+    getPublicDataUrl: async (relativePath) => {
+      try {
+        return await ipcRenderer.invoke('get-public-asset-dataurl', relativePath)
+      } catch (e) {
+        console.error('Failed to get public asset data url', e)
+        return ''
       }
     }
   }

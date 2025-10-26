@@ -158,7 +158,9 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {
-                      // Fallback para entornos que interceptan enlaces externos
+                      // Evitar que otros listeners globales (Electron) intercepten
+                      e.preventDefault();
+                      e.stopPropagation();
                       try { window.open(waUrl, '_blank'); } catch (_) { /* ignore */ }
                     }}
                   >
@@ -184,6 +186,8 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       try { window.open(calUrl, '_blank'); } catch (_) { /* ignore */ }
                     }}
                   >

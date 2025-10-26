@@ -42,6 +42,182 @@ export const DetalleCotizacion = ({
     }).format(valor);
   };
 
+  const buildCompanyLogoUrl = () => {
+    // Public assets are served from root in Next.js
+    return '/logodelgado.png';
+  };
+
+  const obtenerNombreUsuario = (): string => {
+    try {
+      if (typeof window === 'undefined') return '';
+      const raw = localStorage.getItem('crm_user');
+      if (!raw) return '';
+      const obj = JSON.parse(raw);
+      return obj?.nombre || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const exportarPDF = () => {
+    const logoUrl = buildCompanyLogoUrl();
+    const usuarioNombre = obtenerNombreUsuario();
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Cotización ${cotizacion.numeroReferencia}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: Arial, Helvetica, sans-serif; color: #333; margin: 0; padding: 24px; }
+            .header { display:flex; align-items:center; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 12px; }
+            .brand { display:flex; align-items:center; gap:12px; }
+            .brand img { height: 48px; }
+            .brand h1 { font-size: 20px; margin: 0; }
+            .title { margin-top: 16px; }
+            h2 { margin: 0 0 4px 0; }
+            .meta { color:#666; }
+            .section { margin-top: 18px; }
+            .section h3 { margin: 0 0 8px 0; font-size: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 8px 10px; border: 1px solid #e5e7eb; font-size: 13px; }
+            th { background: #f9fafb; text-align: left; }
+            .totals { margin-top: 12px; width: 50%; }
+            .right { text-align: right; }
+            .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; border:1px solid #e5e7eb; font-size: 12px; }
+            .footer { margin-top: 24px; font-size: 12px; color:#666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="brand">
+              <img src="${logoUrl}" alt="Logo" />
+              <div>
+                <h1>CRM Delgado</h1>
+                <div class="meta">Cotización profesional</div>
+              </div>
+            </div>
+            <div class="right">
+              <div><strong>Ref:</strong> ${cotizacion.numeroReferencia}</div>
+              <div class="meta">Creada: ${formatearFecha(cotizacion.creadoEn)}</div>
+            </div>
+          </div>
+
+          <div class="title">
+            <h2>${cotizacion.nombreProyecto}</h2>
+            <div class="meta">Estado: <span class="badge">${ESTADOS_COTIZACION_LABELS[cotizacion.estado]}</span></div>
+            <div class="meta">Asesor: ${usuarioNombre || '—'}</div>
+          </div>
+
+          <div class="section">
+            <h3>Información del Inmueble</h3>
+            <table>
+              <tr><th>Tipo</th><td>${cotizacion.tipoInmueble || 'No especificado'}</td></tr>
+              <tr><th>Descripción</th><td>${cotizacion.descripcion || 'No especificado'}</td></tr>
+            </table>
+          </div>
+
+          <div class="section">
+            <h3>Datos Financieros</h3>
+            <table>
+              <tr><th>Precio Inmueble</th><td class="right">${formatearMoneda(cotizacion.precioInmueble)}</td></tr>
+              <tr><th>Cuota Inicial</th><td class="right">${formatearMoneda(cotizacion.cuotaInicial)} (${cotizacion.porcentajeCuotaInicial?.toFixed(2)}%)</td></tr>
+              <tr><th>Monto a Financiar</th><td class="right">${formatearMoneda(cotizacion.montoFinanciar)}</td></tr>
+              <tr><th>Tasa Interés Anual</th><td class="right">${cotizacion.tasaInteresAnual}%</td></tr>
+              <tr><th>Plazo</th><td class="right">${cotizacion.plazoMeses} meses (${(cotizacion.plazoMeses / 12).toFixed(1)} años)</td></tr>
+              <tr><th>Cuota Mensual</th><td class="right">${formatearMoneda(cotizacion.cuotaMensualEstimada)}</td></tr>
+              <tr><th>Tipo de Cuota</th><td>${TIPOS_CUOTA_LABELS[cotizacion.tipoCuota]}</td></tr>
+              <tr><th>Total Intereses</th><td class="right">${formatearMoneda(cotizacion.totalIntereses)}</td></tr>
+              <tr><th>Total a Pagar</th><td class="right">${formatearMoneda(cotizacion.totalPagar)}</td></tr>
+            </table>
+          </div>
+
+          <div class="section">
+            <h3>Información Adicional</h3>
+            <table>
+              <tr><th>Válido Hasta</th><td>${cotizacion.fechaValidez ? formatearFecha(cotizacion.fechaValidez) : '—'}</td></tr>
+              <tr><th>Notas</th><td>${cotizacion.notas || '—'}</td></tr>
+            </table>
+          </div>
+
+          <div class="footer">Generado por CRM Delgado • ${new Date().toLocaleString('es-PE')} • ${usuarioNombre || ''}</div>
+        </body>
+      </html>`;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    setTimeout(() => {
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch {}
+      setTimeout(() => { try { document.body.removeChild(iframe); } catch {} }, 500);
+    }, 300);
+  };
+
+  const exportarExcel = () => {
+    // Generar Excel en formato XML Spreadsheet 2003 (compatible con .xls) sin librerías externas
+    const esc = (v: any) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const rows: string[] = [];
+    const pushRow = (cells: (string|number)[]) => {
+      rows.push('<Row>' + cells.map(c => `<Cell><Data ss:Type="String">${esc(c)}</Data></Cell>`).join('') + '</Row>');
+    };
+    const usuarioNombre = obtenerNombreUsuario();
+    pushRow([`Cotización ${cotizacion.numeroReferencia}`]);
+    pushRow([`Proyecto: ${cotizacion.nombreProyecto}`]);
+    pushRow([`Estado: ${ESTADOS_COTIZACION_LABELS[cotizacion.estado]}`]);
+    pushRow([`Asesor: ${usuarioNombre || '—'}`]);
+    pushRow(['']);
+    pushRow(['Información del Inmueble']);
+    pushRow(['Tipo', cotizacion.tipoInmueble || 'No especificado']);
+    pushRow(['Descripción', cotizacion.descripcion || 'No especificado']);
+    pushRow(['']);
+    pushRow(['Datos Financieros']);
+    pushRow(['Precio Inmueble', formatearMoneda(cotizacion.precioInmueble)]);
+    pushRow(['Cuota Inicial', `${formatearMoneda(cotizacion.cuotaInicial)} (${cotizacion.porcentajeCuotaInicial?.toFixed(2)}%)`]);
+    pushRow(['Monto a Financiar', formatearMoneda(cotizacion.montoFinanciar)]);
+    pushRow(['Tasa Interés Anual', `${cotizacion.tasaInteresAnual}%`]);
+    pushRow(['Plazo', `${cotizacion.plazoMeses} meses (${(cotizacion.plazoMeses/12).toFixed(1)} años)`]);
+    pushRow(['Cuota Mensual', formatearMoneda(cotizacion.cuotaMensualEstimada)]);
+    pushRow(['Tipo de Cuota', TIPOS_CUOTA_LABELS[cotizacion.tipoCuota]]);
+    pushRow(['Total Intereses', formatearMoneda(cotizacion.totalIntereses)]);
+    pushRow(['Total a Pagar', formatearMoneda(cotizacion.totalPagar)]);
+    pushRow(['']);
+    pushRow(['Información Adicional']);
+    pushRow(['Válido Hasta', cotizacion.fechaValidez ? formatearFecha(cotizacion.fechaValidez) : '—']);
+    pushRow(['Notas', cotizacion.notas || '—']);
+
+    const xml = `<?xml version="1.0"?>
+      <?mso-application progid="Excel.Sheet"?>
+      <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+        xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:x="urn:schemas-microsoft-com:office:excel"
+        xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+        <Worksheet ss:Name="Cotizacion">
+          <Table>
+            ${rows.join('')}
+          </Table>
+        </Worksheet>
+      </Workbook>`;
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cotizacion_${cotizacion.numeroReferencia}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  };
+
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-PE', {
       year: 'numeric',
@@ -319,6 +495,26 @@ export const DetalleCotizacion = ({
             Eliminar Cotización
           </Button>
         )}
+
+        {/* Exportaciones */}
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            onClick={exportarPDF}
+            disabled={!cotizacion?.id}
+            title={!cotizacion?.id ? 'Crea y guarda la cotización para exportar' : ''}
+          >
+            Exportar PDF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportarExcel}
+            disabled={!cotizacion?.id}
+            title={!cotizacion?.id ? 'Crea y guarda la cotización para exportar' : ''}
+          >
+            Exportar Excel
+          </Button>
+        </div>
       </div>
     </div>
   );
