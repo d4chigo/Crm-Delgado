@@ -45,16 +45,20 @@ export function eliminarTokens() {
 }
 
 export async function obtenerUrlAutenticacion(): Promise<{ authUrl: string }> {
-  return await fetchAPI<{ authUrl: string }>('/calendar/auth-url');
+  const response = await fetchAPI<{ authUrl: string }>('/calendar/auth-url');
+  console.log('[Calendar Service] URL de autenticación obtenida:', response?.authUrl?.substring(0, 50) + '...');
+  return response;
 }
 
 export async function obtenerEstadoAutenticacion(): Promise<CalendarAuthStatus> {
   const tokens = obtenerTokensGuardados();
   console.log('[Calendar Service] Tokens guardados:', tokens ? 'presente' : 'no presente');
-  return await fetchAPI<CalendarAuthStatus>('/calendar/auth-status', {
+  const response = await fetchAPI<CalendarAuthStatus>('/calendar/auth-status', {
     method: 'POST',
     body: JSON.stringify({ tokens }),
   });
+  console.log('[Calendar Service] Estado autenticación recibido:', response);
+  return response;
 }
 
 export async function obtenerEventos(): Promise<CalendarEventsResponse> {
@@ -76,14 +80,18 @@ export async function cerrarSesionCalendario(): Promise<void> {
 
 // Nuevas funciones para el calendario mejorado
 export async function sincronizarEventos(): Promise<void> {
+  console.log('[Calendar Service] Sincronizando eventos...');
   const tokens = obtenerTokensGuardados();
   if (!tokens) {
+    console.error('[Calendar Service] No hay tokens para sincronizar');
     throw new Error('No autenticado');
   }
+  console.log('[Calendar Service] Enviando tokens al backend para sincronizar');
   await fetchAPI<void>('/calendar/sync', {
     method: 'POST',
     body: JSON.stringify({ tokens }),
   });
+  console.log('[Calendar Service] Sincronización completada');
 }
 
 export async function listarEventos(): Promise<CalendarEvent[]> {
@@ -91,11 +99,13 @@ export async function listarEventos(): Promise<CalendarEvent[]> {
   if (!tokens) {
     throw new Error('No autenticado');
   }
+  console.log('[Calendar Service] Listando eventos...');
   const response = await fetchAPI<CalendarEventsResponse>('/calendar/events', {
     method: 'POST',
     body: JSON.stringify({ tokens }),
   });
-  return response.events;
+  console.log('[Calendar Service] Eventos recibidos:', response?.events?.length || 0);
+  return response.events || [];
 }
 
 export function getTokenFromCallback(): string | null {

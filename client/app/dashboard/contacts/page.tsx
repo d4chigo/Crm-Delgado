@@ -198,6 +198,51 @@ export default function PaginaContactos() {
     }
   }
 
+  const handleWhatsApp = (telefono: string, nombre?: string) => {
+    if (telefono) {
+      // Limpiar el teléfono y asegurar que tenga el código de país
+      let telefonoLimpio = telefono.replace(/\D/g, '');
+      
+      // Si no tiene código de país, agregar +51 (Perú)
+      if (telefonoLimpio.length === 9) {
+        telefonoLimpio = '51' + telefonoLimpio;
+      }
+      
+      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado.`;
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
+      
+      // Abrir WhatsApp
+      window.open(url, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay número de teléfono disponible para este contacto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre} - CRM Delgado`;
+    const descripcion = `Reunión de seguimiento con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
+    
+    // Crear URL para Google Calendar
+    const fechaInicio = new Date();
+    fechaInicio.setDate(fechaInicio.getDate() + 1); // Mañana
+    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
+    
+    window.open(url, '_blank');
+    
+    toast({
+      title: "Calendario abierto",
+      description: "Se abrió Google Calendar para agendar la reunión",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -354,6 +399,8 @@ export default function PaginaContactos() {
                 onConvertir={handleConvertirALead}
                 onEditar={setContactoEditando}
                 onEliminar={setContactoEliminando}
+                onWhatsApp={handleWhatsApp}
+                onScheduleMeeting={handleScheduleMeeting}
               />
             ))}
           </div>
@@ -417,7 +464,7 @@ export default function PaginaContactos() {
         abierto={!!contactoEditando}
         onActualizar={actualizarContacto}
         onCancelar={() => setContactoEditando(null)}
-        onRecargar={refrescarContactos}
+        onRecargar={async () => { refrescarContactos(); }}
       />
 
       <DialogoEliminarContacto

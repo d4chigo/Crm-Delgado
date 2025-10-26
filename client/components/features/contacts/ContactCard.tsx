@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, ArrowRightCircle } from "lucide-react"
+import { Edit, Trash2, ArrowRightCircle, MessageSquare, Calendar } from "lucide-react"
 import type { Contacto } from "@/types/contacto.types"
 
 interface ContactCardProps {
@@ -14,6 +14,8 @@ interface ContactCardProps {
   onConvertir: (contacto: Contacto) => void
   onEditar: (contacto: Contacto) => void
   onEliminar: (contacto: Contacto) => void
+  onWhatsApp?: (telefono: string, nombre: string) => void
+  onScheduleMeeting?: (nombre: string, correo: string) => void
 }
 
 export function ContactCard({
@@ -23,6 +25,8 @@ export function ContactCard({
   onConvertir,
   onEditar,
   onEliminar,
+  onWhatsApp,
+  onScheduleMeeting,
 }: ContactCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow max-w-full overflow-hidden">
@@ -108,6 +112,29 @@ export function ContactCard({
               <ArrowRightCircle className="w-3 h-3 mr-1" />
               Convertir a Lead
             </Button>
+            
+            {/* Botones WhatsApp y Agendar */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onWhatsApp?.(contacto.telefono, `${contacto.nombre} ${contacto.apellido}`)}
+                className="flex-1"
+                disabled={!contacto.telefono}
+              >
+                <MessageSquare className="w-3 h-3 mr-1" />
+                WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onScheduleMeeting?.(`${contacto.nombre} ${contacto.apellido}`, contacto.correo)}
+                className="flex-1"
+              >
+                <Calendar className="w-3 h-3 mr-1" />
+                Agendar
+              </Button>
+            </div>
             
             {/* Botones editar/eliminar */}
             <div className="flex gap-2">

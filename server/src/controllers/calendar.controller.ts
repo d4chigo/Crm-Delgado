@@ -2,20 +2,26 @@ import { Request, Response } from 'express';
 import { google } from 'googleapis';
 
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_CALENDAR_REDIRECT_URI
+  process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CALENDAR_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_CALENDAR_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URI
 );
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 
 export async function getAuthUrl(req: Request, res: Response) {
   try {
+    console.log('[Calendar] Generando URL de autenticación');
+    console.log('[Calendar] Client ID:', process.env.GOOGLE_CALENDAR_CLIENT_ID?.substring(0, 20) + '...');
+    console.log('[Calendar] Redirect URI:', process.env.GOOGLE_CALENDAR_REDIRECT_URI);
+    
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
       prompt: 'consent',
     });
+    
+    console.log('[Calendar] URL generada:', authUrl.substring(0, 100) + '...');
     res.json({ exito: true, datos: { authUrl } });
   } catch (error: any) {
     console.error('[Calendar] Error generando URL de autenticación:', error);

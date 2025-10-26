@@ -86,7 +86,7 @@ export class ContactoService {
 
 
     // Agregar edad a cada contacto
-    const contactosConEdad = contactos.map(c => this.agregarEdad(c));
+    const contactosConEdad = contactos.map((c: any) => this.agregarEdad(c));
 
     return {
       contactos: contactosConEdad,
@@ -289,7 +289,7 @@ export class ContactoService {
     // Convertir todos a leads
     const resultado = await prisma.contacto.updateMany({
       where: {
-        id: { in: contactos.map(c => c.id) }
+        id: { in: contactos.map((c: any) => c.id) }
       },
       data: {
         tipo: TipoContacto.LEAD,
@@ -386,7 +386,7 @@ export class ContactoService {
       }
     });
 
-    return contactos.map(contacto => ({
+    return contactos.map((contacto: any) => ({
       id: contacto.id,
       nombre: `${contacto.nombre} ${contacto.apellido}`.trim(),
       email: contacto.correo,
@@ -623,12 +623,17 @@ export class ContactoService {
     duplicados: number;
     errores: number;
   }> {
+    console.log('[Contacto Service] Iniciando importación desde Google');
+    console.log('[Contacto Service] Usuario ID:', usuarioId);
+    console.log('[Contacto Service] Access token longitud:', accessToken?.length || 0);
+    
     let importados = 0;
     let duplicados = 0;
     let errores = 0;
 
     try {
       // Obtener contactos de Google usando el access token
+      console.log('[Contacto Service] Llamando a googleAuthService.getContacts...');
       const contactosGoogle = await googleAuthService.getContacts(accessToken);
       
       console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle.length}`);

@@ -14,7 +14,7 @@ import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones
 // potential external CSS conflicts that may be causing layout issues.
 // This is not standard practice but is used here for maximum style isolation.
 
-const DetailItem = ({ label, value }) => (
+const DetailItem = ({ label, value }: { label: string; value: string | undefined }) => (
     <div style={{ marginBottom: '1rem' }}>
         <p style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
         <p 
@@ -52,7 +52,7 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar }: DialogoDetalles
 
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
-      <DialogContent style={{ width: '1200px', maxWidth: 'none', height: '800px', display: 'flex', flexDirection: 'column', padding: 0, background: '#f9fafb', borderRadius: '1rem' }}>
+      <DialogContent style={{ maxWidth: '900px', width: '90vw', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0, background: '#f9fafb', borderRadius: '1rem', overflow: 'hidden' }}>
         
         {/* Header */}
         <div style={{ padding: '2rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>
