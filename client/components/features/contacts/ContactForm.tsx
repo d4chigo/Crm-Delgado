@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Plus } from "lucide-react"
 import type { DatosFormularioContacto } from "@/types/contacto.types"
+import { validarTelefono, validarTexto } from "@/lib/validaciones"
 
 interface ContactFormProps {
   onSubmit: (data: DatosFormularioContacto) => void
@@ -28,27 +29,33 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<DatosFormularioContacto>({
     nombre: "",
-    email: "",
+    apellido: "",
+    correo: "",
     telefono: "",
-    empresa: "",
-    ubicacion: "",
-    notas: "",
+    direccion: "",
+    ciudad: "",
+    dni: "",
+    sexo: "",
+    fechaNacimiento: "",
   })
 
   const handleSubmit = () => {
     onSubmit(formData)
     setFormData({
       nombre: "",
-      email: "",
+      apellido: "",
+      correo: "",
       telefono: "",
-      empresa: "",
-      ubicacion: "",
-      notas: "",
+      direccion: "",
+      ciudad: "",
+      dni: "",
+      sexo: "",
+      fechaNacimiento: "",
     })
     setOpen(false)
   }
 
-  const isValid = formData.nombre && formData.email && formData.telefono
+  const isValid = formData.nombre && formData.correo && formData.telefono
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,17 +76,17 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
             <Input
               id="name"
               value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, nombre: validarTexto(e.target.value) })}
               placeholder="Ej: Juan Pérez"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="correo">Correo *</Label>
             <Input
-              id="email"
+              id="correo"
               type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              value={formData.correo}
+              onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
               placeholder="juan@email.com"
             />
           </div>
@@ -88,37 +95,53 @@ export function ContactForm({ onSubmit }: ContactFormProps) {
             <Input
               id="phone"
               value={formData.telefono}
-              onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+              inputMode="numeric"
+              pattern="[0-9\s+\-]*"
+              onChange={(e) => setFormData({ ...formData, telefono: validarTelefono(e.target.value) })}
               placeholder="+51 987 654 321"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="company">Empresa</Label>
-            <Input
-              id="company"
-              value={formData.empresa}
-              onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
-              placeholder="Nombre de la empresa"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="apellido">Apellido</Label>
+              <Input
+                id="apellido"
+                value={formData.apellido}
+                onChange={(e) => setFormData({ ...formData, apellido: validarTexto(e.target.value) })}
+                placeholder="Pérez"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dni">DNI</Label>
+              <Input
+                id="dni"
+                value={formData.dni}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/[^0-9]/g, '').slice(0, 8) })}
+                placeholder="12345678"
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">Ubicación</Label>
-            <Input
-              id="location"
-              value={formData.ubicacion}
-              onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-              placeholder="Lima, Perú"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              value={formData.notas}
-              onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-              placeholder="Información adicional..."
-              rows={3}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="direccion">Dirección</Label>
+              <Input
+                id="direccion"
+                value={formData.direccion}
+                onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                placeholder="Av. Principal 123"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ciudad">Ciudad</Label>
+              <Input
+                id="ciudad"
+                value={formData.ciudad}
+                onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                placeholder="Lima"
+              />
+            </div>
           </div>
           <Button
             onClick={handleSubmit}

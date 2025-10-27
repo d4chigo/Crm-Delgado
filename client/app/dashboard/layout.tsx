@@ -22,7 +22,6 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
   { nombre: "Estadísticas", href: "/dashboard/reports", icono: IconoGrafico },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
-  { nombre: "Ayuda", href: "/dashboard/help", icono: IconoArchivo },
 ]
 
 export default function LayoutDashboard({ children }: { children: React.ReactNode }) {

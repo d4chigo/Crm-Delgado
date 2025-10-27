@@ -22,6 +22,7 @@ model Usuario {
   contactos     Contacto[]
   proyectos     Proyecto[]
   oportunidades OportunidadCliente[]
+  reportes      Reporte[]  @relation("UsuarioReportes")
 
   @@map("usuarios")
 }
@@ -315,4 +316,19 @@ enum EstadoCotizacion {
   ACEPTADA
   RECHAZADA
   VENCIDA
+}
+
+// Registro de ejecuciones de reportes (auditoría/bitácora)
+model Reporte {
+  id                String   @id @default(uuid())
+  tipo              String
+  parametros        Json?
+  resultadosResumen Json?
+  generadoPor       String?
+  generadoEn        DateTime @default(now())
+
+  usuario Usuario? @relation("UsuarioReportes", fields: [generadoPor], references: [id])
+
+  @@index([generadoPor])
+  @@map("reportes")
 }

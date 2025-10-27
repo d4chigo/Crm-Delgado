@@ -82,36 +82,155 @@ export async function getEstadisticas(req: Request, res: Response) {
       }))
       .sort((a, b) => b.cantidad - a.cantidad);
 
-    res.json({ exito: true, datos: {
-      estadisticasGenerales: [
-        { titulo: "Total de Contactos", valor: totalContactos.toString(), cambio: "+12%", tendencia: "up" },
-        { titulo: "Leads Convertidos", valor: leadsConvertidos.toString(), cambio: "+8%", tendencia: "up" },
-        { titulo: "Tasa de Conversión", valor: totalLeads > 0 ? `${((leadsConvertidos / totalLeads) * 100).toFixed(1)}%` : "0%", cambio: "+0.3%", tendencia: "up" }
-      ],
-      actividadesRecientes: actividadesRecientes.map(actividad => ({
-        fecha: actividad.creadoEn.toISOString().split('T')[0],
-        actividad: `Nuevo ${actividad.tipo.toLowerCase()} creado`,
-        usuario: actividad.usuario.nombre,
-        tipo: actividad.tipo.toLowerCase()
-      })),
-      gruposEdad: Object.entries(gruposEdad).map(([rango, cantidad]) => ({
-        rango,
-        cantidad
-      })),
-      departamentos: departamentosData
-    }});
-  } catch (error: any) {
-    console.error('[Estadísticas] Error obteniendo estadísticas:', error);
-    res.json({ exito: true, datos: {
-      estadisticasGenerales: [
-        { titulo: "Total de Contactos", valor: "0", cambio: "+0%", tendencia: "up" },
-        { titulo: "Leads Convertidos", valor: "0", cambio: "+0%", tendencia: "up" },
-        { titulo: "Tasa de Conversión", valor: "0%", cambio: "+0%", tendencia: "up" }
-      ],
-      actividadesRecientes: [],
-      gruposEdad: [],
-      departamentos: []
-    }});
+    res.json({ exito: true, datos: { totalContactos, totalLeads, leadsConvertidos, actividadesRecientes, gruposEdad, departamentosData } });
+  } catch (error) {
+    res.status(500).json({ exito: false, mensaje: 'Error obteniendo estadísticas' });
+  }
+}
+
+export async function getReporteConversionPorOrigen(req: Request, res: Response) {
+  try {
+    const leadsPorFuente = await prisma.contacto.groupBy({
+      by: ['fuente'],
+      _count: { _all: true },
+      where: { tipo: 'LEAD' },
+    });
+
+    const oportunidadesGanadas = await prisma.oportunidadCliente.findMany({
+      where: { etapa: 'GANADO' },
+      select: { cliente: { select: { fuente: true } }, valor: true },
+    });
+
+    const ganadasPorFuente = new Map<string, { count: number; value: number }>();
+    for (const o of oportunidadesGanadas) {
+      const key = o.cliente?.fuente || 'DESCONOCIDO';
+      const prev = ganadasPorFuente.get(key) || { count: 0, value: 0 };
+      ganadasPorFuente.set(key, { count: prev.count + 1, value: prev.value + Number(o.valor || 0) });
+    }
+
+    const data = leadsPorFuente.map((l) => {
+      const key = (l.fuente as string) || 'DESCONOCIDO';
+      const won = ganadasPorFuente.get(key)?.count || 0;
+      const valor = ganadasPorFuente.get(key)?.value || 0;
+      const conversion = l._count._all > 0 ? Math.round((won * 10000) / l._count._all) / 100 : 0;
+      return { origen: key, leads: l._count._all, ganadas: won, conversion, valorGanado: valor };
+    });
+
+    await prisma.reporte.create({
+      data: {
+        tipo: 'conversion_por_origen',
+        parametros: {},
+        resultadosResumen: { totalOrigenes: data.length },
+      },
+    });
+
+    res.json({ exito: true, datos: data });
+  } catch (error) {
+    res.status(500).json({ exito: false, mensaje: 'Error generando reporte de conversión' });
+  }
+}
+
+export async function getReporteVelocidadCiclo(req: Request, res: Response) {
+  try {
+    const oportunidades = await prisma.oportunidadCliente.findMany({
+      select: { etapa: true, creadoEn: true, actualizadoEn: true },
+    });
+
+    const agg = new Map<string, { totalDias: number; count: number }>();
+    const now = new Date();
+    for (const o of oportunidades) {
+      const end = o.actualizadoEn || now as any;
+      const diffMs = (new Date(end).getTime() - new Date(o.creadoEn).getTime());
+      const dias = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+      const key = o.etapa as string;
+      const prev = agg.get(key) || { totalDias: 0, count: 0 };
+      agg.set(key, { totalDias: prev.totalDias + dias, count: prev.count + 1 });
+    }
+
+    const data = Array.from(agg.entries()).map(([etapa, v]) => ({
+      etapa,
+      tiempoPromedioDias: v.count ? Math.round((v.totalDias / v.count) * 100) / 100 : 0,
+      oportunidades: v.count,
+    }));
+
+    await prisma.reporte.create({
+      data: {
+        tipo: 'velocidad_ciclo',
+        parametros: {},
+        resultadosResumen: { etapas: data.length },
+      },
+    });
+
+    res.json({ exito: true, datos: data });
+  } catch (error) {
+    res.status(500).json({ exito: false, mensaje: 'Error generando reporte de velocidad de ciclo' });
+  }
+}
+
+export async function getReporteDesempenoAsesor(req: Request, res: Response) {
+  try {
+    const [usuarios, leadsPorAsesor, oportunidadesActivas, valorActivas] = await Promise.all([
+      prisma.usuario.findMany({ select: { id: true, nombre: true } }),
+      prisma.contacto.groupBy({ by: ['usuarioId'], _count: { _all: true }, where: { tipo: 'LEAD' } }),
+      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _count: { _all: true }, where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } } }),
+      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _sum: { valor: true }, where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } } }),
+    ]);
+
+    const leadsMap = new Map(leadsPorAsesor.map((r) => [r.usuarioId, r._count._all] as const));
+    const oppMap = new Map(oportunidadesActivas.map((r) => [r.usuarioId, r._count._all] as const));
+    const valMap = new Map(valorActivas.map((r) => [r.usuarioId, Number(r._sum.valor || 0)] as const));
+
+    const data = usuarios.map((u) => ({
+      asesor: u.nombre,
+      leadsAsignados: leadsMap.get(u.id) || 0,
+      oportunidadesActivas: oppMap.get(u.id) || 0,
+      valorPipeline: valMap.get(u.id) || 0,
+    }));
+
+    await prisma.reporte.create({
+      data: {
+        tipo: 'desempeno_asesor',
+        parametros: {},
+        resultadosResumen: { asesores: data.length },
+      },
+    });
+
+    res.json({ exito: true, datos: data });
+  } catch (error) {
+    res.status(500).json({ exito: false, mensaje: 'Error generando reporte de desempeño' });
+  }
+}
+
+export async function getReporteForecast(req: Request, res: Response) {
+  try {
+    const oportunidades = await prisma.oportunidadCliente.findMany({
+      where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } },
+      select: { valor: true, probabilidad: true, creadoEn: true, proyecto: true },
+    });
+
+    let totalEsperado = 0;
+    const porMes = new Map<number, number>();
+    for (const o of oportunidades) {
+      const p = Math.max(0, Math.min(100, Number(o.probabilidad ?? 0))) / 100;
+      const v = Number(o.valor || 0) * p;
+      totalEsperado += v;
+      const m = (new Date(o.creadoEn).getMonth() + 1);
+      porMes.set(m, (porMes.get(m) || 0) + v);
+    }
+
+    const mensual = Array.from(porMes.entries()).sort((a, b) => a[0] - b[0]).map(([mes, valor]) => ({ mes, valor: Math.round(valor * 100) / 100 }));
+
+    await prisma.reporte.create({
+      data: {
+        tipo: 'forecast_ingresos',
+        parametros: {},
+        resultadosResumen: { totalEsperado: Math.round(totalEsperado * 100) / 100 },
+      },
+    });
+
+    res.json({ exito: true, datos: { totalEsperado: Math.round(totalEsperado * 100) / 100, mensual } });
+  } catch (error) {
+    res.status(500).json({ exito: false, mensaje: 'Error generando forecast' });
   }
 }
 

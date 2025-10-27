@@ -30,3 +30,46 @@ export async function obtenerEstadisticas(params?: { period?: string; year?: str
   const query = qs.toString() ? `?${qs.toString()}` : '';
   return await fetchAPI<EstadisticasResponse>(`/analytics/estadisticas${query}`);
 }
+
+// -------------------- Reportes Esenciales --------------------
+export interface ReporteConversionOrigenItem {
+  origen: string;
+  leads: number;
+  ganadas: number;
+  conversion: number; // %
+  valorGanado: number;
+}
+
+export interface ReporteVelocidadCicloItem {
+  etapa: string;
+  tiempoPromedioDias: number;
+  oportunidades: number;
+}
+
+export interface ReporteDesempenoAsesorItem {
+  asesor: string;
+  leadsAsignados: number;
+  oportunidadesActivas: number;
+  valorPipeline: number;
+}
+
+export interface ReporteForecastResponse {
+  totalEsperado: number;
+  mensual: Array<{ mes: number; valor: number }>;
+}
+
+export async function obtenerReporteConversionPorOrigen(): Promise<ReporteConversionOrigenItem[]> {
+  return await fetchAPI<ReporteConversionOrigenItem[]>(`/analytics/reports/conversion-origen`);
+}
+
+export async function obtenerReporteVelocidadCiclo(): Promise<ReporteVelocidadCicloItem[]> {
+  return await fetchAPI<ReporteVelocidadCicloItem[]>(`/analytics/reports/velocidad-ciclo`);
+}
+
+export async function obtenerReporteDesempenoAsesor(): Promise<ReporteDesempenoAsesorItem[]> {
+  return await fetchAPI<ReporteDesempenoAsesorItem[]>(`/analytics/reports/desempeno-asesor`);
+}
+
+export async function obtenerReporteForecast(): Promise<ReporteForecastResponse> {
+  return await fetchAPI<ReporteForecastResponse>(`/analytics/reports/forecast`);
+}
