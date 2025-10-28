@@ -20,8 +20,8 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
   { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
-  { nombre: "Estadísticas", href: "/dashboard/reports", icono: IconoGrafico },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
+  { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
 ]
 
 export default function LayoutDashboard({ children }: { children: React.ReactNode }) {

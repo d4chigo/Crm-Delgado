@@ -67,6 +67,8 @@ model Contacto {
   @@index([usuarioId])
   @@index([tipo])
   @@index([correo])
+  @@index([creadoEn])
+  @@index([departamento])
   @@index([estadoLead])
   @@index([prioridad])
   @@map("contactos")
@@ -86,6 +88,7 @@ model Etiqueta {
   proyectos     ProyectoEtiqueta[]
 
   @@index([activa])
+  @@index([activa, orden])
   @@map("etiquetas")
 }
 
@@ -139,6 +142,7 @@ model OportunidadCliente {
   @@index([clienteId])
   @@index([usuarioId])
   @@index([etapa])
+  @@index([creadoEn])
   @@map("oportunidades_clientes")
 }
 
