@@ -1,423 +1,481 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect } from "react"
+import { useContactos } from "@/hooks/useContactos"
+import { FormularioContacto } from "@/components/features/contacts/FormularioContacto";
+import { ContactCard } from "@/components/features/contacts/ContactCard";
+import { DialogoEditarContacto } from "@/components/features/contacts/DialogoEditarContacto"
+import { DialogoEliminarContacto } from "@/components/features/contacts/DialogoEliminarContacto"
+import { DialogoImportarGoogle } from "@/components/features/contacts/DialogoImportarGoogle";
+import { PageHeader } from "@/components/layout";
+import googleAuthService from "@/services/api/google-auth.service";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { StatCard } from "@/components/ui/stat-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Search, Plus, Mail, Phone, MapPin, UserPlus, ArrowRight, Upload } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
+import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { TipoContacto, type Contacto } from "@/types/contacto.types"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
-interface Contact {
-  id: string
-  name: string
-  email: string
-  phone: string
-  company?: string
-  location?: string
-  source: "manual" | "google" | "import"
-  createdAt: string
-  notes?: string
-}
+export const dynamic = 'force-dynamic'
 
-export default function ContactsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showNewContactDialog, setShowNewContactDialog] = useState(false)
-  const [showImportDialog, setShowImportDialog] = useState(false)
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([])
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: "1",
-      name: "Roberto Martínez",
-      email: "roberto.m@email.com",
-      phone: "+51 987 654 330",
-      company: "Empresa ABC",
-      location: "Lima, Perú",
-      source: "manual",
-      createdAt: "2025-01-20",
-      notes: "Contacto de evento inmobiliario",
-    },
-    {
-      id: "2",
-      name: "Carmen López",
-      email: "carmen.l@email.com",
-      phone: "+51 987 654 331",
-      location: "Arequipa, Perú",
-      source: "google",
-      createdAt: "2025-01-19",
-      notes: "Importado desde Google Contacts",
-    },
-    {
-      id: "3",
-      name: "Diego Fernández",
-      email: "diego.f@email.com",
-      phone: "+51 987 654 332",
-      company: "Constructora XYZ",
-      location: "Cusco, Perú",
-      source: "import",
-      createdAt: "2025-01-18",
-    },
-  ])
+export default function PaginaContactos() {
+  const {
+    contactos,
+    estadisticas,
+    estaCargando,
+    error,
+    paginacion,
+    filtros,
+    buscarContactos,
+    crearContacto,
+    actualizarContacto,
+    eliminarContacto,
+    convertirALead,
+    convertirVariosALeads,
+    refrescarContactos,
+    iniciarImportacionGoogle,
+    completarImportacionGoogle,
+    cambiarPagina,
+    filtrarPorTipo,
+    setFiltros,
+  } = useContactos()
 
-  const [newContact, setNewContact] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    location: "",
-    notes: "",
-  })
+  const { toast } = useToast()
+  const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
+  const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
+  const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
+  const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
+  const [resultadoImportacion, setResultadoImportacion] = useState<{
+    importados: number
+    duplicados: number
+    errores: number
+  } | null>(null)
 
-  const filteredContacts = contacts.filter(
-    (contact) =>
-      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.phone.includes(searchQuery),
-  )
+  // NO filtrar en el frontend - el backend ya envía solo contactos tipo CONTACTO
+  const contactosFiltrados = contactos
 
-  const handleCreateContact = () => {
-    const contact: Contact = {
-      id: Date.now().toString(),
-      ...newContact,
-      source: "manual",
-      createdAt: new Date().toISOString().split("T")[0],
+  // Cargar contactos con filtro CONTACTO al montar el componente
+  useEffect(() => {
+    console.log('🎯 Cargando contactos iniciales con filtro: solo CONTACTO')
+    setFiltros(prev => ({
+      ...prev,
+      tipo: TipoContacto.CONTACTO,
+      pagina: 1,
+      limite: 6,
+      busqueda: ''
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Verificar si hay un callback de Google al cargar la página
+  useEffect(() => {
+    const procesarCallbackGoogle = async () => {
+      // Verificar si hay un error en el callback
+      const error = googleAuthService.getErrorFromCallback()
+      if (error) {
+        toast({
+          title: "Error al importar",
+          description: googleAuthService.getErrorMessage(error.error) + (error.message ? `: ${error.message}` : ''),
+          variant: "destructive",
+        })
+        googleAuthService.clearPendingImport()
+        return
+      }
+
+      // Verificar si hay un token en el callback y una importación pendiente
+      const token = googleAuthService.getTokenFromCallback()
+      if (token && googleAuthService.isPendingImport()) {
+        try {
+          console.log('📥 Completando importación de Google con token recibido...')
+          const resultado = await completarImportacionGoogle(token)
+          setResultadoImportacion(resultado)
+          toast({
+            title: "✅ Importación completada",
+            description: `Se importaron ${resultado.importados} contactos correctamente`,
+          })
+        } catch (err: any) {
+          toast({
+            title: "Error al importar",
+            description: err.message || "No se pudieron importar los contactos",
+            variant: "destructive",
+          })
+        }
+      }
     }
-    setContacts([contact, ...contacts])
-    setNewContact({ name: "", email: "", phone: "", company: "", location: "", notes: "" })
-    setShowNewContactDialog(false)
+
+    procesarCallbackGoogle()
+  }, [completarImportacionGoogle, toast])
+
+  // Manejador de búsqueda que se pasa al componente de búsqueda
+  const handleBusqueda = (query: string) => {
+    console.log('⌨️ Tecla presionada:', query);
+    // Llamar directamente a buscarContactos sin debounce para mejor respuesta
+    buscarContactos(query);
   }
 
-  const handleImportFromGoogle = () => {
-    // Simulated Google import
-    const importedContacts: Contact[] = [
-      {
-        id: Date.now().toString(),
-        name: "Juan Importado",
-        email: "juan.importado@gmail.com",
-        phone: "+51 999 888 777",
-        location: "Lima, Perú",
-        source: "google",
-        createdAt: new Date().toISOString().split("T")[0],
-        notes: "Importado desde Google Contacts",
-      },
-      {
-        id: (Date.now() + 1).toString(),
-        name: "María Importada",
-        email: "maria.importada@gmail.com",
-        phone: "+51 999 888 778",
-        company: "Tech Corp",
-        location: "Lima, Perú",
-        source: "google",
-        createdAt: new Date().toISOString().split("T")[0],
-        notes: "Importado desde Google Contacts",
-      },
-    ]
-    setContacts([...importedContacts, ...contacts])
-    setShowImportDialog(false)
-  }
-
-  const handleConvertToLeads = () => {
-    if (selectedContacts.length === 0) return
-    alert(`${selectedContacts.length} contacto(s) convertido(s) a Leads exitosamente`)
-    setSelectedContacts([])
-  }
-
-  const toggleContactSelection = (id: string) => {
-    setSelectedContacts((prev) => (prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]))
-  }
-
-  const getSourceBadge = (source: Contact["source"]) => {
-    const badges = {
-      manual: { label: "Manual", className: "bg-blue-100 text-blue-700" },
-      google: { label: "Google", className: "bg-green-100 text-green-700" },
-      import: { label: "Importado", className: "bg-purple-100 text-purple-700" },
+  const handleConfirmarEliminar = async () => {
+    if (!contactoEliminando) return
+    
+    try {
+      await eliminarContacto(contactoEliminando.id)
+      setContactoEliminando(null)
+      toast({
+        title: "✅ Contacto eliminado",
+        description: "El contacto se eliminó correctamente",
+      })
+    } catch (error) {
+      console.error('Error al eliminar contacto:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudo eliminar el contacto",
+        variant: "destructive",
+      })
     }
-    return badges[source]
   }
+
+  const handleConvertirALead = async (contacto: Contacto) => {
+    try {
+      await convertirALead(contacto.id)
+      toast({
+        title: "✅ Convertido a Lead",
+        description: `${contacto.nombre} ${contacto.apellido} ahora es un lead`,
+      })
+    } catch (error) {
+      console.error('Error al convertir contacto:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudo convertir el contacto a lead",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSeleccionarContacto = (contactoId: string) => {
+    setContactosSeleccionados(prev => {
+      if (prev.includes(contactoId)) {
+        return prev.filter(id => id !== contactoId)
+      } else {
+        return [...prev, contactoId]
+      }
+    })
+  }
+
+  const handleSeleccionarTodos = () => {
+    if (contactosSeleccionados.length === contactosFiltrados.length) {
+      setContactosSeleccionados([])
+    } else {
+      setContactosSeleccionados(contactosFiltrados.map(c => c.id))
+    }
+  }
+
+  const handleConvertirVariosALeads = async () => {
+    if (contactosSeleccionados.length === 0) return
+    
+    setConvirtiendoALeads(true)
+    try {
+      const resultado = await convertirVariosALeads(contactosSeleccionados)
+      setContactosSeleccionados([])
+      toast({
+        title: "✅ Conversión exitosa",
+        description: `${resultado.convertidos} de ${resultado.total} contacto(s) convertido(s) a leads`,
+      })
+    } catch (error) {
+      console.error('Error al convertir contactos:', error)
+      toast({
+        title: "❌ Error",
+        description: "No se pudieron convertir los contactos a leads",
+        variant: "destructive",
+      })
+    } finally {
+      setConvirtiendoALeads(false)
+    }
+  }
+
+  const handleWhatsApp = (telefono: string, nombre?: string) => {
+    if (telefono) {
+      // Limpiar el teléfono y asegurar que tenga el código de país
+      let telefonoLimpio = telefono.replace(/\D/g, '');
+      
+      // Si no tiene código de país, agregar +51 (Perú)
+      if (telefonoLimpio.length === 9) {
+        telefonoLimpio = '51' + telefonoLimpio;
+      }
+      
+      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado.`;
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
+      
+      // Abrir WhatsApp
+      window.open(url, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay número de teléfono disponible para este contacto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre} - CRM Delgado`;
+    const descripcion = `Reunión de seguimiento con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
+    
+    // Crear URL para Google Calendar
+    const fechaInicio = new Date();
+    fechaInicio.setDate(fechaInicio.getDate() + 1); // Mañana
+    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
+    
+    window.open(url, '_blank');
+    
+    toast({
+      title: "Calendario abierto",
+      description: "Se abrió Google Calendar para agendar la reunión",
+    });
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Contactos</h1>
-          <p className="text-muted-foreground mt-1">Gestiona tus contactos e impórtalos desde Google</p>
-        </div>
-        <div className="flex gap-3">
-          <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10 bg-transparent"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Importar de Google
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Importar Contactos de Google</DialogTitle>
-                <DialogDescription>Conecta tu cuenta de Google para importar tus contactos</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="flex items-center justify-center p-8 border-2 border-dashed border-border rounded-lg">
-                  <div className="text-center space-y-3">
-                    <div className="w-16 h-16 bg-[#FCBA00]/10 rounded-full flex items-center justify-center mx-auto">
-                      <Upload className="w-8 h-8 text-[#FCBA00]" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-[#303030]">Conectar con Google</p>
-                      <p className="text-sm text-muted-foreground">Autoriza el acceso a tus contactos de Google</p>
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleImportFromGoogle}
-                  className="w-full bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
-                >
-                  Conectar e Importar
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+      <PageHeader
+        title="Contactos"
+        description="Gestiona tus contactos y conviértelos en leads"
+      >
+        <DialogoImportarGoogle onImportar={iniciarImportacionGoogle} />
+        <FormularioContacto onCrear={crearContacto} />
+      </PageHeader>
 
-          <Dialog open={showNewContactDialog} onOpenChange={setShowNewContactDialog}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Contacto
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Contacto</DialogTitle>
-                <DialogDescription>Agrega un nuevo contacto manualmente</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo *</Label>
-                  <Input
-                    id="name"
-                    value={newContact.name}
-                    onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                    placeholder="Ej: Juan Pérez"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newContact.email}
-                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                    placeholder="juan@email.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono *</Label>
-                  <Input
-                    id="phone"
-                    value={newContact.phone}
-                    onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                    placeholder="+51 987 654 321"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input
-                    id="company"
-                    value={newContact.company}
-                    onChange={(e) => setNewContact({ ...newContact, company: e.target.value })}
-                    placeholder="Nombre de la empresa"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Ubicación</Label>
-                  <Input
-                    id="location"
-                    value={newContact.location}
-                    onChange={(e) => setNewContact({ ...newContact, location: e.target.value })}
-                    placeholder="Lima, Perú"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notas</Label>
-                  <Textarea
-                    id="notes"
-                    value={newContact.notes}
-                    onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
-                    placeholder="Información adicional..."
-                    rows={3}
-                  />
-                </div>
-                <Button
-                  onClick={handleCreateContact}
-                  disabled={!newContact.name || !newContact.email || !newContact.phone}
-                  className="w-full bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
-                >
-                  Crear Contacto
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Resultado de importación */}
+      {resultadoImportacion && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <strong>¡Importación completada!</strong>
+            <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
               <div>
-                <p className="text-sm text-muted-foreground">Total Contactos</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">{contacts.length}</p>
+                <span className="text-muted-foreground">Importados:</span>
+                <span className="ml-2 font-semibold text-green-600">{resultadoImportacion.importados}</span>
               </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <UserPlus className="w-6 h-6 text-blue-600" />
-              </div>
+              {resultadoImportacion.duplicados > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Duplicados:</span>
+                  <span className="ml-2 font-semibold text-amber-600">{resultadoImportacion.duplicados}</span>
+                </div>
+              )}
+              {resultadoImportacion.errores > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Errores:</span>
+                  <span className="ml-2 font-semibold text-red-600">{resultadoImportacion.errores}</span>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Desde Google</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">
-                  {contacts.filter((c) => c.source === "google").length}
-                </p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <Upload className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Seleccionados</p>
-                <p className="text-3xl font-bold text-[#FCBA00] mt-1">{selectedContacts.length}</p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-xl">
-                <ArrowRight className="w-6 h-6 text-[#FCBA00]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Actions */}
-      <Card className="border-border">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            {selectedContacts.length > 0 && (
-              <Button
-                onClick={handleConvertToLeads}
-                className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
-              >
-                <ArrowRight className="w-4 h-4 mr-2" />
-                Convertir a Leads ({selectedContacts.length})
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contacts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredContacts.map((contact) => {
-          const sourceBadge = getSourceBadge(contact.source)
-          const isSelected = selectedContacts.includes(contact.id)
-          return (
-            <Card
-              key={contact.id}
-              className={`border-border hover:shadow-md transition-all cursor-pointer ${
-                isSelected ? "ring-2 ring-[#FCBA00] bg-[#FCBA00]/5" : ""
-              }`}
-              onClick={() => toggleContactSelection(contact.id)}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => setResultadoImportacion(null)}
             >
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12 bg-[#FCBA00]">
-                      <AvatarFallback className="bg-[#FCBA00] text-[#303030] font-bold">
-                        {contact.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-[#303030]">{contact.name}</h3>
-                      {contact.company && <p className="text-xs text-muted-foreground">{contact.company}</p>}
-                    </div>
-                  </div>
-                  <Badge className={sourceBadge.className}>{sourceBadge.label}</Badge>
-                </div>
+              Cerrar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <span className="truncate">{contact.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="w-4 h-4" />
-                    <span>{contact.phone}</span>
-                  </div>
-                  {contact.location && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      <span>{contact.location}</span>
-                    </div>
-                  )}
-                </div>
+      {/* Estadísticas */}
+      {estadisticas && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <StatCard
+            title="Total de Registros"
+            value={estadisticas.total}
+            description="Todos los contactos registrados"
+            icon={Users}
+          />
+          <StatCard
+            title="Solo Contactos"
+            value={estadisticas.totalContactos}
+            description="Sin convertir a leads"
+            icon={Users}
+            iconColor="text-blue-500"
+            valueColor="text-blue-600"
+          />
+        </div>
+      )}
 
-                {contact.notes && (
-                  <p className="text-xs text-muted-foreground line-clamp-2 pt-2 border-t border-border">
-                    {contact.notes}
-                  </p>
-                )}
-
-                <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-                  Agregado: {contact.createdAt}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+      {/* Barra de búsqueda y acciones */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre, apellido, correo o DNI..."
+            value={filtros?.busqueda || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              console.log('📝 Valor del input:', value);
+              handleBusqueda(value);
+            }}
+            className="pl-9"
+          />
+        </div>
+        
+        {/* Acciones masivas */}
+        {contactosSeleccionados.length > 0 && (
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-muted-foreground">
+              {contactosSeleccionados.length} seleccionado(s)
+            </span>
+            <Button
+              onClick={handleConvertirVariosALeads}
+              disabled={convirtiendoALeads}
+              size="sm"
+              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+              {convirtiendoALeads ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Convirtiendo...
+                </>
+              ) : (
+                <>
+                  <ArrowRightCircle className="h-4 w-4 mr-2" />
+                  Convertir a Leads
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {filteredContacts.length === 0 && (
-        <Card className="border-border">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserPlus className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-[#303030] mb-2">No se encontraron contactos</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchQuery ? "Intenta con otros términos de búsqueda" : "Comienza agregando o importando contactos"}
-            </p>
+      {/* Seleccionar todos */}
+      {contactosFiltrados.length > 0 && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="seleccionar-todos"
+            checked={contactosSeleccionados.length === contactosFiltrados.length}
+            onCheckedChange={handleSeleccionarTodos}
+          />
+          <label
+            htmlFor="seleccionar-todos"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Seleccionar todos ({contactosFiltrados.length})
+          </label>
+        </div>
+      )}
+
+      {/* Estado de carga */}
+      {estaCargando && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <p className="text-red-600">{error}</p>
           </CardContent>
         </Card>
       )}
+
+      {/* Lista de contactos */}
+      {!estaCargando && contactosFiltrados.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {contactosFiltrados.map((contacto) => (
+              <ContactCard
+                key={contacto.id}
+                contacto={contacto}
+                isSelected={contactosSeleccionados.includes(contacto.id)}
+                onSeleccionar={handleSeleccionarContacto}
+                onConvertir={handleConvertirALead}
+                onEditar={setContactoEditando}
+                onEliminar={setContactoEliminando}
+                onWhatsApp={handleWhatsApp}
+                onScheduleMeeting={handleScheduleMeeting}
+              />
+            ))}
+          </div>
+
+          {/* Paginación */}
+          {paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {contactosFiltrados.length} de {paginacion.total} contactos
+              </p>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Estado vacío */}
+      {!estaCargando && contactosFiltrados.length === 0 && !error && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hay contactos</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              {filtros.busqueda && filtros.busqueda.trim() !== ''
+                ? "No se encontraron contactos con ese criterio de búsqueda"
+                : "Comienza agregando tu primer contacto para gestionar tus relaciones"}
+            </p>
+            <FormularioContacto onCrear={crearContacto} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Diálogos */}
+      <DialogoEditarContacto
+        contacto={contactoEditando}
+        abierto={!!contactoEditando}
+        onActualizar={actualizarContacto}
+        onCancelar={() => setContactoEditando(null)}
+        onRecargar={async () => { refrescarContactos(); }}
+      />
+
+      <DialogoEliminarContacto
+        contacto={contactoEliminando}
+        abierto={!!contactoEliminando}
+        onConfirmar={handleConfirmarEliminar}
+        onCancelar={() => setContactoEliminando(null)}
+      />
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

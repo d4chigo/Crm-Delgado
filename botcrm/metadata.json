@@ -1,0 +1,7 @@
+{
+  "name": "Chatbot Delgado Propiedades",
+  "description": "A professional real estate CRM chatbot with text and live voice call modes, powered by Gemini. It assists in analyzing contacts, opportunities, and properties.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

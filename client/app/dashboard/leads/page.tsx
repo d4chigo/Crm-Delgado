@@ -1,675 +1,670 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
+import { useContactos } from "@/hooks/useContactos";
+import { PageHeader } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
+import { TipoContacto, Contacto } from "@/types/contacto.types"
+import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
+import { FormularioCotizacion } from "@/components/features/cotizaciones";
+import { cotizacionService } from "@/services/api/cotizacion.service";
+import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Plus,
-  Search,
-  Filter,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  User,
-  Building2,
-  Edit,
-  Trash2,
-  Tag,
-  XIcon,
-} from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import { etiquetaService } from "@/services/api/etiqueta.service"
+import type { Etiqueta } from "@/types/etiqueta.types"
 
-interface Lead {
-  id: string
-  name: string
-  email: string
-  phone: string
-  source: string
-  status: "new" | "contacted" | "qualified" | "negotiation" | "closed" | "lost"
-  score: number
-  budget: string
-  project: string
-  location: string
-  createdAt: string
-  lastContact: string
-  notes: string
-  tags: string[]
-}
+export default function PaginaLeads() {
+  const {
+    contactos,
+    estadisticas,
+    estaCargando,
+    error,
+    paginacion,
+    buscarContactos,
+    filtrarPorTipo,
+    cargarContactos,
+    cambiarPagina,
+    filtros,
+  } = useContactos()
 
-export default function LeadsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [filterTag, setFilterTag] = useState("all")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isTagDialogOpen, setIsTagDialogOpen] = useState(false)
-  const [selectedLeads, setSelectedLeads] = useState<string[]>([])
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  // Usamos el estado de filtros del hook useContactos
+  const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
+  const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
+  const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
+  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
+  const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
+  const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
+  const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
+  const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
+  const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
+  const [totalLeads, setTotalLeads] = useState(0)
+  const [totalClientes, setTotalClientes] = useState(0)
 
-  const [leads, setLeads] = useState<Lead[]>([
-    {
-      id: "1",
-      name: "María González",
-      email: "maria.g@email.com",
-      phone: "+51 987 654 321",
-      source: "Web",
-      status: "qualified",
-      score: 85,
-      budget: "S/ 250,000 - S/ 300,000",
-      project: "Proyecto Los Olivos",
-      location: "Los Olivos, Lima",
-      createdAt: "2025-01-15",
-      lastContact: "Hoy, 10:30 AM",
-      notes: "Interesada en departamento de 3 dormitorios. Tiene buen score crediticio.",
-      tags: ["Mi Vivienda", "Compra"],
-    },
-    {
-      id: "2",
-      name: "Carlos Ramírez",
-      email: "carlos.r@email.com",
-      phone: "+51 987 654 322",
-      source: "Referido",
-      status: "negotiation",
-      score: 72,
-      budget: "S/ 180,000 - S/ 220,000",
-      project: "Condominio San Isidro",
-      location: "San Isidro, Lima",
-      createdAt: "2025-01-14",
-      lastContact: "Hoy, 09:15 AM",
-      notes: "Busca departamento cerca al trabajo. Necesita financiamiento Techo Propio.",
-      tags: ["Techo Propio"],
-    },
-    {
-      id: "3",
-      name: "Ana Torres",
-      email: "ana.t@email.com",
-      phone: "+51 987 654 323",
-      source: "Facebook",
-      status: "contacted",
-      score: 45,
-      budget: "S/ 150,000 - S/ 180,000",
-      project: "Edificio Miraflores",
-      location: "Miraflores, Lima",
-      createdAt: "2025-01-13",
-      lastContact: "Ayer, 04:20 PM",
-      notes: "Primera vivienda. Requiere asesoría sobre Mi Vivienda.",
-      tags: ["Mi Vivienda", "Compra"],
-    },
-    {
-      id: "4",
-      name: "Roberto Silva",
-      email: "roberto.s@email.com",
-      phone: "+51 987 654 324",
-      source: "Web",
-      status: "new",
-      score: 60,
-      budget: "S/ 200,000 - S/ 250,000",
-      project: "Torres del Norte",
-      location: "Independencia, Lima",
-      createdAt: "2025-01-16",
-      lastContact: "Sin contactar",
-      notes: "Lead nuevo desde formulario web.",
-      tags: ["Venta"],
-    },
-  ])
+  // Cargar leads/clientes según el tab activo
+  useEffect(() => {
+    const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
+    cargarContactos({ tipo, pagina: 1, limite: 6 })
+  }, [tabActivo])
 
-  const [newLead, setNewLead] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    source: "",
-    budget: "",
-    project: "",
-    location: "",
-    notes: "",
-  })
+  // Cargar etiquetas al montar
+  useEffect(() => {
+    cargarEtiquetas()
+  }, [])
 
-  const availableTags = ["Techo Propio", "Mi Vivienda", "Compra", "Venta"]
-  const [selectedTagsForBatch, setSelectedTagsForBatch] = useState<string[]>([])
-
-  const statusConfig = {
-    new: { label: "Nuevo", color: "bg-blue-100 text-blue-700 border-blue-200" },
-    contacted: { label: "Contactado", color: "bg-purple-100 text-purple-700 border-purple-200" },
-    qualified: { label: "Calificado", color: "bg-green-100 text-green-700 border-green-200" },
-    negotiation: { label: "Negociación", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-    closed: { label: "Cerrado", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-    lost: { label: "Perdido", color: "bg-red-100 text-red-700 border-red-200" },
-  }
-
-  const tagColors: Record<string, string> = {
-    "Techo Propio": "bg-orange-100 text-orange-700 border-orange-200",
-    "Mi Vivienda": "bg-cyan-100 text-cyan-700 border-cyan-200",
-    Compra: "bg-green-100 text-green-700 border-green-200",
-    Venta: "bg-purple-100 text-purple-700 border-purple-200",
-  }
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-green-600 bg-green-50 border-green-200"
-    if (score >= 50) return "text-yellow-600 bg-yellow-50 border-yellow-200"
-    return "text-red-600 bg-red-50 border-red-200"
-  }
-
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone.includes(searchTerm)
-    const matchesStatus = filterStatus === "all" || lead.status === filterStatus
-    const matchesTag = filterTag === "all" || lead.tags.includes(filterTag)
-    return matchesSearch && matchesStatus && matchesTag
-  })
-
-  const handleAddLead = () => {
-    const lead: Lead = {
-      id: Date.now().toString(),
-      ...newLead,
-      status: "new",
-      score: Math.floor(Math.random() * 40) + 40,
-      createdAt: new Date().toISOString().split("T")[0],
-      lastContact: "Sin contactar",
-      tags: [],
-    }
-    setLeads([lead, ...leads])
-    setNewLead({
-      name: "",
-      email: "",
-      phone: "",
-      source: "",
-      budget: "",
-      project: "",
-      location: "",
-      notes: "",
-    })
-    setIsAddDialogOpen(false)
-  }
-
-  const handleDeleteLead = (id: string) => {
-    setLeads(leads.filter((lead) => lead.id !== id))
-    setSelectedLeads(selectedLeads.filter((leadId) => leadId !== id))
-  }
-
-  const handleSelectLead = (leadId: string) => {
-    setSelectedLeads((prev) => (prev.includes(leadId) ? prev.filter((id) => id !== leadId) : [...prev, leadId]))
-  }
-
-  const handleSelectAll = () => {
-    if (selectedLeads.length === filteredLeads.length) {
-      setSelectedLeads([])
+  // Actualizar totales cuando cambie la paginación
+  useEffect(() => {
+    if (tabActivo === 'leads') {
+      setTotalLeads(paginacion.total)
     } else {
-      setSelectedLeads(filteredLeads.map((lead) => lead.id))
+      setTotalClientes(paginacion.total)
+    }
+  }, [paginacion.total, tabActivo])
+
+  const cargarEtiquetas = async () => {
+    try {
+      const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+      // Asegurarse de que sea un array
+      if (Array.isArray(etiquetasObtenidas)) {
+        setEtiquetas(etiquetasObtenidas)
+      } else {
+        console.error('Las etiquetas obtenidas no son un array:', etiquetasObtenidas)
+        setEtiquetas([])
+      }
+    } catch (error) {
+      console.error('Error al cargar etiquetas:', error)
+      setEtiquetas([]) // Establecer array vacío en caso de error
     }
   }
 
-  const handleApplyTags = () => {
-    setLeads((prevLeads) =>
-      prevLeads.map((lead) => {
-        if (selectedLeads.includes(lead.id)) {
-          const newTags = [...new Set([...lead.tags, ...selectedTagsForBatch])]
-          return { ...lead, tags: newTags }
-        }
-        return lead
-      }),
-    )
-    setSelectedLeads([])
-    setSelectedTagsForBatch([])
-    setIsTagDialogOpen(false)
+  // El backend ya filtra por tipo según el tab activo
+  // Solo aplicar filtro por etiqueta si es necesario
+  const contactosFiltrados = tabActivo === 'leads'
+    ? (etiquetaFiltroLeads === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)))
+    : (etiquetaFiltroClientes === "todas" 
+        ? contactos 
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)))
+
+  // Para mantener compatibilidad con el código existente
+  const leads = tabActivo === 'leads' ? contactosFiltrados : []
+  const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
+
+  // Manejador de búsqueda que se pasa al componente de búsqueda
+  const handleBusqueda = (query: string) => {
+    console.log('⌨️ Buscando leads:', query);
+    buscarContactos(query);
   }
 
-  const handleRemoveTag = (leadId: string, tagToRemove: string) => {
-    setLeads((prevLeads) =>
-      prevLeads.map((lead) => {
-        if (lead.id === leadId) {
-          return { ...lead, tags: lead.tags.filter((tag) => tag !== tagToRemove) }
-        }
-        return lead
-      }),
-    )
+
+  const handleVerDetalles = (lead: Contacto) => {
+    setLeadSeleccionado(lead)
+    setDialogoDetallesAbierto(true)
   }
+
+  const handleEditar = (lead: Contacto) => {
+    setLeadSeleccionado(lead)
+    setDialogoEditarAbierto(true)
+  }
+
+  const handleConvertirCliente = async (leadId: string) => {
+    setConvirtiendoCliente(leadId)
+    try {
+      const token = localStorage.getItem('crm_token')
+      if (!token) {
+        toast({
+          title: 'Sesión expirada',
+          description: 'Por favor inicia sesión nuevamente',
+          variant: 'destructive',
+        })
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return
+      }
+
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}/convertir-cliente`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      // Si el token expiró
+      if (respuesta.status === 401) {
+        localStorage.removeItem('crm_token');
+        localStorage.removeItem('crm_user');
+        toast({
+          title: 'Sesión expirada',
+          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
+          variant: 'destructive',
+        });
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        return;
+      }
+
+      const resultado = await respuesta.json()
+
+      if (!respuesta.ok) {
+        throw new Error(resultado.mensaje || 'Error al convertir lead')
+      }
+
+      toast({
+        title: 'Lead convertido a Cliente',
+        description: `El lead ahora es un cliente y aparece en la pestaña "Clientes"`,
+      })
+
+      // Cambiar a la pestaña de clientes (esto recargará automáticamente con el filtro correcto)
+      setTabActivo('clientes')
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo convertir el lead',
+        variant: 'destructive',
+      })
+    } finally {
+      setConvirtiendoCliente(null)
+    }
+  }
+
+  const obtenerColorEstado = (estado?: string): string => {
+    const colores: Record<string, string> = {
+      'NUEVO': 'bg-blue-100 text-blue-800 border-blue-200',
+      'CONTACTADO': 'bg-purple-100 text-purple-800 border-purple-200',
+      'CALIFICADO': 'bg-green-100 text-green-800 border-green-200',
+      'NEGOCIACION': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'PROPUESTA': 'bg-orange-100 text-orange-800 border-orange-200',
+      'GANADO': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'PERDIDO': 'bg-red-100 text-red-800 border-red-200',
+      'EN_ESPERA': 'bg-gray-100 text-gray-800 border-gray-200',
+    }
+    return estado ? colores[estado] : 'bg-gray-100 text-gray-800 border-gray-200'
+  }
+
+  const obtenerColorPrioridad = (prioridad?: string): string => {
+    const colores: Record<string, string> = {
+      'BAJA': 'bg-gray-100 text-gray-700 border-gray-200',
+      'MEDIA': 'bg-blue-100 text-blue-700 border-blue-200',
+      'ALTA': 'bg-orange-100 text-orange-700 border-orange-200',
+      'URGENTE': 'bg-red-100 text-red-700 border-red-200',
+    }
+    return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
+  }
+
+  const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
+    try {
+      await cotizacionService.crear(datos);
+      toast({
+        title: "Cotización guardada",
+        description: "La cotización ha sido creada exitosamente.",
+      });
+      setDialogoCotizacionAbierto(false);
+    } catch (error) {
+      console.error("Error al guardar la cotización:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la cotización.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCotizar = (lead: Contacto) => {
+    setLeadParaCotizar(lead);
+    setDialogoCotizacionAbierto(true);
+  };
+
+  const handleWhatsApp = (telefono: string, nombre?: string) => {
+    if (telefono) {
+      // Limpiar el teléfono y asegurar que tenga el código de país
+      let telefonoLimpio = telefono.replace(/\D/g, '');
+      
+      // Si no tiene código de país, agregar +51 (Perú)
+      if (telefonoLimpio.length === 9) {
+        telefonoLimpio = '51' + telefonoLimpio;
+      }
+      
+      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado para hacer seguimiento.`;
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
+      
+      // Intentar abrir en la aplicación de WhatsApp
+      try {
+        if (window.electron) {
+          window.electron.shell.openExternal(url);
+        } else {
+          window.open(url, '_blank');
+        }
+      } catch (error) {
+        console.error('Error al abrir WhatsApp:', error);
+        // Fallback: copiar al portapapeles
+        navigator.clipboard.writeText(url);
+        toast({
+          title: "WhatsApp",
+          description: "Enlace copiado al portapapeles. Pega en WhatsApp.",
+        });
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay número de teléfono disponible para este contacto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Wrapper para ClientCard que solo recibe el teléfono
+  const handleWhatsAppCliente = (telefono: string) => {
+    handleWhatsApp(telefono);
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre} - CRM Delgado`;
+    const descripcion = `Reunión de seguimiento para discutir detalles de la oportunidad con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
+    
+    // Crear URL para Google Calendar con más detalles
+    const fechaInicio = new Date();
+    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
+    
+    try {
+      if (window.electron) {
+        window.electron.shell.openExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
+      
+      toast({
+        title: "Google Calendar",
+        description: "Abriendo Google Calendar para agendar la reunión.",
+      });
+    } catch (error) {
+      console.error('Error al abrir Google Calendar:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo abrir Google Calendar. Intenta copiar el enlace manualmente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Gestión de Leads</h1>
-          <p className="text-muted-foreground mt-1">Administra y califica tus prospectos</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Lead
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-[#303030]">Agregar Nuevo Lead</DialogTitle>
-                <DialogDescription>Completa la información del prospecto</DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo *</Label>
-                  <Input
-                    id="name"
-                    value={newLead.name}
-                    onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
-                    placeholder="Ej: María González"
-                  />
+      <PageHeader
+        title="Leads & Clientes"
+        description="Gestiona tus leads y clientes en un solo lugar"
+      />
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Leads Activos"
+          value={totalLeads}
+          description="En proceso de conversión"
+          icon={TrendingUp}
+          iconColor="text-yellow-500"
+          valueColor="text-yellow-600"
+        />
+        <StatCard
+          title="Clientes"
+          value={totalClientes}
+          description="Leads convertidos"
+          icon={Users}
+          iconColor="text-green-500"
+          valueColor="text-green-600"
+        />
+        <StatCard
+          title="Tasa de Conversión"
+          value={`${(totalLeads + totalClientes) > 0 
+              ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100)
+              : 0}%`}
+          description="Leads → Clientes"
+          icon={TrendingUp}
+          iconColor="text-blue-500"
+          valueColor="text-blue-600"
+        />
+      </div>
+
+      {/* Tabs: Leads y Clientes */}
+      <Tabs value={tabActivo} onValueChange={(value) => setTabActivo(value as 'leads' | 'clientes')}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Leads ({leads.length})
+          </TabsTrigger>
+          <TabsTrigger value="clientes" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Clientes ({clientes.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* TAB: LEADS */}
+        <TabsContent value="leads" className="space-y-4">
+          {/* Barra de búsqueda y filtros */}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre, apellido, correo o DNI..."
+                value={filtros?.busqueda || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  console.log('📝 Valor del input:', value);
+                  handleBusqueda(value);
+                }}
+                className="pl-9"
+              />
+            </div>
+            <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newLead.email}
-                    onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                    placeholder="email@ejemplo.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono *</Label>
-                  <Input
-                    id="phone"
-                    value={newLead.phone}
-                    onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                    placeholder="+51 987 654 321"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="source">Fuente</Label>
-                  <Select value={newLead.source} onValueChange={(value) => setNewLead({ ...newLead, source: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar fuente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Web">Sitio Web</SelectItem>
-                      <SelectItem value="Facebook">Facebook</SelectItem>
-                      <SelectItem value="Instagram">Instagram</SelectItem>
-                      <SelectItem value="Referido">Referido</SelectItem>
-                      <SelectItem value="Llamada">Llamada Directa</SelectItem>
-                      <SelectItem value="Google Contacts">Google Contacts</SelectItem>
-                      <SelectItem value="Otro">Otro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="budget">Presupuesto</Label>
-                  <Input
-                    id="budget"
-                    value={newLead.budget}
-                    onChange={(e) => setNewLead({ ...newLead, budget: e.target.value })}
-                    placeholder="S/ 200,000 - S/ 250,000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project">Proyecto de Interés</Label>
-                  <Input
-                    id="project"
-                    value={newLead.project}
-                    onChange={(e) => setNewLead({ ...newLead, project: e.target.value })}
-                    placeholder="Nombre del proyecto"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="location">Ubicación Preferida</Label>
-                  <Input
-                    id="location"
-                    value={newLead.location}
-                    onChange={(e) => setNewLead({ ...newLead, location: e.target.value })}
-                    placeholder="Distrito, Ciudad"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="notes">Notas</Label>
-                  <Textarea
-                    id="notes"
-                    value={newLead.notes}
-                    onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
-                    placeholder="Información adicional sobre el lead..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancelar
-                </Button>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de leads */}
+          {!estaCargando && leads.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {leads.map((lead) => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  isConverting={convirtiendoCliente === lead.id}
+                  onVerDetalles={handleVerDetalles}
+                  onConvertir={handleConvertirCliente}
+                  onEditar={handleEditar}
+                  onWhatsApp={handleWhatsAppCliente}
+                  onScheduleMeeting={handleScheduleMeeting}
+                  onCotizar={handleCotizar}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Paginación para Leads */}
+          {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {leads.length} de {paginacion.total} leads
+              </p>
+              
+              <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleAddLead}
-                  disabled={!newLead.name || !newLead.email || !newLead.phone}
-                  className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
                 >
-                  Guardar Lead
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+            </div>
+          )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Leads</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">{leads.length}</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <User className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Calificados</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {leads.filter((l) => l.status === "qualified").length}
+          {/* Estado vacío */}
+          {!estaCargando && leads.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {filtros?.busqueda 
+                    ? "No se encontraron leads con ese criterio de búsqueda"
+                    : "Convierte tus contactos en leads para comenzar a gestionarlos"}
                 </p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En Negociación</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {leads.filter((l) => l.status === "negotiation").length}
-                </p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-xl">
-                <DollarSign className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Score Promedio</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {Math.round(leads.reduce((acc, l) => acc + l.score, 0) / leads.length)}
-                </p>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <Button
+                  onClick={() => window.location.href = '/dashboard/contacts'}
+                  className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+                >
+                  Ir a Contactos
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-      {/* Filters and Bulk Actions */}
-      <Card className="border-border">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+        {/* TAB: CLIENTES */}
+        <TabsContent value="clientes" className="space-y-4">
+          {/* Barra de búsqueda y filtros */}
+          <div className="flex gap-4">
+            <div className="flex-1">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nombre, email o teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  placeholder="Buscar clientes por nombre, apellido o correo..."
+                  value={filtros?.busqueda || ''}
+                  onChange={(e) => handleBusqueda(e.target.value)}
+                  className="pl-9"
                 />
               </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="new">Nuevos</SelectItem>
-                  <SelectItem value="contacted">Contactados</SelectItem>
-                  <SelectItem value="qualified">Calificados</SelectItem>
-                  <SelectItem value="negotiation">En Negociación</SelectItem>
-                  <SelectItem value="closed">Cerrados</SelectItem>
-                  <SelectItem value="lost">Perdidos</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterTag} onValueChange={setFilterTag}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <Tag className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filtrar por etiqueta" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las etiquetas</SelectItem>
-                  {availableTags.map((tag) => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
+            <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  <SelectValue placeholder="Todas las etiquetas" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas las etiquetas</SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
+                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: etiqueta.color }}
+                      />
+                      {etiqueta.nombre}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {selectedLeads.length > 0 && (
-              <div className="flex items-center gap-3 p-3 bg-[#FCBA00]/10 rounded-lg border border-[#FCBA00]/20">
-                <span className="text-sm font-medium text-[#303030]">{selectedLeads.length} leads seleccionados</span>
-                <Dialog open={isTagDialogOpen} onOpenChange={setIsTagDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]">
-                      <Tag className="w-4 h-4 mr-2" />
-                      Etiquetar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl font-bold text-[#303030]">Etiquetar Leads</DialogTitle>
-                      <DialogDescription>
-                        Selecciona las etiquetas para aplicar a {selectedLeads.length} lead(s)
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      {availableTags.map((tag) => (
-                        <div key={tag} className="flex items-center space-x-3">
-                          <Checkbox
-                            id={tag}
-                            checked={selectedTagsForBatch.includes(tag)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedTagsForBatch([...selectedTagsForBatch, tag])
-                              } else {
-                                setSelectedTagsForBatch(selectedTagsForBatch.filter((t) => t !== tag))
-                              }
-                            }}
-                          />
-                          <Label htmlFor={tag} className="flex items-center gap-2 cursor-pointer">
-                            <Badge className={`${tagColors[tag]} border`}>{tag}</Badge>
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <Button variant="outline" onClick={() => setIsTagDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={handleApplyTags}
-                        disabled={selectedTagsForBatch.length === 0}
-                        className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]"
-                      >
-                        Aplicar Etiquetas
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+          {/* Estado de carga */}
+          {estaCargando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+            </div>
+          )}
+
+          {/* Error */}
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <p className="text-red-600">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lista de clientes */}
+          {!estaCargando && clientes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clientes.map((cliente) => (
+                <ClientCard
+                  key={cliente.id}
+                  cliente={cliente}
+                  onVerDetalles={handleVerDetalles}
+                  onCotizar={handleCotizar}
+                  onEditar={handleEditar}
+                  onWhatsApp={handleWhatsAppCliente}
+                  onScheduleMeeting={handleScheduleMeeting}
+                  onAgregarOportunidad={() => {
+                    setClienteParaOportunidad(cliente)
+                    setDialogoOportunidadAbierto(true)
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Paginación para Clientes */}
+          {!estaCargando && clientes.length > 0 && paginacion.totalPaginas > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Mostrando {clientes.length} de {paginacion.total} clientes
+              </p>
+              
+              <div className="flex items-center gap-2">
                 <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => setSelectedLeads([])}
-                  className="border-red-200 text-red-600 hover:bg-red-50"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
+                  disabled={paginacion.pagina === 1 || estaCargando}
                 >
-                  Cancelar
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Anterior
+                </Button>
+                
+                <span className="text-sm text-muted-foreground px-4">
+                  Página {paginacion.pagina} de {paginacion.totalPaginas}
+                </span>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
+                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          )}
 
-      {filteredLeads.length > 0 && (
-        <div className="flex items-center gap-2 px-2">
-          <Checkbox
-            id="select-all"
-            checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
-            onCheckedChange={handleSelectAll}
-          />
-          <Label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
-            Seleccionar todos ({filteredLeads.length})
-          </Label>
-        </div>
+          {/* Estado vacío */}
+          {!estaCargando && clientes.length === 0 && !error && (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No hay clientes</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  {filtros?.busqueda 
+                    ? "No se encontraron clientes con ese criterio de búsqueda"
+                    : "Convierte tus leads en clientes para comenzar"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Diálogos */}
+      <DialogoDetallesLead
+        lead={leadSeleccionado}
+        abierto={dialogoDetallesAbierto}
+        onCerrar={() => setDialogoDetallesAbierto(false)}
+      />
+
+      <DialogoEditarLead
+        lead={leadSeleccionado}
+        abierto={dialogoEditarAbierto}
+        onCerrar={() => setDialogoEditarAbierto(false)}
+        onActualizado={() => {
+          cargarContactos({}) // Recargar todos los contactos sin filtro
+          setDialogoEditarAbierto(false)
+        }}
+      />
+
+      {/* Diálogo para crear oportunidad */}
+      {clienteParaOportunidad && (
+        <DialogoCrearOportunidad
+          clienteId={clienteParaOportunidad.id}
+          clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
+          open={dialogoOportunidadAbierto}
+          onOpenChange={setDialogoOportunidadAbierto}
+          onSuccess={() => {
+            toast({
+              title: "¡Oportunidad creada!",
+              description: "El cliente ha sido agregado al pipeline exitosamente",
+            })
+            setDialogoOportunidadAbierto(false)
+            setClienteParaOportunidad(null)
+          }}
+        />
       )}
 
-      {/* Leads List */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredLeads.map((lead) => (
-          <Card key={lead.id} className="border-border hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                <div className="flex items-start gap-4 flex-1">
-                  <Checkbox
-                    checked={selectedLeads.includes(lead.id)}
-                    onCheckedChange={() => handleSelectLead(lead.id)}
-                    className="mt-1"
-                  />
-
-                  {/* Lead Info */}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="text-xl font-bold text-[#303030]">{lead.name}</h3>
-                          <Badge className={`${statusConfig[lead.status].color} border font-medium`}>
-                            {statusConfig[lead.status].label}
-                          </Badge>
-                          <Badge className={`${getScoreColor(lead.score)} border font-bold`}>Score: {lead.score}</Badge>
-                        </div>
-                        {lead.tags.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap mt-2">
-                            {lead.tags.map((tag) => (
-                              <Badge key={tag} className={`${tagColors[tag]} border text-xs`}>
-                                {tag}
-                                <button
-                                  onClick={() => handleRemoveTag(lead.id, tag)}
-                                  className="ml-1 hover:text-red-600"
-                                >
-                                  <XIcon className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-4 h-4" />
-                            {lead.email}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-4 h-4" />
-                            {lead.phone}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Proyecto:</span>
-                        <span className="font-medium text-[#303030]">{lead.project}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Ubicación:</span>
-                        <span className="font-medium text-[#303030]">{lead.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Presupuesto:</span>
-                        <span className="font-medium text-[#303030]">{lead.budget}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Creado: {lead.createdAt}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Último contacto: {lead.lastContact}
-                      </span>
-                      <span className="px-2 py-1 bg-muted rounded text-[#303030]">Fuente: {lead.source}</span>
-                    </div>
-
-                    {lead.notes && (
-                      <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">{lead.notes}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex lg:flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 lg:flex-none border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00] hover:text-[#303030] bg-transparent"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteLead(lead.id)}
-                    className="flex-1 lg:flex-none border-red-200 text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredLeads.length === 0 && (
-        <Card className="border-border">
-          <CardContent className="p-12 text-center">
-            <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-[#303030] mb-2">No se encontraron leads</h3>
-            <p className="text-muted-foreground">Intenta ajustar los filtros o agrega un nuevo lead</p>
-          </CardContent>
-        </Card>
+      {/* Diálogo para cotización */}
+      {leadParaCotizar && (
+        <FormularioCotizacion
+          open={dialogoCotizacionAbierto}
+          onOpenChange={setDialogoCotizacionAbierto}
+          onGuardar={handleGuardarCotizacion}
+          contactoId={leadParaCotizar.id}
+          nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`}
+        />
       )}
     </div>
   )

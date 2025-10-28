@@ -2,34 +2,73 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getUser } from "@/lib/auth"
+import { obtenerUsuario } from "@/lib/autenticacion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { fetchAPI } from "@/services/api/config"
+import WebPreview from "@/components/WebPreview"
 import {
-  Users,
-  Building2,
-  TrendingUp,
-  DollarSign,
-  Phone,
-  Mail,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
+  Building2 as IconoEdificio,
+  TrendingUp as IconoTendencia,
+  DollarSign as IconoDolar,
+  Calendar as IconoCalendario,
+  ArrowUpRight as FlechaArriba,
+  ArrowDownRight as FlechaAbajo,
+  RefreshCcw as IconoActualizar,
+  Eye as IconoVer,
+  Users as IconoUsuarios,
 } from "lucide-react"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
-export default function DashboardPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+export default function PaginaDashboard() {
+  const enrutador = useRouter()
+  const [usuario, setUsuario] = useState<any>(null)
+  const [metricas, setMetricas] = useState<any[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [leadsRecientes, setLeadsRecientes] = useState<any[]>([])
+  const [cargandoLeads, setCargandoLeads] = useState(false)
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
   useEffect(() => {
-    const currentUser = getUser()
-    if (!currentUser) {
-      router.push("/login")
+    const usuarioActual = obtenerUsuario()
+    if (!usuarioActual) {
+      enrutador.push("/login")
     } else {
-      setUser(currentUser)
+      setUsuario(usuarioActual)
+      cargarMetricas()
+      cargarLeadsRecientes()
     }
-  }, [router])
+  }, [enrutador])
 
-  if (!user) {
+  async function cargarMetricas() {
+    try {
+      setCargando(true)
+      setError(null)
+      const datos = await fetchAPI<any>('/analytics/metrics')
+      setMetricas(datos.metricas || [])
+    } catch (err: any) {
+      console.error('Error cargando métricas:', err)
+      setError('Error cargando métricas del dashboard')
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  async function cargarLeadsRecientes() {
+    try {
+      setCargandoLeads(true)
+      const datos = await fetchAPI<any>('/contactos/recientes?tipo=LEAD')
+      setLeadsRecientes(datos.contactos || [])
+    } catch (err: any) {
+      console.error('Error cargando leads recientes:', err)
+    } finally {
+      setCargandoLeads(false)
+    }
+  }
+
+  if (!usuario) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FCBA00]"></div>
@@ -37,234 +76,169 @@ export default function DashboardPage() {
     )
   }
 
-  const kpis = [
-    {
-      title: "Leads Activos",
-      value: "248",
-      change: "+12.5%",
-      trend: "up",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Propiedades Disponibles",
-      value: "87",
-      change: "-3.2%",
-      trend: "down",
-      icon: Building2,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Ventas del Mes",
-      value: "S/ 2.4M",
-      change: "+18.7%",
-      trend: "up",
-      icon: DollarSign,
-      color: "text-[#FCBA00]",
-      bgColor: "bg-yellow-50",
-    },
-    {
-      title: "Tasa de Conversión",
-      value: "34.2%",
-      change: "+5.1%",
-      trend: "up",
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-  ]
-
-  const recentLeads = [
-    {
-      name: "María González",
-      email: "maria.g@email.com",
-      phone: "+51 987 654 321",
-      project: "Proyecto Los Olivos",
-      score: 85,
-      status: "hot",
-      date: "Hoy, 10:30 AM",
-    },
-    {
-      name: "Carlos Ramírez",
-      email: "carlos.r@email.com",
-      phone: "+51 987 654 322",
-      project: "Condominio San Isidro",
-      score: 72,
-      status: "warm",
-      date: "Hoy, 09:15 AM",
-    },
-    {
-      name: "Ana Torres",
-      email: "ana.t@email.com",
-      phone: "+51 987 654 323",
-      project: "Edificio Miraflores",
-      score: 45,
-      status: "cold",
-      date: "Ayer, 04:20 PM",
-    },
-  ]
-
-  const upcomingActivities = [
-    {
-      type: "Visita",
-      client: "María González",
-      project: "Proyecto Los Olivos",
-      time: "Hoy, 3:00 PM",
-      icon: Building2,
-    },
-    {
-      type: "Llamada",
-      client: "Carlos Ramírez",
-      project: "Condominio San Isidro",
-      time: "Hoy, 5:30 PM",
-      icon: Phone,
-    },
-    {
-      type: "Email",
-      client: "Ana Torres",
-      project: "Edificio Miraflores",
-      time: "Mañana, 10:00 AM",
-      icon: Mail,
-    },
-  ]
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-green-600 bg-green-50"
-    if (score >= 50) return "text-yellow-600 bg-yellow-50"
-    return "text-red-600 bg-red-50"
+  if (cargando) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Cargando métricas...</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FCBA00]"></div>
+        </div>
+      </div>
+    )
   }
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      hot: "bg-red-100 text-red-700 border-red-200",
-      warm: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      cold: "bg-blue-100 text-blue-700 border-blue-200",
+  const obtenerIcono = (iconName: string) => {
+    const iconos: { [key: string]: any } = {
+      building: IconoEdificio,
+      dollar: IconoDolar,
+      trending: IconoTendencia,
     }
-    return styles[status as keyof typeof styles] || styles.cold
+    return iconos[iconName] || IconoTendencia
   }
+
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Bienvenido de vuelta, {user.name}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-[#303030]">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Bienvenido de vuelta, {usuario.name}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={cargarMetricas}
+            className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+          >
+            <IconoActualizar className="w-4 h-4 mr-2" />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
-      {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi, index) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={index} className="border-border hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
-                    <p className="text-3xl font-bold text-[#303030]">{kpi.value}</p>
-                    <div className="flex items-center gap-1">
-                      {kpi.trend === "up" ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className={`text-sm font-medium ${kpi.trend === "up" ? "text-green-600" : "text-red-600"}`}>
-                        {kpi.change}
-                      </span>
-                      <span className="text-sm text-muted-foreground">vs mes anterior</span>
-                    </div>
-                  </div>
-                  <div className={`${kpi.bgColor} p-3 rounded-xl`}>
-                    <Icon className={`w-6 h-6 ${kpi.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cargarMetricas}
+            className="text-red-600 border-red-300 hover:bg-red-50"
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Leads */}
-        <Card className="lg:col-span-2 border-border">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-[#303030]">Leads Recientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentLeads.map((lead, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h4 className="font-semibold text-[#303030]">{lead.name}</h4>
-                      <span
-                        className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusBadge(lead.status)}`}
-                      >
-                        {lead.status.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{lead.project}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {lead.email}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {lead.phone}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreColor(lead.score)}`}>
-                      Score: {lead.score}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{lead.date}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Upcoming Activities */}
+
+      {/* Leads Recientes y Link Delgado lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Leads Recientes */}
         <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-[#303030]">Próximas Actividades</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl font-bold text-[#303030] flex items-center gap-2">
+                <IconoUsuarios className="w-5 h-5 text-[#FCBA00]" />
+                Leads Recientes
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cargarLeadsRecientes}
+                className="bg-[#FCBA00] text-[#303030] border-[#FCBA00] hover:shadow-lg hover:shadow-[#FCBA00]/30 transition-all duration-200"
+              >
+                <IconoActualizar className="w-4 h-4 mr-1" />
+                Actualizar
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {upcomingActivities.map((activity, index) => {
-                const Icon = activity.icon
-                return (
+            {cargandoLeads ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FCBA00]"></div>
+                <span className="ml-2 text-sm text-muted-foreground">Cargando leads...</span>
+              </div>
+            ) : leadsRecientes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <IconoUsuarios className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No hay leads recientes</p>
+                <p className="text-xs mt-1">Los nuevos leads aparecerán aquí</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {leadsRecientes.slice(0, 5).map((lead, indice) => (
                   <div
-                    key={index}
-                    className="flex gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                    key={lead.id || indice}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-gray-200 hover:border-[#FCBA00]/30 hover:shadow-md transition-all duration-200"
                   >
-                    <div className="bg-[#FCBA00] p-2 rounded-lg h-fit">
-                      <Icon className="w-4 h-4 text-[#303030]" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#FCBA00]/10 rounded-full flex items-center justify-center">
+                      <span className="text-[#FCBA00] font-semibold text-sm">
+                        {lead.nombre ? lead.nombre.charAt(0).toUpperCase() : '?'}
+                      </span>
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-sm text-[#303030]">{activity.type}</h4>
-                      <p className="text-sm text-muted-foreground">{activity.client}</p>
-                      <p className="text-xs text-muted-foreground">{activity.project}</p>
-                      <div className="flex items-center gap-1 text-xs text-[#FCBA00] font-medium pt-1">
-                        <Calendar className="w-3 h-3" />
-                        {activity.time}
-                      </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-[#303030] truncate">
+                        {lead.nombre || 'Sin nombre'}
+                      </h4>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {lead.email || lead.telefono || 'Sin información de contacto'}
+                      </p>
+                      {lead.empresa && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {lead.empresa}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {lead.fechaCreacion ? new Date(lead.fechaCreacion).toLocaleDateString() : 'Reciente'}
+                      </span>
+                      {lead.estado && (
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          lead.estado === 'activo' 
+                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            : 'bg-gray-100 text-gray-700 border border-gray-200'
+                        }`}>
+                          {lead.estado}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+            
+            {leadsRecientes.length > 5 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                <Button
+                  variant="outline"
+                  onClick={() => enrutador.push('/dashboard/leads')}
+                  className="bg-[#FCBA00] text-[#303030] border-[#FCBA00] hover:shadow-lg hover:shadow-[#FCBA00]/30 transition-all duration-200"
+                >
+                  Ver todos los leads
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Link Delgado */}
+        <WebPreview
+          url="https://linkdelgado.netlify.app/"
+          title="Link Delgado"
+          description="Portal principal de servicios digitales"
+        />
       </div>
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

@@ -1,14 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { useOportunidades } from "@/hooks/useOportunidades"
+import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
+import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
   DollarSign,
@@ -18,298 +21,273 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  Settings,
-  Plus,
-  Trash2,
-  GripVertical,
+  Loader2,
+  Search,
+  Tag,
 } from "lucide-react"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
-interface Deal {
-  id: string
-  clientName: string
-  email: string
-  phone: string
-  property: string
-  project: string
-  value: number
-  stage: string
-  probability: number
-  lastActivity: string
-  nextAction: string
-  assignedTo: string
-  createdAt: string
-  notes: string
-}
+// Mapeo de etapas para el pipeline
+const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
+  { id: "LEAD", nombre: "Lead", color: "bg-blue-500" },
+  { id: "CONTACTO", nombre: "Contacto Inicial", color: "bg-purple-500" },
+  { id: "VISITA", nombre: "Visita Agendada", color: "bg-indigo-500" },
+  { id: "NEGOCIACION", nombre: "Negociación", color: "bg-yellow-500" },
+  { id: "CIERRE", nombre: "Cierre", color: "bg-orange-500" },
+  { id: "GANADO", nombre: "Ganado", color: "bg-green-500" },
+  { id: "PERDIDO", nombre: "Perdido", color: "bg-red-500" },
+]
 
-interface Stage {
-  id: string
-  name: string
-  color: string
-  count: number
-  value?: number
-}
-
-export default function PipelinePage() {
+export default function PaginaPipeline() {
+  const { toast } = useToast()
+  const { oportunidades, estadisticas, cargando, error, moverOportunidad, refrescar } = useOportunidades()
+  
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
-  const [isManageStagesOpen, setIsManageStagesOpen] = useState(false)
-  const [stages, setStages] = useState<Stage[]>([
-    { id: "lead", name: "Lead", color: "bg-blue-500", count: 0 },
-    { id: "contacto", name: "Contacto Inicial", color: "bg-purple-500", count: 0 },
-    { id: "visita", name: "Visita Agendada", color: "bg-indigo-500", count: 0 },
-    { id: "negociacion", name: "Negociación", color: "bg-yellow-500", count: 0 },
-    { id: "cierre", name: "Cierre", color: "bg-orange-500", count: 0 },
-    { id: "ganado", name: "Ganado", color: "bg-green-500", count: 0 },
-  ])
-  const [newStageName, setNewStageName] = useState("")
-  const [editingStageId, setEditingStageId] = useState<string | null>(null)
-  const [editingStageName, setEditingStageName] = useState("")
-
-  const [deals, setDeals] = useState<Deal[]>([
-    {
-      id: "1",
-      clientName: "María González",
-      email: "maria.g@email.com",
-      phone: "+51 987 654 321",
-      property: "Dpto 301",
-      project: "Proyecto Los Olivos",
-      value: 280000,
-      stage: "negociacion",
-      probability: 75,
-      lastActivity: "Hace 2 horas",
-      nextAction: "Enviar cotización final",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-15",
-      notes: "Cliente muy interesado. Tiene aprobación de crédito Mi Vivienda.",
-    },
-    {
-      id: "2",
-      clientName: "Carlos Ramírez",
-      email: "carlos.r@email.com",
-      phone: "+51 987 654 322",
-      property: "Dpto 502",
-      project: "Condominio San Isidro",
-      value: 350000,
-      stage: "visita",
-      probability: 60,
-      lastActivity: "Hace 1 día",
-      nextAction: "Agendar segunda visita",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-14",
-      notes: "Programar visita con familia este fin de semana.",
-    },
-    {
-      id: "3",
-      clientName: "Ana Torres",
-      email: "ana.t@email.com",
-      phone: "+51 987 654 323",
-      property: "Casa 15",
-      project: "Torres del Norte",
-      value: 220000,
-      stage: "contacto",
-      probability: 40,
-      lastActivity: "Hace 3 días",
-      nextAction: "Llamada de seguimiento",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-13",
-      notes: "Interesada en Techo Propio. Necesita asesoría financiera.",
-    },
-    {
-      id: "4",
-      clientName: "Roberto Silva",
-      email: "roberto.s@email.com",
-      phone: "+51 987 654 324",
-      property: "Dpto 204",
-      project: "Residencial Surco",
-      value: 195000,
-      stage: "lead",
-      probability: 25,
-      lastActivity: "Hace 5 días",
-      nextAction: "Primer contacto",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-10",
-      notes: "Lead desde formulario web. Sin contactar aún.",
-    },
-    {
-      id: "5",
-      clientName: "Patricia Mendoza",
-      email: "patricia.m@email.com",
-      phone: "+51 987 654 325",
-      property: "Dpto 801",
-      project: "Edificio Miraflores",
-      value: 420000,
-      stage: "cierre",
-      probability: 90,
-      lastActivity: "Hace 1 hora",
-      nextAction: "Firma de contrato",
-      assignedTo: "Juan Pérez",
-      createdAt: "2025-01-08",
-      notes: "Lista para firmar. Separación pagada.",
-    },
-    {
-      id: "6",
-      clientName: "Luis Vargas",
-      email: "luis.v@email.com",
-      phone: "+51 987 654 326",
-      property: "Casa 22",
-      project: "Torres del Norte",
-      value: 220000,
-      stage: "ganado",
-      probability: 100,
-      lastActivity: "Hace 2 días",
-      nextAction: "Proceso de escrituración",
-      assignedTo: "Ana Torres",
-      createdAt: "2025-01-05",
-      notes: "Venta cerrada exitosamente. Cliente muy satisfecho.",
-    },
-  ])
+  const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
+  const [busqueda, setBusqueda] = useState<string>("")
+  const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
-  const filteredDeals = deals.filter((deal) => {
-    if (selectedMonth === "all") return true
-    const dealDate = new Date(deal.createdAt)
-    const dealMonth = dealDate.getMonth() + 1
-    const dealYear = dealDate.getFullYear()
-    return dealMonth === Number.parseInt(selectedMonth) && dealYear === Number.parseInt(selectedYear)
+  // Cargar etiquetas al montar
+  useEffect(() => {
+    const cargarEtiquetas = async () => {
+      try {
+        const etiquetasObtenidas = await etiquetaService.obtenerTodas()
+        if (Array.isArray(etiquetasObtenidas)) {
+          setEtiquetas(etiquetasObtenidas)
+        }
+      } catch (error) {
+        toast({ 
+          title: 'Error al cargar etiquetas',
+          description: (error as Error).message,
+          variant: 'destructive',
+        });
+      }
+    }
+    cargarEtiquetas()
+  }, [])
+
+  // Cargar oportunidades al montar
+  useEffect(() => {
+    refrescar()
+  }, [refrescar])
+
+  // Filtrar oportunidades por mes, año, búsqueda y etiqueta
+  const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
+    // Filtro por mes y año
+    if (selectedMonth !== "all") {
+      const opDate = new Date(op.creadoEn)
+      const opMonth = opDate.getMonth() + 1
+      const opYear = opDate.getFullYear()
+      if (opMonth !== Number.parseInt(selectedMonth) || opYear !== Number.parseInt(selectedYear)) {
+        return false
+      }
+    }
+
+    // Filtro por búsqueda (nombre, apellido, correo, empresa)
+    if (busqueda.trim()) {
+      const searchLower = busqueda.toLowerCase()
+      const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
+      const correo = op.cliente?.correo?.toLowerCase() || ''
+      const empresa = op.cliente?.empresa?.toLowerCase() || ''
+      const dni = op.cliente?.dni?.toLowerCase() || ''
+      const titulo = op.titulo?.toLowerCase() || ''
+      
+      if (!nombreCompleto.includes(searchLower) && 
+          !correo.includes(searchLower) && 
+          !empresa.includes(searchLower) &&
+          !titulo.includes(searchLower) &&
+          !dni.includes(searchLower)) {
+        return false
+      }
+    }
+
+    // Nota: El filtro por etiqueta requiere que el backend incluya las etiquetas del cliente
+    // Por ahora, este filtro está deshabilitado hasta que se actualice el tipo OportunidadCliente
+    if (etiquetaFiltro !== "todas") {
+      // TODO: Agregar soporte de etiquetas en el backend para oportunidades
+      return true
+    }
+
+    return true
   })
 
-  const stagesWithData = stages.map((stage) => {
-    const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+  // Calcular datos por etapa
+  const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
+    const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
     return {
-      ...stage,
-      count: stageDeals.length,
-      value: stageDeals.reduce((acc, deal) => acc + deal.value, 0),
+      ...etapa,
+      count: oportunidadesEtapa.length,
+      value: oportunidadesEtapa.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0),
     }
   })
 
-  const totalPipelineValue = filteredDeals
-    .filter((d) => !["ganado", "perdido"].includes(d.stage))
-    .reduce((acc, deal) => acc + deal.value, 0)
+  // Estadísticas generales
+  const valorPipeline = oportunidadesFiltradas
+    .filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const wonDeals = filteredDeals.filter((d) => d.stage === "ganado")
-  const totalWonValue = wonDeals.reduce((acc, deal) => acc + deal.value, 0)
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "GANADO")
+  const valorGanado = oportunidadesGanadas.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const getProbabilityColor = (probability: number) => {
+  const getProbabilityColor = (probability?: number | null) => {
+    if (!probability) return "text-gray-600 bg-gray-50"
     if (probability >= 75) return "text-green-600 bg-green-50"
     if (probability >= 50) return "text-yellow-600 bg-yellow-50"
     return "text-red-600 bg-red-50"
   }
 
-  const moveDeal = (dealId: string, newStage: string) => {
-    setDeals(
-      deals.map((deal) =>
-        deal.id === dealId
-          ? {
-              ...deal,
-              stage: newStage,
-              probability: newStage === "ganado" ? 100 : newStage === "perdido" ? 0 : deal.probability,
-            }
-          : deal,
-      ),
-    )
-  }
-
-  const handleAddStage = () => {
-    if (!newStageName.trim()) return
-    const newStage: Stage = {
-      id: newStageName.toLowerCase().replace(/\s+/g, "-"),
-      name: newStageName,
-      color: "bg-gray-500",
-      count: 0,
-    }
-    setStages([...stages, newStage])
-    setNewStageName("")
-  }
-
-  const handleDeleteStage = (stageId: string) => {
-    const hasDeals = deals.some((deal) => deal.stage === stageId)
-    if (hasDeals) {
-      alert("No puedes eliminar un estado que tiene oportunidades asignadas")
+  const handleWhatsApp = (telefono: string, nombre: string) => {
+    console.log('[WA] handler called with', telefono, nombre)
+    if (!telefono) {
+      toast({ title: 'Teléfono no disponible', description: 'El contacto no tiene teléfono registrado.' })
       return
     }
-    setStages(stages.filter((s) => s.id !== stageId))
-  }
-
-  const handleEditStage = (stageId: string) => {
-    const stage = stages.find((s) => s.id === stageId)
-    if (stage) {
-      setEditingStageId(stageId)
-      setEditingStageName(stage.name)
+    if (telefono) {
+      const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
+      // Normalize phone (digits only) and build wa.me URL so it opens in browser
+      const phone = telefono.replace(/\D/g, '')
+      if (!phone) return
+      let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      // map whatsapp:// scheme (if somehow provided) to web wa.me
+      try {
+        if (telefono.startsWith('whatsapp:') || telefono.startsWith('whatsapp://')) {
+          // in case telefono contains a whatsapp://... URL, extract digits
+          const digits = telefono.replace(/\D/g, '')
+          url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
+        }
+      } catch (e) {
+        // ignore
+      }
+      try {
+        console.log('[WA] opening url:', url)
+        // show a small toast to give user feedback
+        toast({ title: 'Abriendo WhatsApp', description: url })
+        if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+          ;(window as any).electron.shell.openExternal(url)
+        } else if (typeof window !== 'undefined') {
+          window.open(url, '_blank')
+        }
+      } catch (e) {
+        // fallback
+        try { window.open(url, '_blank') } catch (_) { /* ignore */ }
+      }
     }
-  }
+  };
 
-  const handleSaveStageEdit = () => {
-    if (!editingStageName.trim()) return
-    setStages(stages.map((s) => (s.id === editingStageId ? { ...s, name: editingStageName } : s)))
-    setEditingStageId(null)
-    setEditingStageName("")
-  }
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre}`;
+    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`
+    try {
+      toast({ title: 'Abriendo calendario', description: url })
+      if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+        ;(window as any).electron.shell.openExternal(url)
+      } else if (typeof window !== 'undefined') {
+        window.open(url, '_blank')
+      }
+    } catch (e) {
+      try { window.open(url, '_blank') } catch (_) { /* ignore */ }
+    }
+  };
 
-  const moveStageUp = (index: number) => {
-    if (index === 0) return
-    const newStages = [...stages]
-    ;[newStages[index - 1], newStages[index]] = [newStages[index], newStages[index - 1]]
-    setStages(newStages)
-  }
-
-  const moveStageDown = (index: number) => {
-    if (index === stages.length - 1) return
-    const newStages = [...stages]
-    ;[newStages[index], newStages[index + 1]] = [newStages[index + 1], newStages[index]]
-    setStages(newStages)
-  }
+  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
+    try {
+      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await refrescar()
+      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
-          <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
+            <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={refrescar} variant="outline">
+              {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Actualizar
+            </Button>
+
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[180px]">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Seleccionar mes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los meses</SelectItem>
+                <SelectItem value="1">Enero</SelectItem>
+                <SelectItem value="2">Febrero</SelectItem>
+                <SelectItem value="3">Marzo</SelectItem>
+                <SelectItem value="4">Abril</SelectItem>
+                <SelectItem value="5">Mayo</SelectItem>
+                <SelectItem value="6">Junio</SelectItem>
+                <SelectItem value="7">Julio</SelectItem>
+                <SelectItem value="8">Agosto</SelectItem>
+                <SelectItem value="9">Septiembre</SelectItem>
+                <SelectItem value="10">Octubre</SelectItem>
+                <SelectItem value="11">Noviembre</SelectItem>
+                <SelectItem value="12">Diciembre</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setIsManageStagesOpen(true)}
-            className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Gestionar Estados
-          </Button>
-
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Seleccionar mes" />
+        {/* Barra de búsqueda y filtros */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, correo, empresa, título o DNI..."
+              value={busqueda}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
+            <SelectTrigger className="w-[220px]">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <SelectValue placeholder="Todas las etiquetas" />
+              </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los meses</SelectItem>
-              <SelectItem value="1">Enero</SelectItem>
-              <SelectItem value="2">Febrero</SelectItem>
-              <SelectItem value="3">Marzo</SelectItem>
-              <SelectItem value="4">Abril</SelectItem>
-              <SelectItem value="5">Mayo</SelectItem>
-              <SelectItem value="6">Junio</SelectItem>
-              <SelectItem value="7">Julio</SelectItem>
-              <SelectItem value="8">Agosto</SelectItem>
-              <SelectItem value="9">Septiembre</SelectItem>
-              <SelectItem value="10">Octubre</SelectItem>
-              <SelectItem value="11">Noviembre</SelectItem>
-              <SelectItem value="12">Diciembre</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Año" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year}>
-                  {year}
+              <SelectItem value="todas">Todas las etiquetas</SelectItem>
+              {etiquetas.map((etiqueta: Etiqueta) => (
+                <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: etiqueta.color }}
+                    />
+                    {etiqueta.nombre}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -325,7 +303,7 @@ export default function PipelinePage() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {filteredDeals.filter((d) => !["ganado", "perdido"].includes(d.stage)).length}
+                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -340,7 +318,7 @@ export default function PipelinePage() {
               <div>
                 <p className="text-sm text-muted-foreground">Valor del Pipeline</p>
                 <p className="text-2xl font-bold text-[#303030] mt-1">
-                  S/ {(totalPipelineValue / 1000000).toFixed(1)}M
+                  S/ {(valorPipeline / 1000000).toFixed(1)}M
                 </p>
               </div>
               <div className="bg-yellow-50 p-3 rounded-xl">
@@ -354,7 +332,7 @@ export default function PipelinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ventas Ganadas</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{wonDeals.length}</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{oportunidadesGanadas.length}</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -367,7 +345,7 @@ export default function PipelinePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valor Ganado</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(totalWonValue / 1000000).toFixed(1)}M</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(valorGanado / 1000000).toFixed(1)}M</p>
               </div>
               <div className="bg-green-50 p-3 rounded-xl">
                 <DollarSign className="w-6 h-6 text-green-600" />
@@ -380,31 +358,31 @@ export default function PipelinePage() {
       {/* Kanban Board */}
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
-          {stagesWithData.map((stage) => {
-            const stageDeals = filteredDeals.filter((deal) => deal.stage === stage.id)
+          {etapasConDatos.map((etapa) => {
+            const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
             return (
-              <div key={stage.id} className="flex-shrink-0 w-80">
+              <div key={etapa.id} className="flex-shrink-0 w-80">
                 <Card className="border-border h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${stage.color}`} />
-                        <CardTitle className="text-base font-semibold text-[#303030]">{stage.name}</CardTitle>
+                        <div className={`w-3 h-3 rounded-full ${etapa.color}`} />
+                        <CardTitle className="text-base font-semibold text-[#303030]">{etapa.nombre}</CardTitle>
                       </div>
                       <Badge variant="secondary" className="font-semibold">
-                        {stage.count}
+                        {etapa.count}
                       </Badge>
                     </div>
                     <div className="text-sm font-medium text-muted-foreground">
-                      S/ {(stage.value / 1000).toFixed(0)}K
+                      S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {stageDeals.map((deal) => (
+                  <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
+                    {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
                       <Card
-                        key={deal.id}
+                        key={oportunidad.id}
                         className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
-                        onClick={() => setSelectedDeal(deal)}
+                        onClick={() => setSelectedDeal(oportunidad)}
                       >
                         <CardContent className="p-4 space-y-3">
                           {/* Client Info */}
@@ -412,12 +390,14 @@ export default function PipelinePage() {
                             <div className="flex items-center gap-2">
                               <Avatar className="w-8 h-8 bg-[#FCBA00]">
                                 <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                  {deal.clientName.charAt(0)}
+                                  {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">{deal.clientName}</h4>
-                                <p className="text-xs text-muted-foreground">{deal.assignedTo}</p>
+                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
+                                  {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
+                                </h4>
+                                <p className="text-xs text-muted-foreground">{oportunidad.titulo}</p>
                               </div>
                             </div>
                           </div>
@@ -426,30 +406,30 @@ export default function PipelinePage() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Building2 className="w-3 h-3" />
-                              <span className="line-clamp-1">{deal.project}</span>
+                              <span className="line-clamp-1">{oportunidad.proyecto || 'Sin proyecto'}</span>
                             </div>
-                            <p className="text-sm font-medium text-[#303030]">{deal.property}</p>
+                            <p className="text-sm font-medium text-[#303030]">{oportunidad.propiedad || 'Sin propiedad'}</p>
                           </div>
 
                           {/* Value */}
                           <div className="flex items-center justify-between pt-2 border-t border-border">
                             <span className="text-lg font-bold text-[#FCBA00]">
-                              S/ {(deal.value / 1000).toFixed(0)}K
+                              S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
                             </span>
-                            <Badge className={`${getProbabilityColor(deal.probability)} font-semibold text-xs`}>
-                              {deal.probability}%
+                            <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
+                              {oportunidad.probabilidad || 0}%
                             </Badge>
                           </div>
 
                           {/* Last Activity */}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span>{deal.lastActivity}</span>
+                            <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
-                    {stageDeals.length === 0 && (
+                    {oportunidadesEtapa.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
                         <p>No hay oportunidades</p>
                       </div>
@@ -467,20 +447,22 @@ export default function PipelinePage() {
         <Dialog open={!!selectedDeal} onOpenChange={() => setSelectedDeal(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#303030]">{selectedDeal.clientName}</DialogTitle>
-              <DialogDescription>{selectedDeal.project}</DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-[#303030]">
+                {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
+              </DialogTitle>
+              <DialogDescription>{selectedDeal.titulo}</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${stagesWithData.find((s) => s.id === selectedDeal.stage)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {stagesWithData.find((s) => s.id === selectedDeal.stage)?.name}
+                  {ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
-                <Badge className={`${getProbabilityColor(selectedDeal.probability)} font-semibold`}>
-                  Probabilidad: {selectedDeal.probability}%
+                <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
+                  Probabilidad: {selectedDeal.probabilidad || 0}%
                 </Badge>
               </div>
 
@@ -489,17 +471,25 @@ export default function PipelinePage() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {selectedDeal.email}
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1" title={selectedDeal.cliente?.correo || 'Sin email'}>
+                      {selectedDeal.cliente?.correo || 'Sin email'}
+                    </span>
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Teléfono</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {selectedDeal.phone}
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1">
+                      {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                    </span>
                   </p>
                 </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
               {/* Property Details */}
@@ -507,11 +497,13 @@ export default function PipelinePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Propiedad</p>
-                    <p className="font-semibold text-[#303030]">{selectedDeal.property}</p>
+                    <p className="font-semibold text-[#303030]">{selectedDeal.propiedad || 'Sin propiedad'}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Valor</p>
-                    <p className="text-2xl font-bold text-[#FCBA00]">S/ {selectedDeal.value.toLocaleString("es-PE")}</p>
+                    <p className="text-2xl font-bold text-[#FCBA00]">
+                      S/ {selectedDeal.valor ? Number(selectedDeal.valor).toLocaleString("es-PE") : '0'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -520,46 +512,52 @@ export default function PipelinePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Última Actividad</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.lastActivity}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.ultimaActividad).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Próxima Acción</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.nextAction}</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proximaAccion || 'Sin próxima acción'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Asignado a</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.assignedTo}</p>
+                  <p className="text-sm text-muted-foreground">Proyecto</p>
+                  <p className="font-medium text-[#303030]">{selectedDeal.proyecto || 'Sin proyecto'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Fecha de Creación</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.createdAt}</p>
+                  <p className="font-medium text-[#303030]">
+                    {new Date(selectedDeal.creadoEn).toLocaleDateString('es-PE')}
+                  </p>
                 </div>
               </div>
 
               {/* Notes */}
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Notas</p>
-                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">{selectedDeal.notes}</p>
+                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">
+                  {selectedDeal.notas || 'Sin notas'}
+                </p>
               </div>
 
               {/* Move Stage Actions */}
               <div className="space-y-3 pt-4 border-t">
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
-                  {stagesWithData
-                    .filter((s) => s.id !== selectedDeal.stage)
-                    .map((stage) => (
+                  {ETAPAS_PIPELINE
+                    .filter((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
+                    .map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => (
                       <Button
-                        key={stage.id}
+                        key={etapa.id}
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          moveDeal(selectedDeal.id, stage.id)
+                          handleMoverOportunidad(selectedDeal.id, etapa.id)
                           setSelectedDeal(null)
                         }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]"
+                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
                       >
-                        {stage.name}
+                        {etapa.nombre}
                       </Button>
                     ))}
                 </div>
@@ -567,11 +565,11 @@ export default function PipelinePage() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold">
-                  Generar Cotización
-                </Button>
-                <Button variant="outline" className="flex-1 bg-transparent">
-                  Editar Oportunidad
+                <Button 
+                  onClick={() => setSelectedDeal(null)}
+                  className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+                >
+                  Cerrar
                 </Button>
               </div>
             </div>
@@ -579,136 +577,8 @@ export default function PipelinePage() {
         </Dialog>
       )}
 
-      <Dialog open={isManageStagesOpen} onOpenChange={setIsManageStagesOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-[#303030]">Gestionar Estados del Pipeline</DialogTitle>
-            <DialogDescription>Personaliza los estados de tu proceso de ventas</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            {/* Add New Stage */}
-            <div className="space-y-3">
-              <Label>Agregar Nuevo Estado</Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Nombre del estado..."
-                  value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddStage()
-                  }}
-                />
-                <Button onClick={handleAddStage} className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar
-                </Button>
-              </div>
-            </div>
-
-            {/* Existing Stages */}
-            <div className="space-y-3">
-              <Label>Estados Actuales</Label>
-              <div className="space-y-2">
-                {stages.map((stage, index) => (
-                  <Card key={stage.id} className="border-border">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        {/* Drag Handle */}
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => moveStageUp(index)}
-                            disabled={index === 0}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => moveStageDown(index)}
-                            disabled={index === stages.length - 1}
-                            className="text-muted-foreground hover:text-[#FCBA00] disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <GripVertical className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Color Indicator */}
-                        <div className={`w-4 h-4 rounded-full ${stage.color}`} />
-
-                        {/* Stage Name */}
-                        <div className="flex-1">
-                          {editingStageId === stage.id ? (
-                            <Input
-                              value={editingStageName}
-                              onChange={(e) => setEditingStageName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveStageEdit()
-                                if (e.key === "Escape") {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <p className="font-semibold text-[#303030]">{stage.name}</p>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {editingStageId === stage.id ? (
-                            <>
-                              <Button size="sm" onClick={handleSaveStageEdit} className="bg-[#FCBA00] text-[#303030]">
-                                Guardar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingStageId(null)
-                                  setEditingStageName("")
-                                }}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditStage(stage.id)}
-                                className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteStage(stage.id)}
-                                className="border-red-200 text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t">
-              <Button onClick={() => setIsManageStagesOpen(false)} className="bg-[#FCBA00] text-[#303030]">
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

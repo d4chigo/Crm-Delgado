@@ -1,0 +1,44 @@
+import { Request, Response, NextFunction } from 'express';
+import { verificarToken } from '@/utils/jwt.util';
+import { respuestaError } from '@/utils/respuesta.util';
+
+export const autenticar = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      respuestaError(res, 'Token no proporcionado', 401, null, 'TOKEN_NO_ENCONTRADO');
+      return;
+    }
+
+    const token = authHeader.substring(7);
+
+    const payload = verificarToken(token);
+    req.usuario = payload;
+
+    next();
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      respuestaError(res, 'Token expirado', 401, null, 'TOKEN_EXPIRADO');
+      return;
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      respuestaError(res, 'Token inválido', 401, null, 'TOKEN_INVALIDO');
+      return;
+    }
+
+    respuestaError(res, 'Error al verificar token', 401, null, 'ERROR_AUTENTICACION');
+  }
+};
+
+export const esAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  const usuario = req.usuario;
+
+  if (!usuario || usuario.rol !== 'ADMIN') {
+    respuestaError(res, 'Acceso denegado. Se requiere rol de administrador', 403, null, 'ACCESO_DENEGADO');
+    return;
+  }
+
+  next();
+};
