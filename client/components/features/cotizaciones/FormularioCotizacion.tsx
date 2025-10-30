@@ -200,10 +200,7 @@ export const FormularioCotizacion = ({
       } catch { return ''; }
     })();
 
-    // Armar cronograma en dos columnas para caber en una página
-    const mitad = Math.ceil(cronograma.length / 2);
-    const col1 = cronograma.slice(0, mitad);
-    const col2 = cronograma.slice(mitad);
+    // Renderizar todo el cronograma en una sola tabla para no perder meses en el PDF
     const renderRows = (arr: any[]) => arr.map(p => `
       <tr>
         <td>${p.mes}</td>
@@ -241,8 +238,8 @@ export const FormularioCotizacion = ({
             .rojo { color:#dc2626; }
             .verde { color:#16a34a; }
             .negrita { font-weight: 700; }
-            .cols { display:flex; gap:10px; }
-            .col { width:50%; }
+            thead { display: table-header-group; }
+            tr, td, th { page-break-inside: avoid; }
           </style>
         </head>
         <body>
@@ -275,32 +272,16 @@ export const FormularioCotizacion = ({
 
           <div class="section">
             <h3>Cronograma de Pagos</h3>
-            <div class="cols">
-              <div class="col">
-                <table class="tabla-cronograma">
-                  <thead>
-                    <tr>
-                      <th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${renderRows(col1)}
-                  </tbody>
-                </table>
-              </div>
-              <div class="col">
-                <table class="tabla-cronograma">
-                  <thead>
-                    <tr>
-                      <th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${renderRows(col2)}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <table class="tabla-cronograma">
+              <thead>
+                <tr>
+                  <th>Mes</th><th>Cuota</th><th>Interés</th><th>Capital</th><th>Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderRows(cronograma)}
+              </tbody>
+            </table>
           </div>
 
           <div class="section">

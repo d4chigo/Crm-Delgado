@@ -13,7 +13,7 @@ interface ClientCardProps {
   onAgregarOportunidad: (cliente: Contacto) => void
   onEditar: (cliente: Contacto) => void
   onWhatsApp: (telefono: string) => void
-  onScheduleMeeting: (nombre: string, correo: string) => void
+  onScheduleMeeting?: (nombre: string, correo: string) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
