@@ -31,7 +31,8 @@ export const proyectoService = {
       }
 
       const resultado = await response.json()
-      const proyectos = resultado.datos || [];
+      // Asegurarse de que siempre devolvamos un array, ya sea que venga en resultado o resultado.datos
+      const proyectos = Array.isArray(resultado) ? resultado : (resultado.datos || []);
       
       // Procesar las rutas de las imágenes para Electron
       if (typeof window !== 'undefined' && window.electron) {

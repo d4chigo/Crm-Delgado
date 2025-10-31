@@ -4,7 +4,7 @@ const prisma = new PrismaClient()
 
 export const teamService = {
   async obtenerTodos() {
-    return await prisma.miembroEquipo.findMany({ orderBy: { orden: 'asc' } as any })
+    return await prisma.miembroEquipo.findMany({ orderBy: { orden_mostrar: 'asc' } as any })
   },
   async obtenerPorId(id: number) {
     return await prisma.miembroEquipo.findUnique({ where: { id } })
