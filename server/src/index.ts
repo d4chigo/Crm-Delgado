@@ -33,6 +33,12 @@ import cotizacionRoutes from '@/routes/cotizacion.routes';
 import analyticsRoutes from '@/routes/analytics.routes';
 import assistantRoutes from '@/routes/assistant.routes';
 import calendarRoutes from '@/routes/calendar.routes';
+import adminPropertiesRoutes from '@/routes/adminProperties';
+import adminProyectosRoutes from '@/routes/adminProyectos';
+import adminTestimonialsRoutes from '@/routes/adminTestimonials';
+import adminTeamRoutes from '@/routes/adminTeam';
+import adminOtrosServiciosRoutes from '@/routes/adminOtrosServicios';
+import adminUsuariosRoutes from '@/routes/adminUsuarios';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -83,6 +89,12 @@ app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/admin/properties', adminPropertiesRoutes);
+app.use('/api/admin/proyectos', adminProyectosRoutes);
+app.use('/api/admin/testimonials', adminTestimonialsRoutes);
+app.use('/api/admin/team', adminTeamRoutes);
+app.use('/api/admin/otros-servicios', adminOtrosServiciosRoutes);
+app.use('/api/admin/users', adminUsuariosRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);
