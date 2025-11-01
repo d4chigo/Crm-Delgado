@@ -385,7 +385,7 @@ model Testimonio {
 
 // Contraseñas para acceso web de clientes
 model ClientePassword {
-  contactoId    String   @id
+  contactoId    String   @id @map("contacto_id")
   passwordWeb   String   @map("password_web") @db.VarChar(255)
   creadoEn      DateTime @default(now()) @map("created_at")
   actualizadoEn DateTime @updatedAt @map("updated_at")
@@ -396,7 +396,7 @@ model ClientePassword {
 // Documentos subidos por clientes
 model ClienteDocumento {
   id              String   @id @default(uuid())
-  contactoId      String
+  contactoId      String   @map("contacto_id")
   nombreArchivo   String   @map("nombre_archivo") @db.VarChar(255)
   nombreOriginal  String   @map("nombre_original") @db.VarChar(255)
   rutaArchivo     String   @map("ruta_archivo") @db.VarChar(512)
@@ -419,7 +419,7 @@ model ClienteDocumento {
 // Registro de accesos al portal
 model ClienteAcceso {
   id             String   @id @default(uuid())
-  contactoId     String
+  contactoId     String   @map("contacto_id")
   fechaAcceso    DateTime @default(now()) @map("fecha_acceso")
   ipAddress      String   @map("ip_address") @db.VarChar(45)
   userAgent      String?  @map("user_agent") @db.Text
@@ -432,7 +432,7 @@ model ClienteAcceso {
 // Actividades del cliente en el portal
 model ClienteActividad {
   id          String   @id @default(uuid())
-  contactoId  String
+  contactoId  String   @map("contacto_id")
   tipo        String   @db.VarChar(50)
   descripcion String   @db.Text
   fecha       DateTime @default(now())

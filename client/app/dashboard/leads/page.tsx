@@ -17,6 +17,7 @@ import { etiquetaService } from "@/services/api/etiqueta.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
 import { LeadCard, ClientCard, DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
 import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
+import { DialogoCrearAccesoWeb } from "@/components/features/contacts/DialogoCrearAccesoWeb";
 import { FormularioCotizacion } from "@/components/features/cotizaciones";
 import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
@@ -42,7 +43,9 @@ export default function PaginaLeads() {
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
   const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
+  const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false);
   const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
+  const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Contacto | null>(null);
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -210,6 +213,10 @@ export default function PaginaLeads() {
                   onWhatsApp={handleWhatsAppCliente}
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
+                  onCrearAccesoWeb={(lead) => {
+                    setLeadParaAccesoWeb(lead);
+                    setDialogoAccesoWebAbierto(true);
+                  }}
                 />
               ))}
             </div>
@@ -259,6 +266,10 @@ export default function PaginaLeads() {
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsAppCliente}
                   onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
+                  onCrearAccesoWeb={(cliente) => {
+                    setLeadParaAccesoWeb(cliente);
+                    setDialogoAccesoWebAbierto(true);
+                  }}
                 />
               ))}
             </div>
@@ -283,6 +294,18 @@ export default function PaginaLeads() {
 
       <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} />
       <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
+
+      <DialogoCrearAccesoWeb
+        contacto={leadParaAccesoWeb}
+        abierto={dialogoAccesoWebAbierto}
+        onCancelar={() => {
+          setDialogoAccesoWebAbierto(false);
+          setLeadParaAccesoWeb(null);
+        }}
+        onCreado={() => {
+          cargarContactos({});
+        }}
+      />
 
       {clienteParaOportunidad && (
         <DialogoCrearOportunidad

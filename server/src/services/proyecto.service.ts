@@ -1,6 +1,5 @@
-import { PrismaClient, EstadoProyecto } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '@/config/database';
+import { EstadoProyecto } from '@prisma/client'
 
 export interface CrearProyectoDto {
   nombre: string
@@ -51,7 +50,7 @@ export const proyectoService = {
       }
     }
 
-    return await prisma.proyectos.findMany({
+    return await prisma.proyecto.findMany({
       where,
       include: {
         etiquetas: {
@@ -73,7 +72,7 @@ export const proyectoService = {
             }
           }
         },
-        usuarios: {
+        usuario: {
           select: {
             id: true,
             nombre: true,

@@ -39,6 +39,7 @@ import adminTestimonialsRoutes from '@/routes/adminTestimonials';
 import adminTeamRoutes from '@/routes/adminTeam';
 import adminOtrosServiciosRoutes from '@/routes/adminOtrosServicios';
 import adminUsuariosRoutes from '@/routes/adminUsuarios';
+import clienteWebRoutes from '@/routes/clienteWebRoutes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -95,6 +96,7 @@ app.use('/api/admin/testimonials', adminTestimonialsRoutes);
 app.use('/api/admin/team', adminTeamRoutes);
 app.use('/api/admin/otros-servicios', adminOtrosServiciosRoutes);
 app.use('/api/admin/users', adminUsuariosRoutes);
+app.use('/api/clientes', clienteWebRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);
