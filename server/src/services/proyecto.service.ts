@@ -1,4 +1,4 @@
-import { PrismaClient, EstadoProyecto, Proyecto } from '@prisma/client'
+import { PrismaClient, proyectos_estado as EstadoProyecto } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -51,7 +51,7 @@ export const proyectoService = {
       }
     }
 
-    return await prisma.proyecto.findMany({
+    return await prisma.proyectos.findMany({
       where,
       include: {
         etiquetas: {
@@ -73,7 +73,7 @@ export const proyectoService = {
             }
           }
         },
-        usuario: {
+        usuarios: {
           select: {
             id: true,
             nombre: true,
@@ -91,7 +91,7 @@ export const proyectoService = {
    * Obtener un proyecto por ID
    */
   async obtenerPorId(id: string) {
-    return await prisma.proyecto.findUnique({
+    return await prisma.proyectos.findUnique({
       where: { id },
       include: {
         etiquetas: {
@@ -114,7 +114,7 @@ export const proyectoService = {
             }
           }
         },
-        usuario: {
+        usuarios: {
           select: {
             id: true,
             nombre: true,
@@ -131,7 +131,7 @@ export const proyectoService = {
   async crear(datos: CrearProyectoDto) {
     const { etiquetaIds, ...proyectoData } = datos
 
-    const proyecto = await prisma.proyecto.create({
+    const proyecto = await prisma.proyectos.create({
       data: {
         ...proyectoData,
         estado: proyectoData.estado || EstadoProyecto.DISPONIBLE,
@@ -164,7 +164,7 @@ export const proyectoService = {
    * Actualizar un proyecto existente
    */
   async actualizar(id: string, datos: ActualizarProyectoDto) {
-    return await prisma.proyecto.update({
+    return await prisma.proyectos.update({
       where: { id },
       data: datos,
       include: {
@@ -186,7 +186,7 @@ export const proyectoService = {
    * Eliminar un proyecto (soft delete)
    */
   async eliminar(id: string) {
-    return await prisma.proyecto.update({
+    return await prisma.proyectos.update({
       where: { id },
       data: { activo: false }
     })
@@ -196,7 +196,7 @@ export const proyectoService = {
    * Eliminar permanentemente un proyecto
    */
   async eliminarPermanente(id: string) {
-    return await prisma.proyecto.delete({
+    return await prisma.proyectos.delete({
       where: { id }
     })
   },
@@ -299,7 +299,7 @@ export const proyectoService = {
    * Obtener proyectos de un cliente específico
    */
   async obtenerPorCliente(clienteId: string) {
-    return await prisma.proyecto.findMany({
+    return await prisma.proyectos.findMany({
       where: {
         clientes: {
           some: {

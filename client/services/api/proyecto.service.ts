@@ -12,6 +12,9 @@ export const proyectoService = {
   async obtenerTodos(filtros?: FiltrosProyecto): Promise<Proyecto[]> {
     try {
       const token = localStorage.getItem('crm_token')
+      if (!token) {
+        throw new Error('No autenticado: falta token (crm_token)')
+      }
       
       const params = new URLSearchParams()
       if (filtros?.etiquetaId) params.append('etiquetaId', filtros.etiquetaId)
@@ -19,6 +22,7 @@ export const proyectoService = {
       if (filtros?.activo !== undefined) params.append('activo', String(filtros.activo))
 
       const url = `${API_URL}/proyectos${params.toString() ? `?${params.toString()}` : ''}`
+      console.log('[proyectoService] GET', url)
 
       const response = await fetch(url, {
         headers: {
@@ -26,8 +30,20 @@ export const proyectoService = {
         }
       })
 
+      console.log('[proyectoService] status', response.status)
       if (!response.ok) {
-        throw new Error('Error al obtener proyectos')
+        let mensaje = `Error ${response.status} al obtener proyectos`
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const body = await response.json()
+            mensaje = body.mensaje || body.message || body.error || mensaje
+          } else {
+            const text = await response.text()
+            if (text) mensaje = `${mensaje}: ${text}`
+          }
+        } catch {}
+        throw new Error(mensaje)
       }
 
       const resultado = await response.json()
@@ -58,6 +74,9 @@ export const proyectoService = {
   async obtenerPorId(id: string): Promise<Proyecto> {
     try {
       const token = localStorage.getItem('crm_token')
+      if (!token) {
+        throw new Error('No autenticado: falta token (crm_token)')
+      }
 
       const response = await fetch(`${API_URL}/proyectos/${id}`, {
         headers: {
@@ -66,7 +85,18 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        throw new Error('Error al obtener proyecto')
+        let mensaje = `Error ${response.status} al obtener proyecto`
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const body = await response.json()
+            mensaje = body.mensaje || body.message || body.error || mensaje
+          } else {
+            const text = await response.text()
+            if (text) mensaje = `${mensaje}: ${text}`
+          }
+        } catch {}
+        throw new Error(mensaje)
       }
 
       const resultado = await response.json()
@@ -93,6 +123,9 @@ export const proyectoService = {
   async crear(datos: DatosFormularioProyecto): Promise<Proyecto> {
     try {
       const token = localStorage.getItem('crm_token')
+      if (!token) {
+        throw new Error('No autenticado: falta token (crm_token)')
+      }
 
       const response = await fetch(`${API_URL}/proyectos`, {
         method: 'POST',
@@ -104,8 +137,18 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.mensaje || 'Error al crear proyecto')
+        let mensaje = 'Error al crear proyecto'
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json()
+            mensaje = error.mensaje || error.message || error.error || mensaje
+          } else {
+            const text = await response.text()
+            if (text) mensaje = `${mensaje}: ${text}`
+          }
+        } catch {}
+        throw new Error(mensaje)
       }
 
       const resultado = await response.json()
@@ -122,6 +165,9 @@ export const proyectoService = {
   async actualizar(id: string, datos: Partial<DatosFormularioProyecto>): Promise<Proyecto> {
     try {
       const token = localStorage.getItem('crm_token')
+      if (!token) {
+        throw new Error('No autenticado: falta token (crm_token)')
+      }
 
       const response = await fetch(`${API_URL}/proyectos/${id}`, {
         method: 'PUT',
@@ -133,8 +179,18 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.mensaje || 'Error al actualizar proyecto')
+        let mensaje = 'Error al actualizar proyecto'
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json()
+            mensaje = error.mensaje || error.message || error.error || mensaje
+          } else {
+            const text = await response.text()
+            if (text) mensaje = `${mensaje}: ${text}`
+          }
+        } catch {}
+        throw new Error(mensaje)
       }
 
       const resultado = await response.json()
@@ -151,6 +207,9 @@ export const proyectoService = {
   async eliminar(id: string): Promise<void> {
     try {
       const token = localStorage.getItem('crm_token')
+      if (!token) {
+        throw new Error('No autenticado: falta token (crm_token)')
+      }
 
       const response = await fetch(`${API_URL}/proyectos/${id}`, {
         method: 'DELETE',
@@ -160,8 +219,18 @@ export const proyectoService = {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.mensaje || 'Error al eliminar proyecto')
+        let mensaje = 'Error al eliminar proyecto'
+        try {
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json()
+            mensaje = error.mensaje || error.message || error.error || mensaje
+          } else {
+            const text = await response.text()
+            if (text) mensaje = `${mensaje}: ${text}`
+          }
+        } catch {}
+        throw new Error(mensaje)
       }
     } catch (error) {
       console.error('Error al eliminar proyecto:', error)

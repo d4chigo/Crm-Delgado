@@ -22,7 +22,6 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
   { nombre: "Contactos", href: "/dashboard/contacts", icono: IconoContacto },
   { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
-  { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
   // Grupo: Panel Admin Web
   {
     nombre: 'Panel Admin Web',
@@ -32,7 +31,7 @@ const navegacion: ElementoNavegacion[] = [
       { nombre: 'Equipo', href: '/dashboard/admin/team', icono: IconoUsuarios },
       { nombre: 'Otros Servicios', href: '/dashboard/admin/otros-servicios', icono: IconoLayers },
       { nombre: 'Usuarios', href: '/dashboard/admin/usuarios', icono: IconoUsuarios },
-      { nombre: 'Proyectos', href: '/dashboard/admin/proyectos', icono: IconoLayers },
+      { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoLayers },
     ]
   },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },

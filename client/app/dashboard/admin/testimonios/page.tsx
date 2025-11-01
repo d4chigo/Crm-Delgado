@@ -8,7 +8,6 @@ interface Testimonio {
   id: number;
   nombre: string;
   email: string;
-  cargo: string;
   calificacion: number;
   testimonio: string;
   foto: string | null;
@@ -28,7 +27,6 @@ const TestimoniosPage: React.FC = () => {
   const [formData, setFormData] = useState<{
     nombre: string;
     email: string;
-    cargo: string;
     calificacion: number;
     testimonio: string;
     foto: string;
@@ -36,7 +34,6 @@ const TestimoniosPage: React.FC = () => {
   }>({
     nombre: '',
     email: '',
-    cargo: '',
     calificacion: 5,
     testimonio: '',
     foto: '',
@@ -132,7 +129,6 @@ const TestimoniosPage: React.FC = () => {
     setFormData({
       nombre: testimonio.nombre,
       email: testimonio.email,
-      cargo: testimonio.cargo,
       calificacion: testimonio.calificacion,
       testimonio: testimonio.testimonio,
       foto: testimonio.foto || '',
@@ -204,7 +200,6 @@ const TestimoniosPage: React.FC = () => {
             setFormData({
               nombre: '',
               email: '',
-              cargo: '',
               calificacion: 5,
               testimonio: '',
               foto: '',
@@ -229,7 +224,6 @@ const TestimoniosPage: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Cargo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Calificación</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Acciones</th>
@@ -256,9 +250,6 @@ const TestimoniosPage: React.FC = () => {
                           <div className="text-sm text-gray-500">{testimonio.email}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {testimonio.cargo}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -371,18 +362,6 @@ const TestimoniosPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cargo / Puesto
-                  </label>
-                  <input
-                    type="text"
-                    name="cargo"
-                    value={formData.cargo}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
