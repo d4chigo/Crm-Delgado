@@ -1,4 +1,4 @@
-import { PrismaClient, proyectos_estado as EstadoProyecto } from '@prisma/client'
+import { PrismaClient, EstadoProyecto } from '@prisma/client'
 
 const prisma = new PrismaClient()
 

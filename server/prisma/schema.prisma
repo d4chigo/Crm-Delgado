@@ -21,7 +21,7 @@ model Usuario {
   actualizadoEn DateTime             @updatedAt
   contactos     Contacto[]
   oportunidades OportunidadCliente[]
-  proyectos     proyectos[]
+  proyectos     Proyecto[]
   reportes      Reporte[]            @relation("UsuarioReportes")
 
   @@map("usuarios")
@@ -150,7 +150,7 @@ model ProyectoEtiqueta {
   etiquetaId String
   asignadoEn DateTime  @default(now())
   etiqueta   Etiqueta  @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
-  proyecto   proyectos @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
 
   @@id([proyectoId, etiquetaId])
   @@index([proyectoId])
@@ -164,7 +164,7 @@ model ProyectoCliente {
   asociadoEn DateTime  @default(now())
   notas      String?   @db.Text
   cliente    Contacto  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  proyecto   proyectos @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
 
   @@id([proyectoId, clienteId])
   @@index([proyectoId])
@@ -222,25 +222,26 @@ model Reporte {
   @@map("reportes")
 }
 
-model proyectos {
-  id            String             @id
+model Proyecto {
+  id            String             @id @default(uuid())
   nombre        String
   descripcion   String?            @db.Text
   imagen        String?
   precio        Decimal?           @db.Decimal(12, 2)
   ubicacion     String?
-  estado        proyectos_estado   @default(DISPONIBLE)
+  estado        EstadoProyecto     @default(DISPONIBLE)
   activo        Boolean            @default(true)
   creadoEn      DateTime           @default(now())
-  actualizadoEn DateTime
+  actualizadoEn DateTime           @updatedAt
   usuarioId     String
   clientes      ProyectoCliente[]
   etiquetas     ProyectoEtiqueta[]
-  usuarios      Usuario            @relation(fields: [usuarioId], references: [id])
+  usuario       Usuario            @relation(fields: [usuarioId], references: [id])
 
   @@index([activo])
   @@index([estado])
   @@index([usuarioId])
+  @@map("proyectos")
 }
 
 enum Rol {
@@ -303,7 +304,7 @@ enum EstadoCotizacion {
   VENCIDA
 }
 
-enum proyectos_estado {
+enum EstadoProyecto {
   DISPONIBLE
   RESERVADO
   VENDIDO
@@ -311,220 +312,133 @@ enum proyectos_estado {
   FINALIZADO
 }
 
-// Enum para valores 'si'/'no' en la BD legacy
-enum SiNo {
-  SI @map("si")
-  NO @map("no")
-}
+// ==================== MODELOS PARA PANEL ADMIN WEB (PHP) ====================
+// Estos modelos mapean a tablas legacy del sitio PHP
 
-// Estados de propiedad (mapear a los valores en la BD: available/sold/reserved)
-enum EstadoPropiedad {
-  DISPONIBLE @map("available")
-  VENDIDO     @map("sold")
-  RESERVADO   @map("reserved")
-}
-
-// Tipos de propiedad (mapear a: house, apartment, land, commercial)
-enum TipoPropiedad {
-  CASA         @map("house")
-  DEPARTAMENTO @map("apartment")
-  TERRENO      @map("land")
-  COMERCIAL    @map("commercial")
-}
-
-// Estado de consultas (inquiries)
-enum EstadoConsulta {
-  PENDIENTE   @map("pending")
-  EN_PROGRESO @map("in_progress")
-  RESUELTA    @map("resolved")
-}
-
-// Tipos de servicio para 'otros_servicios'
 enum TipoServicio {
   GENERAL    @map("general")
   TOPOGRAFIA @map("topografia")
   DRON       @map("dron")
 }
 
-// Estado de testimonios
 enum EstadoTestimonio {
   PENDIENTE @map("pending")
   APROBADO  @map("approved")
   RECHAZADO @map("rejected")
 }
 
-// Estado de contacto para credit_evaluations
-enum EstadoContacto {
-  PENDIENTE      @map("pending")
-  CONTACTADO     @map("contacted")
-  NO_INTERESADO  @map("not_interested")
-  SEGUIMIENTO    @map("follow_up")
-}
-
-// Modelo: propiedades (tabla legacy `properties`) - en español
-model Propiedad {
-  id             Int               @id @default(autoincrement()) @map("id")
-  titulo         String            @map("title")
-  descripcion    String            @map("description") @db.Text
-  precio         Decimal?          @map("price") @db.Decimal(10, 2)
-  direccion      String            @map("address")
-  ciudad         String            @map("city")
-  habitaciones   Int               @map("bedrooms")
-  banos          Int               @map("bathrooms")
-  area           Decimal?          @map("area") @db.Decimal(10, 2)
-  destacado      Boolean?          @map("featured") @default(false)
-  estado         EstadoPropiedad   @map("status") @default(DISPONIBLE)
-  tipo_propiedad TipoPropiedad     @map("property_type")
-  creado_en      DateTime          @map("created_at")
-  actualizado_en DateTime?         @map("updated_at") @updatedAt
-  es_destacado   Boolean?          @map("is_featured") @default(false)
-  mapa_url       String?           @map("map_url") @db.VarChar(500)
-  video_url      String?           @map("video_url") @db.Text
-  etiqueta       String?           @map("tag") @db.VarChar(50)
-  imagenes       ImagenPropiedad[] @relation("PropiedadImagenes")
-  consultas      Consulta[]
-
-  @@map("properties")
-}
-
-// Modelo: imagenes de propiedad (property_images)
-model ImagenPropiedad {
-  id           Int       @id @default(autoincrement()) @map("id")
-  propiedad_id Int       @map("property_id")
-  ruta_imagen   String    @map("image_path") @db.VarChar(255)
-  es_principal Boolean   @map("is_main") @default(false)
-  creado_en    DateTime  @map("created_at")
-
-  propiedad    Propiedad @relation("PropiedadImagenes", fields: [propiedad_id], references: [id], onDelete: Cascade)
-
-  @@map("property_images")
-  @@index([propiedad_id], name: "property_id")
-}
-
-// Modelo: consultas (inquiries)
-model Consulta {
-  id           Int            @id @default(autoincrement()) @map("id")
-  nombre       String         @map("name") @db.VarChar(100)
-  correo       String         @map("email") @db.VarChar(100)
-  telefono     String         @map("phone") @db.VarChar(20)
-  asunto       String         @map("subject") @db.VarChar(255)
-  mensaje      String         @map("message") @db.Text
-  propiedad_id Int?           @map("property_id")
-  estado       EstadoConsulta @map("status") @default(PENDIENTE)
-  creado_en    DateTime       @map("created_at")
-  resuelto_en  DateTime?      @map("resolved_at")
-
-  propiedad    Propiedad?     @relation(fields: [propiedad_id], references: [id], onDelete: SetNull)
-
-  @@map("inquiries")
-}
-
-// Modelo: chequeos de elegibilidad (eligibility_checks)
-model ChequeoElegibilidad {
-  id               Int      @id @default(autoincrement()) @map("id")
-  nombre_completo  String   @map("full_name") @db.VarChar(100)
-  dni              String   @map("dni") @db.VarChar(20)
-  ingreso_mensual  Decimal  @map("monthly_income") @db.Decimal(10, 2)
-  miembros_familia Int      @map("family_members")
-  propiedad_propia String   @map("own_property") @db.VarChar(20)
-  modalidad        String   @map("modality") @db.VarChar(20)
-  ahorros          Decimal  @map("savings") @db.Decimal(10, 2)
-  correo           String   @map("email") @db.VarChar(100)
-  telefono         String   @map("phone") @db.VarChar(20)
-  ciudad           String?  @map("city") @db.VarChar(100)
-  elegible         Boolean  @map("eligible")
-  mensaje          String?  @map("message") @db.Text
-  creado_en        DateTime @map("created_at")
-  contactado       Boolean  @map("contacted") @default(false)
-  inalcanzable     Boolean  @map("unreachable") @default(false)
-  agendado         Boolean  @map("scheduled") @default(false)
-  contactado_en    DateTime? @map("contacted_at")
-  notas_contacto   String?  @map("contact_notes") @db.Text
-  ingreso_excede   SiNo     @map("income_exceeds") @default(NO)
-  apoyo_previo     SiNo     @map("previous_support") @default(NO)
-  tiene_familia    SiNo     @map("has_family") @default(NO)
-  tiene_ahorros    SiNo     @map("has_savings") @default(NO)
-
-  @@map("eligibility_checks")
-}
-
-// Modelo: otros servicios (otros_servicios)
+// Otros servicios para el sitio web
 model OtrosServicios {
-  id            Int        @id @default(autoincrement()) @map("id")
-  titulo        String     @map("title") @db.VarChar(255)
-  descripcion   String?    @map("description") @db.Text
-  enlace_imagen String?    @map("image_link") @db.VarChar(512)
-  enlace_video  String?    @map("video_link") @db.VarChar(512)
-  creado_en     DateTime   @map("created_at") @default(now())
-  actualizado_en DateTime  @map("updated_at") @updatedAt
-  tipo_servicio TipoServicio @map("service_type") @default(GENERAL)
+  id             Int          @id @default(autoincrement())
+  titulo         String       @db.VarChar(255)
+  descripcion    String?      @db.Text
+  enlaceImagen   String?      @map("image_link") @db.VarChar(512)
+  enlaceVideo    String?      @map("video_link") @db.VarChar(512)
+  tipoServicio   TipoServicio @map("service_type") @default(GENERAL)
+  creadoEn       DateTime     @default(now()) @map("created_at")
+  actualizadoEn  DateTime     @updatedAt @map("updated_at")
 
   @@map("otros_servicios")
 }
 
-// Modelo: miembros de equipo (team_members)
+// Miembros del equipo para el sitio web
 model MiembroEquipo {
-  id            Int       @id @default(autoincrement()) @map("id")
-  nombre        String    @map("name") @db.VarChar(100)
-  cargo         String    @map("position") @db.VarChar(100)
-  descripcion   String    @map("description") @db.Text
-  correo        String    @map("email") @db.VarChar(100)
-  telefono      String    @map("phone") @db.VarChar(20)
-  foto          String?   @map("photo") @db.VarChar(255)
-  activo        Boolean   @map("active") @default(true)
-  orden_mostrar Int       @map("display_order")
-  creado_en     DateTime  @map("created_at") @default(now())
-  facebook      String?   @map("facebook")
-  instagram     String?   @map("instagram")
-  tiktok        String?   @map("tiktok")
-  actualizado_en DateTime? @map("updated_at")
+  id             Int       @id @default(autoincrement())
+  nombre         String    @db.VarChar(100)
+  cargo          String    @db.VarChar(100)
+  descripcion    String    @db.Text
+  correo         String    @db.VarChar(100)
+  telefono       String    @db.VarChar(20)
+  foto           String?   @db.VarChar(255)
+  activo         Boolean   @default(true)
+  ordenMostrar   Int       @map("display_order")
+  facebook       String?   @db.VarChar(255)
+  instagram      String?   @db.VarChar(255)
+  tiktok         String?   @db.VarChar(255)
+  creadoEn       DateTime  @default(now()) @map("created_at")
+  actualizadoEn  DateTime? @updatedAt @map("updated_at")
 
+  @@index([activo])
+  @@index([ordenMostrar])
   @@map("team_members")
 }
 
-// Modelo: testimonios (testimonials)
+// Testimonios para el sitio web
 model Testimonio {
-  id           Int             @id @default(autoincrement()) @map("id")
-  nombre       String          @map("name") @db.VarChar(100)
-  correo       String          @map("email") @db.VarChar(100)
-  cargo        String          @map("role") @db.VarChar(100)
-  calificacion Int             @map("rating")
-  testimonio   String          @map("testimonial") @db.Text
-  foto         String?         @map("photo") @db.VarChar(255)
-  media        String?         @map("media") @db.VarChar(255)
-  video_url    String?         @map("video_url") @db.VarChar(255)
-  estado       EstadoTestimonio @map("status") @default(APROBADO)
-  creado_en    DateTime        @map("created_at")
-  aprobado_en  DateTime?       @map("approved_at")
+  id             Int              @id @default(autoincrement())
+  nombre         String           @db.VarChar(100)
+  correo         String           @db.VarChar(100)
+  calificacion   Int
+  testimonio     String           @db.Text
+  foto           String?          @db.VarChar(255)
+  media          String?          @db.VarChar(255)
+  videoUrl       String?          @map("video_url") @db.VarChar(255)
+  estado         EstadoTestimonio @default(APROBADO)
+  creadoEn       DateTime         @map("created_at")
+  aprobadoEn     DateTime?        @map("approved_at")
 
+  @@index([estado])
   @@map("testimonials")
 }
 
-// Modelo: usuarios legacy (tabla `users`) - separado del modelo `Usuario` del CRM
-model UsuarioWeb {
-  id             Int      @id @default(autoincrement()) @map("id")
-  nombre         String   @map("name") @db.VarChar(100)
-  correo         String   @map("email") @unique @db.VarChar(100)
-  telefono       String   @map("phone") @db.VarChar(20)
-  password       String   @map("password") @db.VarChar(255)
-  rol_usuario    String   @map("role") @db.VarChar(20) @default("user")
-  remember_token String?  @map("remember_token") @db.VarChar(100)
-  token_expira   BigInt?  @map("token_expires")
-  creado_en      DateTime @map("created_at")
-  actualizado_en DateTime? @map("updated_at")
+// ==================== MODELOS PARA PORTAL DE CLIENTES ====================
 
-  @@map("users")
+// Contraseñas para acceso web de clientes
+model ClientePassword {
+  contactoId    String   @id
+  passwordWeb   String   @map("password_web") @db.VarChar(255)
+  creadoEn      DateTime @default(now()) @map("created_at")
+  actualizadoEn DateTime @updatedAt @map("updated_at")
+
+  @@map("cliente_passwords")
 }
 
-// Modelo: evaluaciones de crédito (credit_evaluations)
-model EvaluacionCredito {
-  id              Int            @id @default(autoincrement()) @map("id")
-  nombre_completo String         @map("full_name") @db.VarChar(100)
-  dni             String?        @map("dni") @db.VarChar(20)
-  elegible        Boolean?       @map("eligible")
-  contactado      Boolean        @map("contacted") @default(false)
-  creado_en       DateTime       @map("created_at")
-  estado_contacto EstadoContacto @map("contact_status") @default(PENDIENTE)
+// Documentos subidos por clientes
+model ClienteDocumento {
+  id              String   @id @default(uuid())
+  contactoId      String
+  nombreArchivo   String   @map("nombre_archivo") @db.VarChar(255)
+  nombreOriginal  String   @map("nombre_original") @db.VarChar(255)
+  rutaArchivo     String   @map("ruta_archivo") @db.VarChar(512)
+  tipoDocumento   String   @map("tipo_documento") @db.VarChar(50)
+  descripcion     String?  @db.Text
+  tamanoBytes     Int      @map("tamano_bytes")
+  mimeType        String   @map("mime_type") @db.VarChar(100)
+  subidoEn        DateTime @default(now()) @map("subido_en")
+  estado          String   @default("PENDIENTE") @db.VarChar(50)
+  revisadoPor     String?  @map("revisado_por")
+  revisadoEn      DateTime? @map("revisado_en")
+  notas           String?  @db.Text
 
-  @@map("credit_evaluations")
+  @@index([contactoId])
+  @@index([estado])
+  @@index([subidoEn])
+  @@map("cliente_documentos")
+}
+
+// Registro de accesos al portal
+model ClienteAcceso {
+  id             String   @id @default(uuid())
+  contactoId     String
+  fechaAcceso    DateTime @default(now()) @map("fecha_acceso")
+  ipAddress      String   @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.Text
+
+  @@index([contactoId])
+  @@index([fechaAcceso])
+  @@map("cliente_accesos")
+}
+
+// Actividades del cliente en el portal
+model ClienteActividad {
+  id          String   @id @default(uuid())
+  contactoId  String
+  tipo        String   @db.VarChar(50)
+  descripcion String   @db.Text
+  fecha       DateTime @default(now())
+  metadata    Json?
+
+  @@index([contactoId])
+  @@index([fecha])
+  @@map("cliente_actividades")
 }
