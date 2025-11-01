@@ -52,6 +52,10 @@ export interface DatosFormularioProyecto {
   precio?: number
   ubicacion?: string
   estado: EstadoProyecto
+  tipoProyecto?: string
+  categoria?: string
+  mostrarEnWeb?: boolean
+  ordenWeb?: number
   etiquetaIds?: string[]
 }
 

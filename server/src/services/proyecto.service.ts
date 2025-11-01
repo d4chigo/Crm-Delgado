@@ -8,6 +8,10 @@ export interface CrearProyectoDto {
   precio?: number
   ubicacion?: string
   estado?: EstadoProyecto
+  tipoProyecto?: string
+  categoria?: string
+  mostrarEnWeb?: boolean
+  ordenWeb?: number
   usuarioId: string
   etiquetaIds?: string[]
 }
@@ -19,6 +23,10 @@ export interface ActualizarProyectoDto {
   precio?: number
   ubicacion?: string
   estado?: EstadoProyecto
+  tipoProyecto?: string
+  categoria?: string
+  mostrarEnWeb?: boolean
+  ordenWeb?: number
   activo?: boolean
 }
 
@@ -90,7 +98,7 @@ export const proyectoService = {
    * Obtener un proyecto por ID
    */
   async obtenerPorId(id: string) {
-    return await prisma.proyectos.findUnique({
+    return await prisma.proyecto.findUnique({
       where: { id },
       include: {
         etiquetas: {
@@ -130,10 +138,19 @@ export const proyectoService = {
   async crear(datos: CrearProyectoDto) {
     const { etiquetaIds, ...proyectoData } = datos
 
-    const proyecto = await prisma.proyectos.create({
+    const proyecto = await prisma.proyecto.create({
       data: {
-        ...proyectoData,
+        nombre: proyectoData.nombre,
+        descripcion: proyectoData.descripcion,
+        imagen: proyectoData.imagen,
+        precio: proyectoData.precio,
+        ubicacion: proyectoData.ubicacion,
         estado: proyectoData.estado || EstadoProyecto.DISPONIBLE,
+        tipoProyecto: proyectoData.tipoProyecto,
+        categoria: proyectoData.categoria,
+        mostrarEnWeb: proyectoData.mostrarEnWeb !== undefined ? proyectoData.mostrarEnWeb : true,
+        ordenWeb: proyectoData.ordenWeb || 0,
+        usuarioId: proyectoData.usuarioId,
         etiquetas: etiquetaIds
           ? {
               create: etiquetaIds.map((etiquetaId) => ({
@@ -163,7 +180,7 @@ export const proyectoService = {
    * Actualizar un proyecto existente
    */
   async actualizar(id: string, datos: ActualizarProyectoDto) {
-    return await prisma.proyectos.update({
+    return await prisma.proyecto.update({
       where: { id },
       data: datos,
       include: {
@@ -185,7 +202,7 @@ export const proyectoService = {
    * Eliminar un proyecto (soft delete)
    */
   async eliminar(id: string) {
-    return await prisma.proyectos.update({
+    return await prisma.proyecto.update({
       where: { id },
       data: { activo: false }
     })
@@ -195,7 +212,7 @@ export const proyectoService = {
    * Eliminar permanentemente un proyecto
    */
   async eliminarPermanente(id: string) {
-    return await prisma.proyectos.delete({
+    return await prisma.proyecto.delete({
       where: { id }
     })
   },
@@ -298,7 +315,7 @@ export const proyectoService = {
    * Obtener proyectos de un cliente específico
    */
   async obtenerPorCliente(clienteId: string) {
-    return await prisma.proyectos.findMany({
+    return await prisma.proyecto.findMany({
       where: {
         clientes: {
           some: {

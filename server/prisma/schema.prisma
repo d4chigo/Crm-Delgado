@@ -231,6 +231,12 @@ model Proyecto {
   ubicacion     String?
   estado        EstadoProyecto     @default(DISPONIBLE)
   activo        Boolean            @default(true)
+  tipoProyecto  TipoProyecto?      @map("tipo_proyecto")
+  categoria     String?            @db.VarChar(100)
+  galeria       Json?
+  caracteristicas Json?
+  mostrarEnWeb  Boolean            @default(true) @map("mostrar_en_web")
+  ordenWeb      Int?               @map("orden_web")
   creadoEn      DateTime           @default(now())
   actualizadoEn DateTime           @updatedAt
   usuarioId     String
@@ -241,6 +247,8 @@ model Proyecto {
   @@index([activo])
   @@index([estado])
   @@index([usuarioId])
+  @@index([tipoProyecto])
+  @@index([mostrarEnWeb])
   @@map("proyectos")
 }
 
@@ -312,6 +320,19 @@ enum EstadoProyecto {
   FINALIZADO
 }
 
+enum TipoProyecto {
+  TECHO_PROPIO       @map("techo_propio")
+  CREDITO_MIVIVIENDA @map("credito_mivivienda")
+  HABILITACIONES     @map("habilitaciones")
+  COMPRA             @map("compra")
+  VENTA              @map("venta")
+  ALQUILER           @map("alquiler")
+  DEPARTAMENTO       @map("departamento")
+  CASA               @map("casa")
+  TERRENO            @map("terreno")
+  LOCAL_COMERCIAL    @map("local_comercial")
+}
+
 // ==================== MODELOS PARA PANEL ADMIN WEB (PHP) ====================
 // Estos modelos mapean a tablas legacy del sitio PHP
 
@@ -379,6 +400,33 @@ model Testimonio {
 
   @@index([estado])
   @@map("testimonials")
+}
+
+// Páginas de servicios para el sitio web (Techo Propio, Crédito, etc.)
+model PaginaServicio {
+  id                String    @id @default(uuid())
+  tipoServicio      TipoProyecto @map("tipo_servicio")
+  titulo            String    @db.VarChar(255)
+  subtitulo         String?   @db.VarChar(255)
+  descripcionCorta  String?   @map("descripcion_corta") @db.Text
+  descripcionLarga  String?   @map("descripcion_larga") @db.Text
+  imagenBanner      String?   @map("imagen_banner") @db.VarChar(512)
+  videoBanner       String?   @map("video_banner") @db.VarChar(512)
+  requisitos        Json?
+  beneficios        Json?
+  pasos             Json?
+  preguntas         Json?
+  activo            Boolean   @default(true)
+  ordenMostrar      Int       @default(0) @map("orden_mostrar")
+  metaTitle         String?   @map("meta_title") @db.VarChar(255)
+  metaDescription   String?   @map("meta_description") @db.Text
+  creadoEn          DateTime  @default(now()) @map("created_at")
+  actualizadoEn     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tipoServicio])
+  @@index([activo])
+  @@index([ordenMostrar])
+  @@map("paginas_servicios")
 }
 
 // ==================== MODELOS PARA PORTAL DE CLIENTES ====================

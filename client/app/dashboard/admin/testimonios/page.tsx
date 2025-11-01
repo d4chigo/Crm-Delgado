@@ -144,7 +144,7 @@ const TestimoniosPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const res = await fetch(`/api/admin/testimonials/${id}`, {
+      const res = await fetch(api(`/api/admin/testimonials/${id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -166,7 +166,7 @@ const TestimoniosPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const res = await fetch(`/api/admin/testimonials/${id}`, {
+      const res = await fetch(api(`/api/admin/testimonials/${id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
