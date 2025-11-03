@@ -13,8 +13,8 @@ COPY package*.json pnpm-lock.yaml ./
 # Instalar pnpm
 RUN npm install -g pnpm
 
-# Instalar dependencias
-RUN pnpm install --frozen-lockfile
+# Instalar dependencias (sin frozen-lockfile para permitir actualizaciones)
+RUN pnpm install --no-frozen-lockfile
 
 # ============================================
 # Etapa 2: Builder

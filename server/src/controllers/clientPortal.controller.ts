@@ -57,6 +57,44 @@ class ClientPortalController {
   }
 
   /**
+   * PUT /api/portal-cliente/perfil
+   * Actualizar información personal del cliente
+   */
+  async actualizarPerfil(req: Request, res: Response) {
+    try {
+      const usuarioId = (req as any).usuario?.usuarioId;
+
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'No autenticado' });
+      }
+
+      const { nombre, apellido, telefono, dni, direccion, ciudad, provincia } = req.body;
+
+      const clienteActualizado = await prisma.contacto.update({
+        where: { id: usuarioId },
+        data: {
+          nombre,
+          apellido,
+          telefono,
+          dni,
+          direccion,
+          ciudad,
+          provincia
+        }
+      });
+
+      res.json({
+        success: true,
+        data: clienteActualizado,
+        message: 'Perfil actualizado correctamente'
+      });
+    } catch (error) {
+      console.error('Error al actualizar perfil:', error);
+      res.status(500).json({ error: 'Error al actualizar perfil del cliente' });
+    }
+  }
+
+  /**
    * GET /api/portal-cliente/oportunidades
    * Listar todas las oportunidades del cliente
    */

@@ -27,11 +27,9 @@ const navegacion: ElementoNavegacion[] = [
     nombre: 'Panel Admin Web',
     icono: IconoEdificio,
     children: [
-      { nombre: 'Servicios Web', href: '/dashboard/admin/servicios-web', icono: IconoHome },
       { nombre: 'Testimonios', href: '/dashboard/admin/testimonios', icono: IconoMessage },
       { nombre: 'Equipo', href: '/dashboard/admin/team', icono: IconoUsuarios },
       { nombre: 'Otros Servicios', href: '/dashboard/admin/otros-servicios', icono: IconoLayers },
-      { nombre: 'Usuarios', href: '/dashboard/admin/usuarios', icono: IconoUsuarios },
       { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoLayers },
     ]
   },

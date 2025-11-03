@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import clientPortalController from '@/controllers/clientPortal.controller';
+import clientAuthController from '@/controllers/clientAuth.controller';
 import { autenticar } from '@/middlewares/autenticacion.middleware';
 
 const router = Router();
 
+// Validar token (sin autenticación requerida, pero valida el token si viene)
+router.get('/validate-token', autenticar, clientAuthController.validateToken.bind(clientAuthController));
+
 // Todas las rutas requieren autenticación
 router.get('/perfil', autenticar, clientPortalController.obtenerPerfil.bind(clientPortalController));
+router.put('/perfil', autenticar, clientPortalController.actualizarPerfil.bind(clientPortalController));
 router.get('/resumen', autenticar, clientPortalController.obtenerResumen.bind(clientPortalController));
 router.get('/oportunidades', autenticar, clientPortalController.obtenerOportunidades.bind(clientPortalController));
 router.get('/oportunidades/:id', autenticar, clientPortalController.obtenerOportunidadDetalle.bind(clientPortalController));
