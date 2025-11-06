@@ -7,26 +7,22 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText } from "lucide-react"
-import { TipoContacto, Contacto } from "@/types/contacto.types"
-import { DialogoDetallesLead, DialogoEditarLead, LeadCard, ClientCard } from "@/components/features/leads";
-import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
-import { FormularioCotizacion } from "@/components/features/cotizaciones";
-import { cotizacionService } from "@/services/api/cotizacion.service";
-import { CrearCotizacionDTO } from "@/types/cotizacion.types";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { etiquetaService } from "@/services/api/etiqueta.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
+import { LeadCard, ClientCard, DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
+import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
+import { DialogoCrearAccesoWeb } from "@/components/features/contacts/DialogoCrearAccesoWeb";
+import { FormularioCotizacion } from "@/components/features/cotizaciones";
+import { cotizacionService } from "@/services/api/cotizacion.service";
+import { CrearCotizacionDTO } from "@/types/cotizacion.types";
+import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
+import { TipoContacto, Contacto } from "@/types/contacto.types"
 
 export default function PaginaLeads() {
   const {
@@ -42,13 +38,14 @@ export default function PaginaLeads() {
     filtros,
   } = useContactos()
 
-  // Usamos el estado de filtros del hook useContactos
   const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
   const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
+  const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false);
   const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
+  const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Contacto | null>(null);
   const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
@@ -58,44 +55,35 @@ export default function PaginaLeads() {
   const [totalLeads, setTotalLeads] = useState(0)
   const [totalClientes, setTotalClientes] = useState(0)
 
-  // Cargar leads/clientes según el tab activo
+  // WhatsApp Post-Agendado
+  const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
+  const [whatsappMensaje, setWhatsappMensaje] = useState("")
+  const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+
   useEffect(() => {
     const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
     cargarContactos({ tipo, pagina: 1, limite: 6 })
   }, [tabActivo])
 
-  // Cargar etiquetas al montar
-  useEffect(() => {
-    cargarEtiquetas()
-  }, [])
+  useEffect(() => { cargarEtiquetas() }, [])
 
-  // Actualizar totales cuando cambie la paginación
   useEffect(() => {
-    if (tabActivo === 'leads') {
-      setTotalLeads(paginacion.total)
-    } else {
-      setTotalClientes(paginacion.total)
-    }
+    if (tabActivo === 'leads') setTotalLeads(paginacion.total)
+    else setTotalClientes(paginacion.total)
   }, [paginacion.total, tabActivo])
 
   const cargarEtiquetas = async () => {
     try {
       const etiquetasObtenidas = await etiquetaService.obtenerTodas()
-      // Asegurarse de que sea un array
-      if (Array.isArray(etiquetasObtenidas)) {
-        setEtiquetas(etiquetasObtenidas)
-      } else {
-        console.error('Las etiquetas obtenidas no son un array:', etiquetasObtenidas)
-        setEtiquetas([])
-      }
-    } catch (error) {
-      console.error('Error al cargar etiquetas:', error)
-      setEtiquetas([]) // Establecer array vacío en caso de error
+      if (Array.isArray(etiquetasObtenidas)) setEtiquetas(etiquetasObtenidas)
+      else setEtiquetas([])
+    } catch {
+      setEtiquetas([])
     }
   }
 
-  // El backend ya filtra por tipo según el tab activo
-  // Solo aplicar filtro por etiqueta si es necesario
+  const handleBusqueda = (query: string) => { buscarContactos(query) }
+
   const contactosFiltrados = tabActivo === 'leads'
     ? (etiquetaFiltroLeads === "todas" 
         ? contactos 
@@ -104,320 +92,114 @@ export default function PaginaLeads() {
         ? contactos 
         : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)))
 
-  // Para mantener compatibilidad con el código existente
   const leads = tabActivo === 'leads' ? contactosFiltrados : []
   const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
 
-  // Manejador de búsqueda que se pasa al componente de búsqueda
-  const handleBusqueda = (query: string) => {
-    console.log('⌨️ Buscando leads:', query);
-    buscarContactos(query);
-  }
-
-
-  const handleVerDetalles = (lead: Contacto) => {
-    setLeadSeleccionado(lead)
-    setDialogoDetallesAbierto(true)
-  }
-
-  const handleEditar = (lead: Contacto) => {
-    setLeadSeleccionado(lead)
-    setDialogoEditarAbierto(true)
-  }
+  const handleVerDetalles = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoDetallesAbierto(true) }
+  const handleEditar = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoEditarAbierto(true) }
 
   const handleConvertirCliente = async (leadId: string) => {
     setConvirtiendoCliente(leadId)
     try {
       const token = localStorage.getItem('crm_token')
       if (!token) {
-        toast({
-          title: 'Sesión expirada',
-          description: 'Por favor inicia sesión nuevamente',
-          variant: 'destructive',
-        })
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        toast({ title: 'Sesión expirada', description: 'Por favor inicia sesión nuevamente', variant: 'destructive' })
+        if (typeof window !== 'undefined') window.location.href = '/login';
         return
       }
-
-      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}/convertir-cliente`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      // Si el token expiró
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}/convertir-cliente`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
       if (respuesta.status === 401) {
-        localStorage.removeItem('crm_token');
-        localStorage.removeItem('crm_user');
-        toast({
-          title: 'Sesión expirada',
-          description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.',
-          variant: 'destructive',
-        });
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
+        localStorage.removeItem('crm_token'); localStorage.removeItem('crm_user');
+        toast({ title: 'Sesión expirada', description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.', variant: 'destructive' });
+        if (typeof window !== 'undefined') window.location.href = '/login';
         return;
       }
-
       const resultado = await respuesta.json()
-
-      if (!respuesta.ok) {
-        throw new Error(resultado.mensaje || 'Error al convertir lead')
-      }
-
-      toast({
-        title: 'Lead convertido a Cliente',
-        description: `El lead ahora es un cliente y aparece en la pestaña "Clientes"`,
-      })
-
-      // Cambiar a la pestaña de clientes (esto recargará automáticamente con el filtro correcto)
+      if (!respuesta.ok) throw new Error(resultado.mensaje || 'Error al convertir lead')
+      toast({ title: 'Lead convertido a Cliente', description: 'El lead ahora es un cliente y aparece en la pestaña "Clientes"' })
       setTabActivo('clientes')
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo convertir el lead',
-        variant: 'destructive',
-      })
-    } finally {
-      setConvirtiendoCliente(null)
-    }
-  }
-
-  const obtenerColorEstado = (estado?: string): string => {
-    const colores: Record<string, string> = {
-      'NUEVO': 'bg-blue-100 text-blue-800 border-blue-200',
-      'CONTACTADO': 'bg-purple-100 text-purple-800 border-purple-200',
-      'CALIFICADO': 'bg-green-100 text-green-800 border-green-200',
-      'NEGOCIACION': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'PROPUESTA': 'bg-orange-100 text-orange-800 border-orange-200',
-      'GANADO': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'PERDIDO': 'bg-red-100 text-red-800 border-red-200',
-      'EN_ESPERA': 'bg-gray-100 text-gray-800 border-gray-200',
-    }
-    return estado ? colores[estado] : 'bg-gray-100 text-gray-800 border-gray-200'
-  }
-
-  const obtenerColorPrioridad = (prioridad?: string): string => {
-    const colores: Record<string, string> = {
-      'BAJA': 'bg-gray-100 text-gray-700 border-gray-200',
-      'MEDIA': 'bg-blue-100 text-blue-700 border-blue-200',
-      'ALTA': 'bg-orange-100 text-orange-700 border-orange-200',
-      'URGENTE': 'bg-red-100 text-red-700 border-red-200',
-    }
-    return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
+      toast({ title: 'Error', description: error.message || 'No se pudo convertir el lead', variant: 'destructive' })
+    } finally { setConvirtiendoCliente(null) }
   }
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
       await cotizacionService.crear(datos);
-      toast({
-        title: "Cotización guardada",
-        description: "La cotización ha sido creada exitosamente.",
-      });
+      toast({ title: "Cotización guardada", description: "La cotización ha sido creada exitosamente." });
       setDialogoCotizacionAbierto(false);
-    } catch (error) {
-      console.error("Error al guardar la cotización:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar la cotización.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Error", description: "No se pudo guardar la cotización.", variant: "destructive" });
     }
   };
 
-  const handleCotizar = (lead: Contacto) => {
-    setLeadParaCotizar(lead);
-    setDialogoCotizacionAbierto(true);
-  };
+  const handleCotizar = (lead: Contacto) => { setLeadParaCotizar(lead); setDialogoCotizacionAbierto(true) };
 
-  const handleWhatsApp = (telefono: string, nombre?: string) => {
-    if (telefono) {
-      // Limpiar el teléfono y asegurar que tenga el código de país
-      let telefonoLimpio = telefono.replace(/\D/g, '');
-      
-      // Si no tiene código de país, agregar +51 (Perú)
-      if (telefonoLimpio.length === 9) {
-        telefonoLimpio = '51' + telefonoLimpio;
-      }
-      
-      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado para hacer seguimiento.`;
-      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
-      
-      // Intentar abrir en la aplicación de WhatsApp
-      try {
-        if (window.electron) {
-          window.electron.shell.openExternal(url);
-        } else {
-          window.open(url, '_blank');
-        }
-      } catch (error) {
-        console.error('Error al abrir WhatsApp:', error);
-        // Fallback: copiar al portapapeles
-        navigator.clipboard.writeText(url);
-        toast({
-          title: "WhatsApp",
-          description: "Enlace copiado al portapapeles. Pega en WhatsApp.",
-        });
-      }
-    } else {
-      toast({
-        title: "Error",
-        description: "No hay número de teléfono disponible para este contacto.",
-        variant: "destructive",
-      });
-    }
-  };
+  const handleWhatsApp = (telefono: string) => {
+    if (!telefono) { toast({ title: 'Sin teléfono', description: 'No hay número disponible.', variant: 'destructive' }); return; }
+    let tel = telefono.replace(/\D/g, ''); if (tel.length === 9) tel = '51' + tel;
+    const url = `https://wa.me/${tel}`; try { window.open(url, '_blank'); } catch {}
+  }
+  const handleWhatsAppCliente = (telefono: string) => handleWhatsApp(telefono)
 
-  // Wrapper para ClientCard que solo recibe el teléfono
-  const handleWhatsAppCliente = (telefono: string) => {
-    handleWhatsApp(telefono);
-  };
-
-  const handleScheduleMeeting = (nombre: string, correo: string) => {
-    const asunto = `Reunión con ${nombre} - CRM Delgado`;
-    const descripcion = `Reunión de seguimiento para discutir detalles de la oportunidad con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
-    
-    // Crear URL para Google Calendar con más detalles
+  // Agendar + abrir modal WhatsApp de confirmación
+  const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
+    // Solo preparar el mensaje y abrir el modal de WhatsApp.
     const fechaInicio = new Date();
-    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
-    const fechaFin = new Date(fechaInicio);
-    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
-    
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
-    
-    try {
-      if (window.electron) {
-        window.electron.shell.openExternal(url);
-      } else {
-        window.open(url, '_blank');
-      }
-      
-      toast({
-        title: "Google Calendar",
-        description: "Abriendo Google Calendar para agendar la reunión.",
-      });
-    } catch (error) {
-      console.error('Error al abrir Google Calendar:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo abrir Google Calendar. Intenta copiar el enlace manualmente.",
-        variant: "destructive",
-      });
-    }
-  };
+    fechaInicio.setHours(9, 0, 0, 0);
+    const fecha = fechaInicio.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    const hora = fechaInicio.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    const lineas = [
+      `Hola${nombre ? ` ${nombre}` : ''}, ¿qué tal?`,
+      `Te confirmo nuestra reunión agendada desde CRM Delgado.`,
+      `Fecha: ${fecha}`,
+      `Hora: ${hora}`,
+      correo ? `Te envié la invitación al correo: ${correo}` : undefined,
+      `Si necesitas reprogramar, avísame por este medio. ¡Gracias!`
+    ].filter(Boolean) as string[];
+    setWhatsappMensaje(lineas.join('\n'));
+    setWhatsappTelefono(telefono || null);
+    setDialogoWhatsappAbierto(true);
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Leads & Clientes"
-        description="Gestiona tus leads y clientes en un solo lugar"
-      />
+      <PageHeader title="Leads & Clientes" description="Gestiona tus leads y clientes en un solo lugar" />
 
-      {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          title="Leads Activos"
-          value={totalLeads}
-          description="En proceso de conversión"
-          icon={TrendingUp}
-          iconColor="text-yellow-500"
-          valueColor="text-yellow-600"
-        />
-        <StatCard
-          title="Clientes"
-          value={totalClientes}
-          description="Leads convertidos"
-          icon={Users}
-          iconColor="text-green-500"
-          valueColor="text-green-600"
-        />
-        <StatCard
-          title="Tasa de Conversión"
-          value={`${(totalLeads + totalClientes) > 0 
-              ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100)
-              : 0}%`}
-          description="Leads → Clientes"
-          icon={TrendingUp}
-          iconColor="text-blue-500"
-          valueColor="text-blue-600"
-        />
+        <StatCard title="Leads Activos" value={totalLeads} description="En proceso de conversión" icon={TrendingUp} iconColor="text-yellow-500" valueColor="text-yellow-600" />
+        <StatCard title="Clientes" value={totalClientes} description="Leads convertidos" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
+        <StatCard title="Tasa de Conversión" value={`${(totalLeads + totalClientes) > 0 ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100) : 0}%`} description="Leads → Clientes" icon={TrendingUp} iconColor="text-blue-500" valueColor="text-blue-600" />
       </div>
 
-      {/* Tabs: Leads y Clientes */}
-      <Tabs value={tabActivo} onValueChange={(value) => setTabActivo(value as 'leads' | 'clientes')}>
+      <Tabs value={tabActivo} onValueChange={(v) => setTabActivo(v as 'leads' | 'clientes')}>
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="leads" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Leads ({leads.length})
-          </TabsTrigger>
-          <TabsTrigger value="clientes" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Clientes ({clientes.length})
-          </TabsTrigger>
+          <TabsTrigger value="leads" className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Leads</TabsTrigger>
+          <TabsTrigger value="clientes" className="flex items-center gap-2"><Users className="h-4 w-4" />Clientes</TabsTrigger>
         </TabsList>
 
-        {/* TAB: LEADS */}
         <TabsContent value="leads" className="space-y-4">
-          {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, apellido, correo o DNI..."
-                value={filtros?.busqueda || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  console.log('📝 Valor del input:', value);
-                  handleBusqueda(value);
-                }}
-                className="pl-9"
-              />
+              <Input placeholder="Buscar por nombre, apellido, correo o DNI..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
             </div>
             <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
-              <SelectTrigger className="w-[220px]">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  <SelectValue placeholder="Todas las etiquetas" />
-                </div>
-              </SelectTrigger>
+              <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas las etiquetas</SelectItem>
-                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
-                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: etiqueta.color }}
-                      />
-                      {etiqueta.nombre}
-                    </div>
+                {Array.isArray(etiquetas) && etiquetas.map((et) => (
+                  <SelectItem key={et.id} value={et.id}>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />{et.nombre}</div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Estado de carga */}
-          {estaCargando && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
-            </div>
-          )}
+          {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
+          {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
 
-          {/* Error */}
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <p className="text-red-600">{error}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lista de leads */}
           {!estaCargando && leads.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leads.map((lead) => (
@@ -429,126 +211,50 @@ export default function PaginaLeads() {
                   onConvertir={handleConvertirCliente}
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsAppCliente}
-                  onScheduleMeeting={handleScheduleMeeting}
+                  onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
+                  onCrearAccesoWeb={(lead) => {
+                    setLeadParaAccesoWeb(lead);
+                    setDialogoAccesoWebAbierto(true);
+                  }}
                 />
               ))}
             </div>
           )}
 
-          {/* Paginación para Leads */}
           {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {leads.length} de {paginacion.total} leads
-              </p>
-              
+              <p className="text-sm text-muted-foreground">Mostrando {leads.length} de {paginacion.total} leads</p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
-                  disabled={paginacion.pagina === 1 || estaCargando}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                
-                <span className="text-sm text-muted-foreground px-4">
-                  Página {paginacion.pagina} de {paginacion.totalPaginas}
-                </span>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
-                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina - 1)} disabled={paginacion.pagina === 1 || estaCargando}><ChevronLeft className="h-4 w-4 mr-1" />Anterior</Button>
+                <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
+                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina + 1)} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>Siguiente<ChevronRight className="h-4 w-4 ml-1" /></Button>
               </div>
             </div>
           )}
 
-          {/* Estado vacío */}
           {!estaCargando && leads.length === 0 && !error && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {filtros?.busqueda 
-                    ? "No se encontraron leads con ese criterio de búsqueda"
-                    : "Convierte tus contactos en leads para comenzar a gestionarlos"}
-                </p>
-                <Button
-                  onClick={() => window.location.href = '/dashboard/contacts'}
-                  className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
-                >
-                  Ir a Contactos
-                </Button>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="flex flex-col items-center justify-center py-12"><TrendingUp className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay leads</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Convierte tus contactos en leads para comenzar a gestionarlos"}</p><Button onClick={() => window.location.href = '/dashboard/contacts'} className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]">Ir a Contactos</Button></CardContent></Card>
           )}
         </TabsContent>
 
-        {/* TAB: CLIENTES */}
         <TabsContent value="clientes" className="space-y-4">
-          {/* Barra de búsqueda y filtros */}
           <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar clientes por nombre, apellido o correo..."
-                  value={filtros?.busqueda || ''}
-                  onChange={(e) => handleBusqueda(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
+            <div className="flex-1"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar clientes por nombre, apellido o correo..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" /></div></div>
             <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
-              <SelectTrigger className="w-[220px]">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  <SelectValue placeholder="Todas las etiquetas" />
-                </div>
-              </SelectTrigger>
+              <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas las etiquetas</SelectItem>
-                {Array.isArray(etiquetas) && etiquetas.map((etiqueta) => (
-                  <SelectItem key={etiqueta.id} value={etiqueta.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: etiqueta.color }}
-                      />
-                      {etiqueta.nombre}
-                    </div>
-                  </SelectItem>
+                {Array.isArray(etiquetas) && etiquetas.map((et) => (
+                  <SelectItem key={et.id} value={et.id}><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />{et.nombre}</div></SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Estado de carga */}
-          {estaCargando && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
-            </div>
-          )}
+          {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
+          {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
 
-          {/* Error */}
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="pt-6">
-                <p className="text-red-600">{error}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Lista de clientes */}
           {!estaCargando && clientes.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {clientes.map((cliente) => (
@@ -559,113 +265,81 @@ export default function PaginaLeads() {
                   onCotizar={handleCotizar}
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsAppCliente}
-                  onScheduleMeeting={handleScheduleMeeting}
-                  onAgregarOportunidad={() => {
-                    setClienteParaOportunidad(cliente)
-                    setDialogoOportunidadAbierto(true)
+                  onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
+                  onCrearAccesoWeb={(cliente) => {
+                    setLeadParaAccesoWeb(cliente);
+                    setDialogoAccesoWebAbierto(true);
                   }}
                 />
               ))}
             </div>
           )}
 
-          {/* Paginación para Clientes */}
           {!estaCargando && clientes.length > 0 && paginacion.totalPaginas > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {clientes.length} de {paginacion.total} clientes
-              </p>
-              
+              <p className="text-sm text-muted-foreground">Mostrando {clientes.length} de {paginacion.total} clientes</p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => cambiarPagina(paginacion.pagina - 1)}
-                  disabled={paginacion.pagina === 1 || estaCargando}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                
-                <span className="text-sm text-muted-foreground px-4">
-                  Página {paginacion.pagina} de {paginacion.totalPaginas}
-                </span>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => cambiarPagina(paginacion.pagina + 1)}
-                  disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina - 1)} disabled={paginacion.pagina === 1 || estaCargando}><ChevronLeft className="h-4 w-4 mr-1" />Anterior</Button>
+                <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
+                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina + 1)} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>Siguiente<ChevronRight className="h-4 w-4 ml-1" /></Button>
               </div>
             </div>
           )}
 
-          {/* Estado vacío */}
           {!estaCargando && clientes.length === 0 && !error && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay clientes</h3>
-                <p className="text-muted-foreground text-center mb-4">
-                  {filtros?.busqueda 
-                    ? "No se encontraron clientes con ese criterio de búsqueda"
-                    : "Convierte tus leads en clientes para comenzar"}
-                </p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="flex flex-col items-center justify-center py-12"><Users className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay clientes</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron clientes con ese criterio de búsqueda" : "Convierte tus leads en clientes para comenzar"}</p></CardContent></Card>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Diálogos */}
-      <DialogoDetallesLead
-        lead={leadSeleccionado}
-        abierto={dialogoDetallesAbierto}
-        onCerrar={() => setDialogoDetallesAbierto(false)}
-      />
+      <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} />
+      <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
 
-      <DialogoEditarLead
-        lead={leadSeleccionado}
-        abierto={dialogoEditarAbierto}
-        onCerrar={() => setDialogoEditarAbierto(false)}
-        onActualizado={() => {
-          cargarContactos({}) // Recargar todos los contactos sin filtro
-          setDialogoEditarAbierto(false)
+      <DialogoCrearAccesoWeb
+        contacto={leadParaAccesoWeb}
+        abierto={dialogoAccesoWebAbierto}
+        onCancelar={() => {
+          setDialogoAccesoWebAbierto(false);
+          setLeadParaAccesoWeb(null);
+        }}
+        onCreado={() => {
+          cargarContactos({});
         }}
       />
 
-      {/* Diálogo para crear oportunidad */}
       {clienteParaOportunidad && (
         <DialogoCrearOportunidad
           clienteId={clienteParaOportunidad.id}
           clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
           open={dialogoOportunidadAbierto}
           onOpenChange={setDialogoOportunidadAbierto}
-          onSuccess={() => {
-            toast({
-              title: "¡Oportunidad creada!",
-              description: "El cliente ha sido agregado al pipeline exitosamente",
-            })
-            setDialogoOportunidadAbierto(false)
-            setClienteParaOportunidad(null)
-          }}
+          onSuccess={() => { toast({ title: "¡Oportunidad creada!", description: "El cliente ha sido agregado al pipeline exitosamente" }); setDialogoOportunidadAbierto(false); setClienteParaOportunidad(null) }}
         />
       )}
 
-      {/* Diálogo para cotización */}
       {leadParaCotizar && (
-        <FormularioCotizacion
-          open={dialogoCotizacionAbierto}
-          onOpenChange={setDialogoCotizacionAbierto}
-          onGuardar={handleGuardarCotizacion}
-          contactoId={leadParaCotizar.id}
-          nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`}
-        />
+        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} contactoId={leadParaCotizar.id} nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`} />
       )}
+
+      {/* Modal: Enviar WhatsApp de confirmación */}
+      <Dialog open={dialogoWhatsappAbierto} onOpenChange={setDialogoWhatsappAbierto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" />Enviar confirmación por WhatsApp</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="block text-sm text-muted-foreground">Mensaje</label>
+            <textarea className="w-full border rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00]" rows={6} value={whatsappMensaje} onChange={(e) => setWhatsappMensaje(e.target.value)} />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => { navigator.clipboard.writeText(whatsappMensaje); toast({ title: 'Copiado', description: 'Mensaje copiado al portapapeles.' }) }}>Copiar</Button>
+              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => {
+                let raw = (whatsappTelefono || '').replace(/\D/g, ''); if (raw.length === 9) raw = `51${raw}`; if (!raw) { toast({ title: 'Sin teléfono', description: 'Este contacto no tiene teléfono. Copia y envía manualmente.', variant: 'destructive' }); return; }
+                const url = `https://wa.me/${raw}?text=${encodeURIComponent(whatsappMensaje)}`; try { window.open(url, '_blank') } catch {}; setDialogoWhatsappAbierto(false);
+              }}>Abrir WhatsApp</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

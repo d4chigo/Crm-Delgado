@@ -139,6 +139,69 @@ async function seed() {
         }
 
         console.log(`✅ Contactos DEMO creados: ${clientesDemo.length}`);
+
+        // DEMO Proyectos para "ventas por programa"
+        const proyectosDemo = [
+          { nombre: 'DEMO Proyecto A', estado: 'DISPONIBLE', activo: true },
+          { nombre: 'DEMO Proyecto B', estado: 'RESERVADO', activo: true },
+          { nombre: 'DEMO Proyecto C', estado: 'VENDIDO', activo: true },
+          { nombre: 'DEMO Proyecto D', estado: 'CONSTRUCCION', activo: true },
+          { nombre: 'DEMO Proyecto E', estado: 'FINALIZADO', activo: true },
+        ];
+        for (const p of proyectosDemo) {
+          const existe = await prisma.proyecto.findFirst({ where: { nombre: p.nombre } });
+          if (!existe) {
+            await prisma.proyecto.create({
+              data: {
+                nombre: p.nombre,
+                descripcion: 'Proyecto de prueba DEMO',
+                estado: p.estado,
+                activo: p.activo,
+                usuarioId: admin.id,
+              },
+            });
+          }
+        }
+        console.log('✅ Proyectos DEMO creados/asegurados para ventas por programa');
+
+        // Asociar oportunidades existentes a proyectos DEMO de forma simple
+        const proys = await prisma.proyecto.findMany({ where: { nombre: { startsWith: 'DEMO Proyecto' } }, orderBy: { nombre: 'asc' } });
+        const oportunidades = await prisma.oportunidadCliente.findMany({ take: 3, orderBy: { creadoEn: 'asc' } });
+        for (let i = 0; i < oportunidades.length; i++) {
+          const p = proys[i % proys.length];
+          await prisma.oportunidadCliente.update({ where: { id: oportunidades[i].id }, data: { proyecto: p.nombre } });
+        }
+        console.log('✅ Oportunidades asociadas a proyectos DEMO');
+
+        // Contactos DEMO adicionales con edades específicas por rango
+        const edadesDemo = [
+          { nombre: 'DEMO_Edad_20', correo: 'edad20.demo@demo.com', anios: 20, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_30', correo: 'edad30.demo@demo.com', anios: 30, tipo: 'CLIENTE' },
+          { nombre: 'DEMO_Edad_40', correo: 'edad40.demo@demo.com', anios: 40, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_50', correo: 'edad50.demo@demo.com', anios: 50, tipo: 'CLIENTE' },
+          { nombre: 'DEMO_Edad_60', correo: 'edad60.demo@demo.com', anios: 60, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_70', correo: 'edad70.demo@demo.com', anios: 70, tipo: 'CLIENTE' },
+        ];
+        for (const e of edadesDemo) {
+          const exists = await prisma.contacto.findFirst({ where: { correo: e.correo } });
+          if (!exists) {
+            const fn = new Date(); fn.setFullYear(fn.getFullYear() - e.anios);
+            await prisma.contacto.create({
+              data: {
+                nombre: e.nombre,
+                apellido: 'DEMO',
+                tipo: e.tipo,
+                correo: e.correo,
+                telefono: '999000111',
+                usuarioId: admin.id,
+                departamento: 'Lima',
+                fuente: 'Web',
+                fechaNacimiento: fn,
+              },
+            });
+          }
+        }
+        console.log('✅ Contactos DEMO por rangos de edad creados/asegurados');
       } else {
         console.log('ℹ️  Datos DEMO ya existen, actualizando para asegurar edades y GANADO...');
         const demoContactos = await prisma.contacto.findMany({
@@ -175,6 +238,65 @@ async function seed() {
             }
           }
         }
+        // Asegurar proyectos DEMO también cuando ya existían contactos
+        const proyectosDemoUpd = [
+          { nombre: 'DEMO Proyecto A', estado: 'DISPONIBLE', activo: true },
+          { nombre: 'DEMO Proyecto B', estado: 'RESERVADO', activo: true },
+          { nombre: 'DEMO Proyecto C', estado: 'VENDIDO', activo: true },
+          { nombre: 'DEMO Proyecto D', estado: 'CONSTRUCCION', activo: true },
+          { nombre: 'DEMO Proyecto E', estado: 'FINALIZADO', activo: true },
+        ];
+        for (const p of proyectosDemoUpd) {
+          const existe = await prisma.proyecto.findFirst({ where: { nombre: p.nombre } });
+          if (!existe) {
+            await prisma.proyecto.create({
+              data: {
+                nombre: p.nombre,
+                descripcion: 'Proyecto de prueba DEMO',
+                estado: p.estado,
+                activo: p.activo,
+                usuarioId: admin.id,
+              },
+            });
+          }
+        }
+        const proys2 = await prisma.proyecto.findMany({ where: { nombre: { startsWith: 'DEMO Proyecto' } }, orderBy: { nombre: 'asc' } });
+        const oportunidades2 = await prisma.oportunidadCliente.findMany({ take: 3, orderBy: { creadoEn: 'asc' } });
+        for (let i = 0; i < oportunidades2.length; i++) {
+          const p = proys2[i % proys2.length];
+          await prisma.oportunidadCliente.update({ where: { id: oportunidades2[i].id }, data: { proyecto: p.nombre } });
+        }
+        console.log('✅ Proyectos DEMO asegurados y oportunidades vinculadas');
+
+        // Asegurar contactos DEMO por rangos de edad también en este branch
+        const edadesDemo2 = [
+          { nombre: 'DEMO_Edad_20', correo: 'edad20.demo@demo.com', anios: 20, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_30', correo: 'edad30.demo@demo.com', anios: 30, tipo: 'CLIENTE' },
+          { nombre: 'DEMO_Edad_40', correo: 'edad40.demo@demo.com', anios: 40, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_50', correo: 'edad50.demo@demo.com', anios: 50, tipo: 'CLIENTE' },
+          { nombre: 'DEMO_Edad_60', correo: 'edad60.demo@demo.com', anios: 60, tipo: 'LEAD' },
+          { nombre: 'DEMO_Edad_70', correo: 'edad70.demo@demo.com', anios: 70, tipo: 'CLIENTE' },
+        ];
+        for (const e of edadesDemo2) {
+          const exists = await prisma.contacto.findFirst({ where: { correo: e.correo } });
+          if (!exists) {
+            const fn = new Date(); fn.setFullYear(fn.getFullYear() - e.anios);
+            await prisma.contacto.create({
+              data: {
+                nombre: e.nombre,
+                apellido: 'DEMO',
+                tipo: e.tipo,
+                correo: e.correo,
+                telefono: '999000111',
+                usuarioId: admin.id,
+                departamento: 'Lima',
+                fuente: 'Web',
+                fechaNacimiento: fn,
+              },
+            });
+          }
+        }
+        console.log('✅ Contactos DEMO por rangos de edad asegurados (branch existente)');
         console.log('✅ DEMO actualizado: edades y oportunidades GANADO listas');
       }
     } else {

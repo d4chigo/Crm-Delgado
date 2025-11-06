@@ -4,9 +4,10 @@
 
 "use client"
 
+import React, { useEffect, useState } from 'react'
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building2, X } from "lucide-react"
+import { Building2, X, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PerfilUsuario } from "./PerfilUsuario"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
@@ -19,6 +20,37 @@ interface PropsBarraLateral {
 
 export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLateral) {
   const rutaActual = usePathname()
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
+
+  // Asegurar que el grupo con la ruta activa inicie abierto, pero pueda cerrarse manualmente
+  useEffect(() => {
+    const nuevos: Record<string, boolean> = {}
+    navegacion.forEach((el) => {
+      if (el.children && el.children.length > 0) {
+        const activoEnHijos = el.children.some((h) => rutaActual === h.href)
+        if (activoEnHijos) nuevos[el.nombre] = true
+      }
+    })
+    if (Object.keys(nuevos).length) {
+      setOpenGroups((prev) => ({ ...prev, ...nuevos }))
+    }
+  }, [rutaActual, navegacion])
+
+  const toggleGroup = (name: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Evitar que el clic se propague al contenedor
+    setOpenGroups((prev) => {
+      const newState = { ...prev, [name]: !prev[name] };
+      console.log('Toggling group:', name, 'New state:', newState);
+      return newState;
+    });
+  }
+  
+  // Cerrar automáticamente el menú al hacer clic en un enlace en móviles
+  const handleLinkClick = () => {
+    if (window.innerWidth < 1024) { // lg breakpoint
+      alCerrar()
+    }
+  }
 
   return (
     <>
@@ -60,21 +92,86 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
           {/* Navegación */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navegacion.map((elemento) => {
+              // Si el elemento tiene children, renderizamos un grupo desplegable
+              if (elemento.children && elemento.children.length > 0) {
+                const IconoGrupo = elemento.icono
+                const activoEnHijos = elemento.children.some((h) => rutaActual === h.href)
+
+                return (
+                  <div key={elemento.nombre} className="mb-2">
+                    {/** header toggler */}
+                    <button
+                      onClick={(e) => toggleGroup(elemento.nombre, e)}
+                      className={cn(
+                        'w-full flex items-center justify-between gap-3 px-4 py-2 rounded-lg',
+                        'transition-colors duration-200',
+                        activoEnHijos
+                          ? 'bg-[#FCBA00] text-[#303030] font-semibold'
+                          : 'text-white/80 hover:bg-white/5',
+                        openGroups[elemento.nombre] ? 'mb-1' : ''
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        {IconoGrupo ? <IconoGrupo className="w-5 h-5" /> : <span className="w-5 h-5" />}
+                        <span>{elemento.nombre}</span>
+                      </div>
+                      <ChevronDown
+                        className={cn('w-4 h-4 transition-transform duration-200', {
+                          'rotate-180': openGroups[elemento.nombre] === true,
+                        } as any)}
+                      />
+                    </button>
+
+                    {/** children - show only when open by state; active route no longer fuerza apertura */}
+                    <div 
+                      className={cn(
+                        'overflow-hidden transition-all duration-200 ease-in-out',
+                        openGroups[elemento.nombre] === true ? 'max-h-96' : 'max-h-0'
+                      )}
+                    >
+                      <div className="mt-1 ml-8 flex flex-col gap-1">
+                        {elemento.children.map((hijo) => {
+                          const IconoHijo = hijo.icono
+                          const estaActivoHijo = rutaActual === hijo.href
+                          return (
+                            <Link
+                              key={hijo.nombre}
+                              href={hijo.href || '#'}
+                              className={cn(
+                                'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                                estaActivoHijo
+                                  ? 'bg-[#FCBA00] text-[#303030] font-medium'
+                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              )}
+                              onClick={handleLinkClick}
+                            >
+                              {IconoHijo ? <IconoHijo className="w-4 h-4" /> : <span className="w-4 h-4" />}
+                              <span>{hijo.nombre}</span>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              // Item normal
               const Icono = elemento.icono
               const estaActivo = rutaActual === elemento.href
               return (
                 <Link
                   key={elemento.nombre}
-                  href={elemento.href}
+                  href={elemento.href || '#'}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                     estaActivo
                       ? "bg-[#FCBA00] text-[#303030] font-semibold"
                       : "text-white/80 hover:bg-white/10 hover:text-white"
                   )}
-                  onClick={alCerrar}
+                  onClick={handleLinkClick}
                 >
-                  <Icono className="w-5 h-5" />
+                  {Icono ? <Icono className="w-5 h-5" /> : <span className="w-5 h-5" />}
                   <span>{elemento.nombre}</span>
                 </Link>
               )

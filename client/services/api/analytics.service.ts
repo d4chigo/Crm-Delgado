@@ -58,18 +58,34 @@ export interface ReporteForecastResponse {
   mensual: Array<{ mes: number; valor: number }>;
 }
 
-export async function obtenerReporteConversionPorOrigen(): Promise<ReporteConversionOrigenItem[]> {
-  return await fetchAPI<ReporteConversionOrigenItem[]>(`/analytics/reports/conversion-origen`);
+export async function obtenerReporteConversionPorOrigen(params?: { period?: string; year?: string | number }): Promise<ReporteConversionOrigenItem[]> {
+  const qs = new URLSearchParams();
+  if (params?.period) qs.set('period', params.period);
+  if (params?.year) qs.set('year', String(params.year));
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return await fetchAPI<ReporteConversionOrigenItem[]>(`/analytics/reports/conversion-origen${query}`);
 }
 
-export async function obtenerReporteVelocidadCiclo(): Promise<ReporteVelocidadCicloItem[]> {
-  return await fetchAPI<ReporteVelocidadCicloItem[]>(`/analytics/reports/velocidad-ciclo`);
+export async function obtenerReporteVelocidadCiclo(params?: { period?: string; year?: string | number }): Promise<ReporteVelocidadCicloItem[]> {
+  const qs = new URLSearchParams();
+  if (params?.period) qs.set('period', params.period);
+  if (params?.year) qs.set('year', String(params.year));
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return await fetchAPI<ReporteVelocidadCicloItem[]>(`/analytics/reports/velocidad-ciclo${query}`);
 }
 
-export async function obtenerReporteDesempenoAsesor(): Promise<ReporteDesempenoAsesorItem[]> {
-  return await fetchAPI<ReporteDesempenoAsesorItem[]>(`/analytics/reports/desempeno-asesor`);
+export async function obtenerReporteDesempenoAsesor(params?: { period?: string; year?: string | number }): Promise<ReporteDesempenoAsesorItem[]> {
+  const qs = new URLSearchParams();
+  if (params?.period) qs.set('period', params.period);
+  if (params?.year) qs.set('year', String(params.year));
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return await fetchAPI<ReporteDesempenoAsesorItem[]>(`/analytics/reports/desempeno-asesor${query}`);
 }
 
-export async function obtenerReporteForecast(): Promise<ReporteForecastResponse> {
-  return await fetchAPI<ReporteForecastResponse>(`/analytics/reports/forecast`);
+export async function obtenerReporteForecast(params?: { period?: string; year?: string | number }): Promise<ReporteForecastResponse> {
+  const qs = new URLSearchParams();
+  if (params?.period) qs.set('period', params.period);
+  if (params?.year) qs.set('year', String(params.year));
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return await fetchAPI<ReporteForecastResponse>(`/analytics/reports/forecast${query}`);
 }

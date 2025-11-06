@@ -52,7 +52,7 @@ export async function getEstadisticas(req: Request, res: Response) {
       '65+': 0
     };
 
-    clientesConEdad.forEach(cliente => {
+    clientesConEdad.forEach((cliente: { fechaNacimiento: Date | null }) => {
       if (cliente.fechaNacimiento) {
         const edad = now.getFullYear() - cliente.fechaNacimiento.getFullYear();
         if (edad >= 18 && edad <= 25) gruposEdad['18-25']++;
@@ -72,15 +72,15 @@ export async function getEstadisticas(req: Request, res: Response) {
         departamento: { not: null },
         tipo: { in: ['LEAD', 'CLIENTE'] }
       }
-    });
+    }) as Array<{ departamento: string | null; _count: { _all: number } }>;
 
     const departamentosData = departamentos
-      .filter(d => d.departamento)
-      .map(d => ({
+      .filter((d: { departamento: string | null }) => d.departamento)
+      .map((d: { departamento: string | null; _count: { _all: number } }) => ({
         departamento: d.departamento as string,
         cantidad: d._count._all
       }))
-      .sort((a, b) => b.cantidad - a.cantidad);
+      .sort((a: { cantidad: number }, b: { cantidad: number }) => b.cantidad - a.cantidad);
 
     // Formatear a la forma que espera el frontend
     const estadisticasGenerales = [
@@ -89,7 +89,7 @@ export async function getEstadisticas(req: Request, res: Response) {
       { titulo: 'Clientes', valor: String(leadsConvertidos), cambio: '—', tendencia: 'up' as const },
     ];
 
-    const actividadesFormateadas = actividadesRecientes.map((a) => ({
+    const actividadesFormateadas = actividadesRecientes.map((a: { creadoEn: Date; tipo: string | null; nombre: string | null; apellido: string | null; usuario: { nombre: string | null } | null }) => ({
       fecha: new Date(a.creadoEn).toLocaleString('es-PE'),
       actividad: `Creación de ${a.tipo?.toLowerCase() || 'contacto'}: ${[a.nombre, a.apellido].filter(Boolean).join(' ')}`,
       usuario: a.usuario?.nombre || '—',
@@ -115,7 +115,7 @@ export async function getReporteConversionPorOrigen(req: Request, res: Response)
       by: ['fuente'],
       _count: { _all: true },
       where: { tipo: 'LEAD' },
-    });
+    }) as Array<{ fuente: string | null; _count: { _all: number } }>;
 
     const oportunidadesGanadas = await prisma.oportunidadCliente.findMany({
       where: { etapa: 'GANADO' },
@@ -129,7 +129,7 @@ export async function getReporteConversionPorOrigen(req: Request, res: Response)
       ganadasPorFuente.set(key, { count: prev.count + 1, value: prev.value + Number(o.valor || 0) });
     }
 
-    const data = leadsPorFuente.map((l) => {
+    const data = leadsPorFuente.map((l: { fuente: string | null; _count: { _all: number } }) => {
       const key = (l.fuente as string) || 'DESCONOCIDO';
       const won = ganadasPorFuente.get(key)?.count || 0;
       const valor = ganadasPorFuente.get(key)?.value || 0;
@@ -207,15 +207,21 @@ export async function getReporteDesempenoAsesor(req: Request, res: Response) {
       prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _sum: { valor: true }, where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } } }),
     ]);
 
-    const leadsMap = new Map(leadsPorAsesor.map((r) => [r.usuarioId, r._count._all] as const));
-    const oppMap = new Map(oportunidadesActivas.map((r) => [r.usuarioId, r._count._all] as const));
-    const valMap = new Map(valorActivas.map((r) => [r.usuarioId, Number(r._sum.valor || 0)] as const));
+    const leadsMap = new Map<string, number>(
+      leadsPorAsesor.map((r: { usuarioId: string; _count: { _all: number } }) => [String(r.usuarioId), r._count._all])
+    );
+    const oppMap = new Map<string, number>(
+      oportunidadesActivas.map((r: { usuarioId: string; _count: { _all: number } }) => [String(r.usuarioId), r._count._all])
+    );
+    const valMap = new Map<string, number>(
+      valorActivas.map((r: { usuarioId: string; _sum: { valor: number | null } }) => [String(r.usuarioId), Number(r._sum.valor || 0)])
+    );
 
-    const data = usuarios.map((u) => ({
+    const data = usuarios.map((u: { id: string; nombre: string }) => ({
       asesor: u.nombre,
-      leadsAsignados: leadsMap.get(u.id) || 0,
-      oportunidadesActivas: oppMap.get(u.id) || 0,
-      valorPipeline: valMap.get(u.id) || 0,
+      leadsAsignados: leadsMap.get(String(u.id)) || 0,
+      oportunidadesActivas: oppMap.get(String(u.id)) || 0,
+      valorPipeline: valMap.get(String(u.id)) || 0,
     }));
 
     try {
@@ -332,10 +338,13 @@ export async function getMetrics(req: Request, res: Response) {
       where: { etapa: 'GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
     });
 
-    const totalValor = ventasPorProyectoRaw.reduce((acc, v) => acc + Number(v._sum.valor || 0), 0);
+    const totalValor = ventasPorProyectoRaw.reduce(
+      (acc: number, v: { _sum: { valor: number | null } }) => acc + Number(v._sum.valor || 0),
+      0
+    );
     const ventasPorProyecto = ventasPorProyectoRaw
-      .filter(v => v.proyecto)
-      .map(v => ({
+      .filter((v: { proyecto: string | null }) => v.proyecto)
+      .map((v: { proyecto: string | null; _count: { _all: number }; _sum: { valor: number | null } }) => ({
         project: v.proyecto as string,
         sales: v._count._all,
         value: Number(v._sum.valor || 0),
@@ -347,27 +356,31 @@ export async function getMetrics(req: Request, res: Response) {
       where: { activo: true },
       select: { estado: true },
     });
-    const estadoCounts = proyectos.reduce<Record<string, number>>((acc, p) => {
-      acc[p.estado] = (acc[p.estado] || 0) + 1;
+    const estadoCounts = proyectos.reduce((acc: Record<string, number>, p: { estado: string | null }) => {
+      const key = String(p.estado ?? 'DESCONOCIDO');
+      acc[key] = (acc[key] ?? 0) + 1;
       return acc;
-    }, {});
-    const totalProgramas = Object.values(estadoCounts).reduce((a, b) => a + b, 0) || 1;
-    const ventasPorPrograma = Object.entries(estadoCounts).map(([program, count]) => ({
-      program,
-      count,
-      percentage: Math.round((count * 100) / totalProgramas),
+    }, {} as Record<string, number>);
+    const totalProgramas = (Object.values(estadoCounts) as number[]).reduce((a, b) => a + b, 0) || 1;
+    const ventasPorPrograma = (Object.entries(estadoCounts) as Array<[string, number]>).map(([program, count]): { program: string; count: number; percentage: number } => ({
+      program: String(program),
+      count: Number(count),
+      percentage: Math.round((Number(count) * 100) / totalProgramas),
     }));
 
     // Mejores agentes (proxy: usuarios ordenados por cantidad de oportunidades GANADO y valor)
+    type GroupByUsuario = { usuarioId: string; _count: { _all: number }; _sum: { valor: number | null } };
     const mejoresAgentesRaw = await prisma.oportunidadCliente.groupBy({
       by: ['usuarioId'],
       _count: { _all: true },
       _sum: { valor: true },
       where: { etapa: 'GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
-    });
+    }) as unknown as GroupByUsuario[];
     const usuarios = await prisma.usuario.findMany({ select: { id: true, nombre: true } });
-    const userMap = new Map(usuarios.map(u => [u.id, u.nombre] as const));
-    const mejoresAgentes = mejoresAgentesRaw
+    const userMap = new Map<string, string>(
+      usuarios.map((u: { id: string; nombre: string | null }) => [String(u.id), String(u.nombre ?? '')] as [string, string])
+    );
+    const mejoresAgentes: { name: string; sales: number; value: number; conversion: number }[] = mejoresAgentesRaw
       .map(a => ({
         name: userMap.get(a.usuarioId) || 'Agente',
         sales: a._count._all,
@@ -377,11 +390,16 @@ export async function getMetrics(req: Request, res: Response) {
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
+    const totalCotizaciones = (cotizacionesPorEstado as Array<{ _count: { _all: number } }>).reduce(
+      (a, c) => a + (c?._count?._all ?? 0),
+      0
+    );
+
     const metricas = [
       { title: 'Leads nuevos (mes)', value: String(totalLeadsMes), change: '—', trend: 'up', icon: 'users', color: '#303030', bgColor: '#FCBA00' },
       { title: 'Oportunidades (GANADO)', value: String(ventasGanadas._count._all), change: '—', trend: 'up', icon: 'target', color: '#303030', bgColor: '#FCBA00' },
       { title: 'Valor ganado', value: `S/ ${Math.round(Number(ventasGanadas._sum.valor || 0)).toLocaleString('es-PE')}`, change: '—', trend: 'up', icon: 'dollar', color: '#303030', bgColor: '#FCBA00' },
-      { title: 'Cotizaciones', value: String(cotizacionesPorEstado.reduce((a, c) => a + c._count._all, 0)), change: '—', trend: 'up', icon: 'file', color: '#303030', bgColor: '#FCBA00' },
+      { title: 'Cotizaciones', value: String(totalCotizaciones), change: '—', trend: 'up', icon: 'file', color: '#303030', bgColor: '#FCBA00' },
     ];
 
     res.json({ exito: true, datos: {

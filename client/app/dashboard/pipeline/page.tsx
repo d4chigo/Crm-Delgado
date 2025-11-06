@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useOportunidades } from "@/hooks/useOportunidades"
-import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
+import { etiquetaService } from "@/services/api/etiqueta.service"
+import type { Etiqueta } from "@/types/etiqueta.types"
 import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
@@ -72,10 +73,11 @@ export default function PaginaPipeline() {
     cargarEtiquetas()
   }, [])
 
-  // Cargar oportunidades al montar
+  // Cargar oportunidades al montar (solo una vez)
   useEffect(() => {
     refrescar()
-  }, [refrescar])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Filtrar oportunidades por mes, año, búsqueda y etiqueta
   const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
@@ -95,14 +97,12 @@ export default function PaginaPipeline() {
       const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
       const correo = op.cliente?.correo?.toLowerCase() || ''
       const empresa = op.cliente?.empresa?.toLowerCase() || ''
-      const dni = op.cliente?.dni?.toLowerCase() || ''
       const titulo = op.titulo?.toLowerCase() || ''
       
       if (!nombreCompleto.includes(searchLower) && 
           !correo.includes(searchLower) && 
           !empresa.includes(searchLower) &&
-          !titulo.includes(searchLower) &&
-          !dni.includes(searchLower)) {
+          !titulo.includes(searchLower)) {
         return false
       }
     }
@@ -488,8 +488,8 @@ export default function PaginaPipeline() {
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
-                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre || '', selectedDeal.cliente?.correo || '')}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
               {/* Property Details */}

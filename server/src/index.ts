@@ -33,6 +33,18 @@ import cotizacionRoutes from '@/routes/cotizacion.routes';
 import analyticsRoutes from '@/routes/analytics.routes';
 import assistantRoutes from '@/routes/assistant.routes';
 import calendarRoutes from '@/routes/calendar.routes';
+import adminPropertiesRoutes from '@/routes/adminProperties';
+import adminProyectosRoutes from '@/routes/adminProyectos';
+import adminTestimonialsRoutes from '@/routes/adminTestimonials';
+import adminTeamRoutes from '@/routes/adminTeam';
+import adminOtrosServiciosRoutes from '@/routes/adminOtrosServicios';
+import adminUsuariosRoutes from '@/routes/adminUsuarios';
+import clienteWebRoutes from '@/routes/clienteWebRoutes';
+import publicLeadRoutes from '@/routes/publicLeadRoutes';
+import clientPortalRoutes from '@/routes/clientPortalRoutes';
+import testRoutes from '@/routes/test.routes';
+import testPasswordRoutes from '@/routes/test-password.routes';
+import testJwtRoutes from '@/routes/test-jwt.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -44,9 +56,29 @@ const PORT = process.env.PORT || 5000;
 
 // ==================== MIDDLEWARES DE SEGURIDAD ====================
 app.use(helmet());
+
+// Configurar CORS para permitir múltiples orígenes
+const allowedOrigins = [
+  process.env.CORS_ORIGIN || 'http://localhost:3000',  // Frontend del CRM
+  'http://localhost:8081',  // Portal de clientes PGDP
+  'http://localhost:8080',  // Alternativa
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (como Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Origen no permitido: ${origin}`);
+      callback(new Error('No permitido por CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting - más permisivo en desarrollo
@@ -83,6 +115,18 @@ app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/admin/properties', adminPropertiesRoutes);
+app.use('/api/admin/proyectos', adminProyectosRoutes);
+app.use('/api/admin/testimonials', adminTestimonialsRoutes);
+app.use('/api/admin/team', adminTeamRoutes);
+app.use('/api/admin/otros-servicios', adminOtrosServiciosRoutes);
+app.use('/api/admin/users', adminUsuariosRoutes);
+app.use('/api/clientes', clienteWebRoutes);
+app.use('/api/public', publicLeadRoutes);
+app.use('/api/portal-cliente', clientPortalRoutes);
+app.use('/api/test', testRoutes);
+app.use('/api/test', testPasswordRoutes);
+app.use('/api/test', testJwtRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);

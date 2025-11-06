@@ -118,7 +118,7 @@ export function ContactCard({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => onWhatsApp?.(contacto.telefono, `${contacto.nombre} ${contacto.apellido}`)}
+                onClick={() => onWhatsApp?.(contacto.telefono || '', `${contacto.nombre} ${contacto.apellido}`)}
                 className="flex-1"
                 disabled={!contacto.telefono}
               >

@@ -10,6 +10,10 @@ import {
   BarChart3 as IconoGrafico,
   UserCircle as IconoContacto,
   Calendar as IconoCalendario,
+  Home as IconoHome,
+  MessageSquare as IconoMessage,
+  Layers as IconoLayers,
+  CreditCard as IconoCredit,
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
@@ -18,7 +22,17 @@ const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
   { nombre: "Contactos", href: "/dashboard/contacts", icono: IconoContacto },
   { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
-  { nombre: "Proyectos", href: "/dashboard/projects", icono: IconoEdificio },
+  // Grupo: Panel Admin Web
+  {
+    nombre: 'Panel Admin Web',
+    icono: IconoEdificio,
+    children: [
+      { nombre: 'Testimonios', href: '/dashboard/admin/testimonios', icono: IconoMessage },
+      { nombre: 'Equipo', href: '/dashboard/admin/team', icono: IconoUsuarios },
+      { nombre: 'Otros Servicios', href: '/dashboard/admin/otros-servicios', icono: IconoLayers },
+      { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoLayers },
+    ]
+  },
   { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
   { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },

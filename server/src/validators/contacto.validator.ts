@@ -43,7 +43,10 @@ export const crearContactoSchema = z.object({
     fechaNacimiento: z
       .string()
       .datetime('Fecha de nacimiento inválida')
-      .optional(),
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     tipo: z.enum(['CONTACTO', 'LEAD', 'CLIENTE']).optional(),
     
     // Información profesional
@@ -58,7 +61,13 @@ export const crearContactoSchema = z.object({
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z.string().datetime().optional(),
+    fechaSeguimiento: z
+      .string()
+      .datetime()
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     
     // Notas
     notas: z.string().optional(),
@@ -111,7 +120,10 @@ export const actualizarContactoSchema = z.object({
     fechaNacimiento: z
       .string()
       .datetime()
-      .optional(),
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     tipo: z
       .enum(['CONTACTO', 'LEAD', 'CLIENTE'])
       .optional(),
@@ -128,7 +140,13 @@ export const actualizarContactoSchema = z.object({
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z.string().datetime().optional(),
+    fechaSeguimiento: z
+      .string()
+      .datetime()
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     
     // Notas
     notas: z.string().optional(),

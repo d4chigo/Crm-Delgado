@@ -31,7 +31,8 @@ export function useContactos() {
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosContacto>({
     pagina: 1,
-    limite: 6
+    limite: 6,
+    tipo: undefined // Inicialmente sin filtro, cada página debe especificar su tipo
   })
 
   /**

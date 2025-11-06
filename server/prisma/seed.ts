@@ -116,6 +116,45 @@ async function seed() {
       console.log('ℹ️  Ya existen etiquetas en la base de datos');
     }
 
+    const testimoniosExistentes = await prisma.testimonio.count();
+    if (testimoniosExistentes === 0) {
+      console.log('🌱 Creando testimonios de ejemplo...');
+      await prisma.testimonio.createMany({
+        data: [
+          {
+            nombre: 'Juan Pérez',
+            correo: 'juan.perez@example.com',
+            cargo: 'Comprador de Vivienda',
+            calificacion: 5,
+            testimonio: '¡Excelente servicio! Me ayudaron a encontrar la casa de mis sueños de manera rápida y profesional. El equipo siempre estuvo dispuesto a resolver mis dudas.',
+            estado: 'APROBADO',
+            creado_en: new Date(),
+          },
+          {
+            nombre: 'María García',
+            correo: 'maria.garcia@example.com',
+            cargo: 'Inversionista Inmobiliaria',
+            calificacion: 4,
+            testimonio: 'Muy profesionales y atentos. El proceso fue transparente y me sentí apoyada en cada paso. ¡Totalmente recomendados!',
+            estado: 'PENDIENTE',
+            creado_en: new Date(),
+          },
+          {
+            nombre: 'Carlos Rodríguez',
+            correo: 'carlos.rodriguez@example.com',
+            cargo: 'Vendedor de Propiedad',
+            calificacion: 5,
+            testimonio: 'Lograron vender mi propiedad en tiempo récord y a un excelente precio. Su estrategia de marketing es muy efectiva.',
+            estado: 'APROBADO',
+            creado_en: new Date(),
+          },
+        ],
+      });
+      console.log('✅ Testimonios de ejemplo creados');
+    } else {
+      console.log('ℹ️  Ya existen testimonios en la base de datos');
+    }
+
   } catch (error) {
     console.error('❌ Error al ejecutar seed:', error);
     throw error;

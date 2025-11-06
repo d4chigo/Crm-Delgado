@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface ClientCardProps {
@@ -13,7 +13,8 @@ interface ClientCardProps {
   onAgregarOportunidad: (cliente: Contacto) => void
   onEditar: (cliente: Contacto) => void
   onWhatsApp: (telefono: string) => void
-  onScheduleMeeting: (nombre: string, correo: string) => void
+  onScheduleMeeting?: (nombre: string, correo: string) => void
+  onCrearAccesoWeb?: (cliente: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -40,7 +41,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting }: ClientCardProps) {
+export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb }: ClientCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow border-green-200">
       <CardHeader>
@@ -205,6 +206,15 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
               Cotizar
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCrearAccesoWeb?.(cliente)}
+            className="w-full mt-2 border-green-600 text-green-700 hover:bg-green-50"
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Crear Acceso Web
+          </Button>
           <Button
             size="sm"
             onClick={() => onAgregarOportunidad(cliente)}

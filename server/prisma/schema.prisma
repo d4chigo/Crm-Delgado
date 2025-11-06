@@ -9,60 +9,60 @@ datasource db {
 }
 
 model Usuario {
-  id            String     @id @default(uuid())
+  id            String               @id @default(uuid())
   nombre        String
-  email         String     @unique
+  email         String               @unique
   password      String
-  rol           Rol        @default(AGENTE)
+  rol           Rol                  @default(AGENTE)
   avatar        String?
   telefono      String?
-  activo        Boolean    @default(true)
-  creadoEn      DateTime   @default(now())
-  actualizadoEn DateTime   @updatedAt
+  activo        Boolean              @default(true)
+  creadoEn      DateTime             @default(now())
+  actualizadoEn DateTime             @updatedAt
   contactos     Contacto[]
-  proyectos     Proyecto[]
   oportunidades OportunidadCliente[]
-  reportes      Reporte[]  @relation("UsuarioReportes")
+  proyectos     Proyecto[]
+  reportes      Reporte[]            @relation("UsuarioReportes")
 
   @@map("usuarios")
 }
 
 model Contacto {
-  id               String             @id @default(uuid())
-  nombre           String
-  apellido         String?
-  correo           String?
-  telefono         String?
-  direccion        String?
-  ciudad           String?
-  dni              String?
-  sexo             Sexo?
-  fechaNacimiento  DateTime?
-  tipo             TipoContacto       @default(CONTACTO)
-  creadoEn         DateTime           @default(now())
-  actualizadoEn    DateTime           @updatedAt
-  usuarioId        String
-  cargo            String?
-  departamento     String?
-  distrito         String?
-  empresa          String?
-  estadoLead       EstadoLead?
-  fechaConversion  DateTime?
-  fechaSeguimiento DateTime?
-  fuente           String?
-  intereses        String?            @db.Text
-  notas            String?            @db.Text
-  presupuesto      Decimal?           @db.Decimal(10, 2)
-  prioridad        Prioridad          @default(MEDIA)
-  probabilidad     Int?
-  provincia        String?
-  etiquetas        ContactoEtiqueta[]
-  proyectos        ProyectoCliente[]
-  leadsAsociados   LeadCliente[]      @relation("LeadRelacion")
-  clientesAsociados LeadCliente[]     @relation("ClienteRelacion")
-  oportunidades    OportunidadCliente[]
-  cotizaciones     Cotizacion[]
-  usuario          Usuario            @relation(fields: [usuarioId], references: [id])
+  id                String               @id @default(uuid())
+  nombre            String
+  apellido          String?
+  correo            String?
+  telefono          String?
+  direccion         String?
+  ciudad            String?
+  dni               String?
+  sexo              Sexo?
+  fechaNacimiento   DateTime?
+  tipo              TipoContacto         @default(CONTACTO)
+  creadoEn          DateTime             @default(now())
+  actualizadoEn     DateTime             @updatedAt
+  usuarioId         String
+  cargo             String?
+  departamento      String?
+  distrito          String?
+  empresa           String?
+  estadoLead        EstadoLead?
+  fechaConversion   DateTime?
+  fechaSeguimiento  DateTime?
+  fuente            String?
+  intereses         String?              @db.Text
+  notas             String?              @db.Text
+  presupuesto       Decimal?             @db.Decimal(10, 2)
+  prioridad         Prioridad            @default(MEDIA)
+  probabilidad      Int?
+  provincia         String?
+  etiquetas         ContactoEtiqueta[]
+  usuario           Usuario              @relation(fields: [usuarioId], references: [id])
+  cotizaciones      Cotizacion[]
+  clientesAsociados LeadCliente[]        @relation("ClienteRelacion")
+  leadsAsociados    LeadCliente[]        @relation("LeadRelacion")
+  oportunidades     OportunidadCliente[]
+  proyectos         ProyectoCliente[]
 
   @@index([usuarioId])
   @@index([tipo])
@@ -111,8 +111,8 @@ model LeadCliente {
   asociadoEn DateTime @default(now())
   notas      String?  @db.Text
   estado     String?  @db.VarChar(50)
-  lead       Contacto @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
   cliente    Contacto @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
+  lead       Contacto @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
 
   @@id([leadId, clienteId])
   @@index([leadId])
@@ -121,29 +121,135 @@ model LeadCliente {
 }
 
 model OportunidadCliente {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   clienteId       String
-  titulo          String   // Título de la oportunidad (ej: "Interés en Dpto 301")
-  proyecto        String?  // Proyecto/producto de interés
-  propiedad       String?  // Propiedad específica (ej: "Dpto 301", "Casa 22")
+  titulo          String
+  proyecto        String?
+  propiedad       String?
   etapa           EtapaPipeline @default(LEAD)
-  valor           Decimal? @db.Decimal(12, 2) // Valor estimado de la venta
-  probabilidad    Int?     @default(25) // % de probabilidad de cierre
-  proximaAccion   String?  @db.Text // Próxima acción a realizar
-  ultimaActividad DateTime @default(now()) // Última vez que se actualizó
-  notas           String?  @db.Text
-  creadoEn        DateTime @default(now())
-  actualizadoEn   DateTime @updatedAt
+  valor           Decimal?      @db.Decimal(12, 2)
+  probabilidad    Int?          @default(25)
+  proximaAccion   String?       @db.Text
+  ultimaActividad DateTime      @default(now())
+  notas           String?       @db.Text
+  creadoEn        DateTime      @default(now())
+  actualizadoEn   DateTime      @updatedAt
   usuarioId       String
-  
-  cliente         Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  usuario         Usuario  @relation(fields: [usuarioId], references: [id])
+  cliente         Contacto      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
 
   @@index([clienteId])
   @@index([usuarioId])
   @@index([etapa])
   @@index([creadoEn])
   @@map("oportunidades_clientes")
+}
+
+model ProyectoEtiqueta {
+  proyectoId String
+  etiquetaId String
+  asignadoEn DateTime  @default(now())
+  etiqueta   Etiqueta  @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, etiquetaId])
+  @@index([proyectoId])
+  @@index([etiquetaId])
+  @@map("proyecto_etiquetas")
+}
+
+model ProyectoCliente {
+  proyectoId String
+  clienteId  String
+  asociadoEn DateTime  @default(now())
+  notas      String?   @db.Text
+  cliente    Contacto  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, clienteId])
+  @@index([proyectoId])
+  @@index([clienteId])
+  @@map("proyecto_clientes")
+}
+
+model Cotizacion {
+  id                     String           @id @default(uuid())
+  contactoId             String
+  numeroReferencia       String           @unique
+  nombreProyecto         String
+  tipoInmueble           String?
+  descripcion            String?          @db.Text
+  precioInmueble         Decimal          @db.Decimal(12, 2)
+  cuotaInicial           Decimal          @db.Decimal(12, 2)
+  porcentajeCuotaInicial Decimal          @db.Decimal(5, 2)
+  montoFinanciar         Decimal          @db.Decimal(12, 2)
+  plazoMeses             Int
+  tipoCuota              TipoCuota        @default(FIJA)
+  tasaInteresAnual       Decimal          @db.Decimal(5, 2)
+  permitePostergar       Boolean          @default(false)
+  cuotasPostergables     Int?
+  permiteDoble           Boolean          @default(false)
+  cuotasDoblesAnuales    Int?
+  permiteCambioFecha     Boolean          @default(false)
+  montoCuotaManual       Decimal?         @db.Decimal(12, 2)
+  cuotaMensualEstimada   Decimal          @db.Decimal(12, 2)
+  totalIntereses         Decimal          @db.Decimal(12, 2)
+  totalPagar             Decimal          @db.Decimal(12, 2)
+  estado                 EstadoCotizacion @default(BORRADOR)
+  notas                  String?          @db.Text
+  observaciones          String?          @db.Text
+  fechaValidez           DateTime?
+  creadoEn               DateTime         @default(now())
+  actualizadoEn          DateTime         @updatedAt
+  contacto               Contacto         @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+
+  @@index([contactoId])
+  @@index([estado])
+  @@index([tipoCuota])
+  @@map("cotizaciones")
+}
+
+model Reporte {
+  id                String   @id @default(uuid())
+  tipo              String
+  parametros        Json?
+  resultadosResumen Json?
+  generadoPor       String?
+  generadoEn        DateTime @default(now())
+  usuario           Usuario? @relation("UsuarioReportes", fields: [generadoPor], references: [id])
+
+  @@index([generadoPor])
+  @@map("reportes")
+}
+
+model Proyecto {
+  id            String             @id @default(uuid())
+  nombre        String
+  descripcion   String?            @db.Text
+  imagen        String?
+  precio        Decimal?           @db.Decimal(12, 2)
+  ubicacion     String?
+  estado        EstadoProyecto     @default(DISPONIBLE)
+  activo        Boolean            @default(true)
+  tipoProyecto  TipoProyecto?      @map("tipo_proyecto")
+  categoria     String?            @db.VarChar(100)
+  galeria       Json?
+  caracteristicas Json?
+  mostrarEnWeb  Boolean            @default(true) @map("mostrar_en_web")
+  ordenWeb      Int?               @map("orden_web")
+  creadoEn      DateTime           @default(now())
+  actualizadoEn DateTime           @updatedAt
+  usuarioId     String
+  clientes      ProyectoCliente[]
+  etiquetas     ProyectoEtiqueta[]
+  usuario       Usuario            @relation(fields: [usuarioId], references: [id])
+
+  @@index([activo])
+  @@index([estado])
+  @@index([usuarioId])
+  @@index([tipoProyecto])
+  @@index([mostrarEnWeb])
+  @@map("proyectos")
 }
 
 enum Rol {
@@ -182,66 +288,6 @@ enum Prioridad {
   URGENTE
 }
 
-// Modelo de Proyecto Inmobiliario
-model Proyecto {
-  id            String              @id @default(uuid())
-  nombre        String
-  descripcion   String?             @db.Text
-  imagen        String?             // URL de la imagen del proyecto
-  precio        Decimal?            @db.Decimal(12, 2)
-  ubicacion     String?
-  estado        EstadoProyecto      @default(DISPONIBLE)
-  activo        Boolean             @default(true)
-  creadoEn      DateTime            @default(now())
-  actualizadoEn DateTime            @updatedAt
-  usuarioId     String
-  usuario       Usuario             @relation(fields: [usuarioId], references: [id])
-  etiquetas     ProyectoEtiqueta[]
-  clientes      ProyectoCliente[]
-
-  @@index([usuarioId])
-  @@index([estado])
-  @@index([activo])
-  @@map("proyectos")
-}
-
-// Relación muchos a muchos: Proyecto - Etiqueta
-model ProyectoEtiqueta {
-  proyectoId String
-  etiquetaId String
-  asignadoEn DateTime @default(now())
-  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
-  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
-
-  @@id([proyectoId, etiquetaId])
-  @@index([proyectoId])
-  @@index([etiquetaId])
-  @@map("proyecto_etiquetas")
-}
-
-// Relación muchos a muchos: Proyecto - Cliente (Contacto tipo CLIENTE)
-model ProyectoCliente {
-  proyectoId  String
-  clienteId   String
-  asociadoEn  DateTime @default(now())
-  notas       String?  @db.Text
-  proyecto    Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
-  cliente     Contacto @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-
-  @@id([proyectoId, clienteId])
-  @@index([proyectoId])
-  @@index([clienteId])
-  @@map("proyecto_clientes")
-}
-
-enum EstadoProyecto {
-  DISPONIBLE
-  RESERVADO
-  VENDIDO
-  CONSTRUCCION
-  FINALIZADO
-}
-
 enum EtapaPipeline {
   LEAD
   CONTACTO
@@ -250,62 +296,6 @@ enum EtapaPipeline {
   CIERRE
   GANADO
   PERDIDO
-}
-
-// Modelo de Cotización Inmobiliaria
-model Cotizacion {
-  id                    String            @id @default(uuid())
-  contactoId            String
-  numeroReferencia      String            @unique // Número de cotización (ej: COT-2024-001)
-  
-  // Información del inmueble
-  nombreProyecto        String
-  tipoInmueble          String?           // Departamento, Casa, Terreno, etc.
-  descripcion           String?           @db.Text
-  precioInmueble        Decimal           @db.Decimal(12, 2)
-  
-  // Financiamiento
-  cuotaInicial          Decimal           @db.Decimal(12, 2)
-  porcentajeCuotaInicial Decimal          @db.Decimal(5, 2) // Porcentaje de cuota inicial
-  montoFinanciar        Decimal           @db.Decimal(12, 2)
-  plazoMeses            Int               // Plazo en meses
-  
-  // Tipo de cuota
-  tipoCuota             TipoCuota         @default(FIJA)
-  tasaInteresAnual      Decimal           @db.Decimal(5, 2) // Tasa de interés anual %
-  
-  // Opciones para Flexible Especial
-  permitePostergar      Boolean           @default(false)
-  cuotasPostergables    Int?              // Cuántas cuotas se pueden postergar al año
-  permiteDoble          Boolean           @default(false)
-  cuotasDoblesAnuales   Int?              // Cuántas cuotas dobles se pueden hacer al año
-  permiteCambioFecha    Boolean           @default(false)
-  montoCuotaManual      Decimal?          @db.Decimal(12, 2)
-  
-  // Cálculos
-  cuotaMensualEstimada  Decimal           @db.Decimal(12, 2)
-  totalIntereses        Decimal           @db.Decimal(12, 2)
-  totalPagar            Decimal           @db.Decimal(12, 2)
-  
-  // Estado de la cotización
-  estado                EstadoCotizacion  @default(BORRADOR)
-  
-  // Notas y observaciones
-  notas                 String?           @db.Text
-  observaciones         String?           @db.Text
-  
-  // Fechas
-  fechaValidez          DateTime?         // Hasta cuándo es válida la cotización
-  creadoEn              DateTime          @default(now())
-  actualizadoEn         DateTime          @updatedAt
-  
-  // Relación
-  contacto              Contacto          @relation(fields: [contactoId], references: [id], onDelete: Cascade)
-
-  @@index([contactoId])
-  @@index([estado])
-  @@index([tipoCuota])
-  @@map("cotizaciones")
 }
 
 enum TipoCuota {
@@ -322,17 +312,181 @@ enum EstadoCotizacion {
   VENCIDA
 }
 
-// Registro de ejecuciones de reportes (auditoría/bitácora)
-model Reporte {
-  id                String   @id @default(uuid())
-  tipo              String
-  parametros        Json?
-  resultadosResumen Json?
-  generadoPor       String?
-  generadoEn        DateTime @default(now())
+enum EstadoProyecto {
+  DISPONIBLE
+  RESERVADO
+  VENDIDO
+  CONSTRUCCION
+  FINALIZADO
+}
 
-  usuario Usuario? @relation("UsuarioReportes", fields: [generadoPor], references: [id])
+enum TipoProyecto {
+  TECHO_PROPIO       @map("techo_propio")
+  CREDITO_MIVIVIENDA @map("credito_mivivienda")
+  HABILITACIONES     @map("habilitaciones")
+  COMPRA             @map("compra")
+  VENTA              @map("venta")
+  ALQUILER           @map("alquiler")
+  DEPARTAMENTO       @map("departamento")
+  CASA               @map("casa")
+  TERRENO            @map("terreno")
+  LOCAL_COMERCIAL    @map("local_comercial")
+}
 
-  @@index([generadoPor])
-  @@map("reportes")
+// ==================== MODELOS PARA PANEL ADMIN WEB (PHP) ====================
+// Estos modelos mapean a tablas legacy del sitio PHP
+
+enum TipoServicio {
+  GENERAL    @map("general")
+  TOPOGRAFIA @map("topografia")
+  DRON       @map("dron")
+}
+
+enum EstadoTestimonio {
+  PENDIENTE @map("pending")
+  APROBADO  @map("approved")
+  RECHAZADO @map("rejected")
+}
+
+// Otros servicios para el sitio web
+model OtrosServicios {
+  id             Int          @id @default(autoincrement())
+  titulo         String       @db.VarChar(255)
+  descripcion    String?      @db.Text
+  enlaceImagen   String?      @map("image_link") @db.VarChar(512)
+  enlaceVideo    String?      @map("video_link") @db.VarChar(512)
+  tipoServicio   TipoServicio @map("service_type") @default(GENERAL)
+  creadoEn       DateTime     @default(now()) @map("created_at")
+  actualizadoEn  DateTime     @updatedAt @map("updated_at")
+
+  @@map("otros_servicios")
+}
+
+// Miembros del equipo para el sitio web
+model MiembroEquipo {
+  id             Int       @id @default(autoincrement())
+  nombre         String    @db.VarChar(100)
+  cargo          String    @db.VarChar(100)
+  descripcion    String    @db.Text
+  correo         String    @db.VarChar(100)
+  telefono       String    @db.VarChar(20)
+  foto           String?   @db.VarChar(255)
+  activo         Boolean   @default(true)
+  ordenMostrar   Int       @map("display_order")
+  facebook       String?   @db.VarChar(255)
+  instagram      String?   @db.VarChar(255)
+  tiktok         String?   @db.VarChar(255)
+  creadoEn       DateTime  @default(now()) @map("created_at")
+  actualizadoEn  DateTime? @updatedAt @map("updated_at")
+
+  @@index([activo])
+  @@index([ordenMostrar])
+  @@map("team_members")
+}
+
+// Testimonios para el sitio web
+model Testimonio {
+  id             Int              @id @default(autoincrement())
+  nombre         String           @db.VarChar(100)
+  correo         String           @db.VarChar(100)
+  calificacion   Int
+  testimonio     String           @db.Text
+  foto           String?          @db.VarChar(255)
+  media          String?          @db.VarChar(255)
+  videoUrl       String?          @map("video_url") @db.VarChar(255)
+  estado         EstadoTestimonio @default(APROBADO)
+  creadoEn       DateTime         @map("created_at")
+  aprobadoEn     DateTime?        @map("approved_at")
+
+  @@index([estado])
+  @@map("testimonials")
+}
+
+// Páginas de servicios para el sitio web (Techo Propio, Crédito, etc.)
+model PaginaServicio {
+  id                String    @id @default(uuid())
+  tipoServicio      TipoProyecto @map("tipo_servicio")
+  titulo            String    @db.VarChar(255)
+  subtitulo         String?   @db.VarChar(255)
+  descripcionCorta  String?   @map("descripcion_corta") @db.Text
+  descripcionLarga  String?   @map("descripcion_larga") @db.Text
+  imagenBanner      String?   @map("imagen_banner") @db.VarChar(512)
+  videoBanner       String?   @map("video_banner") @db.VarChar(512)
+  requisitos        Json?
+  beneficios        Json?
+  pasos             Json?
+  preguntas         Json?
+  activo            Boolean   @default(true)
+  ordenMostrar      Int       @default(0) @map("orden_mostrar")
+  metaTitle         String?   @map("meta_title") @db.VarChar(255)
+  metaDescription   String?   @map("meta_description") @db.Text
+  creadoEn          DateTime  @default(now()) @map("created_at")
+  actualizadoEn     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tipoServicio])
+  @@index([activo])
+  @@index([ordenMostrar])
+  @@map("paginas_servicios")
+}
+
+// ==================== MODELOS PARA PORTAL DE CLIENTES ====================
+
+// Contraseñas para acceso web de clientes
+model ClientePassword {
+  contactoId    String   @id @map("contacto_id")
+  passwordWeb   String   @map("password_web") @db.VarChar(255)
+  creadoEn      DateTime @default(now()) @map("created_at")
+  actualizadoEn DateTime @updatedAt @map("updated_at")
+
+  @@map("cliente_passwords")
+}
+
+// Documentos subidos por clientes
+model ClienteDocumento {
+  id              String   @id @default(uuid())
+  contactoId      String   @map("contacto_id")
+  nombreArchivo   String   @map("nombre_archivo") @db.VarChar(255)
+  nombreOriginal  String   @map("nombre_original") @db.VarChar(255)
+  rutaArchivo     String   @map("ruta_archivo") @db.VarChar(512)
+  tipoDocumento   String   @map("tipo_documento") @db.VarChar(50)
+  descripcion     String?  @db.Text
+  tamanoBytes     Int      @map("tamano_bytes")
+  mimeType        String   @map("mime_type") @db.VarChar(100)
+  subidoEn        DateTime @default(now()) @map("subido_en")
+  estado          String   @default("PENDIENTE") @db.VarChar(50)
+  revisadoPor     String?  @map("revisado_por")
+  revisadoEn      DateTime? @map("revisado_en")
+  notas           String?  @db.Text
+
+  @@index([contactoId])
+  @@index([estado])
+  @@index([subidoEn])
+  @@map("cliente_documentos")
+}
+
+// Registro de accesos al portal
+model ClienteAcceso {
+  id             String   @id @default(uuid())
+  contactoId     String   @map("contacto_id")
+  fechaAcceso    DateTime @default(now()) @map("fecha_acceso")
+  ipAddress      String   @map("ip_address") @db.VarChar(45)
+  userAgent      String?  @map("user_agent") @db.Text
+
+  @@index([contactoId])
+  @@index([fechaAcceso])
+  @@map("cliente_accesos")
+}
+
+// Actividades del cliente en el portal
+model ClienteActividad {
+  id          String   @id @default(uuid())
+  contactoId  String   @map("contacto_id")
+  tipo        String   @db.VarChar(50)
+  descripcion String   @db.Text
+  fecha       DateTime @default(now())
+  metadata    Json?
+
+  @@index([contactoId])
+  @@index([fecha])
+  @@map("cliente_actividades")
 }

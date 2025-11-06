@@ -114,8 +114,22 @@ export function DialogoEditarLead({
       const datosLimpios: any = {};
       Object.entries(datos).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
+          // Limpiar teléfono: solo dígitos
+          if (key === 'telefono' && typeof value === 'string') {
+            const telefonoLimpio = value.replace(/\D/g, ''); // Eliminar todo lo que no sea dígito
+            if (telefonoLimpio) {
+              datosLimpios[key] = telefonoLimpio;
+            }
+          }
+          // Limpiar DNI: solo dígitos
+          else if (key === 'dni' && typeof value === 'string') {
+            const dniLimpio = value.replace(/\D/g, '');
+            if (dniLimpio) {
+              datosLimpios[key] = dniLimpio;
+            }
+          }
           // Convertir fechas al formato ISO datetime
-          if (key === 'fechaNacimiento' && value) {
+          else if (key === 'fechaNacimiento' && value) {
             // Si es solo fecha (YYYY-MM-DD), agregar hora 00:00:00
             if (typeof value === 'string' && !value.includes('T')) {
               datosLimpios[key] = `${value}T00:00:00.000Z`;
@@ -172,6 +186,16 @@ export function DialogoEditarLead({
       console.log('Resultado:', resultado);
 
       if (!respuesta.ok) {
+        // Mostrar detalles específicos de validación
+        if (resultado.detalles && Array.isArray(resultado.detalles)) {
+          console.error('Detalles de validación COMPLETOS:', JSON.stringify(resultado.detalles, null, 2));
+          const errores = resultado.detalles.map((d: any) => {
+            const campo = d.campo || d.path || (d.path && Array.isArray(d.path) ? d.path.join('.') : 'campo desconocido');
+            const mensaje = d.mensaje || d.message || d.msg || 'error desconocido';
+            return `${campo}: ${mensaje}`;
+          }).join(', ');
+          throw new Error(`Error de validación: ${errores}`);
+        }
         throw new Error(resultado.mensaje || resultado.error || 'Error al actualizar lead');
       }
 
