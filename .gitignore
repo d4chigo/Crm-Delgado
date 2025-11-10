@@ -1,33 +1,39 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# debug
+# Node / package managers
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
+pnpm-lock.yaml
 
-# env files
-.env*
-!.env.docker
-!.env.example
+# Builds / dist
+**/dist/
+**/build/
+**/.turbo/
+**/.cache/
 
-# vercel
-.vercel
+# Next.js
+client/.next/
+.next/
+out/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Vite (botcrm)
+botcrm/dist/
 
-# Docker
-nginx/ssl/*
-!nginx/ssl/.gitkeep
+# Env files (secrets)
+.env
+*.env
+*.env.*
+server/.env
+client/.env.local
+
+# Prisma / DB
+server/prisma/dev.db
+**/*.sqlite
+**/*.db
+
+# OS / misc
+.DS_Store
+Thumbs.db
+*.pid
+

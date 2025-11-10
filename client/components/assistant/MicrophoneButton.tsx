@@ -5,10 +5,12 @@ import { Mic, PhoneOff } from 'lucide-react';
 interface MicrophoneButtonProps {
   isActive: boolean;
   isListening: boolean;
-  onClick: () => void;
+  onClick?: () => void;
+  onStart?: () => void;
+  onStop?: () => void;
 }
 
-export default function MicrophoneButton({ isActive, isListening, onClick }: MicrophoneButtonProps) {
+export default function MicrophoneButton({ isActive, isListening, onClick, onStart, onStop }: MicrophoneButtonProps) {
   const baseClasses = "w-16 h-16 md:w-18 md:h-18 rounded-full flex items-center justify-center transition-all duration-300 ease-in-out transform focus:outline-none";
   const gradientIdle = "bg-[radial-gradient(ellipse_at_center,rgba(252,186,0,0.95),rgba(48,48,48,0.9))]";
   const gradientActive = "bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.95),rgba(48,48,48,0.9))]";
@@ -18,7 +20,17 @@ export default function MicrophoneButton({ isActive, isListening, onClick }: Mic
 
   const handleClick = () => {
     console.log('MicrophoneButton clicked, isActive:', isActive);
-    onClick();
+    // Preferir control explícito si se provee
+    if (onStart || onStop) {
+      if (isActive || isListening) {
+        onStop && onStop();
+      } else {
+        onStart && onStart();
+      }
+      return;
+    }
+    // Compatibilidad hacia atrás
+    onClick && onClick();
   };
 
   return (

@@ -25,13 +25,13 @@ DATOS DEL CRM ACTUALES:
 - Tasa conversión: ${context.resumen.tasaConversion}%
 
 ESTADOS DE LEADS:
-${context.detalles.contactosPorEstado.map(c => `  - ${c.estado}: ${c.cantidad}`).join('\n')}
+${context.detalles.contactosPorEstado.map((c: any) => `  - ${c.estado}: ${c.cantidad}`).join('\n')}
 
 OPORTUNIDADES POR ETAPA:
-${context.detalles.oportunidadesPorEtapa.map(o => `  - ${o.etapa}: ${o.cantidad}`).join('\n')}
+${context.detalles.oportunidadesPorEtapa.map((o: any) => `  - ${o.etapa}: ${o.cantidad}`).join('\n')}
 
 TOP PROYECTOS (año actual):
-${context.detalles.topProyectos.map((p, i) => `  ${i + 1}. ${p.proyecto}: ${p.oportunidades} ops, S/ ${p.valorTotal.toLocaleString('es-PE')}`).join('\n')}
+${context.detalles.topProyectos.map((p: any, i: number) => `  ${i + 1}. ${p.proyecto}: ${p.oportunidades} ops, S/ ${p.valorTotal.toLocaleString('es-PE')}`).join('\n')}
 `;
 
     const liveConfig = {

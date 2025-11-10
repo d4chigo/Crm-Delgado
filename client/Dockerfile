@@ -28,6 +28,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copiar código fuente
 COPY . .
 
+# Copiar esquema Prisma y generar cliente
+COPY prisma ./prisma
+RUN npx prisma generate
+
 # Variables de entorno de build
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
@@ -57,6 +61,13 @@ ENV NEXT_TELEMETRY_DISABLED 1
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+
+# Generar Prisma Client en producción
+RUN npm install -g pnpm \
+  && pnpm add -D prisma \
+  && pnpm add @prisma/client \
+  && npx prisma generate
 
 # Cambiar al usuario no-root
 USER nodejs

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, KeyboardEvent } from 'react';
 import { SendIcon } from './icons/SendIcon';
 
@@ -32,12 +31,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
         setText(e.target.value);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${e.target.scrollHeight}px`;
+            if (textareaRef.current.scrollHeight < 192) {
+                 textareaRef.current.style.height = `${e.target.scrollHeight}px`;
+            } else {
+                 textareaRef.current.style.height = '192px';
+            }
         }
     };
 
     return (
-        <div className="bg-gray-900 p-2 rounded-2xl shadow-inner flex items-center w-full max-w-4xl mx-auto border border-gray-700 focus-within:border-amber-400 transition-colors">
+        <div
+            className="p-2 rounded-2xl flex items-end w-full max-w-4xl mx-auto border transition-colors"
+            style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--panel-border)' }}
+        >
             <textarea
                 ref={textareaRef}
                 value={text}
@@ -45,13 +51,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu consulta aquí..."
                 rows={1}
-                className="w-full bg-transparent p-2 text-gray-200 resize-none focus:outline-none placeholder-gray-500 max-h-48"
+                className="w-full bg-transparent p-2 resize-none focus:outline-none max-h-48"
+                style={{ color: 'var(--text)' }}
                 disabled={isLoading}
             />
             <button
                 onClick={handleSend}
                 disabled={isLoading || !text.trim()}
-                className="ml-2 p-3 rounded-full bg-amber-500 text-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all transform hover:scale-105"
+                className="ml-2 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none transition-all transform hover:scale-110"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
                 aria-label="Enviar mensaje"
             >
                <SendIcon />

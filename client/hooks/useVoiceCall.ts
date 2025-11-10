@@ -64,6 +64,7 @@ export const useVoiceCall = () => {
 
   const stopCallCleanup = useCallback(() => {
     setIsCallActive(false);
+    isCallActiveRef.current = false;
     setStatus(CallStatus.Inactive);
     setLiveTranscript('');
 
@@ -84,8 +85,9 @@ export const useVoiceCall = () => {
       outputAudioContextRef.current = null;
     }
     if (wsRef.current) {
-      wsRef.current.send(JSON.stringify({ type: 'close' }));
-      wsRef.current.close();
+      try { wsRef.current.onopen = null as any; wsRef.current.onmessage = null as any; wsRef.current.onerror = null as any; wsRef.current.onclose = null as any; } catch {}
+      try { if (wsRef.current.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify({ type: 'close' })); } catch {}
+      try { wsRef.current.close(); } catch {}
       wsRef.current = null;
     }
   }, []);
@@ -109,6 +111,8 @@ export const useVoiceCall = () => {
       let nextStartTime = 0;
       let currentInputTranscription = '';
       let currentOutputTranscription = '';
+      let pushedUserThisTurn = false;
+      let dispatchedThisTurn = false;
 
       // Conectar al WebSocket del backend, normalizando URL con o sin sufijo /api
       const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -144,16 +148,46 @@ export const useVoiceCall = () => {
             setLiveTranscript(currentInputTranscription + message.serverContent.inputTranscription.text);
             if ((message.serverContent.inputTranscription as any)?.isFinal) {
               currentInputTranscription += message.serverContent.inputTranscription.text + ' ';
+              try { console.debug('[VoiceHook] input FINAL:', currentInputTranscription.trim()); } catch {}
+              if (!pushedUserThisTurn && currentInputTranscription.trim()) {
+                // Emitir ya el mensaje del usuario para que AssistantPanel dispare la acción
+                setConversation(prev => [...prev, { role: Role.User, text: currentInputTranscription.trim() }]);
+                pushedUserThisTurn = true;
+              }
+              // BYPASS: Enviar de inmediato al backend y navegar
+              const phrase = currentInputTranscription.trim();
+              if (phrase && !dispatchedThisTurn) {
+                dispatchedThisTurn = true;
+                try {
+                  const base = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+                  const api = `${base.endsWith('/api') ? base : base + '/api'}`;
+                  console.log('[VoiceHook][Bypass] Enviando a', `${api}/assistant/ask`, phrase);
+                  const res = await fetch(`${api}/assistant/ask`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: phrase }) });
+                  const json = await res.json().catch(() => null);
+                  const action = json?.datos?.action;
+                  if (action?.type === 'navigate' && action?.target) {
+                    const params = new URLSearchParams(action.params || {});
+                    const targetUrl = `${action.target}${params.toString() ? `?${params.toString()}` : ''}`;
+                    console.log('[VoiceHook][Bypass] Navegando a', targetUrl);
+                    try { (window as any).electron?.navigation?.navigateTo?.(targetUrl); } catch {}
+                    if (!((window as any).electron?.navigation?.navigateTo)) window.location.href = targetUrl;
+                  }
+                } catch (e) {
+                  console.warn('[VoiceHook][Bypass] Error enviando a assistant/ask:', e);
+                }
+              }
             }
           }
           if (message.serverContent?.outputTranscription) {
             currentOutputTranscription += message.serverContent.outputTranscription.text;
           }
           if (message.serverContent?.turnComplete) {
-            if (currentInputTranscription.trim()) setConversation(prev => [...prev, { role: Role.User, text: currentInputTranscription.trim() }]);
+            if (currentInputTranscription.trim() && !pushedUserThisTurn) setConversation(prev => [...prev, { role: Role.User, text: currentInputTranscription.trim() }]);
             if (currentOutputTranscription.trim()) setConversation(prev => [...prev, { role: Role.Assistant, text: currentOutputTranscription.trim() }]);
             currentInputTranscription = '';
             currentOutputTranscription = '';
+            dispatchedThisTurn = false;
+            pushedUserThisTurn = false;
             setLiveTranscript('');
             setStatus(CallStatus.Listening);
           }

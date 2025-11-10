@@ -23,8 +23,11 @@ import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 export default function PaginaLeads() {
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const {
     contactos,
     estadisticas,
@@ -340,6 +343,9 @@ export default function PaginaLeads() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

@@ -166,10 +166,10 @@ export async function getCRMContext() {
         },
       }),
       prisma.cotizacion.aggregate({
-        _sum: { valorTotal: true },
+        _sum: { totalPagar: true },
       }),
       prisma.cotizacion.groupBy({
-        by: ['proyectoId'],
+        by: ['nombreProyecto'],
         _count: { _all: true },
       }),
       
@@ -210,8 +210,7 @@ export async function getCRMContext() {
         take: 10,
         orderBy: { creadoEn: 'desc' },
         include: { 
-          cliente: { select: { nombre: true, apellido: true } },
-          proyecto: { select: { nombre: true } }
+          contacto: { select: { nombre: true, apellido: true } },
         }
       }),
       
@@ -236,15 +235,14 @@ export async function getCRMContext() {
       }),
       prisma.cotizacion.findMany({
         include: { 
-          cliente: { select: { nombre: true, apellido: true } },
-          proyecto: { select: { nombre: true } }
+          contacto: { select: { nombre: true, apellido: true } },
         }
       }),
       prisma.etiqueta.findMany(),
     ]);
 
     // Calcular grupos de edad
-    const gruposEdad = contactosConEdad.reduce((grupos, contacto) => {
+    const gruposEdad = contactosConEdad.reduce((grupos: any, contacto: any) => {
       if (contacto.fechaNacimiento) {
         const edad = now.getFullYear() - contacto.fechaNacimiento.getFullYear();
         let rango = '';
@@ -296,12 +294,12 @@ export async function getCRMContext() {
       },
     });
     const topProyectos = topProyectosRaw
-      .map(p => ({
+      .map((p: any) => ({
         proyecto: p.proyecto as string,
         oportunidades: p._count._all,
         valorTotal: Number(p._sum.valor || 0),
       }))
-      .sort((a, b) => b.valorTotal - a.valorTotal)
+      .sort((a: any, b: any) => b.valorTotal - a.valorTotal)
       .slice(0, 5);
 
     // Conversión de leads a oportunidades
@@ -323,44 +321,45 @@ export async function getCRMContext() {
         totalClientes,
         leadsEsteMes,
         clientesEsteMes,
-        oportunidadesActivas: oportunidadesPorEtapa.reduce((sum, o) => sum + o._count._all, 0),
+        oportunidadesActivas: oportunidadesPorEtapa.reduce((sum: number, o: any) => sum + o._count._all, 0),
         oportunidadesGanadas,
         valorTotalOportunidades: Number(valorTotalOportunidades._sum.valor || 0),
         valorGanado: Number(valorGanado._sum.valor || 0),
         cotizacionesTotales,
         cotizacionesEsteMes,
-        valorTotalCotizaciones: Number(valorTotalCotizaciones._sum.valorTotal || 0),
+        valorTotalCotizaciones: Number(valorTotalCotizaciones._sum.totalPagar || 0),
+        
         proyectosActivos,
         proyectosTotales,
         usuariosActivos,
         tasaConversion,
       },
       detalles: {
-        contactosPorEstado: contactosPorEstado.map(c => ({
+        contactosPorEstado: contactosPorEstado.map((c: any) => ({
           estado: c.estadoLead || 'SIN_ESTADO',
           cantidad: c._count._all,
         })),
-        contactosPorTipo: contactosPorTipo.map(c => ({
+        contactosPorTipo: contactosPorTipo.map((c: any) => ({
           tipo: c.tipo,
           cantidad: c._count._all,
         })),
-        contactosPorDepartamento: contactosPorDepartamento.map(c => ({
+        contactosPorDepartamento: contactosPorDepartamento.map((c: any) => ({
           departamento: c.departamento,
           cantidad: c._count._all,
         })),
-        contactosPorCiudad: contactosPorCiudad.map(c => ({
+        contactosPorCiudad: contactosPorCiudad.map((c: any) => ({
           ciudad: c.ciudad,
           cantidad: c._count._all,
         })),
-        contactosPorDistrito: contactosPorDistrito.map(c => ({
+        contactosPorDistrito: contactosPorDistrito.map((c: any) => ({
           distrito: c.distrito,
           cantidad: c._count._all,
         })),
-        contactosPorProvincia: contactosPorProvincia.map(c => ({
+        contactosPorProvincia: contactosPorProvincia.map((c: any) => ({
           provincia: c.provincia,
           cantidad: c._count._all,
         })),
-        contactosPorSexo: contactosPorSexo.map(c => ({
+        contactosPorSexo: contactosPorSexo.map((c: any) => ({
           sexo: c.sexo,
           cantidad: c._count._all,
         })),
@@ -368,35 +367,35 @@ export async function getCRMContext() {
           rango,
           cantidad,
         })),
-        oportunidadesPorEtapa: oportunidadesPorEtapa.map(o => ({
+        oportunidadesPorEtapa: oportunidadesPorEtapa.map((o: any) => ({
           etapa: o.etapa,
           cantidad: o._count._all,
         })),
-        oportunidadesPorProyecto: oportunidadesPorProyecto.map(o => ({
+        oportunidadesPorProyecto: oportunidadesPorProyecto.map((o: any) => ({
           proyecto: o.proyecto,
           cantidad: o._count._all,
         })),
-        oportunidadesPorUsuario: oportunidadesPorUsuario.map(o => ({
+        oportunidadesPorUsuario: oportunidadesPorUsuario.map((o: any) => ({
           usuarioId: o.usuarioId,
           cantidad: o._count._all,
         })),
-        cotizacionesPorEstado: cotizacionesPorEstado.map(c => ({
+        cotizacionesPorEstado: cotizacionesPorEstado.map((c: any) => ({
           estado: c.estado,
           cantidad: c._count._all,
         })),
-        cotizacionesPorProyecto: cotizacionesPorProyecto.map(c => ({
-          proyectoId: c.proyectoId,
+        cotizacionesPorProyecto: cotizacionesPorProyecto.map((c: any) => ({
+          nombreProyecto: c.nombreProyecto,
           cantidad: c._count._all,
         })),
-        proyectosPorEstado: proyectosPorEstado.map(p => ({
+        proyectosPorEstado: proyectosPorEstado.map((p: any) => ({
           estado: p.estado,
           cantidad: p._count._all,
         })),
-        proyectosPorUsuario: proyectosPorUsuario.map(p => ({
+        proyectosPorUsuario: proyectosPorUsuario.map((p: any) => ({
           usuarioId: p.usuarioId,
           cantidad: p._count._all,
         })),
-        usuariosPorRol: usuariosPorRol.map(u => ({
+        usuariosPorRol: usuariosPorRol.map((u: any) => ({
           rol: u.rol,
           cantidad: u._count._all,
         })),
@@ -404,7 +403,7 @@ export async function getCRMContext() {
         topProyectos,
       },
       actividadesRecientes: {
-        contactos: contactosRecientes.map(c => ({
+        contactos: contactosRecientes.map((c: any) => ({
           id: c.id,
           nombre: c.nombre,
           apellido: c.apellido,
@@ -412,7 +411,7 @@ export async function getCRMContext() {
           creadoEn: c.creadoEn,
           usuario: c.usuario.nombre,
         })),
-        oportunidades: oportunidadesRecientes.map(o => ({
+        oportunidades: oportunidadesRecientes.map((o: any) => ({
           id: o.id,
           titulo: o.titulo,
           cliente: `${o.cliente.nombre} ${o.cliente.apellido || ''}`,
@@ -421,11 +420,11 @@ export async function getCRMContext() {
           creadoEn: o.creadoEn,
           usuario: o.usuario.nombre,
         })),
-        cotizaciones: cotizacionesRecientes.map(c => ({
+        cotizaciones: cotizacionesRecientes.map((c: any) => ({
           id: c.id,
-          cliente: `${c.cliente.nombre} ${c.cliente.apellido || ''}`,
-          proyecto: c.proyecto?.nombre,
-          valorTotal: Number(c.valorTotal || 0),
+          cliente: `${c.contacto.nombre} ${c.contacto.apellido || ''}`,
+          proyecto: c.nombreProyecto,
+          valorTotal: Number((c as any).totalPagar || 0),
           estado: c.estado,
           creadoEn: c.creadoEn,
         })),

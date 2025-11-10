@@ -26,7 +26,7 @@ export class EtiquetaService {
       }
     });
 
-    return contactoConEtiquetas?.etiquetas.map(ce => ce.etiqueta) || [];
+    return contactoConEtiquetas?.etiquetas.map((ce: any) => ce.etiqueta) || [];
   }
 
   /**

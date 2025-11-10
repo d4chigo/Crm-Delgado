@@ -3,7 +3,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Message, Role, CallStatus } from '../types';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { ai } from '../services/geminiService';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, CloseEvent, ErrorEvent } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Blob, CloseEvent, ErrorEvent, FunctionCall } from '@google/genai';
+import { crmTools } from '../services/tools';
 
 // --- Type Definitions for Web APIs ---
 declare global {
@@ -62,6 +63,29 @@ function createPcmBlob(data: Float32Array): Blob {
     };
 }
 
+// In a real application, these would make API calls to your backend.
+async function executeVoiceTool(toolCall: FunctionCall): Promise<any> {
+    const { name, args } = toolCall;
+    console.log(`Executing voice tool: ${name}`, args);
+
+    switch (name) {
+        case 'createContact':
+            return { success: true, message: `Contacto ${args.nombre} creado.` };
+        case 'getContact':
+            if (args.correo === 'notfound@example.com') {
+                return { success: false, message: `No encontré el contacto con email ${args.correo}.` };
+            }
+            return { success: true, contact: { nombre: 'Juan Pérez', correo: args.correo } };
+        case 'updateContact':
+            return { success: true, message: `Contacto ${args.identificador} actualizado.` };
+        case 'deleteContact':
+            return { success: true, message: `Contacto ${args.identificador} borrado.` };
+        default:
+            return { success: false, message: `Función ${name} desconocida.` };
+    }
+}
+
+
 // --- Main Hook ---
 export const useVoiceCall = () => {
     const [conversation, setConversation] = useState<Message[]>([]);
@@ -69,21 +93,27 @@ export const useVoiceCall = () => {
     const [liveTranscript, setLiveTranscript] = useState('');
     const [isCallActive, setIsCallActive] = useState(false);
 
-    // Refs for managing Web Audio and Live session
     const inputAudioContextRef = useRef<AudioContext | null>(null);
     const outputAudioContextRef = useRef<AudioContext | null>(null);
     const sessionPromiseRef = useRef<Promise<any> | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
-    
-    // Refs for managing state within callbacks
     const isCallActiveRef = useRef(isCallActive);
-    useEffect(() => { isCallActiveRef.current = isCallActive; }, [isCallActive]);
+
+    useEffect(() => {
+        isCallActiveRef.current = isCallActive;
+    }, [isCallActive]);
 
     const stopCallCleanup = useCallback(() => {
-        setIsCallActive(false);
-        setStatus(CallStatus.Inactive);
-        setLiveTranscript('');
+        const sessionPromise = sessionPromiseRef.current;
+        sessionPromiseRef.current = null;
+        if (sessionPromise) {
+            sessionPromise.then(session => {
+                if (session && typeof session.close === 'function') {
+                    session.close();
+                }
+            }).catch(e => console.error("Error closing session:", e));
+        }
 
         if (scriptProcessorRef.current) {
             scriptProcessorRef.current.disconnect();
@@ -93,36 +123,38 @@ export const useVoiceCall = () => {
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
             mediaStreamRef.current = null;
         }
+
         if (inputAudioContextRef.current && inputAudioContextRef.current.state !== 'closed') {
-            inputAudioContextRef.current.close();
+            inputAudioContextRef.current.close().catch(e => console.error("Error closing input context:", e));
             inputAudioContextRef.current = null;
         }
         if (outputAudioContextRef.current && outputAudioContextRef.current.state !== 'closed') {
-            outputAudioContextRef.current.close();
+            outputAudioContextRef.current.close().catch(e => console.error("Error closing output context:", e));
             outputAudioContextRef.current = null;
         }
-        if (sessionPromiseRef.current) {
-            sessionPromiseRef.current.then(session => session.close());
-            sessionPromiseRef.current = null;
-        }
+
+        setIsCallActive(false);
+        setStatus(CallStatus.Inactive);
+        setLiveTranscript('');
     }, []);
-    
-    // Effect for teardown
+
     useEffect(() => {
         return () => stopCallCleanup();
     }, [stopCallCleanup]);
 
 
     const startCall = useCallback(async () => {
+        if (isCallActiveRef.current) return;
+        
         setConversation([]);
         setLiveTranscript('');
         setIsCallActive(true);
         setStatus(CallStatus.RequestingMic);
-        
+
         try {
             mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
             setStatus(CallStatus.Connecting);
-            
+
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             inputAudioContextRef.current = new AudioContext({ sampleRate: 16000 });
             outputAudioContextRef.current = new AudioContext({ sampleRate: 24000 });
@@ -130,7 +162,7 @@ export const useVoiceCall = () => {
             let nextStartTime = 0;
             let currentInputTranscription = '';
             let currentOutputTranscription = '';
-            
+
             sessionPromiseRef.current = ai.live.connect({
                 model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 config: {
@@ -141,6 +173,7 @@ export const useVoiceCall = () => {
                     systemInstruction: SYSTEM_INSTRUCTION,
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
+                    tools: [{ functionDeclarations: crmTools }],
                 },
                 callbacks: {
                     onopen: () => {
@@ -148,32 +181,44 @@ export const useVoiceCall = () => {
                         setStatus(CallStatus.Listening);
                         const source = inputAudioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
                         scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
-                        
+
                         scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
                             if (!isCallActiveRef.current) return;
                             const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
                             const pcmBlob = createPcmBlob(inputData);
-                            if (sessionPromiseRef.current) {
-                                sessionPromiseRef.current.then((session) => {
-                                    session.sendRealtimeInput({ media: pcmBlob });
-                                });
-                            }
+                            sessionPromiseRef.current?.then((session) => {
+                                session.sendRealtimeInput({ media: pcmBlob });
+                            });
                         };
                         source.connect(scriptProcessorRef.current);
                         scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
                     },
                     onmessage: async (message: LiveServerMessage) => {
-                        // Handle transcriptions
+                        if (message.toolCall) {
+                            for (const fc of message.toolCall.functionCalls) {
+                                const result = await executeVoiceTool(fc);
+                                sessionPromiseRef.current?.then((session) => {
+                                    session.sendToolResponse({
+                                        functionResponses: {
+                                            id: fc.id,
+                                            name: fc.name,
+                                            response: result,
+                                        }
+                                    });
+                                });
+                            }
+                        }
+
                         if (message.serverContent?.inputTranscription) {
                             setLiveTranscript(currentInputTranscription + message.serverContent.inputTranscription.text);
-                            if(message.serverContent.inputTranscription.isFinal) {
+                            if (message.serverContent.inputTranscription.isFinal) {
                                 currentInputTranscription += message.serverContent.inputTranscription.text + ' ';
                             }
                         }
                         if (message.serverContent?.outputTranscription) {
                             currentOutputTranscription += message.serverContent.outputTranscription.text;
                         }
-                         if (message.serverContent?.turnComplete) {
+                        if (message.serverContent?.turnComplete) {
                             if (currentInputTranscription.trim()) {
                                 setConversation(prev => [...prev, { role: Role.User, text: currentInputTranscription.trim() }]);
                             }
@@ -186,14 +231,13 @@ export const useVoiceCall = () => {
                             setStatus(CallStatus.Listening);
                         }
 
-                        // Handle audio playback
                         const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                         if (base64Audio && outputAudioContextRef.current) {
                             setStatus(CallStatus.Speaking);
                             const outputCtx = outputAudioContextRef.current;
                             if (outputCtx.state === 'suspended') await outputCtx.resume();
                             nextStartTime = Math.max(nextStartTime, outputCtx.currentTime);
-                            
+
                             const audioBuffer = await decodePcmAudioData(decode(base64Audio), outputCtx, 24000, 1);
                             const source = outputCtx.createBufferSource();
                             source.buffer = audioBuffer;
@@ -208,9 +252,8 @@ export const useVoiceCall = () => {
                         stopCallCleanup();
                     },
                     onclose: (e: CloseEvent) => {
-                        if (isCallActiveRef.current) {
-                           stopCallCleanup();
-                        }
+                        console.log('Live session closed.');
+                        stopCallCleanup();
                     },
                 },
             });

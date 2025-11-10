@@ -1,21 +1,21 @@
-import { PrismaClient, UsuarioWeb } from '@prisma/client'
+import { PrismaClient, Usuario } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 export const usuariosService = {
   async obtenerTodos() {
-    return await prisma.usuarioWeb.findMany({ orderBy: { id: 'asc' } as any })
+    return await prisma.usuario.findMany({ orderBy: { id: 'asc' } as any })
   },
   async obtenerPorId(id: number) {
-    return await prisma.usuarioWeb.findUnique({ where: { id } })
+    return await prisma.usuario.findUnique({ where: { id: String(id) } })
   },
-  async crear(data: Partial<UsuarioWeb>) {
-    return await prisma.usuarioWeb.create({ data: { ...data } as any })
+  async crear(data: Partial<Usuario>) {
+    return await prisma.usuario.create({ data: { ...data } as any })
   },
-  async actualizar(id: number, data: Partial<UsuarioWeb>) {
-    return await prisma.usuarioWeb.update({ where: { id }, data: { ...data } as any })
+  async actualizar(id: number, data: Partial<Usuario>) {
+    return await prisma.usuario.update({ where: { id: String(id) }, data: { ...data } as any })
   },
   async eliminar(id: number) {
-    return await prisma.usuarioWeb.delete({ where: { id } })
+    return await prisma.usuario.delete({ where: { id: String(id) } })
   }
 }

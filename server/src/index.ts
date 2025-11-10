@@ -33,7 +33,6 @@ import cotizacionRoutes from '@/routes/cotizacion.routes';
 import analyticsRoutes from '@/routes/analytics.routes';
 import assistantRoutes from '@/routes/assistant.routes';
 import calendarRoutes from '@/routes/calendar.routes';
-import adminPropertiesRoutes from '@/routes/adminProperties';
 import adminProyectosRoutes from '@/routes/adminProyectos';
 import adminTestimonialsRoutes from '@/routes/adminTestimonials';
 import adminTeamRoutes from '@/routes/adminTeam';
@@ -42,14 +41,13 @@ import adminUsuariosRoutes from '@/routes/adminUsuarios';
 import clienteWebRoutes from '@/routes/clienteWebRoutes';
 import publicLeadRoutes from '@/routes/publicLeadRoutes';
 import clientPortalRoutes from '@/routes/clientPortalRoutes';
+import portalTestimonialsRoutes from '@/routes/portalTestimonials';
 import testRoutes from '@/routes/test.routes';
 import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
+import devRoutes from '@/routes/dev.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
-
-// Cargar variables de entorno
-dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -58,18 +56,28 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // Configurar CORS para permitir múltiples orígenes
-const allowedOrigins = [
+// Orígenes base por defecto (desarrollo)
+const defaultOrigins = [
   process.env.CORS_ORIGIN || 'http://localhost:3000',  // Frontend del CRM
   'http://localhost:8081',  // Portal de clientes PGDP
   'http://localhost:8080',  // Alternativa
 ];
 
+// Orígenes extra configurables por entorno (separados por comas)
+const extraOrigins = (process.env.CORS_EXTRA_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+// Unificar y eliminar duplicados
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...extraOrigins]));
+
 app.use(cors({
   origin: (origin, callback) => {
     // Permitir requests sin origin (como Postman, curl, etc.)
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`[CORS] Origen no permitido: ${origin}`);
@@ -115,7 +123,6 @@ app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/admin/properties', adminPropertiesRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimonialsRoutes);
 app.use('/api/admin/team', adminTeamRoutes);
@@ -124,9 +131,15 @@ app.use('/api/admin/users', adminUsuariosRoutes);
 app.use('/api/clientes', clienteWebRoutes);
 app.use('/api/public', publicLeadRoutes);
 app.use('/api/portal-cliente', clientPortalRoutes);
+app.use('/api/portal-cliente/testimonios', portalTestimonialsRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/test', testPasswordRoutes);
 app.use('/api/test', testJwtRoutes);
+
+// Rutas de desarrollo opcionales (solo si ALLOW_DEV_SEED=true)
+if (process.env.ALLOW_DEV_SEED === 'true') {
+  app.use('/api/dev', devRoutes);
+}
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);

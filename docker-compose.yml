@@ -1,30 +1,5 @@
 services:
-  # Base de datos MySQL
-  mysql:
-    image: mysql:8.0
-    container_name: crm-mysql
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_2025}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-crm_delgado}
-      MYSQL_USER: ${MYSQL_USER:-crm_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-crm_password_2025}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./database/main.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - crm-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password_2025}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Backend (Node.js + Express + Prisma)
+  # Backend (Node.js + Express + Prisma + SQLite)
   backend:
     build:
       context: ./server
@@ -33,28 +8,29 @@ services:
         NODE_ENV: ${NODE_ENV:-production}
     container_name: crm-backend
     restart: unless-stopped
+    user: "0:0"
     env_file:
       - .env
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
-      DATABASE_URL: mysql://${MYSQL_USER:-crm_user}:${MYSQL_PASSWORD:-crm_password_2025}@mysql:3306/${MYSQL_DATABASE:-crm_delgado}
+      DATABASE_URL: file:/data/dev.db
       JWT_SECRET: ${JWT_SECRET:-tu_super_secreto_jwt_cambiar_en_produccion_2025}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       DNI_API_TOKEN: ${DNI_API_TOKEN:-}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      CORS_EXTRA_ORIGINS: ${CORS_EXTRA_ORIGINS:-http://localhost:3000,http://localhost:8080,http://localhost:8081}
+      ALLOW_DEV_SEED: "true"
     ports:
       - "5000:5000"
-    depends_on:
-      mysql:
-        condition: service_healthy
     networks:
       - crm-network
     volumes:
       - ./server/prisma:/app/prisma:ro
+      - devdb:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/auth/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -74,58 +50,39 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+      DATABASE_URL: file:/data/dev.db
     ports:
       - "3000:3000"
     depends_on:
       - backend
     networks:
       - crm-network
+    volumes:
+      - devdb:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Nginx Reverse Proxy (para producción)
-  nginx:
-    image: nginx:alpine
-    container_name: crm-nginx
+  # PGDP (PHP + Apache) - sitio público
+  pgdp:
+    build:
+      context: ../PGDP
+      dockerfile: Dockerfile
+    container_name: pgdp-php
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - crm-network
-
-  # Adminer - Gestor de base de datos (solo para producción interna/staging)
-  # ⚠️ DESACTIVAR en producción pública por seguridad
-  adminer:
-    image: adminer:latest
-    container_name: crm-adminer
-    restart: unless-stopped
-    ports:
-      - "${ADMINER_PORT:-8080}:8080"
     environment:
-      ADMINER_DEFAULT_SERVER: mysql
-      ADMINER_DESIGN: ${ADMINER_DESIGN:-pepa-linha-dark}
-    depends_on:
-      - mysql
+      APACHE_DOCUMENT_ROOT: /var/www/html/public
+      JWT_SECRET: ${JWT_SECRET:-tu_super_secreto_jwt_cambiar_en_produccion_2025}
+      CRM_API_BASE: ${CRM_API_BASE:-http://backend:5000/api}
+    ports:
+      - "8081:80"
     networks:
       - crm-network
-    # Descomentar en producción para desactivar:
-    # profiles:
-    #   - tools
 
 networks:
   crm-network:
     driver: bridge
-
 volumes:
-  mysql_data:
-    driver: local
+  devdb:

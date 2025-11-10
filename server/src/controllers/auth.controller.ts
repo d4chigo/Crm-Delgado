@@ -48,13 +48,14 @@ export class AuthController {
       // Si viene con un token JWT pre-firmado (desde PHP), valídalo directamente
       if (req.body.token) {
         // El token ya fue validado por el PHP y contiene la info del cliente
-        return res.json({
+        res.json({
           exito: true,
           datos: {
             token: req.body.token,
             cliente: req.body.cliente
           }
         });
+        return;
       }
       
       // Si viene con correo/password, intenta autenticar

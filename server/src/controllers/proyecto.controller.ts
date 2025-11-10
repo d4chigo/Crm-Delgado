@@ -24,7 +24,7 @@ const crearProyectoSchema = z.object({
   ]).optional(),
   categoria: z.string().max(100).optional(),
   galeria: z.array(z.string().url()).optional(),
-  caracteristicas: z.record(z.any()).optional(),
+  caracteristicas: z.record(z.string(), z.any()).optional(),
   mostrarEnWeb: z.boolean().optional().default(true),
   ordenWeb: z.number().int().optional(),
   etiquetaIds: z.array(z.string().uuid()).optional()
@@ -52,7 +52,7 @@ const actualizarProyectoSchema = z.object({
   ]).optional(),
   categoria: z.string().max(100).optional(),
   galeria: z.array(z.string().url()).optional(),
-  caracteristicas: z.record(z.any()).optional(),
+  caracteristicas: z.record(z.string(), z.any()).optional(),
   mostrarEnWeb: z.boolean().optional(),
   ordenWeb: z.number().int().optional(),
   activo: z.boolean().optional()
