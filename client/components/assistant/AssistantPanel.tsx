@@ -122,6 +122,7 @@ export default function AssistantPanel({ open, onClose }: { open: boolean; onClo
               src={src}
               className="w-full h-[70vh]"
               style={{ border: 0 }}
+              allow="microphone; autoplay; clipboard-read; clipboard-write"
             />
           </div>
         </div>
