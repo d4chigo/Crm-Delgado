@@ -51,7 +51,7 @@ export default function TeamPage() {
       const token = getToken();
       if (!token) return;
 
-      const url = api('/api/admin/team');
+      const url = api('/admin/team');
       const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -97,10 +97,28 @@ export default function TeamPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Validaciones según el campo
+    if (name === 'nombre' || name === 'cargo') {
+      // Solo aceptar letras, espacios y algunos caracteres especiales comunes en nombres
+      const sanitized = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: sanitized
+      }));
+    } else if (name === 'telefono') {
+      // Solo aceptar números y algunos caracteres de formato telefónico
+      const sanitized = value.replace(/[^0-9+\-\s()]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: sanitized
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,8 +128,8 @@ export default function TeamPage() {
       if (!token) return;
 
       const url = currentMiembro 
-        ? api(`/api/admin/team/${currentMiembro.id}`)
-        : api('/api/admin/team');
+        ? api(`/admin/team/${currentMiembro.id}`)
+        : api('/admin/team');
 
       const method = currentMiembro ? 'PUT' : 'POST';
       
@@ -124,7 +142,7 @@ export default function TeamPage() {
         phone: formData.telefono || null,
         photo: formData.foto,
         active: formData.activo,
-        display_order: formData.orden_mostrar,
+        display_order: Number(formData.orden_mostrar) || 0,  // ← Convertir a número
         facebook_url: formData.facebook,
         instagram_url: formData.instagram,
         tiktok_url: formData.tiktok,
@@ -139,9 +157,33 @@ export default function TeamPage() {
         body: JSON.stringify(datosParaEnviar),
       });
 
+      // Log de la respuesta para debugging
+      console.log('Response status:', res.status);
+      console.log('Response statusText:', res.statusText);
+      console.log('URL enviada:', url);
+      console.log('Método:', method);
+      console.log('Datos enviados:', JSON.stringify(datosParaEnviar, null, 2));
+      
+      let errorData = {};
+      try {
+        errorData = await res.json();
+        console.log('Response data:', errorData);
+        
+        // Si hay details de validación, mostrarlos
+        if ((errorData as any).details && Array.isArray((errorData as any).details)) {
+          console.log('Errores de validación:');
+          (errorData as any).details.forEach((detail: any, index: number) => {
+            console.log(`  ${index + 1}. ${detail.message || detail.code || JSON.stringify(detail)}`);
+          });
+        }
+      } catch (e) {
+        console.log('Could not parse response as JSON');
+      }
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Error al guardar el miembro del equipo');
+        const errorMessage = (errorData as any).message || (errorData as any).error || `Error ${res.status}: ${res.statusText}`;
+        console.error('Error detallado:', errorMessage);
+        throw new Error(errorMessage);
       }
       
       toast.success(`Miembro ${currentMiembro ? 'actualizado' : 'agregado'} correctamente`);
@@ -178,7 +220,7 @@ export default function TeamPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(api(`/api/admin/team/${id}`), {
+      const res = await fetch(api(`/admin/team/${id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,18 +237,12 @@ export default function TeamPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          foto: reader.result as string
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleFotoUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      foto: value || null
+    }));
   };
 
   return (
@@ -222,12 +258,22 @@ export default function TeamPage() {
         <button
           onClick={() => {
             setCurrentMiembro(null);
+            // Calcular automáticamente el siguiente orden
+            const maxOrden = miembros.length > 0 
+              ? Math.max(...miembros.map(m => m.orden_mostrar)) 
+              : -1;
             setFormData({
               nombre: '',
               cargo: '',
               descripcion: '',
+              correo: '',
+              telefono: '',
               foto: null,
-              orden_mostrar: 0,
+              activo: true,
+              orden_mostrar: maxOrden + 1,
+              facebook: null,
+              instagram: null,
+              tiktok: null,
             });
             setShowModal(true);
           }}
@@ -330,15 +376,18 @@ export default function TeamPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Foto
+                    URL de Foto
                   </label>
                   <div className="flex items-center space-x-4">
-                    <div className="h-20 w-20 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-20 w-20 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
                       {formData.foto ? (
                         <img 
                           src={formData.foto} 
                           alt="Preview" 
                           className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="h-full w-full bg-gray-200 flex items-center justify-center text-gray-400">
@@ -348,21 +397,18 @@ export default function TeamPage() {
                         </div>
                       )}
                     </div>
-                    <div>
-                      <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
-                        Subir Imagen
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          accept="image/*"
-                          onChange={handleFileChange}
-                        />
-                      </label>
-                      <p className="mt-1 text-xs text-gray-500">
-                        PNG, JPG, GIF (Máx. 2MB)
-                      </p>
-                    </div>
+                    <input
+                      type="url"
+                      name="foto"
+                      value={formData.foto || ''}
+                      onChange={handleFotoUrlChange}
+                      placeholder="https://ejemplo.com/foto.jpg"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                    />
                   </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Ingresa la URL completa de la imagen
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">
@@ -395,16 +441,46 @@ export default function TeamPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Orden
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    name="correo"
+                    value={formData.correo || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))}
+                    placeholder="correo@ejemplo.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono || ''}
+                    onChange={handleInputChange}
+                    placeholder="+51 999 999 999"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Orden (Automático)
                   </label>
                   <input
                     type="number"
                     name="orden_mostrar"
                     value={formData.orden_mostrar}
-                    onChange={handleInputChange}
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Se asigna automáticamente
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">

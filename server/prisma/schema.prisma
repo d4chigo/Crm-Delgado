@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -366,10 +366,10 @@ model MiembroEquipo {
   id             Int       @id @default(autoincrement())
   nombre         String
   cargo          String
-  descripcion    String
+  descripcion    String    @db.LongText
   correo         String
   telefono       String
-  foto           String?
+  foto           String?   @db.LongText
   activo         Boolean   @default(true)
   ordenMostrar   Int       @map("display_order")
   facebook       String?

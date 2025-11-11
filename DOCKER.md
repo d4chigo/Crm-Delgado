@@ -17,6 +17,8 @@ Sistema CRM dockerizado con MySQL, Node.js/Express y Next.js, listo para desarro
 # 1. Copiar variables de entorno
 cp .env.docker .env
 
+docker network create crm-shared-network
+
 # 2. Iniciar servicios de desarrollo
 docker-compose -f docker-compose.dev.yml up -d
 
@@ -84,8 +86,10 @@ docker-compose exec mysql mysql -u root -p
 # Ejecutar migraciones de Prisma
 docker-compose exec backend npx prisma migrate deploy
 
+docker compose -f docker-compose.dev.yml exec backend npx prisma db push
+
 # Seed de datos iniciales
-docker-compose exec backend npx prisma db seed
+docker compose -f docker-compose.dev.yml exec backend npx prisma db seed
 
 # Abrir Prisma Studio
 docker-compose exec backend npx prisma studio

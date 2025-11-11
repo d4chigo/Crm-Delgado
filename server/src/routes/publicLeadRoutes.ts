@@ -5,6 +5,57 @@ import { TipoContacto, EstadoLead } from '@prisma/client';
 const router = Router();
 
 /**
+ * GET /api/public/team
+ * Obtener miembros del equipo (público, sin autenticación)
+ */
+router.get('/team', async (req: Request, res: Response) => {
+  try {
+    const team = await prisma.miembroEquipo.findMany({
+      where: { activo: true },
+      orderBy: { ordenMostrar: 'asc' },
+      select: {
+        id: true,
+        nombre: true,
+        cargo: true,
+        descripcion: true,
+        correo: true,
+        telefono: true,
+        foto: true,
+        facebook: true,
+        instagram: true,
+        tiktok: true,
+        activo: true,
+        ordenMostrar: true,
+      }
+    });
+
+    // Mapear al formato esperado por el frontend
+    const teamFormatted = team.map(member => ({
+      id: member.id,
+      name: member.nombre,
+      position: member.cargo,
+      description: member.descripcion,
+      email: member.correo,
+      phone: member.telefono,
+      photo: member.foto,
+      facebook_url: member.facebook,
+      instagram_url: member.instagram,
+      tiktok_url: member.tiktok,
+      active: member.activo,
+      display_order: member.ordenMostrar,
+    }));
+
+    res.json(teamFormatted);
+  } catch (error) {
+    console.error('Error al obtener equipo público:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener los miembros del equipo'
+    });
+  }
+});
+
+/**
  * POST /api/public/lead
  * Crear lead desde formulario público de la web
  */
