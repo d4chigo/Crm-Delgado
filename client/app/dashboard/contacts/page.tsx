@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+
 import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto";
 import { ContactCard } from "@/components/features/contacts/ContactCard";
@@ -20,7 +21,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
-import AssistantPanel from "@/components/assistant/AssistantPanel"
+import dynamic from "next/dynamic"
+const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
 export const dynamic = 'force-dynamic'
 
@@ -58,8 +60,8 @@ export default function PaginaContactos() {
     errores: number
   } | null>(null)
 
-  // NO filtrar en el frontend - el backend ya envía solo contactos tipo CONTACTO
-  const contactosFiltrados = contactos
+  // Lista memorizada (si se aplican filtros adicionales en el futuro)
+  const contactosFiltrados = useMemo(() => contactos, [contactos])
 
   // Cargar contactos con filtro CONTACTO al montar el componente
   useEffect(() => {
@@ -113,12 +115,13 @@ export default function PaginaContactos() {
     procesarCallbackGoogle()
   }, [completarImportacionGoogle, toast])
 
-  // Manejador de búsqueda que se pasa al componente de búsqueda
-  const handleBusqueda = (query: string) => {
-    console.log('⌨️ Tecla presionada:', query);
-    // Llamar directamente a buscarContactos sin debounce para mejor respuesta
-    buscarContactos(query);
-  }
+  // Búsqueda con debounce para reducir requests
+  const [busqueda, setBusqueda] = useState("")
+  const handleBusqueda = (query: string) => { setBusqueda(query) }
+  useEffect(() => {
+    const t = setTimeout(() => { buscarContactos(busqueda) }, 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
   const handleConfirmarEliminar = async () => {
     if (!contactoEliminando) return

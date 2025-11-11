@@ -30,7 +30,7 @@ router.get('/team', async (req: Request, res: Response) => {
     });
 
     // Mapear al formato esperado por el frontend
-    const teamFormatted = team.map(member => ({
+    const teamFormatted = team.map((member: any) => ({
       id: member.id,
       name: member.nombre,
       position: member.cargo,
@@ -45,7 +45,7 @@ router.get('/team', async (req: Request, res: Response) => {
       display_order: member.ordenMostrar,
     }));
 
-    res.json(teamFormatted);
+    res.json({ success: true, data: teamFormatted, count: teamFormatted.length });
   } catch (error) {
     console.error('Error al obtener equipo público:', error);
     res.status(500).json({

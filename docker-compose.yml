@@ -14,7 +14,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
-      DATABASE_URL: file:/data/dev.db
+      DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET:-tu_super_secreto_jwt_cambiar_en_produccion_2025}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       DNI_API_TOKEN: ${DNI_API_TOKEN:-}
@@ -41,7 +41,7 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
         NODE_ENV: ${NODE_ENV:-production}
     container_name: crm-frontend
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
       - .env
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000}
       DATABASE_URL: file:/data/dev.db
     ports:
       - "3000:3000"

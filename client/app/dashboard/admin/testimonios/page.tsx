@@ -49,7 +49,7 @@ const TestimoniosPage: React.FC = () => {
       console.log('Cargando testimonios...');
       
       // Usar la función api para construir la URL correctamente
-      const token = getToken();
+      const token = getToken() || process.env.NEXT_PUBLIC_DEV_ADMIN_TOKEN;
       if (!token) return;
 
       const url = api('/api/admin/testimonials');
@@ -96,10 +96,10 @@ const TestimoniosPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const method = currentTestimonio ? 'PUT' : 'POST';
+      const method = currentTestimonio ? 'PATCH' : 'POST';
       const url = currentTestimonio 
-        ? `/api/testimonios/${currentTestimonio.id}`
-        : '/api/testimonios';
+        ? api(`/api/admin/testimonials/${currentTestimonio.id}`)
+        : api('/api/admin/testimonials');
       
       const token = getToken();
       if (!token) return;
@@ -140,7 +140,7 @@ const TestimoniosPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este testimonio?')) return;
     
-    const token = getToken();
+    const token = getToken() || process.env.NEXT_PUBLIC_DEV_ADMIN_TOKEN;
     if (!token) return;
 
     try {
@@ -162,7 +162,7 @@ const TestimoniosPage: React.FC = () => {
   };
 
   const cambiarEstado = async (id: number, nuevoEstado: 'APROBADO' | 'RECHAZADO' | 'PENDIENTE') => {
-    const token = getToken();
+    const token = getToken() || process.env.NEXT_PUBLIC_DEV_ADMIN_TOKEN;
     if (!token) return;
 
     try {

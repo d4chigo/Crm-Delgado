@@ -40,6 +40,10 @@ import adminOtrosServiciosRoutes from '@/routes/adminOtrosServicios';
 import adminUsuariosRoutes from '@/routes/adminUsuarios';
 import clienteWebRoutes from '@/routes/clienteWebRoutes';
 import publicLeadRoutes from '@/routes/publicLeadRoutes';
+import publicTeamRoutes from '@/routes/publicTeam';
+import publicProjectsRoutes from '@/routes/publicProjects';
+import publicTestimonialsRoutes from '@/routes/publicTestimonials';
+import publicServicesRoutes from '@/routes/publicServicios';
 import clientPortalRoutes from '@/routes/clientPortalRoutes';
 import portalTestimonialsRoutes from '@/routes/portalTestimonials';
 import testRoutes from '@/routes/test.routes';
@@ -112,6 +116,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Cache corto para endpoints públicos (mejora de rendimiento en sitio público)
+app.use('/api/public', (req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+  next();
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
 app.use('/api/contactos', contactoRoutes);
@@ -130,6 +140,10 @@ app.use('/api/admin/otros-servicios', adminOtrosServiciosRoutes);
 app.use('/api/admin/users', adminUsuariosRoutes);
 app.use('/api/clientes', clienteWebRoutes);
 app.use('/api/public', publicLeadRoutes);
+app.use('/api/public', publicTeamRoutes);
+app.use('/api/public', publicProjectsRoutes);
+app.use('/api/public', publicTestimonialsRoutes);
+app.use('/api/public', publicServicesRoutes);
 app.use('/api/portal-cliente', clientPortalRoutes);
 app.use('/api/portal-cliente/testimonios', portalTestimonialsRoutes);
 app.use('/api/test', testRoutes);

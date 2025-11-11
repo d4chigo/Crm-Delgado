@@ -6,6 +6,19 @@ export const autenticar = (req: Request, res: Response, next: NextFunction): voi
   try {
     const authHeader = req.headers.authorization;
 
+    // Bypass de desarrollo con token fijo
+    if (process.env.NODE_ENV === 'development') {
+      const devToken = process.env.DEV_ADMIN_TOKEN || '';
+      const headerDevToken = (req.headers['x-dev-token'] as string) || '';
+      const queryDevToken = (req.query.dev_token as string) || '';
+      const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : '';
+      if (devToken && (bearerToken === devToken || headerDevToken === devToken || queryDevToken === devToken)) {
+        // Inyectar usuario ADMIN temporal
+        req.usuario = { id: 'dev-admin', email: 'dev@local', rol: 'ADMIN' } as any;
+        return next();
+      }
+    }
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       respuestaError(res, 'Token no proporcionado', 401, null, 'TOKEN_NO_ENCONTRADO');
       return;

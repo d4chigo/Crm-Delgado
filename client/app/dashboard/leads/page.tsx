@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useContactos } from "@/hooks/useContactos";
 import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,8 @@ import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
-import AssistantPanel from "@/components/assistant/AssistantPanel"
+import dynamic from "next/dynamic"
+const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
 export default function PaginaLeads() {
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
@@ -85,18 +86,27 @@ export default function PaginaLeads() {
     }
   }
 
-  const handleBusqueda = (query: string) => { buscarContactos(query) }
+  const [busqueda, setBusqueda] = useState("")
+  const handleBusqueda = (query: string) => { setBusqueda(query) }
+  useEffect(() => {
+    const t = setTimeout(() => { buscarContactos(busqueda) }, 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
-  const contactosFiltrados = tabActivo === 'leads'
-    ? (etiquetaFiltroLeads === "todas" 
-        ? contactos 
-        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads)))
-    : (etiquetaFiltroClientes === "todas" 
-        ? contactos 
-        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes)))
+  const contactosFiltrados = useMemo(() => {
+    if (tabActivo === 'leads') {
+      return etiquetaFiltroLeads === "todas"
+        ? contactos
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads))
+    } else {
+      return etiquetaFiltroClientes === "todas"
+        ? contactos
+        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes))
+    }
+  }, [tabActivo, etiquetaFiltroLeads, etiquetaFiltroClientes, contactos])
 
-  const leads = tabActivo === 'leads' ? contactosFiltrados : []
-  const clientes = tabActivo === 'clientes' ? contactosFiltrados : []
+  const leads = useMemo(() => (tabActivo === 'leads' ? contactosFiltrados : []), [tabActivo, contactosFiltrados])
+  const clientes = useMemo(() => (tabActivo === 'clientes' ? contactosFiltrados : []), [tabActivo, contactosFiltrados])
 
   const handleVerDetalles = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoDetallesAbierto(true) }
   const handleEditar = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoEditarAbierto(true) }
