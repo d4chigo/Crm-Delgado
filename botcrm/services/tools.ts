@@ -64,9 +64,56 @@ export const deleteContactFunction: FunctionDeclaration = {
     }
 };
 
+export const getCRMStatsFunction: FunctionDeclaration = {
+    name: 'getCRMStats',
+    description: 'Obtiene estadísticas generales del CRM incluyendo total de contactos, proyectos, tasa de conversión e ingresos.',
+    parameters: {
+        type: Type.OBJECT,
+        properties: {},
+        required: [],
+    }
+};
+
+export const getMarketingAnalysisFunction: FunctionDeclaration = {
+    name: 'getMarketingAnalysis',
+    description: 'Genera un análisis completo de marketing basado en los datos del CRM, incluyendo recomendaciones de dónde enfocar esfuerzos.',
+    parameters: {
+        type: Type.OBJECT,
+        properties: {},
+        required: [],
+    }
+};
+
+export const getRecommendationsFunction: FunctionDeclaration = {
+    name: 'getRecommendations',
+    description: 'Obtiene recomendaciones personalizadas para mejorar el negocio basadas en los datos actuales del CRM.',
+    parameters: {
+        type: Type.OBJECT,
+        properties: {},
+        required: [],
+    }
+};
+
+export const getContactosByStateFunction: FunctionDeclaration = {
+    name: 'getContactosByState',
+    description: 'Obtiene contactos filtrados por estado (NUEVO, CONTACTADO, CALIFICADO, etc.)',
+    parameters: {
+        type: Type.OBJECT,
+        properties: {
+            estado: { type: Type.STRING, description: 'Estado del lead a filtrar', enum: ['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA'] },
+            limite: { type: Type.INTEGER, description: 'Número máximo de contactos a retornar (default: 10)' }
+        },
+        required: ['estado']
+    }
+};
+
 export const crmTools: FunctionDeclaration[] = [
     createContactFunction,
     getContactFunction,
     updateContactFunction,
-    deleteContactFunction
+    deleteContactFunction,
+    getCRMStatsFunction,
+    getMarketingAnalysisFunction,
+    getRecommendationsFunction,
+    getContactosByStateFunction
 ];

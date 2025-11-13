@@ -3,8 +3,13 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Message, Role, CallStatus } from '../types';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { ai } from '../services/geminiService';
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, CloseEvent, ErrorEvent, FunctionCall } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Blob, FunctionCall } from '@google/genai';
 import { crmTools } from '../services/tools';
+import { AI_MODEL } from '../config';
+
+// Tipos para eventos de la sesión en vivo
+type CloseEvent = any;
+type ErrorEvent = any;
 
 // --- Type Definitions for Web APIs ---
 declare global {
@@ -163,8 +168,11 @@ export const useVoiceCall = () => {
             let currentInputTranscription = '';
             let currentOutputTranscription = '';
 
+            // Usar modelo de audio en vivo (debe ser compatible con live API)
+            const liveModel = 'gemini-2.0-flash-exp';
+            
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+                model: liveModel,
                 config: {
                     responseModalities: [Modality.AUDIO],
                     speechConfig: {
@@ -180,15 +188,26 @@ export const useVoiceCall = () => {
                         if (!mediaStreamRef.current || !inputAudioContextRef.current) return;
                         setStatus(CallStatus.Listening);
                         const source = inputAudioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
+                        
+                        // Usar AudioWorkletNode en lugar de ScriptProcessorNode (deprecado)
+                        // Por ahora usamos ScriptProcessorNode como fallback
                         scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
 
                         scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
                             if (!isCallActiveRef.current) return;
-                            const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                            const pcmBlob = createPcmBlob(inputData);
-                            sessionPromiseRef.current?.then((session) => {
-                                session.sendRealtimeInput({ media: pcmBlob });
-                            });
+                            try {
+                                const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+                                // Crear una copia del buffer para evitar problemas de referencia
+                                const audioData = new Float32Array(inputData);
+                                const pcmBlob = createPcmBlob(audioData);
+                                sessionPromiseRef.current?.then((session) => {
+                                    if (session && typeof session.sendRealtimeInput === 'function') {
+                                        session.sendRealtimeInput({ media: pcmBlob });
+                                    }
+                                }).catch(err => console.error('Error sending audio:', err));
+                            } catch (err) {
+                                console.error('Error processing audio:', err);
+                            }
                         };
                         source.connect(scriptProcessorRef.current);
                         scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
@@ -211,7 +230,7 @@ export const useVoiceCall = () => {
 
                         if (message.serverContent?.inputTranscription) {
                             setLiveTranscript(currentInputTranscription + message.serverContent.inputTranscription.text);
-                            if (message.serverContent.inputTranscription.isFinal) {
+                            if ((message.serverContent.inputTranscription as any).isFinal) {
                                 currentInputTranscription += message.serverContent.inputTranscription.text + ' ';
                             }
                         }
@@ -248,12 +267,14 @@ export const useVoiceCall = () => {
                     },
                     onerror: (e: ErrorEvent) => {
                         console.error('Live session error:', e);
+                        const errorMsg = (e as any)?.message || String(e);
+                        console.error('Error details:', errorMsg);
                         setStatus(CallStatus.Error);
-                        stopCallCleanup();
+                        setTimeout(() => stopCallCleanup(), 500);
                     },
                     onclose: (e: CloseEvent) => {
-                        console.log('Live session closed.');
-                        stopCallCleanup();
+                        console.log('Live session closed:', e);
+                        setTimeout(() => stopCallCleanup(), 500);
                     },
                 },
             });
