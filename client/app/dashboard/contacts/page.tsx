@@ -21,8 +21,8 @@ import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
-import dynamic from "next/dynamic"
-const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
+import dynamicImport from "next/dynamic"
+const AssistantPanel = dynamicImport(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
 export const dynamic = 'force-dynamic'
 

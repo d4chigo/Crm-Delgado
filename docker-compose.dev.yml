@@ -15,9 +15,15 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_dev_data:/var/lib/mysql
-      - ./database/main.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # - ./database/main.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - crm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Backend (desarrollo con hot reload)
   backend:
