@@ -28,6 +28,9 @@ export default function TeamPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [currentMiembro, setCurrentMiembro] = useState<MiembroEquipo | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
   const [formData, setFormData] = useState<Omit<MiembroEquipo, 'id' | 'creado_en' | 'actualizado_en'>>({
     nombre: '',
     cargo: '',
@@ -42,6 +45,12 @@ export default function TeamPage() {
     tiktok: null,
   });
   const [error, setError] = useState<string | null>(null);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(miembros.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const miembrosPaginados = miembros.slice(startIndex, endIndex);
 
   const cargarMiembros = async () => {
     try {
@@ -301,7 +310,7 @@ export default function TeamPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {miembros.map((miembro) => (
+                {miembrosPaginados.map((miembro) => (
                   <tr key={miembro.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       {miembro.foto ? (
@@ -353,6 +362,46 @@ export default function TeamPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="text-sm text-gray-600">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, miembros.length)} de {miembros.length} miembros
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ← Anterior
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-[#FCBA00] text-[#303030]'
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
