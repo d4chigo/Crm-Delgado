@@ -1,10 +1,9 @@
-import { PrismaClient, Testimonio } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { Testimonio } from '@prisma/client'
+import prisma from '@/config/database'
 
 export const testimonialService = {
   async obtenerTodos() {
-    return await prisma.testimonio.findMany({ orderBy: { creado_en: 'desc' } as any })
+    return await prisma.testimonio.findMany({ orderBy: { creadoEn: 'desc' } as any })
   },
 
   async obtenerPorId(id: number) {

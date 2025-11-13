@@ -52,7 +52,7 @@ const TestimoniosPage: React.FC = () => {
       const token = getToken() || process.env.NEXT_PUBLIC_DEV_ADMIN_TOKEN;
       if (!token) return;
 
-      const url = api('/api/admin/testimonials');
+      const url = api('/admin/testimonials');
       console.log('Fetching testimonials from:', url);
       const res = await fetch(url, {
         headers: {
@@ -67,7 +67,12 @@ const TestimoniosPage: React.FC = () => {
       
       const data = await res.json();
       console.log('Datos recibidos:', data);
-      setTestimonios(data);
+      // Mapear 'correo' a 'email' para compatibilidad con la interfaz
+      const mappedData = data.map((t: any) => ({
+        ...t,
+        email: t.email || t.correo,
+      }));
+      setTestimonios(mappedData);
     } catch (error) {
       console.error('Error al cargar testimonios:', error);
       setError('No se pudieron cargar los testimonios. Intente nuevamente.');
@@ -98,8 +103,8 @@ const TestimoniosPage: React.FC = () => {
     try {
       const method = currentTestimonio ? 'PATCH' : 'POST';
       const url = currentTestimonio 
-        ? api(`/api/admin/testimonials/${currentTestimonio.id}`)
-        : api('/api/admin/testimonials');
+        ? api(`/admin/testimonials/${currentTestimonio.id}`)
+        : api('/admin/testimonials');
       
       const token = getToken();
       if (!token) return;
@@ -144,7 +149,7 @@ const TestimoniosPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const res = await fetch(api(`/api/admin/testimonials/${id}`), {
+      const res = await fetch(api(`/admin/testimonials/${id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -166,7 +171,7 @@ const TestimoniosPage: React.FC = () => {
     if (!token) return;
 
     try {
-      const res = await fetch(api(`/api/admin/testimonials/${id}`), {
+      const res = await fetch(api(`/admin/testimonials/${id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -225,6 +230,7 @@ const TestimoniosPage: React.FC = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Nombre</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Calificación</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Testimonio</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-[#303030] uppercase tracking-wider bg-gray-100">Acciones</th>
                 </tr>
@@ -263,6 +269,13 @@ const TestimoniosPage: React.FC = () => {
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
                         ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="max-w-xs">
+                        <p className="text-sm text-gray-700 line-clamp-2 hover:line-clamp-none cursor-help" title={testimonio.testimonio}>
+                          {testimonio.testimonio}
+                        </p>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -34,7 +34,7 @@ import analyticsRoutes from '@/routes/analytics.routes';
 import assistantRoutes from '@/routes/assistant.routes';
 import calendarRoutes from '@/routes/calendar.routes';
 import adminProyectosRoutes from '@/routes/adminProyectos';
-import adminTestimonialsRoutes from '@/routes/adminTestimonials';
+import adminTestimoniosRoutes from '@/routes/adminTestimonios';
 import adminTeamRoutes from '@/routes/adminTeam';
 import adminOtrosServiciosRoutes from '@/routes/adminOtrosServicios';
 import adminUsuariosRoutes from '@/routes/adminUsuarios';
@@ -42,7 +42,7 @@ import clienteWebRoutes from '@/routes/clienteWebRoutes';
 import publicLeadRoutes from '@/routes/publicLeadRoutes';
 import publicTeamRoutes from '@/routes/publicTeam';
 import publicProjectsRoutes from '@/routes/publicProjects';
-import publicTestimonialsRoutes from '@/routes/publicTestimonials';
+import publicTestimoniosRoutes from '@/routes/publicTestimonios';
 import publicServicesRoutes from '@/routes/publicServicios';
 import clientPortalRoutes from '@/routes/clientPortalRoutes';
 import portalTestimonialsRoutes from '@/routes/portalTestimonials';
@@ -134,15 +134,18 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
-app.use('/api/admin/testimonials', adminTestimonialsRoutes);
+app.use('/api/admin/testimonials', adminTestimoniosRoutes);
 app.use('/api/admin/team', adminTeamRoutes);
 app.use('/api/admin/otros-servicios', adminOtrosServiciosRoutes);
 app.use('/api/admin/users', adminUsuariosRoutes);
 app.use('/api/clientes', clienteWebRoutes);
+// Rutas específicas primero (más específicas)
+app.use('/api/public/testimonios', publicTestimoniosRoutes);
+
+// Rutas generales después (menos específicas)
 app.use('/api/public', publicLeadRoutes);
 app.use('/api/public', publicTeamRoutes);
 app.use('/api/public', publicProjectsRoutes);
-app.use('/api/public', publicTestimonialsRoutes);
 app.use('/api/public', publicServicesRoutes);
 app.use('/api/portal-cliente', clientPortalRoutes);
 app.use('/api/portal-cliente/testimonios', portalTestimonialsRoutes);
