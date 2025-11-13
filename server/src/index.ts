@@ -44,6 +44,7 @@ import publicTeamRoutes from '@/routes/publicTeam';
 import publicProjectsRoutes from '@/routes/publicProjects';
 import publicTestimoniosRoutes from '@/routes/publicTestimonios';
 import publicServicesRoutes from '@/routes/publicServicios';
+import publicProyectosRoutes from '@/routes/publicProyectos';
 import clientPortalRoutes from '@/routes/clientPortalRoutes';
 import portalTestimonialsRoutes from '@/routes/portalTestimonials';
 import testRoutes from '@/routes/test.routes';
@@ -141,6 +142,7 @@ app.use('/api/admin/users', adminUsuariosRoutes);
 app.use('/api/clientes', clienteWebRoutes);
 // Rutas específicas primero (más específicas)
 app.use('/api/public/testimonios', publicTestimoniosRoutes);
+app.use('/api/public/proyectos', publicProyectosRoutes);
 
 // Rutas generales después (menos específicas)
 app.use('/api/public', publicLeadRoutes);

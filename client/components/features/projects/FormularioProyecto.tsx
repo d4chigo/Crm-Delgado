@@ -34,10 +34,7 @@ const formularioSchema = z.object({
   precio: z.number().positive("El precio debe ser positivo").optional(),
   ubicacion: z.string().max(255).optional(),
   estado: z.enum(["DISPONIBLE", "RESERVADO", "VENDIDO", "CONSTRUCCION", "FINALIZADO"]),
-  tipoProyecto: z.string().optional(),
-  categoria: z.string().optional(),
   mostrarEnWeb: z.boolean().optional(),
-  ordenWeb: z.number().optional(),
   etiquetaIds: z.array(z.string()).optional()
 })
 
@@ -69,10 +66,7 @@ export function FormularioProyecto({
       precio: valorInicial?.precio || undefined,
       ubicacion: valorInicial?.ubicacion || "",
       estado: valorInicial?.estado || EstadoProyecto.DISPONIBLE,
-      tipoProyecto: valorInicial?.tipoProyecto || "",
-      categoria: valorInicial?.categoria || "",
       mostrarEnWeb: valorInicial?.mostrarEnWeb !== undefined ? valorInicial.mostrarEnWeb : true,
-      ordenWeb: valorInicial?.ordenWeb || 0,
       etiquetaIds: valorInicial?.etiquetaIds || []
     }
   })
@@ -228,55 +222,8 @@ export function FormularioProyecto({
           )}
         />
 
-        {/* Tipo de Proyecto y Categoría */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="tipoProyecto"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Proyecto</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="techo_propio">Techo Propio</SelectItem>
-                    <SelectItem value="credito_mivivienda">Crédito MiVivienda</SelectItem>
-                    <SelectItem value="habilitaciones">Habilitaciones</SelectItem>
-                    <SelectItem value="compra">Compra</SelectItem>
-                    <SelectItem value="venta">Venta</SelectItem>
-                    <SelectItem value="alquiler">Alquiler</SelectItem>
-                    <SelectItem value="departamento">Departamento</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="terreno">Terreno</SelectItem>
-                    <SelectItem value="local_comercial">Local Comercial</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="categoria"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej: Vivienda Económica" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Mostrar en Web y Orden */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        {/* Mostrar en Web */}
+        <div className="space-y-4">
           <FormField
             control={form.control}
             name="mostrarEnWeb"
@@ -294,26 +241,6 @@ export function FormularioProyecto({
                     onCheckedChange={field.onChange}
                   />
                 </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="ordenWeb"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Orden en la web</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    placeholder="0"
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                    value={field.value || 0}
-                  />
-                </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />

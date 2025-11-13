@@ -7,6 +7,8 @@ export interface CrearProyectoDto {
   imagen?: string
   precio?: number
   ubicacion?: string
+  latitud?: number
+  longitud?: number
   estado?: EstadoProyecto
   tipoProyecto?: string
   categoria?: string
@@ -22,6 +24,8 @@ export interface ActualizarProyectoDto {
   imagen?: string
   precio?: number
   ubicacion?: string
+  latitud?: number
+  longitud?: number
   estado?: EstadoProyecto
   tipoProyecto?: string
   categoria?: string
@@ -121,7 +125,7 @@ export const proyectoService = {
             }
           }
         },
-        usuarios: {
+        usuario: {
           select: {
             id: true,
             nombre: true,

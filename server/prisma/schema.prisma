@@ -228,6 +228,8 @@ model Proyecto {
   imagen        String?
   precio        Float?
   ubicacion     String?
+  latitud       Float?
+  longitud      Float?
   estado        EstadoProyecto     @default(DISPONIBLE)
   activo        Boolean            @default(true)
   tipoProyecto  TipoProyecto?      @map("tipo_proyecto")

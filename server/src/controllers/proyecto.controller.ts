@@ -9,6 +9,8 @@ const crearProyectoSchema = z.object({
   imagen: z.string().url('Debe ser una URL válida').optional().or(z.literal('')),
   precio: z.number().positive('El precio debe ser positivo').optional(),
   ubicacion: z.string().max(255).optional(),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
   estado: z.enum(['DISPONIBLE', 'RESERVADO', 'VENDIDO', 'CONSTRUCCION', 'FINALIZADO']).optional(),
   tipoProyecto: z.enum([
     'TECHO_PROPIO', 
@@ -37,6 +39,8 @@ const actualizarProyectoSchema = z.object({
   imagen: z.string().url().optional().or(z.literal('')),
   precio: z.number().positive().optional(),
   ubicacion: z.string().max(255).optional(),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
   estado: z.enum(['DISPONIBLE', 'RESERVADO', 'VENDIDO', 'CONSTRUCCION', 'FINALIZADO']).optional(),
   tipoProyecto: z.enum([
     'TECHO_PROPIO', 
