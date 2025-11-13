@@ -34,6 +34,7 @@ const formularioSchema = z.object({
   precio: z.number().positive("El precio debe ser positivo").optional(),
   ubicacion: z.string().max(255).optional(),
   estado: z.enum(["DISPONIBLE", "RESERVADO", "VENDIDO", "CONSTRUCCION", "FINALIZADO"]),
+  mostrarEnWeb: z.boolean().optional(),
   etiquetaIds: z.array(z.string()).optional()
 })
 
@@ -65,6 +66,7 @@ export function FormularioProyecto({
       precio: valorInicial?.precio || undefined,
       ubicacion: valorInicial?.ubicacion || "",
       estado: valorInicial?.estado || EstadoProyecto.DISPONIBLE,
+      mostrarEnWeb: valorInicial?.mostrarEnWeb !== undefined ? valorInicial.mostrarEnWeb : true,
       etiquetaIds: valorInicial?.etiquetaIds || []
     }
   })
@@ -219,6 +221,30 @@ export function FormularioProyecto({
             </FormItem>
           )}
         />
+
+        {/* Mostrar en Web */}
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="mostrarEnWeb"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Mostrar en página web</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    El proyecto será visible en la página pública
+                  </div>
+                </div>
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Etiquetas */}
         <div className="space-y-3">

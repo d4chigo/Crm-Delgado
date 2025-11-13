@@ -19,7 +19,7 @@ export interface UsuarioSinPassword extends Omit<Usuario, 'password'> {}
 export interface PayloadJWT {
   usuarioId: string;
   email: string;
-  rol: Rol;
+  rol: Rol | 'CLIENTE'; // Permitir CLIENTE para portal web
 }
 
 export interface TokenRespuesta {

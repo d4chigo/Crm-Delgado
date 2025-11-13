@@ -6,17 +6,20 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['@google/generative-ai'],
   images: {
     unoptimized: true,
   },
-  // Habilitar standalone output para Docker
-  output: 'standalone',
+  // Habilitar standalone solo en producción
+  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
   // Habilitar polling para hot-reload en Docker (Windows/WSL)
-  webpack: (config, { dev }) => {
+  webpack: (config, { dev, isServer }) => {
     if (dev) {
+      // Configuración mejorada para hot-reload en Docker/Windows
       config.watchOptions = {
         poll: 1000, // Revisar cambios cada segundo
-        aggregateTimeout: 300,
+        aggregateTimeout: 300, // Delay antes de rebuilding
+        ignored: /node_modules/, // Ignorar node_modules para mejor performance
       }
     }
     return config

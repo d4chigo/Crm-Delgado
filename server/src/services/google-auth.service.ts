@@ -59,21 +59,28 @@ class GoogleAuthService {
    * Obtener contactos de Google usando el access token
    */
   async getContacts(accessToken: string) {
+    console.log('[Google Auth] Obteniendo contactos...');
+    console.log('[Google Auth] Access token recibido, longitud:', accessToken?.length || 0);
+    
     this.oauth2Client.setCredentials({ access_token: accessToken });
     
     const people = google.people({ version: 'v1', auth: this.oauth2Client });
     
     try {
+      console.log('[Google Auth] Llamando a Google People API...');
       const response = await people.people.connections.list({
         resourceName: 'people/me',
         pageSize: 1000,
         personFields: 'names,emailAddresses,phoneNumbers,addresses'
       });
 
+      console.log('[Google Auth] Contactos recibidos:', response.data.connections?.length || 0);
       return response.data.connections || [];
-    } catch (error) {
-      console.error('Error al obtener contactos de Google:', error);
-      throw new Error('No se pudieron obtener los contactos de Google');
+    } catch (error: any) {
+      console.error('[Google Auth] Error al obtener contactos de Google:', error.message);
+      console.error('[Google Auth] Error code:', error.code);
+      console.error('[Google Auth] Error response:', error.response?.data);
+      throw new Error(`No se pudieron obtener los contactos de Google: ${error.message}`);
     }
   }
 

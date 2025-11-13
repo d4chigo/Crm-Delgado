@@ -1,6 +1,5 @@
-import { PrismaClient, EstadoProyecto, Proyecto } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '@/config/database';
+import { EstadoProyecto } from '@prisma/client'
 
 export interface CrearProyectoDto {
   nombre: string
@@ -8,7 +7,13 @@ export interface CrearProyectoDto {
   imagen?: string
   precio?: number
   ubicacion?: string
+  latitud?: number
+  longitud?: number
   estado?: EstadoProyecto
+  tipoProyecto?: string
+  categoria?: string
+  mostrarEnWeb?: boolean
+  ordenWeb?: number
   usuarioId: string
   etiquetaIds?: string[]
 }
@@ -19,7 +24,13 @@ export interface ActualizarProyectoDto {
   imagen?: string
   precio?: number
   ubicacion?: string
+  latitud?: number
+  longitud?: number
   estado?: EstadoProyecto
+  tipoProyecto?: string
+  categoria?: string
+  mostrarEnWeb?: boolean
+  ordenWeb?: number
   activo?: boolean
 }
 
@@ -133,8 +144,17 @@ export const proyectoService = {
 
     const proyecto = await prisma.proyecto.create({
       data: {
-        ...proyectoData,
+        nombre: proyectoData.nombre,
+        descripcion: proyectoData.descripcion,
+        imagen: proyectoData.imagen,
+        precio: proyectoData.precio,
+        ubicacion: proyectoData.ubicacion,
         estado: proyectoData.estado || EstadoProyecto.DISPONIBLE,
+        tipoProyecto: proyectoData.tipoProyecto,
+        categoria: proyectoData.categoria,
+        mostrarEnWeb: proyectoData.mostrarEnWeb !== undefined ? proyectoData.mostrarEnWeb : true,
+        ordenWeb: proyectoData.ordenWeb || 0,
+        usuarioId: proyectoData.usuarioId,
         etiquetas: etiquetaIds
           ? {
               create: etiquetaIds.map((etiquetaId) => ({

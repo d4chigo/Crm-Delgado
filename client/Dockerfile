@@ -13,8 +13,8 @@ COPY package*.json pnpm-lock.yaml ./
 # Instalar pnpm
 RUN npm install -g pnpm
 
-# Instalar dependencias
-RUN pnpm install --frozen-lockfile
+# Instalar dependencias (sin frozen-lockfile para permitir actualizaciones)
+RUN pnpm install --no-frozen-lockfile
 
 # ============================================
 # Etapa 2: Builder
@@ -27,6 +27,10 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copiar código fuente
 COPY . .
+
+# Copiar esquema Prisma y generar cliente
+COPY prisma ./prisma
+RUN npx prisma generate
 
 # Variables de entorno de build
 ARG NEXT_PUBLIC_API_URL
@@ -57,6 +61,13 @@ ENV NEXT_TELEMETRY_DISABLED 1
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+
+# Generar Prisma Client en producción
+RUN npm install -g pnpm \
+  && pnpm add -D prisma \
+  && pnpm add @prisma/client \
+  && npx prisma generate
 
 # Cambiar al usuario no-root
 USER nodejs

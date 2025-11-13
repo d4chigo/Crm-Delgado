@@ -11,11 +11,11 @@ WORKDIR /app
 # Copiar archivos de dependencias
 COPY package*.json pnpm-lock.yaml ./
 
-# Instalar pnpm
-RUN npm install -g pnpm
+# Instalar pnpm y Prisma CLI
+RUN npm install -g pnpm prisma
 
 # Instalar dependencias
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copiar código fuente
 COPY . .
@@ -44,16 +44,17 @@ RUN npm install -g pnpm
 # Copiar package.json y lockfile
 COPY --chown=nodejs:nodejs package*.json pnpm-lock.yaml ./
 
-# Instalar solo dependencias de producción
-RUN pnpm install --prod --frozen-lockfile
+# Instalar solo dependencias de producción (permitir lockfile no congelado en CI)
+RUN pnpm install --prod --no-frozen-lockfile
 
 # Copiar prisma schema
 COPY --chown=nodejs:nodejs prisma ./prisma
 
+# Generar Prisma Client en producción (asegura binarios correctos dentro de esta etapa)
+RUN npx prisma generate
+
 # Copiar código compilado desde builder
 COPY --chown=nodejs:nodejs --from=builder /app/dist ./dist
-COPY --chown=nodejs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --chown=nodejs:nodejs --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Cambiar al usuario no-root
 USER nodejs
@@ -65,5 +66,5 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Script de inicio con migraciones
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/index.js"]
+# Script de inicio para SQLite: sincroniza el esquema y arranca
+CMD ["sh", "-c", "npx prisma db push && node dist/src/index.js"]

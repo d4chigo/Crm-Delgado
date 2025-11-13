@@ -15,6 +15,7 @@ export interface CrearCotizacionDTO {
   permiteDoble?: boolean;
   cuotasDoblesAnuales?: number;
   permiteCambioFecha?: boolean;
+  montoCuotaManual?: number;
   notas?: string;
   observaciones?: string;
   fechaValidez?: Date | string;
@@ -34,6 +35,7 @@ export interface ActualizarCotizacionDTO {
   permiteDoble?: boolean;
   cuotasDoblesAnuales?: number;
   permiteCambioFecha?: boolean;
+  montoCuotaManual?: number;
   notas?: string;
   observaciones?: string;
   fechaValidez?: Date | string;

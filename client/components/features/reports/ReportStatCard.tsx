@@ -1,24 +1,31 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { LucideIcon, TrendingUp, TrendingDown, Users, Target, DollarSign, FileText } from 'lucide-react';
 
 interface ReportStatCardProps {
   title: string;
   value: string;
   change: string;
   trend: 'up' | 'down';
-  icon: LucideIcon;
+  icon: LucideIcon | string;
   color: string;
   bgColor: string;
 }
 
-export function ReportStatCard({ title, value, change, trend, icon: Icon, color, bgColor }: ReportStatCardProps) {
+export function ReportStatCard({ title, value, change, trend, icon, color, bgColor }: ReportStatCardProps) {
+  const iconMap: Record<string, LucideIcon> = {
+    users: Users,
+    target: Target,
+    dollar: DollarSign,
+    file: FileText,
+  };
+  const ResolvedIcon: LucideIcon = typeof icon === 'string' ? (iconMap[icon.toLowerCase()] || Users) : icon;
   return (
     <Card className="border-border">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className={`${bgColor} p-3 rounded-xl`}>
-            <Icon className={`w-6 h-6 ${color}`} />
+            <ResolvedIcon className={`w-6 h-6 ${color}`} />
           </div>
           <Badge
             variant="secondary"

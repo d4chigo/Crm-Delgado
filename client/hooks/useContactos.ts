@@ -4,7 +4,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import contactoService from "@/services/api/contacto.service"
 import googleAuthService from "@/services/api/google-auth.service"
 import type {
@@ -31,57 +31,72 @@ export function useContactos() {
   // Filtros
   const [filtros, setFiltros] = useState<FiltrosContacto>({
     pagina: 1,
-    limite: 6
+    limite: 6,
+    tipo: undefined // Inicialmente sin filtro, cada página debe especificar su tipo
   })
+
+  /**
+   * Refrescar contactos (actualiza filtros para disparar recarga)
+   * Debe estar definido antes de funciones que lo referencian para evitar TDZ.
+   */
+  const refrescarContactos = useCallback(() => {
+    setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros }));
+  }, []);
+
+  /**
+   * Cargar contactos con filtros opcionales. Actualiza `filtros` para
+   * disparar la recarga automática en el useEffect que escucha `filtros`.
+   */
+  const cargarContactos = useCallback((nuevosFiltros?: Partial<FiltrosContacto>) => {
+    setFiltros((prev: FiltrosContacto) => ({ ...prev, ...(nuevosFiltros || {}) }));
+  }, []);
+
+  // Ref para debounce de búsqueda
+  const searchTimeoutRef = useRef<number | null>(null);
 
   /**
    * Cargar contactos desde el backend
    */
-  const cargarContactos = async (nuevosFiltros?: FiltrosContacto) => {
-    setEstaCargando(true)
-    setError(null)
-
-    try {
-      // Si no se pasan filtros, usar filtros vacíos para cargar todos los contactos
-      const filtrosAplicar = nuevosFiltros !== undefined ? nuevosFiltros : filtros
-      console.log('🔍 Cargando contactos con filtros:', filtrosAplicar)
-      const respuesta = await contactoService.obtenerContactos(filtrosAplicar)
-
-      setContactos(respuesta.contactos)
-      setPaginacion(respuesta.paginacion)
-
-      // Siempre actualizar los filtros si se pasaron nuevos (incluyendo objeto vacío)
-      if (nuevosFiltros !== undefined) {
-        setFiltros(filtrosAplicar)
-        console.log('💾 Filtros guardados en estado:', filtrosAplicar)
-      }
-      
-      // Cargar estadísticas también
-      await cargarEstadisticas()
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar contactos')
-      setContactos([])
-    } finally {
-      setEstaCargando(false)
-    }
-  }
-
-  /**
-   * Cargar estadísticas
-   */
-  const cargarEstadisticas = async () => {
+  const cargarEstadisticas = useCallback(async () => {
     try {
       const stats = await contactoService.obtenerEstadisticas()
       setEstadisticas(stats)
     } catch (err: any) {
       console.error('Error al cargar estadísticas:', err)
     }
-  }
+  }, [])
+
+  /**
+   * Cargar contactos desde el backend
+   */
+  useEffect(() => {
+    const fetchContactos = async () => {
+      setEstaCargando(true)
+      setError(null)
+
+      try {
+        console.log('🔍 Cargando contactos con filtros:', filtros)
+        const respuesta = await contactoService.obtenerContactos(filtros)
+
+        setContactos(respuesta.contactos)
+        setPaginacion(respuesta.paginacion)
+
+        await cargarEstadisticas()
+      } catch (err: any) {
+        setError(err.message || 'Error al cargar contactos')
+        setContactos([])
+      } finally {
+        setEstaCargando(false)
+      }
+    }
+
+    fetchContactos()
+  }, [filtros, cargarEstadisticas])
 
   /**
    * Crear nuevo contacto
    */
-  const crearContacto = async (datos: CrearContactoDTO): Promise<Contacto> => {
+  const crearContacto = useCallback(async (datos: CrearContactoDTO): Promise<Contacto> => {
     setEstaCargando(true)
     setError(null)
     
@@ -89,8 +104,7 @@ export function useContactos() {
       const nuevoContacto = await contactoService.crearContacto(datos)
       
       // Recargar la lista
-      await cargarContactos()
-      await cargarEstadisticas()
+      refrescarContactos()
       
       return nuevoContacto
     } catch (err: any) {
@@ -99,12 +113,12 @@ export function useContactos() {
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [refrescarContactos])
 
   /**
    * Actualizar contacto
    */
-  const actualizarContacto = async (id: string, datos: ActualizarContactoDTO): Promise<Contacto> => {
+  const actualizarContacto = useCallback(async (id: string, datos: ActualizarContactoDTO): Promise<Contacto> => {
     setEstaCargando(true)
     setError(null)
     
@@ -112,8 +126,8 @@ export function useContactos() {
       const contactoActualizado = await contactoService.actualizarContacto(id, datos)
       
       // Actualizar en la lista local
-      setContactos(prev =>
-        prev.map(c => c.id === id ? contactoActualizado : c)
+      setContactos((prev: Contacto[]) =>
+        prev.map((c: Contacto) => c.id === id ? contactoActualizado : c)
       )
       
       await cargarEstadisticas()
@@ -125,12 +139,12 @@ export function useContactos() {
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [cargarEstadisticas])
 
   /**
    * Eliminar contacto
    */
-  const eliminarContacto = async (id: string): Promise<void> => {
+  const eliminarContacto = useCallback(async (id: string): Promise<void> => {
     setEstaCargando(true)
     setError(null)
     
@@ -143,25 +157,23 @@ export function useContactos() {
       
       if (elementosEnPagina === 1 && paginaActual > 1) {
         // Si era el último elemento y no es la primera página, ir a página anterior
-        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
+        setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
       } else {
         // Recargar la página actual para llenar automáticamente con más elementos
-        await cargarContactos({ ...filtros, pagina: paginaActual });
+        refrescarContactos();
       }
-      
-      await cargarEstadisticas()
     } catch (err: any) {
       setError(err.message || 'Error al eliminar contacto')
       throw err
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [paginacion, contactos, refrescarContactos])
 
   /**
    * Convertir contacto a lead
    */
-  const convertirALead = async (id: string): Promise<Contacto> => {
+  const convertirALead = useCallback(async (id: string): Promise<Contacto> => {
     setEstaCargando(true)
     setError(null)
     
@@ -173,7 +185,6 @@ export function useContactos() {
       // Recarga inteligente para evitar páginas vacías y llenar el espacio
       const paginaActual = paginacion.pagina;
       const elementosEnPagina = contactos.length;
-      
       console.log(`📄 Recargando página ${paginaActual} con filtros:`, filtros)
       
       // Esperar un momento para asegurar que la DB se actualizó
@@ -181,13 +192,11 @@ export function useContactos() {
       
       if (elementosEnPagina === 1 && paginaActual > 1) {
         // Si era el último elemento y no es la primera página, ir a página anterior
-        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
+        setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
       } else {
         // Recargar la página actual para llenar con más elementos
-        await cargarContactos({ ...filtros, pagina: paginaActual });
+        refrescarContactos();
       }
-      
-      await cargarEstadisticas()
       
       return contactoConvertido
     } catch (err: any) {
@@ -196,12 +205,12 @@ export function useContactos() {
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [paginacion, contactos, filtros, refrescarContactos])
 
   /**
    * Convertir múltiples contactos a leads
    */
-  const convertirVariosALeads = async (ids: string[]): Promise<{ convertidos: number; total: number; noConvertidos: number }> => {
+  const convertirVariosALeads = useCallback(async (ids: string[]): Promise<{ convertidos: number; total: number; noConvertidos: number }> => {
     setEstaCargando(true)
     setError(null)
     
@@ -214,17 +223,15 @@ export function useContactos() {
       // Recarga inteligente después de conversión masiva
       const paginaActual = paginacion.pagina;
       const elementosEnPagina = contactos.length;
-      const convertidosEnEstaPagina = ids.filter(id => contactos.some(c => c.id === id)).length;
+      const convertidosEnEstaPagina = ids.filter(id => contactos.some((c: Contacto) => c.id === id)).length;
       
       if (convertidosEnEstaPagina === elementosEnPagina && paginaActual > 1) {
         // Si se convirtieron todos los elementos de esta página, ir a la anterior
-        await cargarContactos({ ...filtros, pagina: paginaActual - 1 });
+        setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
       } else {
         // Recargar la página actual para llenar con más elementos
-        await cargarContactos({ ...filtros, pagina: paginaActual });
+        refrescarContactos();
       }
-      
-      await cargarEstadisticas()
       
       return resultado
     } catch (err: any) {
@@ -233,40 +240,97 @@ export function useContactos() {
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [paginacion, contactos, refrescarContactos])
 
   /**
    * Buscar contactos
    */
-  const buscarContactos = (busqueda: string) => {
-    cargarContactos({ ...filtros, busqueda, pagina: 1 })
-  }
+  const buscarContactos = useCallback((busqueda: string) => {
+    console.log('🔍 Buscando:', busqueda);
+    
+    // Limpiar el timeout anterior si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+
+    // Actualizar los filtros inmediatamente
+    setFiltros(prevFiltros => {
+      // Si el término de búsqueda está vacío, lo eliminamos del filtro
+      if (!busqueda || busqueda.trim() === '') {
+        const { busqueda: _, ...nuevosFiltros } = prevFiltros;
+        return { ...nuevosFiltros, pagina: 1 };
+      }
+      
+      // Si el término de búsqueda es el mismo, no hacemos nada
+      if (prevFiltros.busqueda === busqueda.trim()) {
+        return prevFiltros;
+      }
+      
+      // Actualizar el término de búsqueda
+      return {
+        ...prevFiltros,
+        busqueda: busqueda.trim(),
+        pagina: 1 // Resetear a la primera página al buscar
+      };
+    });
+  }, []);
 
   /**
    * Filtrar por tipo
    */
-  const filtrarPorTipo = (tipo?: TipoContacto) => {
-    cargarContactos({ ...filtros, tipo, pagina: 1 })
-  }
+  const filtrarPorTipo = useCallback((tipo?: TipoContacto) => {
+    setFiltros((prevFiltros: FiltrosContacto) => {
+      const nuevosFiltros = { ...prevFiltros, pagina: 1 };
+      
+      if (tipo) {
+        nuevosFiltros.tipo = tipo;
+      } else {
+        delete nuevosFiltros.tipo;
+      }
+      
+      return nuevosFiltros;
+    });
+  }, []);
 
   /**
    * Filtrar por ciudad
    */
-  const filtrarPorCiudad = (ciudad?: string) => {
-    cargarContactos({ ...filtros, ciudad, pagina: 1 })
-  }
+  const filtrarPorCiudad = useCallback((ciudad?: string) => {
+    setFiltros((prevFiltros: FiltrosContacto) => {
+      const nuevosFiltros = { ...prevFiltros, pagina: 1 };
+      
+      if (ciudad) {
+        nuevosFiltros.ciudad = ciudad;
+      } else {
+        delete nuevosFiltros.ciudad;
+      }
+      
+      return nuevosFiltros;
+    });
+  }, []);
 
   /**
    * Cambiar página
    */
-  const cambiarPagina = (pagina: number) => {
-    cargarContactos({ ...filtros, pagina })
-  }
+  const cambiarPagina = useCallback((pagina: number) => {
+    setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina }))
+  }, []);
+
+  /**
+   * Limpiar todos los filtros
+   */
+  const limpiarFiltros = useCallback(() => {
+    setFiltros({
+      pagina: 1,
+      limite: 6
+    });
+  }, []);
 
   /**
    * Iniciar flujo de importación desde Google
    */
-  const iniciarImportacionGoogle = async () => {
+  const iniciarImportacionGoogle = useCallback(async () => {
     try {
       console.log('🚀 Iniciando importación desde Google...');
       await googleAuthService.startAuthFlow();
@@ -274,12 +338,12 @@ export function useContactos() {
       setError(err.message || 'Error al iniciar la autenticación con Google');
       throw err;
     }
-  };
+  }, []);
 
   /**
    * Completar importación desde Google (después del callback)
    */
-  const completarImportacionGoogle = async (accessToken: string) => {
+  const completarImportacionGoogle = useCallback(async (accessToken: string) => {
     setEstaCargando(true);
     setError(null);
     
@@ -292,8 +356,7 @@ export function useContactos() {
       console.log('✅ Contactos importados:', resultado);
       
       // Recargar la lista de contactos y estadísticas
-      await cargarContactos();
-      await cargarEstadisticas();
+      refrescarContactos();
       
       return resultado;
     } catch (err: any) {
@@ -303,13 +366,7 @@ export function useContactos() {
       setEstaCargando(false);
       googleAuthService.clearPendingImport();
     }
-  };
-
-  // NO cargar automáticamente - dejar que el componente padre controle la carga inicial
-  // useEffect(() => {
-  //   cargarContactos()
-  //   cargarEstadisticas()
-  // }, [])
+  }, [refrescarContactos]);
 
   return {
     // Estado
@@ -319,6 +376,7 @@ export function useContactos() {
     error,
     paginacion,
     filtros,
+    setFiltros,
     
     // Funciones CRUD
     crearContacto,
@@ -331,8 +389,10 @@ export function useContactos() {
     buscarContactos,
     filtrarPorTipo,
     filtrarPorCiudad,
-    cambiarPagina,
     cargarContactos,
+    cambiarPagina,
+    refrescarContactos,
+    limpiarFiltros,
     
     // Importación desde Google
     iniciarImportacionGoogle,

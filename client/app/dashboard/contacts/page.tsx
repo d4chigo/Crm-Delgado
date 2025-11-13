@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+
 import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto";
 import { ContactCard } from "@/components/features/contacts/ContactCard";
@@ -19,6 +20,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Search, Users, UserPlus, UserCheck, Loader2, Edit, Trash2, ArrowRightCircle, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { TipoContacto, type Contacto } from "@/types/contacto.types"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import dynamicImport from "next/dynamic"
+const AssistantPanel = dynamicImport(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
 export const dynamic = 'force-dynamic'
 
@@ -29,24 +33,26 @@ export default function PaginaContactos() {
     estaCargando,
     error,
     paginacion,
+    filtros,
     buscarContactos,
     crearContacto,
     actualizarContacto,
     eliminarContacto,
     convertirALead,
     convertirVariosALeads,
-    cargarContactos,
+    refrescarContactos,
     iniciarImportacionGoogle,
     completarImportacionGoogle,
     cambiarPagina,
     filtrarPorTipo,
+    setFiltros,
   } = useContactos()
 
   const { toast } = useToast()
-  const [busqueda, setBusqueda] = useState("")
   const [contactoEditando, setContactoEditando] = useState<Contacto | null>(null)
   const [contactoEliminando, setContactoEliminando] = useState<Contacto | null>(null)
   const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [convirtiendoALeads, setConvirtiendoALeads] = useState(false)
   const [resultadoImportacion, setResultadoImportacion] = useState<{
     importados: number
@@ -54,13 +60,19 @@ export default function PaginaContactos() {
     errores: number
   } | null>(null)
 
-  // NO filtrar en el frontend - el backend ya envía solo contactos tipo CONTACTO
-  const contactosFiltrados = contactos
+  // Lista memorizada (si se aplican filtros adicionales en el futuro)
+  const contactosFiltrados = useMemo(() => contactos, [contactos])
 
   // Cargar contactos con filtro CONTACTO al montar el componente
   useEffect(() => {
     console.log('🎯 Cargando contactos iniciales con filtro: solo CONTACTO')
-    cargarContactos({ tipo: TipoContacto.CONTACTO, pagina: 1, limite: 6 })
+    setFiltros(prev => ({
+      ...prev,
+      tipo: TipoContacto.CONTACTO,
+      pagina: 1,
+      limite: 6,
+      busqueda: ''
+    }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -103,21 +115,13 @@ export default function PaginaContactos() {
     procesarCallbackGoogle()
   }, [completarImportacionGoogle, toast])
 
-  // Efecto para buscar con delay (debounce) - solo después del montaje inicial
+  // Búsqueda con debounce para reducir requests
+  const [busqueda, setBusqueda] = useState("")
+  const handleBusqueda = (query: string) => { setBusqueda(query) }
   useEffect(() => {
-    // No ejecutar en el montaje inicial (cuando busqueda está vacía)
-    if (busqueda === '') return
-    
-    const timer = setTimeout(() => {
-      buscarContactos(busqueda)
-    }, 500)
-    
-    return () => clearTimeout(timer)
-  }, [busqueda, buscarContactos])
-
-  const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBusqueda(e.target.value)
-  }
+    const t = setTimeout(() => { buscarContactos(busqueda) }, 300)
+    return () => clearTimeout(t)
+  }, [busqueda])
 
   const handleConfirmarEliminar = async () => {
     if (!contactoEliminando) return
@@ -197,6 +201,51 @@ export default function PaginaContactos() {
     }
   }
 
+  const handleWhatsApp = (telefono: string, nombre?: string) => {
+    if (telefono) {
+      // Limpiar el teléfono y asegurar que tenga el código de país
+      let telefonoLimpio = telefono.replace(/\D/g, '');
+      
+      // Si no tiene código de país, agregar +51 (Perú)
+      if (telefonoLimpio.length === 9) {
+        telefonoLimpio = '51' + telefonoLimpio;
+      }
+      
+      const message = `Hola${nombre ? ` ${nombre}` : ''}, te contacto desde CRM Delgado.`;
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(message)}`;
+      
+      // Abrir WhatsApp
+      window.open(url, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No hay número de teléfono disponible para este contacto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleMeeting = (nombre: string, correo: string) => {
+    const asunto = `Reunión con ${nombre} - CRM Delgado`;
+    const descripcion = `Reunión de seguimiento con ${nombre}.\n\nCliente: ${nombre}\nCorreo: ${correo || 'No especificado'}\n\nAgendado desde CRM Delgado`;
+    
+    // Crear URL para Google Calendar
+    const fechaInicio = new Date();
+    fechaInicio.setDate(fechaInicio.getDate() + 1); // Mañana
+    fechaInicio.setHours(9, 0, 0, 0); // 9:00 AM
+    const fechaFin = new Date(fechaInicio);
+    fechaFin.setHours(10, 0, 0, 0); // 10:00 AM
+    
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fechaInicio.toISOString().replace(/[-:]/g, '').split('.')[0]}Z%2F${fechaFin.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&add=${encodeURIComponent(correo || '')}`;
+    
+    window.open(url, '_blank');
+    
+    toast({
+      title: "Calendario abierto",
+      description: "Se abrió Google Calendar para agendar la reunión",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -268,9 +317,13 @@ export default function PaginaContactos() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, apellido o correo..."
-            value={busqueda}
-            onChange={handleBusqueda}
+            placeholder="Buscar por nombre, apellido, correo o DNI..."
+            value={filtros?.busqueda || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              console.log('📝 Valor del input:', value);
+              handleBusqueda(value);
+            }}
             className="pl-9"
           />
         </div>
@@ -349,6 +402,8 @@ export default function PaginaContactos() {
                 onConvertir={handleConvertirALead}
                 onEditar={setContactoEditando}
                 onEliminar={setContactoEliminando}
+                onWhatsApp={handleWhatsApp}
+                onScheduleMeeting={handleScheduleMeeting}
               />
             ))}
           </div>
@@ -397,7 +452,7 @@ export default function PaginaContactos() {
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No hay contactos</h3>
             <p className="text-muted-foreground text-center mb-4">
-              {busqueda 
+              {filtros.busqueda && filtros.busqueda.trim() !== ''
                 ? "No se encontraron contactos con ese criterio de búsqueda"
                 : "Comienza agregando tu primer contacto para gestionar tus relaciones"}
             </p>
@@ -412,7 +467,7 @@ export default function PaginaContactos() {
         abierto={!!contactoEditando}
         onActualizar={actualizarContacto}
         onCancelar={() => setContactoEditando(null)}
-        onRecargar={cargarContactos}
+        onRecargar={async () => { refrescarContactos(); }}
       />
 
       <DialogoEliminarContacto
@@ -421,6 +476,9 @@ export default function PaginaContactos() {
         onConfirmar={handleConfirmarEliminar}
         onCancelar={() => setContactoEliminando(null)}
       />
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

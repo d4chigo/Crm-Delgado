@@ -9,7 +9,26 @@ const crearProyectoSchema = z.object({
   imagen: z.string().url('Debe ser una URL válida').optional().or(z.literal('')),
   precio: z.number().positive('El precio debe ser positivo').optional(),
   ubicacion: z.string().max(255).optional(),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
   estado: z.enum(['DISPONIBLE', 'RESERVADO', 'VENDIDO', 'CONSTRUCCION', 'FINALIZADO']).optional(),
+  tipoProyecto: z.enum([
+    'TECHO_PROPIO', 
+    'CREDITO_MIVIVIENDA', 
+    'HABILITACIONES', 
+    'RESIDENCIAL', 
+    'COMERCIAL', 
+    'INDUSTRIAL', 
+    'TERRENOS', 
+    'DEPARTAMENTOS', 
+    'CASAS', 
+    'OFICINAS'
+  ]).optional(),
+  categoria: z.string().max(100).optional(),
+  galeria: z.array(z.string().url()).optional(),
+  caracteristicas: z.record(z.string(), z.any()).optional(),
+  mostrarEnWeb: z.boolean().optional().default(true),
+  ordenWeb: z.number().int().optional(),
   etiquetaIds: z.array(z.string().uuid()).optional()
 })
 
@@ -20,7 +39,26 @@ const actualizarProyectoSchema = z.object({
   imagen: z.string().url().optional().or(z.literal('')),
   precio: z.number().positive().optional(),
   ubicacion: z.string().max(255).optional(),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
   estado: z.enum(['DISPONIBLE', 'RESERVADO', 'VENDIDO', 'CONSTRUCCION', 'FINALIZADO']).optional(),
+  tipoProyecto: z.enum([
+    'TECHO_PROPIO', 
+    'CREDITO_MIVIVIENDA', 
+    'HABILITACIONES', 
+    'RESIDENCIAL', 
+    'COMERCIAL', 
+    'INDUSTRIAL', 
+    'TERRENOS', 
+    'DEPARTAMENTOS', 
+    'CASAS', 
+    'OFICINAS'
+  ]).optional(),
+  categoria: z.string().max(100).optional(),
+  galeria: z.array(z.string().url()).optional(),
+  caracteristicas: z.record(z.string(), z.any()).optional(),
+  mostrarEnWeb: z.boolean().optional(),
+  ordenWeb: z.number().int().optional(),
   activo: z.boolean().optional()
 })
 

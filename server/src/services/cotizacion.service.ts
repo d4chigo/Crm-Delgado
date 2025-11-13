@@ -54,7 +54,10 @@ export class CotizacionService {
     const montoFinanciar = precioInmueble - cuotaInicial;
     const porcentajeCuotaInicial = (cuotaInicial / precioInmueble) * 100;
     
-    const cuotaMensual = this.calcularCuotaMensual(montoFinanciar, tasaInteresAnual, plazoMeses);
+    let cuotaMensual = this.calcularCuotaMensual(montoFinanciar, tasaInteresAnual, plazoMeses);
+    if (datos.montoCuotaManual && datos.montoCuotaManual > 0) {
+      cuotaMensual = datos.montoCuotaManual;
+    }
     const totalPagar = cuotaMensual * plazoMeses;
     const totalIntereses = totalPagar - montoFinanciar;
     
@@ -106,6 +109,7 @@ export class CotizacionService {
         permiteDoble: datos.permiteDoble || false,
         cuotasDoblesAnuales: datos.cuotasDoblesAnuales,
         permiteCambioFecha: datos.permiteCambioFecha || false,
+        montoCuotaManual: datos.montoCuotaManual,
         cuotaMensualEstimada: calculos.cuotaMensual,
         totalIntereses: calculos.totalIntereses,
         totalPagar: calculos.totalPagar,
@@ -256,7 +260,8 @@ export class CotizacionService {
         precioInmueble: datos.precioInmueble || cotizacionExistente.precioInmueble.toNumber(),
         cuotaInicial: datos.cuotaInicial || cotizacionExistente.cuotaInicial.toNumber(),
         plazoMeses: datos.plazoMeses || cotizacionExistente.plazoMeses,
-        tasaInteresAnual: datos.tasaInteresAnual || cotizacionExistente.tasaInteresAnual.toNumber()
+        tasaInteresAnual: datos.tasaInteresAnual || cotizacionExistente.tasaInteresAnual.toNumber(),
+        montoCuotaManual: datos.montoCuotaManual
       };
 
       const calculos = this.calcularValores(datosParaCalculo);

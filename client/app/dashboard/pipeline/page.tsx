@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useOportunidades } from "@/hooks/useOportunidades"
-import { etiquetaService, type Etiqueta } from "@/services/api/etiqueta.service"
+import { etiquetaService } from "@/services/api/etiqueta.service"
+import type { Etiqueta } from "@/types/etiqueta.types"
 import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
 import {
   Building2,
@@ -25,6 +26,8 @@ import {
   Search,
   Tag,
 } from "lucide-react"
+import AssistantFab from "@/components/assistant/AssistantFab"
+import AssistantPanel from "@/components/assistant/AssistantPanel"
 
 // Mapeo de etapas para el pipeline
 const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
@@ -47,6 +50,7 @@ export default function PaginaPipeline() {
   const [busqueda, setBusqueda] = useState<string>("")
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
@@ -59,14 +63,24 @@ export default function PaginaPipeline() {
           setEtiquetas(etiquetasObtenidas)
         }
       } catch (error) {
-        console.error('Error al cargar etiquetas:', error)
+        toast({ 
+          title: 'Error al cargar etiquetas',
+          description: (error as Error).message,
+          variant: 'destructive',
+        });
       }
     }
     cargarEtiquetas()
   }, [])
 
+  // Cargar oportunidades al montar (solo una vez)
+  useEffect(() => {
+    refrescar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Filtrar oportunidades por mes, año, búsqueda y etiqueta
-  const oportunidadesFiltradas = oportunidades.filter((op) => {
+  const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
     // Filtro por mes y año
     if (selectedMonth !== "all") {
       const opDate = new Date(op.creadoEn)
@@ -105,21 +119,21 @@ export default function PaginaPipeline() {
 
   // Calcular datos por etapa
   const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
-    const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
+    const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
     return {
       ...etapa,
       count: oportunidadesEtapa.length,
-      value: oportunidadesEtapa.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0),
+      value: oportunidadesEtapa.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0),
     }
   })
 
   // Estadísticas generales
   const valorPipeline = oportunidadesFiltradas
-    .filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa))
-    .reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
+    .filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const oportunidadesGanadas = oportunidadesFiltradas.filter((op) => op.etapa === "GANADO")
-  const valorGanado = oportunidadesGanadas.reduce((acc, op) => acc + (op.valor ? Number(op.valor) : 0), 0)
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "GANADO")
+  const valorGanado = oportunidadesGanadas.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
   const getProbabilityColor = (probability?: number | null) => {
     if (!probability) return "text-gray-600 bg-gray-50"
@@ -129,13 +143,39 @@ export default function PaginaPipeline() {
   }
 
   const handleWhatsApp = (telefono: string, nombre: string) => {
+    console.log('[WA] handler called with', telefono, nombre)
+    if (!telefono) {
+      toast({ title: 'Teléfono no disponible', description: 'El contacto no tiene teléfono registrado.' })
+      return
+    }
     if (telefono) {
       const message = `Hola ${nombre}, te contacto para hacer seguimiento.`
-      const url = `https://wa.me/${telefono.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-      if (window.electron) {
-        window.electron.shell.openExternal(url);
-      } else {
-        window.open(url, '_blank');
+      // Normalize phone (digits only) and build wa.me URL so it opens in browser
+      const phone = telefono.replace(/\D/g, '')
+      if (!phone) return
+      let url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+      // map whatsapp:// scheme (if somehow provided) to web wa.me
+      try {
+        if (telefono.startsWith('whatsapp:') || telefono.startsWith('whatsapp://')) {
+          // in case telefono contains a whatsapp://... URL, extract digits
+          const digits = telefono.replace(/\D/g, '')
+          url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
+        }
+      } catch (e) {
+        // ignore
+      }
+      try {
+        console.log('[WA] opening url:', url)
+        // show a small toast to give user feedback
+        toast({ title: 'Abriendo WhatsApp', description: url })
+        if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+          ;(window as any).electron.shell.openExternal(url)
+        } else if (typeof window !== 'undefined') {
+          window.open(url, '_blank')
+        }
+      } catch (e) {
+        // fallback
+        try { window.open(url, '_blank') } catch (_) { /* ignore */ }
       }
     }
   };
@@ -143,11 +183,26 @@ export default function PaginaPipeline() {
   const handleScheduleMeeting = (nombre: string, correo: string) => {
     const asunto = `Reunión con ${nombre}`;
     const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`;
-    if (window.electron) {
-      window.electron.shell.openExternal(url);
-    } else {
-      window.open(url, '_blank');
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`
+    try {
+      toast({ title: 'Abriendo calendario', description: url })
+      if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
+        ;(window as any).electron.shell.openExternal(url)
+      } else if (typeof window !== 'undefined') {
+        window.open(url, '_blank')
+      }
+    } catch (e) {
+      try { window.open(url, '_blank') } catch (_) { /* ignore */ }
+    }
+  };
+
+  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
+    try {
+      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await refrescar()
+      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
     }
   };
 
@@ -209,9 +264,9 @@ export default function PaginaPipeline() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, correo, empresa o título..."
+              placeholder="Buscar por nombre, correo, empresa, título o DNI..."
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
               className="pl-9"
             />
           </div>
@@ -224,7 +279,7 @@ export default function PaginaPipeline() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas las etiquetas</SelectItem>
-              {etiquetas.map((etiqueta) => (
+              {etiquetas.map((etiqueta: Etiqueta) => (
                 <SelectItem key={etiqueta.id} value={etiqueta.id}>
                   <div className="flex items-center gap-2">
                     <div 
@@ -248,7 +303,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {oportunidadesFiltradas.filter((op) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
+                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -304,7 +359,7 @@ export default function PaginaPipeline() {
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {etapasConDatos.map((etapa) => {
-            const oportunidadesEtapa = oportunidadesFiltradas.filter((op) => op.etapa === etapa.id)
+            const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
             return (
               <div key={etapa.id} className="flex-shrink-0 w-80">
                 <Card className="border-border h-full">
@@ -322,8 +377,8 @@ export default function PaginaPipeline() {
                       S/ {(etapa.value / 1000).toFixed(0)}K
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 h-[600px] overflow-y-auto pr-2 scrollbar-visible">
-                    {oportunidadesEtapa.map((oportunidad) => (
+                  <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
+                    {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
                       <Card
                         key={oportunidad.id}
                         className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
@@ -402,9 +457,9 @@ export default function PaginaPipeline() {
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {ETAPAS_PIPELINE.find((e) => e.id === selectedDeal.etapa)?.nombre}
+                  {ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
                 <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
                   Probabilidad: {selectedDeal.probabilidad || 0}%
@@ -416,21 +471,25 @@ export default function PaginaPipeline() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {selectedDeal.cliente?.correo || 'Sin email'}
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1" title={selectedDeal.cliente?.correo || 'Sin email'}>
+                      {selectedDeal.cliente?.correo || 'Sin email'}
+                    </span>
                   </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Teléfono</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate min-w-0 flex-1">
+                      {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                    </span>
                   </p>
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono, selectedDeal.cliente?.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
-                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre, selectedDeal.cliente?.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
+                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre || '', selectedDeal.cliente?.correo || '')}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
               </div>
 
               {/* Property Details */}
@@ -486,8 +545,8 @@ export default function PaginaPipeline() {
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
                   {ETAPAS_PIPELINE
-                    .filter((e) => e.id !== selectedDeal.etapa)
-                    .map((etapa) => (
+                    .filter((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
+                    .map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => (
                       <Button
                         key={etapa.id}
                         size="sm"
@@ -517,6 +576,9 @@ export default function PaginaPipeline() {
           </DialogContent>
         </Dialog>
       )}
+
+      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
+      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
     </div>
   )
 }

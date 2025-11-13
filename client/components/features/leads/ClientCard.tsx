@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface ClientCardProps {
@@ -13,7 +13,8 @@ interface ClientCardProps {
   onAgregarOportunidad: (cliente: Contacto) => void
   onEditar: (cliente: Contacto) => void
   onWhatsApp: (telefono: string) => void
-  onScheduleMeeting: (nombre: string, correo: string) => void
+  onScheduleMeeting?: (nombre: string, correo: string) => void
+  onCrearAccesoWeb?: (cliente: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -40,7 +41,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting }: ClientCardProps) {
+export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb }: ClientCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow border-green-200">
       <CardHeader>
@@ -84,8 +85,8 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
 
           {cliente.correo && (
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span className="truncate">{cliente.correo}</span>
+              <Mail className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate min-w-0 flex-1" title={cliente.correo}>{cliente.correo}</span>
             </div>
           )}
           
@@ -145,8 +146,38 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
 
           {/* Botones de acción para clientes */}
           <div className="grid grid-cols-2 gap-2 pt-2">
-             <Button variant="outline" size="sm" onClick={() => onWhatsApp(cliente.telefono, cliente.nombre)}><MessageSquare className="h-4 w-4 mr-1" />WhatsApp</Button>
-             <Button variant="outline" size="sm" onClick={() => onScheduleMeeting(cliente.nombre, cliente.correo)}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+            {(() => {
+              const raw = (cliente.telefono || '').replace(/\D/g, '');
+              const phone = raw.length === 9 ? `51${raw}` : raw;
+              const msg = `Hola ${cliente.nombre || ''}, te contacto desde CRM Delgado para hacer seguimiento.`.trim();
+              const waUrl = `https://wa.me/${phone}${phone ? `?text=${encodeURIComponent(msg)}` : ''}`;
+              return (
+                <Button asChild variant="outline" size="sm" className="cursor-pointer">
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer">
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    WhatsApp
+                  </a>
+                </Button>
+              );
+            })()}
+            {(() => {
+              const asunto = `Reunión con ${cliente.nombre} - CRM Delgado`;
+              const descripcion = `Reunión de seguimiento con ${cliente.nombre} ${cliente.apellido || ''}. Email: ${cliente.correo || ''}`;
+              const start = new Date();
+              start.setHours(9, 0, 0, 0);
+              const end = new Date(start);
+              end.setHours(10, 0, 0, 0);
+              const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+              const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fmt(start)}%2F${fmt(end)}${cliente.correo ? `&add=${encodeURIComponent(cliente.correo)}` : ''}`;
+              return (
+                <Button asChild variant="outline" size="sm" className="cursor-pointer">
+                  <a href={calUrl} target="_blank" rel="noopener noreferrer">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Agendar
+                  </a>
+                </Button>
+              );
+            })()}
           </div>
           <div className="grid grid-cols-3 gap-2 pt-2">
             <Button
@@ -175,6 +206,15 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
               Cotizar
             </Button>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCrearAccesoWeb?.(cliente)}
+            className="w-full mt-2 border-green-600 text-green-700 hover:bg-green-50"
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Crear Acceso Web
+          </Button>
           <Button
             size="sm"
             onClick={() => onAgregarOportunidad(cliente)}

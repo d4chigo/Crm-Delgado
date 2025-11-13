@@ -1,15 +1,21 @@
 import { z } from 'zod';
 
+const baseSexoEnum = z.enum(['MASCULINO', 'FEMENINO']);
+const soloLetrasRegexp = new RegExp("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$");
+const soloDigitosRegexp = new RegExp("^\\d+$");
+
 export const crearContactoSchema = z.object({
   body: z.object({
     nombre: z
       .string({ message: 'El nombre es requerido' })
       .min(2, 'El nombre debe tener al menos 2 caracteres')
-      .max(100, 'El nombre no puede exceder 100 caracteres'),
+      .max(100, 'El nombre no puede exceder 100 caracteres')
+      .regex(soloLetrasRegexp, 'El nombre solo debe contener letras y espacios'),
     apellido: z
       .string()
       .min(2, 'El apellido debe tener al menos 2 caracteres')
       .max(100, 'El apellido no puede exceder 100 caracteres')
+      .regex(soloLetrasRegexp, 'El apellido solo debe contener letras y espacios')
       .optional(),
     correo: z
       .string()
@@ -18,6 +24,7 @@ export const crearContactoSchema = z.object({
       .optional(),
     telefono: z
       .string()
+      .regex(soloDigitosRegexp, 'El teléfono solo debe contener dígitos')
       .optional(),
     direccion: z
       .string()
@@ -30,14 +37,17 @@ export const crearContactoSchema = z.object({
     dni: z
       .string()
       .max(20, 'El DNI no puede exceder 20 caracteres')
+      .regex(soloDigitosRegexp, 'El DNI solo debe contener dígitos')
       .optional(),
-    sexo: z
-      .enum(['MASCULINO', 'FEMENINO', 'OTRO'])
-      .optional(),
+    sexo: baseSexoEnum.optional(),
     fechaNacimiento: z
       .string()
       .datetime('Fecha de nacimiento inválida')
-      .optional(),
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
+    tipo: z.enum(['CONTACTO', 'LEAD', 'CLIENTE']).optional(),
     
     // Información profesional
     empresa: z.string().max(200).optional(),
@@ -51,7 +61,13 @@ export const crearContactoSchema = z.object({
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z.string().datetime().optional(),
+    fechaSeguimiento: z
+      .string()
+      .datetime()
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     
     // Notas
     notas: z.string().optional(),
@@ -70,11 +86,13 @@ export const actualizarContactoSchema = z.object({
       .string()
       .min(2, 'El nombre debe tener al menos 2 caracteres')
       .max(100)
+      .regex(soloLetrasRegexp, 'El nombre solo debe contener letras y espacios')
       .optional(),
     apellido: z
       .string()
       .min(2, 'El apellido debe tener al menos 2 caracteres')
       .max(100)
+      .regex(soloLetrasRegexp, 'El apellido solo debe contener letras y espacios')
       .optional(),
     correo: z
       .string()
@@ -83,6 +101,7 @@ export const actualizarContactoSchema = z.object({
       .optional(),
     telefono: z
       .string()
+      .regex(soloDigitosRegexp, 'El teléfono solo debe contener dígitos')
       .optional(),
     direccion: z
       .string()
@@ -95,14 +114,16 @@ export const actualizarContactoSchema = z.object({
     dni: z
       .string()
       .max(20)
+      .regex(soloDigitosRegexp, 'El DNI solo debe contener dígitos')
       .optional(),
-    sexo: z
-      .enum(['MASCULINO', 'FEMENINO', 'OTRO'])
-      .optional(),
+    sexo: baseSexoEnum.optional(),
     fechaNacimiento: z
       .string()
       .datetime()
-      .optional(),
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     tipo: z
       .enum(['CONTACTO', 'LEAD', 'CLIENTE'])
       .optional(),
@@ -119,7 +140,13 @@ export const actualizarContactoSchema = z.object({
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z.string().datetime().optional(),
+    fechaSeguimiento: z
+      .string()
+      .datetime()
+      .optional()
+      .nullable()
+      .or(z.literal(''))
+      .transform((val: any) => val === '' ? undefined : val),
     
     // Notas
     notas: z.string().optional(),

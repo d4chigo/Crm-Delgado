@@ -51,6 +51,27 @@ export class ContactoController {
   }
 
   /**
+   * GET /api/contactos/recientes
+   */
+  async obtenerContactosRecientes(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      const limite = req.query.limite ? Number(req.query.limite) : 10;
+      const tipo = req.query.tipo as string;
+      const contactos = await contactoService.obtenerContactosRecientes(usuarioId, limite, tipo);
+      respuestaExito(res, { contactos });
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al obtener contactos recientes', 500);
+    }
+  }
+
+  /**
    * GET /api/contactos/:id
    */
   async obtenerContactoPorId(req: Request, res: Response): Promise<void> {
@@ -352,22 +373,32 @@ export class ContactoController {
    */
   async importarDesdeGoogle(req: Request, res: Response): Promise<void> {
     try {
+      console.log('[Contacto Controller] Importar desde Google iniciado');
       const usuarioId = req.usuario?.usuarioId;
       const { accessToken } = req.body;
 
+      console.log('[Contacto Controller] Usuario ID:', usuarioId);
+      console.log('[Contacto Controller] Access token recibido:', accessToken ? `Sí (${accessToken.length} chars)` : 'No');
+
       if (!usuarioId) {
+        console.error('[Contacto Controller] Usuario no autenticado');
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       if (!accessToken) {
+        console.error('[Contacto Controller] Access token no proporcionado');
         respuestaError(res, 'Token de acceso de Google requerido', 400);
         return;
       }
 
+      console.log('[Contacto Controller] Llamando a contactoService.importarDesdeGoogle...');
       const resultado = await contactoService.importarDesdeGoogle(usuarioId, accessToken);
+      console.log('[Contacto Controller] Importación completada:', resultado);
       respuestaExito(res, resultado, 'Importación completada');
     } catch (error: any) {
+      console.error('[Contacto Controller] Error en importación:', error.message);
+      console.error('[Contacto Controller] Stack:', error.stack);
       respuestaError(res, error.message || 'Error al importar contactos desde Google', 500);
     }
   }

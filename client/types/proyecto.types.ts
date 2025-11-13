@@ -13,6 +13,8 @@ export interface Proyecto {
   imagen?: string
   precio?: number
   ubicacion?: string
+  latitud?: number
+  longitud?: number
   estado: EstadoProyecto
   activo: boolean
   creadoEn: Date
@@ -52,6 +54,7 @@ export interface DatosFormularioProyecto {
   precio?: number
   ubicacion?: string
   estado: EstadoProyecto
+  mostrarEnWeb?: boolean
   etiquetaIds?: string[]
 }
 

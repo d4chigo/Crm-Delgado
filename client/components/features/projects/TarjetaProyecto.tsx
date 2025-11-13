@@ -54,15 +54,41 @@ export function TarjetaProyecto({
       {/* Imagen */}
       {proyecto.imagen ? (
         <div className="relative h-48 w-full overflow-hidden bg-gray-100">
-          <Image
-            src={proyecto.imagen}
-            alt={proyecto.nombre}
-            fill
-            className="object-cover"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg'
-            }}
-          />
+          {typeof window !== 'undefined' && window.electron ? (
+            // Usar img estándar en Electron - manejar tanto URLs como rutas locales
+            <>
+              <img
+                src={proyecto.imagen.startsWith('http') 
+                  ? proyecto.imagen // Usar URL directa si es una URL web
+                  : `file://${proyecto.imagen.replace(/\\\\/g, '/')}` // Usar file:// para rutas locales
+                }
+                alt={proyecto.nombre}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error('Error al cargar la imagen en Electron:', proyecto.imagen);
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder.svg';
+                }}
+                onLoad={() => console.log('Imagen cargada correctamente en Electron:', proyecto.imagen)}
+              />
+            </>
+          ) : (
+            // Usar el componente Image de Next.js en el navegador
+            <>
+              <Image
+                src={proyecto.imagen}
+                alt={proyecto.nombre}
+                fill
+                className="object-cover"
+                onError={(e) => {
+                  console.error('Error al cargar la imagen en el navegador:', proyecto.imagen);
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder.svg';
+                }}
+                onLoad={() => console.log('Imagen cargada correctamente en el navegador:', proyecto.imagen)}
+              />
+            </>
+          )}
         </div>
       ) : (
         <div className="h-48 w-full bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 flex items-center justify-center">

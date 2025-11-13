@@ -56,6 +56,7 @@ export function DialogoEditarContacto({
     dni: "",
     sexo: undefined,
     fechaNacimiento: "",
+    departamento: "",
   })
 
   // Cargar datos del contacto cuando se abre el diálogo
@@ -75,6 +76,7 @@ export function DialogoEditarContacto({
         dni: contacto.dni || "",
         sexo: contacto.sexo,
         fechaNacimiento,
+        departamento: contacto.departamento || "",
       })
       
       // Calcular edad al cargar
@@ -166,6 +168,7 @@ export function DialogoEditarContacto({
         const fecha = new Date(formulario.fechaNacimiento)
         datos.fechaNacimiento = fecha.toISOString()
       }
+      if (formulario.departamento?.trim()) datos.departamento = formulario.departamento.trim()
 
       await onActualizar(contacto.id, datos)
 
@@ -307,7 +310,7 @@ export function DialogoEditarContacto({
 
             {/* Sexo */}
             <div className="space-y-2">
-              <Label htmlFor="edit-sexo">Sexo</Label>
+              <Label htmlFor="edit-sexo">Sexo <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
               <Select
                 value={formulario.sexo || ""}
                 onValueChange={(value) => handleChange("sexo", value as Sexo)}
@@ -327,7 +330,7 @@ export function DialogoEditarContacto({
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
               <Label htmlFor="edit-fechaNacimiento">
-                Fecha de Nacimiento {edad !== null && <span className="text-muted-foreground">({edad} años)</span>}
+                Fecha de Nacimiento <span className="text-xs text-muted-foreground">(Recomendado)</span> {edad !== null && <span className="text-muted-foreground">({edad} años)</span>}
               </Label>
               <Input
                 id="edit-fechaNacimiento"
@@ -341,6 +344,16 @@ export function DialogoEditarContacto({
                   El contacto debe ser mayor de 18 años
                 </p>
               )}
+            </div>
+            {/* Departamento */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-departamento">Departamento <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
+              <Input
+                id="edit-departamento"
+                value={formulario.departamento || ""}
+                onChange={(e) => handleChange("departamento", e.target.value)}
+                placeholder="Ej: Lima"
+              />
             </div>
           </div>
 

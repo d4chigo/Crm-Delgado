@@ -26,6 +26,12 @@ router.get(
   contactoController.obtenerEstadisticas.bind(contactoController)
 );
 
+// GET /api/contactos/recientes - Obtener contactos recientes
+router.get(
+  '/recientes',
+  contactoController.obtenerContactosRecientes.bind(contactoController)
+);
+
 // GET /api/contactos/:id - Obtener un contacto
 router.get(
   '/:id',

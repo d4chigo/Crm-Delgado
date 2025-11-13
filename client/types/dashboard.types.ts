@@ -6,8 +6,12 @@ import type { LucideIcon } from 'lucide-react'
 
 export interface ElementoNavegacion {
   nombre: string
-  href: string
-  icono: LucideIcon
+  // href is optional when the item is a group that contains children
+  href?: string
+  // icon is optional for groups
+  icono?: LucideIcon
+  // children for grouped navigation (submenu)
+  children?: ElementoNavegacion[]
 }
 
 export interface KPI {
