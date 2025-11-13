@@ -224,7 +224,7 @@ model Reporte {
 model Proyecto {
   id            String             @id @default(uuid())
   nombre        String
-  descripcion   String?
+  descripcion   String?            @db.Text
   imagen        String?
   precio        Float?
   ubicacion     String?
