@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { etiquetaService } from "@/services/api/etiqueta.service"
+import contactoService from "@/services/api/contacto.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
-import { LeadCard, ClientCard, DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
-import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
-import { DialogoCrearAccesoWeb } from "@/components/features/contacts/DialogoCrearAccesoWeb";
+import { LeadCard, ClientCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
+import { DialogoCrearOportunidad, DialogoCrearAccesoWeb } from "@/components/features/contacts";
 import { FormularioCotizacion } from "@/components/features/cotizaciones";
 import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
@@ -58,6 +58,15 @@ export default function PaginaLeads() {
   const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
   const [totalLeads, setTotalLeads] = useState(0)
   const [totalClientes, setTotalClientes] = useState(0)
+
+  // Crear nuevo lead/cliente
+  const [dialogoCrearAbierto, setDialogoCrearAbierto] = useState(false)
+  const [tipoCrear, setTipoCrear] = useState<'lead' | 'cliente'>('lead')
+
+  // Eliminar contacto
+  const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false)
+  const [contactoAEliminar, setContactoAEliminar] = useState<Contacto | null>(null)
+  const [eliminando, setEliminando] = useState(false)
 
   // WhatsApp Post-Agendado
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
@@ -192,7 +201,7 @@ export default function PaginaLeads() {
         </TabsList>
 
         <TabsContent value="leads" className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-end">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Buscar por nombre, apellido, correo o DNI..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
@@ -208,6 +217,12 @@ export default function PaginaLeads() {
                 ))}
               </SelectContent>
             </Select>
+            <Button 
+              onClick={() => { setTipoCrear('lead'); setDialogoCrearAbierto(true) }}
+              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+              + Nuevo Lead
+            </Button>
           </div>
 
           {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
@@ -226,6 +241,10 @@ export default function PaginaLeads() {
                   onWhatsApp={handleWhatsAppCliente}
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
+                  onEliminar={(lead) => {
+                    setContactoAEliminar(lead)
+                    setDialogoEliminarAbierto(true)
+                  }}
                 />
               ))}
             </div>
@@ -248,7 +267,7 @@ export default function PaginaLeads() {
         </TabsContent>
 
         <TabsContent value="clientes" className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-end">
             <div className="flex-1"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar clientes por nombre, apellido o correo..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" /></div></div>
             <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
               <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
@@ -259,6 +278,12 @@ export default function PaginaLeads() {
                 ))}
               </SelectContent>
             </Select>
+            <Button 
+              onClick={() => { setTipoCrear('cliente'); setDialogoCrearAbierto(true) }}
+              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+              + Nuevo Cliente
+            </Button>
           </div>
 
           {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
@@ -278,6 +303,10 @@ export default function PaginaLeads() {
                   onCrearAccesoWeb={(cliente) => {
                     setLeadParaAccesoWeb(cliente);
                     setDialogoAccesoWebAbierto(true);
+                  }}
+                  onEliminar={(cliente) => {
+                    setContactoAEliminar(cliente)
+                    setDialogoEliminarAbierto(true)
                   }}
                 />
               ))}
@@ -303,6 +332,53 @@ export default function PaginaLeads() {
 
       <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} />
       <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
+
+      <DialogoCrearLead 
+        abierto={dialogoCrearAbierto} 
+        onCerrar={() => setDialogoCrearAbierto(false)} 
+        onCreado={() => cargarContactos({})}
+        tipo={tipoCrear}
+      />
+
+      {leadParaCotizar && (
+        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} contactoId={leadParaCotizar.id} nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`} />
+      )}
+
+      {clienteParaOportunidad && (
+        <DialogoCrearOportunidad
+          clienteId={clienteParaOportunidad.id}
+          clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
+          open={dialogoOportunidadAbierto}
+          onOpenChange={setDialogoOportunidadAbierto}
+          onSuccess={() => { toast({ title: "¡Oportunidad creada!", description: "El cliente ha sido agregado al pipeline exitosamente" }); setDialogoOportunidadAbierto(false); setClienteParaOportunidad(null) }}
+        />
+      )}
+
+      {contactoAEliminar && (
+        <DialogoConfirmarEliminar
+          abierto={dialogoEliminarAbierto}
+          onCerrar={() => {
+            setDialogoEliminarAbierto(false)
+            setContactoAEliminar(null)
+          }}
+          onConfirmar={async () => {
+            setEliminando(true)
+            try {
+              await contactoService.eliminarContacto(contactoAEliminar.id)
+              toast({ title: 'Éxito', description: 'Contacto eliminado correctamente' })
+              cargarContactos({})
+              setDialogoEliminarAbierto(false)
+              setContactoAEliminar(null)
+            } catch (error: any) {
+              toast({ title: 'Error', description: error.message || 'No se pudo eliminar el contacto', variant: 'destructive' })
+            } finally {
+              setEliminando(false)
+            }
+          }}
+          nombre={`${contactoAEliminar.nombre} ${contactoAEliminar.apellido || ''}`}
+          cargando={eliminando}
+        />
+      )}
 
       <DialogoCrearAccesoWeb
         contacto={leadParaAccesoWeb}

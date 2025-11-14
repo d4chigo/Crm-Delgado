@@ -229,7 +229,8 @@ export class ContactoService {
   }
 
   /**
-   * Convertir contacto a lead
+   * Convertir un lead a cliente
+   * Nota: Ya no existe conversión de CONTACTO a LEAD, todos son LEAD desde el inicio
    */
   async convertirALead(id: string, usuarioId: string) {
     const contacto = await prisma.contacto.findFirst({
@@ -240,10 +241,10 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    console.log(`🔄 Intentando convertir contacto ${id} - Tipo actual: ${contacto.tipo}`);
+    console.log(`🔄 Verificando contacto ${id} - Tipo actual: ${contacto.tipo}`);
 
     if (contacto.tipo === TipoContacto.LEAD) {
-      console.log(`⚠️ Contacto ${id} ya es un LEAD, retornando sin cambios`);
+      console.log(`✅ Contacto ${id} ya es un LEAD`);
       return this.agregarEdad(contacto);
     }
 
@@ -252,58 +253,7 @@ export class ContactoService {
       throw new Error('Este contacto ya es un cliente y no puede convertirse a lead');
     }
 
-    const contactoActualizado = await prisma.contacto.update({
-      where: { id },
-      data: { 
-        tipo: TipoContacto.LEAD,
-        estadoLead: contacto.estadoLead || EstadoLead.NUEVO
-      }
-    });
-
-    console.log(`✅ Contacto ${id} convertido de ${contacto.tipo} a ${contactoActualizado.tipo}`);
-
-    return this.agregarEdad(contactoActualizado);
-  }
-
-  /**
-   * Convertir múltiples contactos a leads
-   */
-  async convertirVariosALeads(ids: string[], usuarioId: string) {
-    console.log(`🔄 Intentando convertir ${ids.length} contactos a leads...`);
-    
-    // Verificar que todos los contactos existen y pertenecen al usuario
-    const contactos = await prisma.contacto.findMany({
-      where: {
-        id: { in: ids },
-        usuarioId,
-        tipo: TipoContacto.CONTACTO // Solo contactos que no sean ya leads o clientes
-      }
-    });
-
-    console.log(`✅ Encontrados ${contactos.length} contactos válidos para convertir`);
-
-    if (contactos.length === 0) {
-      throw new Error('No se encontraron contactos válidos para convertir. Verifica que los contactos seleccionados no sean ya leads o clientes.');
-    }
-
-    // Convertir todos a leads
-    const resultado = await prisma.contacto.updateMany({
-      where: {
-        id: { in: contactos.map((c: any) => c.id) }
-      },
-      data: {
-        tipo: TipoContacto.LEAD,
-        estadoLead: EstadoLead.NUEVO
-      }
-    });
-
-    console.log(`✅ ${resultado.count} contactos convertidos a leads exitosamente`);
-
-    return {
-      convertidos: resultado.count,
-      total: ids.length,
-      noConvertidos: ids.length - resultado.count
-    };
+    throw new Error('Tipo de contacto inválido');
   }
 
   /**
@@ -339,10 +289,7 @@ export class ContactoService {
    * Obtener estadísticas de contactos
    */
   async obtenerEstadisticas(usuarioId: string) {
-    const [totalContactos, totalLeads, totalClientes] = await Promise.all([
-      prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.CONTACTO }
-      }),
+    const [totalLeads, totalClientes] = await Promise.all([
       prisma.contacto.count({
         where: { usuarioId, tipo: TipoContacto.LEAD }
       }),
@@ -352,10 +299,9 @@ export class ContactoService {
     ]);
 
     return {
-      totalContactos,
       totalLeads,
       totalClientes,
-      total: totalContactos + totalLeads + totalClientes
+      total: totalLeads + totalClientes
     };
   }
 
@@ -616,6 +562,36 @@ export class ContactoService {
   }
 
   /**
+   * Obtener o crear la etiqueta "Fuente: Google Contacts"
+   */
+  private async obtenerOCrearEtiquetaGoogle(usuarioId: string) {
+    let etiqueta = await prisma.etiqueta.findFirst({
+      where: {
+        nombre: 'Fuente: Google Contacts',
+        usuarioId
+      }
+    });
+
+    if (!etiqueta) {
+      console.log('📝 Creando etiqueta "Fuente: Google Contacts"...');
+      etiqueta = await prisma.etiqueta.create({
+        data: {
+          nombre: 'Fuente: Google Contacts',
+          descripcion: 'Contactos importados desde Google Contacts',
+          color: '#4285F4', // Color azul de Google
+          icono: 'Mail',
+          usuarioId,
+          activa: true,
+          orden: 1
+        }
+      });
+      console.log('✅ Etiqueta creada exitosamente');
+    }
+
+    return etiqueta;
+  }
+
+  /**
    * Importar contactos desde Google
    */
   async importarDesdeGoogle(usuarioId: string, accessToken: string): Promise<{
@@ -632,6 +608,10 @@ export class ContactoService {
     let errores = 0;
 
     try {
+      // Obtener o crear la etiqueta de Google
+      const etiquetaGoogle = await this.obtenerOCrearEtiquetaGoogle(usuarioId);
+      console.log('🏷️ Etiqueta Google obtenida/creada:', etiquetaGoogle.id);
+
       // Obtener contactos de Google usando el access token
       console.log('[Contacto Service] Llamando a googleAuthService.getContacts...');
       const contactosGoogle = await googleAuthService.getContacts(accessToken);
@@ -690,15 +670,23 @@ export class ContactoService {
             continue;
           }
 
-          // Crear el nuevo contacto
-          await this.crearContacto({
+          // Crear el nuevo contacto como LEAD
+          const nuevoContacto = await this.crearContacto({
             nombre: nombre.trim() || 'Sin nombre',
             apellido: apellido.trim() || '',
             correo: correoFinal!.toLowerCase().trim(),
             telefono: telefono?.trim()
           }, usuarioId);
 
-          console.log(`✅ Importado: ${nombre} ${apellido}`);
+          // Asignar la etiqueta "Fuente: Google Contacts"
+          await prisma.contactoEtiqueta.create({
+            data: {
+              contactoId: nuevoContacto.id,
+              etiquetaId: etiquetaGoogle.id
+            }
+          });
+
+          console.log(`✅ Importado: ${nombre} ${apellido} (con etiqueta Google)`);
           importados++;
         } catch (error: any) {
           console.error('❌ Error al importar contacto individual:', {

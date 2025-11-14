@@ -20,7 +20,6 @@ import type { ElementoNavegacion } from "@/types/dashboard.types"
 
 const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
-  { nombre: "Contactos", href: "/dashboard/contacts", icono: IconoContacto },
   { nombre: "Leads / Clientes", href: "/dashboard/leads", icono: IconoUsuarios },
   // Grupo: Panel Admin Web
   {

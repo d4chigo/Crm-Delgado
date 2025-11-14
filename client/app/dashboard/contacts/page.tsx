@@ -63,12 +63,12 @@ export default function PaginaContactos() {
   // Lista memorizada (si se aplican filtros adicionales en el futuro)
   const contactosFiltrados = useMemo(() => contactos, [contactos])
 
-  // Cargar contactos con filtro CONTACTO al montar el componente
+  // Cargar contactos con filtro LEAD al montar el componente
   useEffect(() => {
-    console.log('🎯 Cargando contactos iniciales con filtro: solo CONTACTO')
+    console.log('🎯 Cargando contactos iniciales con filtro: solo LEAD')
     setFiltros(prev => ({
       ...prev,
-      tipo: TipoContacto.CONTACTO,
+      tipo: TipoContacto.LEAD,
       pagina: 1,
       limite: 6,
       busqueda: ''

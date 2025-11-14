@@ -37,7 +37,7 @@ model Contacto {
   dni               String?
   sexo              Sexo?
   fechaNacimiento   DateTime?
-  tipo              TipoContacto         @default(CONTACTO)
+  tipo              TipoContacto         @default(LEAD)
   creadoEn          DateTime             @default(now())
   actualizadoEn     DateTime             @updatedAt
   usuarioId         String
@@ -266,7 +266,6 @@ enum Sexo {
 }
 
 enum TipoContacto {
-  CONTACTO
   LEAD
   CLIENTE
 }

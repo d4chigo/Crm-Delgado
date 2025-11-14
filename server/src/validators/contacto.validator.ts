@@ -47,7 +47,7 @@ export const crearContactoSchema = z.object({
       .nullable()
       .or(z.literal(''))
       .transform((val: any) => val === '' ? undefined : val),
-    tipo: z.enum(['CONTACTO', 'LEAD', 'CLIENTE']).optional(),
+    tipo: z.enum(['LEAD', 'CLIENTE']).optional(),
     
     // Información profesional
     empresa: z.string().max(200).optional(),

@@ -9,7 +9,6 @@ export enum Sexo {
 }
 
 export enum TipoContacto {
-  CONTACTO = 'CONTACTO',
   LEAD = 'LEAD',
   CLIENTE = 'CLIENTE'
 }

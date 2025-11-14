@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe, Trash2 } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface ClientCardProps {
@@ -15,6 +15,7 @@ interface ClientCardProps {
   onWhatsApp: (telefono: string) => void
   onScheduleMeeting?: (nombre: string, correo: string) => void
   onCrearAccesoWeb?: (cliente: Contacto) => void
+  onEliminar?: (cliente: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -41,7 +42,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb }: ClientCardProps) {
+export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb, onEliminar }: ClientCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow border-green-200">
       <CardHeader>
@@ -223,6 +224,17 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
             <TrendingUp className="h-4 w-4 mr-2" />
             Agregar al Pipeline
           </Button>
+          {onEliminar && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEliminar(cliente)}
+              className="w-full mt-2 border-red-300 text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Eliminar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

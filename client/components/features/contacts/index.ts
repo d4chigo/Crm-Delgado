@@ -1,10 +1,9 @@
 /**
  * Índice de componentes de contactos
+ * Nota: Solo se exportan componentes que se usan en otras secciones
  */
 
-export { TarjetaContacto } from './TarjetaContacto'
-export { FormularioContacto } from './FormularioContacto'
-export { DialogoImportarContacto } from './DialogoImportarContacto'
-export { EstadisticasContacto } from './EstadisticasContacto'
-export { BarraBusquedaContacto } from './BarraBusquedaContacto'
-export { EstadoVacioContacto } from './EstadoVacioContacto'
+// Componentes para Leads/Clientes
+export { DialogoCrearOportunidad } from './DialogoCrearOportunidad'
+export { DialogoCrearAccesoWeb } from './DialogoCrearAccesoWeb'
+export { SelectorEtiquetasCreacion } from './SelectorEtiquetasCreacion'
