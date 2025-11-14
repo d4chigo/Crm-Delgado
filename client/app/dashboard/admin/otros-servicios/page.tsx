@@ -18,8 +18,9 @@ export default function OtrosServiciosPage() {
   const [formData, setFormData] = useState<Omit<OtroServicio, 'id'>>({
     titulo: '',
     descripcion: '',
-    imagen: '',
-    activo: true,
+    caracteristicas: [],
+    imagenes: [],
+    enlaceVideo: '',
   });
 
   // Cargar servicios al montar el componente
@@ -80,8 +81,9 @@ export default function OtrosServiciosPage() {
     setFormData({
       titulo: servicio.titulo,
       descripcion: servicio.descripcion || '',
-      imagen: servicio.imagen || '',
-      activo: servicio.activo,
+      caracteristicas: servicio.caracteristicas || [],
+      imagenes: servicio.imagenes || [],
+      enlaceVideo: servicio.enlaceVideo || '',
     });
     setShowModal(true);
   };
@@ -107,8 +109,9 @@ export default function OtrosServiciosPage() {
     setFormData({
       titulo: '',
       descripcion: '',
-      imagen: '',
-      activo: true,
+      caracteristicas: [],
+      imagenes: [],
+      enlaceVideo: '',
     });
     setShowModal(true);
   };
@@ -139,9 +142,6 @@ export default function OtrosServiciosPage() {
                     Título
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
@@ -154,15 +154,6 @@ export default function OtrosServiciosPage() {
                       {servicio.descripcion && (
                         <div className="text-sm text-gray-500 line-clamp-2">{servicio.descripcion}</div>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        servicio.activo 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {servicio.activo ? 'Activo' : 'Inactivo'}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
@@ -197,14 +188,15 @@ export default function OtrosServiciosPage() {
 
       {/* Modal para agregar/editar servicio */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">
                 {currentServicio ? 'Editar Servicio' : 'Nuevo Servicio'}
               </h2>
               
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Título */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Título <span className="text-red-500">*</span>
@@ -214,69 +206,149 @@ export default function OtrosServiciosPage() {
                     name="titulo"
                     value={formData.titulo}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00] bg-white"
                     required
                   />
                 </div>
 
+                {/* Descripción */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Descripción
                   </label>
                   <textarea
                     name="descripcion"
-                    value={formData.descripcion}
+                    value={formData.descripcion || ''}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00] bg-white"
                   />
                 </div>
 
+                {/* Características dinámicas */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Características
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          caracteristicas: [...(prev.caracteristicas || []), '']
+                        }));
+                      }}
+                      className="text-xs bg-[#FCBA00] text-gray-900 px-2 py-1 rounded hover:bg-[#e6a800] transition-colors"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {(formData.caracteristicas || []).map((caracteristica, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={caracteristica}
+                          onChange={(e) => {
+                            const newCaracteristicas = [...(formData.caracteristicas || [])];
+                            newCaracteristicas[index] = e.target.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              caracteristicas: newCaracteristicas
+                            }));
+                          }}
+                          placeholder="Ej: Mediciones precisas de terrenos"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00] bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newCaracteristicas = (formData.caracteristicas || []).filter((_, i) => i !== index);
+                            setFormData(prev => ({
+                              ...prev,
+                              caracteristicas: newCaracteristicas
+                            }));
+                          }}
+                          className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Imágenes dinámicas */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Imágenes para galería
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          imagenes: [...(prev.imagenes || []), '']
+                        }));
+                      }}
+                      className="text-xs bg-[#FCBA00] text-gray-900 px-2 py-1 rounded hover:bg-[#e6a800] transition-colors"
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {(formData.imagenes || []).map((imagen, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="url"
+                          value={imagen}
+                          onChange={(e) => {
+                            const newImagenes = [...(formData.imagenes || [])];
+                            newImagenes[index] = e.target.value;
+                            setFormData(prev => ({
+                              ...prev,
+                              imagenes: newImagenes
+                            }));
+                          }}
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00] bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImagenes = (formData.imagenes || []).filter((_, i) => i !== index);
+                            setFormData(prev => ({
+                              ...prev,
+                              imagenes: newImagenes
+                            }));
+                          }}
+                          className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Video */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    URL de la imagen
+                    URL del video (opcional)
                   </label>
                   <input
                     type="url"
-                    name="imagen"
-                    value={formData.imagen}
+                    name="enlaceVideo"
+                    value={formData.enlaceVideo || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                    placeholder="https://youtube.com/..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00] bg-white"
                   />
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="activo"
-                    name="activo"
-                    checked={formData.activo}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 text-[#FCBA00] focus:ring-[#FCBA00] border-gray-300 rounded"
-                  />
-                  <label htmlFor="activo" className="ml-2 block text-sm text-gray-700">
-                    Activo
-                  </label>
-                </div>
-
-                {formData.imagen && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Vista previa de la imagen
-                    </label>
-                    <div className="mt-1">
-                      <img 
-                        src={formData.imagen} 
-                        alt="Vista previa" 
-                        className="h-32 w-auto object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
+                {/* Botones */}
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"

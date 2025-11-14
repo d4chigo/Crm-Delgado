@@ -224,7 +224,7 @@ model Reporte {
 model Proyecto {
   id            String             @id @default(uuid())
   nombre        String
-  descripcion   String?
+  descripcion   String?            @db.Text
   imagen        String?
   precio        Float?
   ubicacion     String?
@@ -351,14 +351,16 @@ enum EstadoTestimonio {
 
 // Otros servicios para el sitio web
 model OtrosServicios {
-  id             Int          @id @default(autoincrement())
-  titulo         String
-  descripcion    String?
-  enlaceImagen   String?      @map("image_link")
-  enlaceVideo    String?      @map("video_link")
-  tipoServicio   TipoServicio @map("service_type") @default(GENERAL)
-  creadoEn       DateTime     @default(now()) @map("created_at")
-  actualizadoEn  DateTime     @updatedAt @map("updated_at")
+  id               Int          @id @default(autoincrement())
+  titulo           String
+  descripcion      String?
+  caracteristicas  String?      @db.LongText  // JSON array as string
+  imagenes         String?      @db.LongText  // JSON array as string
+  enlaceImagen     String?      @map("image_link")
+  enlaceVideo      String?      @map("video_link")
+  tipoServicio     TipoServicio @map("service_type") @default(GENERAL)
+  creadoEn         DateTime     @default(now()) @map("created_at")
+  actualizadoEn    DateTime     @updatedAt @map("updated_at")
 
   @@map("otros_servicios")
 }

@@ -4,15 +4,20 @@ export interface OtroServicio {
   id: number;
   titulo: string;
   descripcion?: string;
-  imagen?: string;
-  activo: boolean;
+  caracteristicas?: string[]; // Lista de características con checkmarks
+  imagenes?: string[]; // URLs de imágenes para la galería
+  enlaceVideo?: string;
+  creadoEn?: Date;
+  actualizadoEn?: Date;
 }
 
 export const otrosServiciosService = {
   async obtenerTodos(): Promise<OtroServicio[]> {
     try {
       const token = localStorage.getItem('crm_token');
-      const url = api('/api/admin/otros-servicios');
+      const url = api('/admin/otros-servicios');
+      
+      console.log('Obteniendo servicios desde:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -21,12 +26,17 @@ export const otrosServiciosService = {
         },
       });
 
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Error al obtener los servicios');
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`Error al obtener los servicios: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      console.log('Datos recibidos:', data);
+      return Array.isArray(data) ? data : data.data || [];
     } catch (error) {
       console.error('Error en otrosServiciosService.obtenerTodos:', error);
       throw error;
@@ -35,7 +45,7 @@ export const otrosServiciosService = {
 
   async crear(datos: Omit<OtroServicio, 'id'>): Promise<OtroServicio> {
     const token = localStorage.getItem('crm_token');
-    const url = api('/api/admin/otros-servicios');
+    const url = api('/admin/otros-servicios');
     
     const response = await fetch(url, {
       method: 'POST',
@@ -56,7 +66,7 @@ export const otrosServiciosService = {
 
   async actualizar(id: number, datos: Partial<OtroServicio>): Promise<OtroServicio> {
     const token = localStorage.getItem('crm_token');
-    const url = api(`/api/admin/otros-servicios/${id}`);
+    const url = api(`/admin/otros-servicios/${id}`);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -77,7 +87,7 @@ export const otrosServiciosService = {
 
   async eliminar(id: number): Promise<void> {
     const token = localStorage.getItem('crm_token');
-    const url = api(`/api/admin/otros-servicios/${id}`);
+    const url = api(`/admin/otros-servicios/${id}`);
     
     const response = await fetch(url, {
       method: 'DELETE',

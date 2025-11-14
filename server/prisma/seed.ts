@@ -107,6 +107,13 @@ async function seed() {
             descripcion: 'Propiedad usada/segunda mano',
             icono: '🏘️',
             orden: 10
+          },
+          {
+            nombre: 'Habilitaciones',
+            color: '#F97316', // Naranja oscuro
+            descripcion: 'Proyectos de habilitaciones urbanas',
+            icono: '🏗️',
+            orden: 11
           }
         ]
       });
@@ -114,6 +121,26 @@ async function seed() {
       console.log(`✅ ${etiquetas.count} etiquetas predefinidas creadas`);
     } else {
       console.log('ℹ️  Ya existen etiquetas en la base de datos');
+      
+      // Verificar si la etiqueta "Habilitaciones" existe
+      const habilitacionesExiste = await prisma.etiqueta.findFirst({
+        where: { nombre: 'Habilitaciones' }
+      });
+      
+      if (!habilitacionesExiste) {
+        await prisma.etiqueta.create({
+          data: {
+            nombre: 'Habilitaciones',
+            color: '#F97316', // Naranja oscuro
+            descripcion: 'Proyectos de habilitaciones urbanas',
+            icono: '🏗️',
+            orden: 11
+          }
+        });
+        console.log('✅ Etiqueta "Habilitaciones" creada exitosamente');
+      } else {
+        console.log('ℹ️  La etiqueta "Habilitaciones" ya existe');
+      }
     }
 
     const testimoniosExistentes = await prisma.testimonio.count();
