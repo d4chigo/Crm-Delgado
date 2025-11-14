@@ -5,7 +5,8 @@ import { otrosServiciosService } from '../services/otrosServicios.service'
 const schema = z.object({
   titulo: z.string().min(1, 'El título es requerido'),
   descripcion: z.string().optional().nullable(),
-  enlaceImagen: z.string().optional().nullable(),
+  caracteristicas: z.array(z.string()).optional().nullable(),
+  imagenes: z.array(z.string()).optional().nullable(),
   enlaceVideo: z.string().optional().nullable(),
   tipoServicio: z.enum(['GENERAL', 'TECHO_PROPIO', 'MI_VIVIENDA', 'HABILITACIONES']).optional()
 })
@@ -13,11 +14,13 @@ const schema = z.object({
 export const otrosServiciosController = {
   async list(req: Request, res: Response) {
     try {
+      console.log('[otrosServicios] Listando servicios...')
       const items = await otrosServiciosService.obtenerTodos()
+      console.log('[otrosServicios] Servicios encontrados:', items.length)
       res.json(items)
     } catch (error) {
-      console.error('Error al listar servicios:', error)
-      res.status(500).json({ error: 'Error al obtener servicios' })
+      console.error('[otrosServicios] Error al listar servicios:', error)
+      res.status(500).json({ error: 'Error al obtener servicios', details: error instanceof Error ? error.message : 'Unknown error' })
     }
   },
   async get(req: Request, res: Response) {
