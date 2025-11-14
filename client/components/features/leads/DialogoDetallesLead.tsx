@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { Contacto, Cotizacion } from '@/types';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { User, Briefcase, TrendingUp, Calendar, MapPin, Mail, Phone, DollarSign, Tag, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Briefcase, TrendingUp, Calendar, MapPin, Mail, Phone, DollarSign, Tag, FileText, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCotizaciones } from '@/hooks/useCotizaciones';
 import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones/ListaCotizacionesSoloLectura';
+import { DialogoCambiarEstado } from './DialogoCambiarEstado';
+import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 
 // NOTE: This component uses extensive inline styles as a last resort to override
 // potential external CSS conflicts that may be causing layout issues.
@@ -37,10 +40,12 @@ interface DialogoDetallesLeadProps {
   lead: Contacto | null;
   abierto: boolean;
   onCerrar: () => void;
+  onActualizado?: () => void;
 }
 
-export function DialogoDetallesLead({ lead, abierto, onCerrar }: DialogoDetallesLeadProps) {
+export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: DialogoDetallesLeadProps) {
   const { cotizaciones, loading: loadingCotizaciones, cargarPorContacto } = useCotizaciones();
+  const [dialogoCambiarEstadoAbierto, setDialogoCambiarEstadoAbierto] = useState(false);
 
   useEffect(() => {
     if (abierto && lead) {
@@ -55,17 +60,26 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar }: DialogoDetalles
       <DialogContent style={{ maxWidth: '900px', width: '90vw', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0, background: '#f9fafb', borderRadius: '1rem', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ padding: '2rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', background: '#1f2937', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'white' }}>{lead.nombre?.charAt(0).toUpperCase()}</span>
-            </div>
-            <div style={{ marginLeft: '1.5rem' }}>
-                <DialogTitle style={{ fontSize: '2.25rem', fontWeight: 800, color: '#111827' }}>{lead.nombre} {lead.apellido}</DialogTitle>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <Badge variant="default">{lead.tipo}</Badge>
-                    {lead.estadoLead && <Badge variant="secondary">{lead.estadoLead}</Badge>}
+        <div style={{ padding: '2rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '6rem', height: '6rem', borderRadius: '9999px', background: '#1f2937', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '3rem', fontWeight: 'bold', color: 'white' }}>{lead.nombre?.charAt(0).toUpperCase()}</span>
+                </div>
+                <div style={{ marginLeft: '1.5rem' }}>
+                    <DialogTitle style={{ fontSize: '2.25rem', fontWeight: 800, color: '#111827' }}>{lead.nombre} {lead.apellido}</DialogTitle>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <Badge variant="default">{lead.tipo}</Badge>
+                        {lead.estadoLead && <Badge variant="secondary">{ESTADOS_LEAD_DISPLAY[lead.estadoLead as keyof typeof ESTADOS_LEAD_DISPLAY]?.label || lead.estadoLead}</Badge>}
+                    </div>
                 </div>
             </div>
+            <Button
+                onClick={() => setDialogoCambiarEstadoAbierto(true)}
+                className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+                <ChevronDown className="h-4 w-4 mr-2" />
+                Cambiar Estado
+            </Button>
         </div>
 
         {/* Body */}
@@ -113,6 +127,21 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar }: DialogoDetalles
                 </div>
             </div>
         </div>
+
+        {/* Dialog para cambiar estado */}
+        {lead && (
+          <DialogoCambiarEstado
+            abierto={dialogoCambiarEstadoAbierto}
+            onCerrar={() => setDialogoCambiarEstadoAbierto(false)}
+            leadId={lead.id}
+            estadoActual={lead.estadoLead}
+            nombreLead={`${lead.nombre} ${lead.apellido || ''}`}
+            onActualizado={() => {
+              onActualizado?.();
+              setDialogoCambiarEstadoAbierto(false);
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

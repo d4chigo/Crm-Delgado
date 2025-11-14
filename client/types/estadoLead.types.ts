@@ -11,25 +11,25 @@ export enum EstadoLead {
 
 export const ESTADOS_LEAD_DISPLAY = {
   [EstadoLead.NUEVO]: {
-    label: 'Nuevos',
-    icon: '🆕',
+    label: 'Sin Contactar',
+    icon: '📋',
     color: 'bg-blue-100 text-blue-800',
-    description: 'Sin contactar - menos de 24 horas',
+    description: 'Nuevos leads sin contactar',
     badge: 'bg-blue-500'
   },
   [EstadoLead.CONTACTADO]: {
-    label: 'En seguimiento',
-    icon: '🔄',
+    label: 'En Contacto',
+    icon: '📞',
     color: 'bg-yellow-100 text-yellow-800',
-    description: 'Contacto iniciado, no calificado',
+    description: 'Seguimiento inicial en progreso',
     badge: 'bg-yellow-500'
   },
   [EstadoLead.CALIFICADO]: {
-    label: 'Calientes',
-    icon: '🔥',
-    color: 'bg-red-100 text-red-800',
-    description: 'Listos para cerrar - alta probabilidad',
-    badge: 'bg-red-500'
+    label: 'Calificados',
+    icon: '✅',
+    color: 'bg-green-100 text-green-800',
+    description: 'Listos para oportunidad',
+    badge: 'bg-green-500'
   },
   [EstadoLead.NEGOCIACION]: {
     label: 'Negociación',
@@ -47,16 +47,16 @@ export const ESTADOS_LEAD_DISPLAY = {
   },
   [EstadoLead.GANADO]: {
     label: 'Ganado',
-    icon: '✅',
+    icon: '🎉',
     color: 'bg-green-100 text-green-800',
     description: 'Convertido a cliente',
     badge: 'bg-green-500'
   },
   [EstadoLead.PERDIDO]: {
-    label: 'Perdidos',
-    icon: '📁',
+    label: 'Descalificados',
+    icon: '❌',
     color: 'bg-gray-100 text-gray-800',
-    description: 'Sin interés o no respondieron',
+    description: 'Archivados sin interés',
     badge: 'bg-gray-500'
   },
   [EstadoLead.EN_ESPERA]: {
@@ -70,8 +70,8 @@ export const ESTADOS_LEAD_DISPLAY = {
 
 export const FILTROS_LEADS = [
   { value: '', label: '👥 Todos los leads' },
-  { value: EstadoLead.NUEVO, label: '🆕 Nuevos' },
-  { value: EstadoLead.CONTACTADO, label: '🔄 En seguimiento' },
-  { value: EstadoLead.CALIFICADO, label: '🔥 Calientes' },
-  { value: EstadoLead.PERDIDO, label: '📁 Perdidos/Archivados' }
+  { value: EstadoLead.NUEVO, label: '📋 Sin Contactar' },
+  { value: EstadoLead.CONTACTADO, label: '📞 En Contacto' },
+  { value: EstadoLead.CALIFICADO, label: '✅ Calificados' },
+  { value: EstadoLead.PERDIDO, label: '❌ Descalificados' }
 ];
