@@ -72,9 +72,11 @@ export async function getEvents(req: Request, res: Response) {
     const { tokens } = req.body;
     
     if (!tokens) {
+      console.warn('[Calendar] No hay tokens en la solicitud');
       return res.status(401).json({ exito: false, error: 'No autenticado', requireAuth: true });
     }
 
+    console.log('[Calendar] Configurando credenciales con tokens');
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
@@ -82,6 +84,8 @@ export async function getEvents(req: Request, res: Response) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+    console.log('[Calendar] Solicitando eventos del mes:', startOfMonth.toISOString(), '-', endOfMonth.toISOString());
+    
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin: startOfMonth.toISOString(),
@@ -90,6 +94,8 @@ export async function getEvents(req: Request, res: Response) {
       singleEvents: true,
       orderBy: 'startTime',
     });
+
+    console.log('[Calendar] Eventos obtenidos:', response.data.items?.length || 0);
 
     const events = response.data.items?.map((event) => ({
       id: event.id,
@@ -106,11 +112,19 @@ export async function getEvents(req: Request, res: Response) {
 
     res.json({ exito: true, datos: { events } });
   } catch (error: any) {
-    console.error('[Calendar] Error obteniendo eventos:', error);
-    if (error.code === 401) {
-      return res.status(401).json({ exito: false, error: 'Token expirado', requireAuth: true });
+    console.error('[Calendar] Error obteniendo eventos:', error.message);
+    console.error('[Calendar] Error code:', error.code);
+    console.error('[Calendar] Error details:', error.errors?.[0]?.message);
+    
+    if (error.code === 401 || error.message?.includes('Invalid Credentials')) {
+      return res.status(401).json({ exito: false, error: 'Token expirado o inválido', requireAuth: true });
     }
-    res.status(500).json({ exito: false, error: 'Error obteniendo eventos' });
+    
+    res.status(500).json({ 
+      exito: false, 
+      error: 'Error obteniendo eventos',
+      detalles: error.message 
+    });
   }
 }
 
@@ -128,9 +142,11 @@ export async function syncEvents(req: Request, res: Response) {
     const { tokens } = req.body;
     
     if (!tokens) {
+      console.warn('[Calendar] No hay tokens para sincronizar');
       return res.status(401).json({ exito: false, error: 'No autenticado', requireAuth: true });
     }
 
+    console.log('[Calendar] Sincronizando eventos...');
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
@@ -138,6 +154,8 @@ export async function syncEvents(req: Request, res: Response) {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    console.log('[Calendar] Rango de fechas:', startOfMonth.toISOString(), '-', endOfMonth.toISOString());
 
     const response = await calendar.events.list({
       calendarId: 'primary',
@@ -151,10 +169,18 @@ export async function syncEvents(req: Request, res: Response) {
     console.log('[Calendar] Eventos sincronizados:', response.data.items?.length || 0);
     res.json({ exito: true, mensaje: 'Eventos sincronizados correctamente' });
   } catch (error: any) {
-    console.error('[Calendar] Error sincronizando eventos:', error);
-    if (error.code === 401) {
-      return res.status(401).json({ exito: false, error: 'Token expirado', requireAuth: true });
+    console.error('[Calendar] Error sincronizando eventos:', error.message);
+    console.error('[Calendar] Error code:', error.code);
+    console.error('[Calendar] Error details:', error.errors?.[0]?.message);
+    
+    if (error.code === 401 || error.message?.includes('Invalid Credentials')) {
+      return res.status(401).json({ exito: false, error: 'Token expirado o inválido', requireAuth: true });
     }
-    res.status(500).json({ exito: false, error: 'Error sincronizando eventos' });
+    
+    res.status(500).json({ 
+      exito: false, 
+      error: 'Error sincronizando eventos',
+      detalles: error.message 
+    });
   }
 }

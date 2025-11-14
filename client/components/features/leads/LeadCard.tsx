@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe } from "lucide-react"
+import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar } from "lucide-react"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface LeadCardProps {
@@ -15,7 +15,6 @@ interface LeadCardProps {
   onEditar: (lead: Contacto) => void
   onWhatsApp: (telefono: string) => void
   onScheduleMeeting: (nombre: string, correo: string, telefono?: string) => void
-  onCrearAccesoWeb?: (lead: Contacto) => void
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -42,7 +41,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb }: LeadCardProps) {
+export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting }: LeadCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -243,15 +242,6 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
             >
               <FileText className="h-4 w-4 mr-1" />
               Cotizar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCrearAccesoWeb?.(lead)}
-              className="col-span-2 border-green-600 text-green-700 hover:bg-green-50"
-            >
-              <Globe className="h-4 w-4 mr-1" />
-              Crear Acceso Web
             </Button>
             <Button
               size="sm"

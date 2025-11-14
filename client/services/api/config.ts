@@ -56,18 +56,23 @@ async function fetchAPI<T>(
 
     // Si no hay respuesta o el servidor no responde
     if (!response.ok && response.status >= 500) {
+      console.error(`[API] Error 500 en ${endpoint}`);
       throw new Error('Error del servidor. Intenta de nuevo más tarde.');
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const errorText = await response.text();
+      console.error(`[API] Respuesta no JSON en ${endpoint}:`, errorText);
       throw new Error(errorText || 'Respuesta inesperada del servidor');
     }
 
     const data: RespuestaAPI<T> = await response.json();
 
     if (!data.exito) {
+      // Log de errores para debugging
+      console.error(`[API] Error en ${endpoint}:`, data.error, data.detalles);
+      
       // Mensajes de error mejorados según el código
       if (data.codigo === 'CREDENCIALES_INVALIDAS') {
         throw new Error('Email o contraseña incorrectos');
@@ -83,7 +88,9 @@ async function fetchAPI<T>(
         throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
       }
       
-      throw new Error(data.error || 'Error en la petición');
+      // Si hay detalles del error, incluirlos
+      const mensajeError = data.detalles ? `${data.error}: ${data.detalles}` : data.error;
+      throw new Error(mensajeError || 'Error en la petición');
     }
 
     return data.datos;

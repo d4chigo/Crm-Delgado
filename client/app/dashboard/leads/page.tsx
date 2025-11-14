@@ -226,10 +226,6 @@ export default function PaginaLeads() {
                   onWhatsApp={handleWhatsAppCliente}
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
-                  onCrearAccesoWeb={(lead) => {
-                    setLeadParaAccesoWeb(lead);
-                    setDialogoAccesoWebAbierto(true);
-                  }}
                 />
               ))}
             </div>
