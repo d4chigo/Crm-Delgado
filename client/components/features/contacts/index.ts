@@ -7,3 +7,6 @@
 export { DialogoCrearOportunidad } from './DialogoCrearOportunidad'
 export { DialogoCrearAccesoWeb } from './DialogoCrearAccesoWeb'
 export { SelectorEtiquetasCreacion } from './SelectorEtiquetasCreacion'
+
+// Componentes de importación
+export { ContactImportDialog } from './ContactImportDialog'

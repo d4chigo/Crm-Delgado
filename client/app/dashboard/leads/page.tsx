@@ -19,6 +19,7 @@ import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, Dia
 import { FormularioCotizacion } from "@/components/features/cotizaciones";
 import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
+import { ContactImportDialog } from "@/components/features/contacts";
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import { EstadoLead, ESTADOS_LEAD_DISPLAY, FILTROS_LEADS } from "@/types/estadoLead.types"
@@ -191,8 +192,8 @@ export default function PaginaLeads() {
           ))}
         </div>
 
-        <div className="flex gap-4 items-end">
-          <div className="flex-1 relative">
+        <div className="flex gap-4 items-end flex-wrap">
+          <div className="flex-1 relative min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por nombre, apellido, correo o DNI..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
           </div>
@@ -207,6 +208,7 @@ export default function PaginaLeads() {
               ))}
             </SelectContent>
           </Select>
+          <ContactImportDialog onImport={() => cargarContactos({ tipo: TipoContacto.LEAD })} />
           <Button 
             onClick={() => setDialogoCrearAbierto(true)}
             className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
