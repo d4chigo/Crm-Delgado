@@ -26,6 +26,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
 import { ProyectosAsociados } from './ProyectosAsociados';
+import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
 
 interface DialogoEditarLeadProps {
@@ -434,16 +435,35 @@ export function DialogoEditarLead({
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NUEVO">Nuevo</SelectItem>
-                    <SelectItem value="CONTACTADO">Contactado</SelectItem>
-                    <SelectItem value="CALIFICADO">Calificado</SelectItem>
-                    <SelectItem value="NEGOCIACION">Negociación</SelectItem>
-                    <SelectItem value="PROPUESTA">Propuesta Enviada</SelectItem>
-                    <SelectItem value="GANADO">Ganado</SelectItem>
-                    <SelectItem value="PERDIDO">Perdido</SelectItem>
-                    <SelectItem value="EN_ESPERA">En Espera</SelectItem>
+                    <SelectItem value="NUEVO">
+                      {ESTADOS_LEAD_DISPLAY.NUEVO.icon} {ESTADOS_LEAD_DISPLAY.NUEVO.label}
+                    </SelectItem>
+                    <SelectItem value="CONTACTADO">
+                      {ESTADOS_LEAD_DISPLAY.CONTACTADO.icon} {ESTADOS_LEAD_DISPLAY.CONTACTADO.label}
+                    </SelectItem>
+                    <SelectItem value="CALIFICADO">
+                      {ESTADOS_LEAD_DISPLAY.CALIFICADO.icon} {ESTADOS_LEAD_DISPLAY.CALIFICADO.label}
+                    </SelectItem>
+                    <SelectItem value="NEGOCIACION">
+                      {ESTADOS_LEAD_DISPLAY.NEGOCIACION.icon} {ESTADOS_LEAD_DISPLAY.NEGOCIACION.label}
+                    </SelectItem>
+                    <SelectItem value="PROPUESTA">
+                      {ESTADOS_LEAD_DISPLAY.PROPUESTA.icon} {ESTADOS_LEAD_DISPLAY.PROPUESTA.label}
+                    </SelectItem>
+                    <SelectItem value="GANADO">
+                      {ESTADOS_LEAD_DISPLAY.GANADO.icon} {ESTADOS_LEAD_DISPLAY.GANADO.label}
+                    </SelectItem>
+                    <SelectItem value="PERDIDO">
+                      {ESTADOS_LEAD_DISPLAY.PERDIDO.icon} {ESTADOS_LEAD_DISPLAY.PERDIDO.label}
+                    </SelectItem>
+                    <SelectItem value="EN_ESPERA">
+                      {ESTADOS_LEAD_DISPLAY.EN_ESPERA.icon} {ESTADOS_LEAD_DISPLAY.EN_ESPERA.label}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {datos.estadoLead && ESTADOS_LEAD_DISPLAY[datos.estadoLead as keyof typeof ESTADOS_LEAD_DISPLAY]?.description}
+                </p>
               </div>
 
               <div className="space-y-2">
