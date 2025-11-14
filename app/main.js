@@ -4,9 +4,11 @@ const { session } = require('electron')
 const path = require('node:path')
 
 const createWindow = () => {
+  const iconPath = path.join(__dirname, '..', 'client', 'public', 'logodelgado.png')
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -15,7 +17,6 @@ const createWindow = () => {
   win.loadURL('http://localhost:3000')
   // Ensure any attempts to open a new window (e.g. window.open or target="_blank")
   // are redirected to the user's default browser instead of creating a new
-  // Electron BrowserWindow. This makes links (like WhatsApp) open externally.
   if (win && win.webContents && typeof win.webContents.setWindowOpenHandler === 'function') {
     win.webContents.setWindowOpenHandler(({ url }) => {
       // Open URL in the system's default browser
