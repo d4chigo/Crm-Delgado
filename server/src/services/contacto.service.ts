@@ -40,6 +40,7 @@ export class ContactoService {
       tipo,
       ciudad,
       busqueda,
+      estadoLead,
       pagina = 1,
       limite = 6
     } = filtros;
@@ -54,18 +55,23 @@ export class ContactoService {
       console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
     }
 
+    if (estadoLead) {
+      where.estadoLead = estadoLead;
+      console.log(`🔍 Filtrando contactos por estado: ${estadoLead}`);
+    }
+
     if (ciudad) {
       where.ciudad = { contains: ciudad };
     }
 
-        if (busqueda) {
-          where.OR = [
-            { nombre: { contains: busqueda } },
-            { apellido: { contains: busqueda } },
-            { correo: { contains: busqueda } },
-            { dni: { contains: busqueda } }
-          ];
-        }
+    if (busqueda) {
+      where.OR = [
+        { nombre: { contains: busqueda } },
+        { apellido: { contains: busqueda } },
+        { correo: { contains: busqueda } },
+        { dni: { contains: busqueda } }
+      ];
+    }
     // Obtener contactos y total
     const [contactos, total] = await Promise.all([
       prisma.contacto.findMany({

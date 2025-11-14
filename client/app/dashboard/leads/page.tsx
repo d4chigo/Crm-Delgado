@@ -21,6 +21,7 @@ import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
 import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
 import { TipoContacto, Contacto } from "@/types/contacto.types"
+import { EstadoLead, ESTADOS_LEAD_DISPLAY, FILTROS_LEADS } from "@/types/estadoLead.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import dynamic from "next/dynamic"
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
@@ -48,6 +49,7 @@ export default function PaginaLeads() {
   const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
+  const [estadoFiltro, setEstadoFiltro] = useState<string>("")
   const [totalLeads, setTotalLeads] = useState(0)
 
   // Crear nuevo lead
@@ -64,8 +66,10 @@ export default function PaginaLeads() {
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
 
   useEffect(() => {
-    cargarContactos({ tipo: TipoContacto.LEAD, pagina: 1, limite: 10 })
-  }, [])
+    const filtros: any = { tipo: TipoContacto.LEAD, pagina: 1, limite: 10 }
+    if (estadoFiltro) filtros.estadoLead = estadoFiltro
+    cargarContactos(filtros)
+  }, [estadoFiltro])
 
   useEffect(() => { cargarEtiquetas() }, [])
 
@@ -91,9 +95,11 @@ export default function PaginaLeads() {
   }, [busqueda])
 
   const leads = useMemo(() => {
-    return etiquetaFiltro === "todas"
-      ? contactos
-      : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltro))
+    let resultado = contactos
+    if (etiquetaFiltro !== "todas") {
+      resultado = resultado.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltro))
+    }
+    return resultado
   }, [etiquetaFiltro, contactos])
 
   const handleVerDetalles = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoDetallesAbierto(true) }
@@ -172,6 +178,19 @@ export default function PaginaLeads() {
       </div>
 
       <div className="space-y-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {FILTROS_LEADS.map((filtro) => (
+            <Button
+              key={filtro.value}
+              onClick={() => setEstadoFiltro(filtro.value)}
+              variant={estadoFiltro === filtro.value ? "default" : "outline"}
+              className={estadoFiltro === filtro.value ? "bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]" : ""}
+            >
+              {filtro.label}
+            </Button>
+          ))}
+        </div>
+
         <div className="flex gap-4 items-end">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

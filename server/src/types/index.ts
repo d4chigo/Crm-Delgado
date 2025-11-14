@@ -116,6 +116,7 @@ export interface FiltrosContacto {
   tipo?: TipoContacto;
   ciudad?: string;
   busqueda?: string; // Para buscar en nombre, apellido, correo
+  estadoLead?: string; // NUEVO, CONTACTADO, CALIFICADO, PERDIDO, EN_ESPERA
   pagina?: number;
   limite?: number;
 }
