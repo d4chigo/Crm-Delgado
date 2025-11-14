@@ -31,6 +31,7 @@ class ContactoService {
     if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
     if (filtros.pagina) params.append('pagina', filtros.pagina.toString());
     if (filtros.limite) params.append('limite', filtros.limite.toString());
+    if (filtros.estadoLead) params.append('estadoLead', filtros.estadoLead);
 
     const queryString = params.toString();
     const url = `/contactos${queryString ? `?${queryString}` : ''}`;
@@ -210,8 +211,8 @@ class ContactoService {
    * Actualizar la asociación entre lead y cliente (notas/estado)
    */
   async actualizarAsociacion(
-    leadId: string, 
-    clienteId: string, 
+    leadId: string,
+    clienteId: string,
     datos: ActualizarAsociacionDTO
   ): Promise<LeadCliente> {
     const token = authService.obtenerToken();

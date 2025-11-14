@@ -9,6 +9,7 @@ export enum Sexo {
 }
 
 export enum TipoContacto {
+  CONTACTO = 'CONTACTO',
   LEAD = 'LEAD',
   CLIENTE = 'CLIENTE'
 }
@@ -178,6 +179,7 @@ export interface FiltrosContacto {
   busqueda?: string;
   pagina?: number;
   limite?: number;
+  estadoLead?: EstadoLead;
 }
 
 // Respuesta paginada

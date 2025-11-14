@@ -24,8 +24,8 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import authRoutes from '@/routes/auth.routes';
 import googleAuthRoutes from '@/routes/google-auth.routes';
-import contactoRoutes from '@/routes/contacto.routes';
 import dniRoutes from '@/routes/dni.routes';
+import contactoRoutes from '@/routes/contacto.routes';
 import etiquetaRoutes from '@/routes/etiqueta.routes';
 import proyectoRoutes from '@/routes/proyecto.routes';
 import oportunidadRoutes from '@/routes/oportunidad.routes';
@@ -125,8 +125,8 @@ app.use('/api/public', (req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
-app.use('/api/contactos', contactoRoutes);
 app.use('/api/dni', dniRoutes);
+app.use('/api/contactos', contactoRoutes);
 app.use('/api/etiquetas', etiquetaRoutes);
 app.use('/api/proyectos', proyectoRoutes);
 app.use('/api/oportunidades', oportunidadRoutes);

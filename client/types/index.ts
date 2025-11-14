@@ -9,9 +9,6 @@ export type * from './comunes.types'
 // Tipos de autenticación
 export type * from './autenticacion.types'
 
-// Tipos de contactos
-export type * from './contacto.types'
-
 // Tipos de leads
 export type * from './lead.types'
 
