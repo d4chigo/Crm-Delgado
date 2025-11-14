@@ -254,13 +254,23 @@ export default function PaginaLeads() {
         )}
 
         {!estaCargando && leads.length === 0 && !error && (
-          <Card><CardContent className="flex flex-col items-center justify-center py-12"><TrendingUp className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay leads</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Convierte tus contactos en leads para comenzar a gestionarlos"}</p><Button onClick={() => window.location.href = '/dashboard/contacts'} className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]">Ir a Contactos</Button></CardContent></Card>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                {filtros?.busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Importa contactos de Google o crea nuevos leads para comenzar a gestionarlos"}
+              </p>
+            </CardContent>
+          </Card>
         )}
+
       </div>
 
       <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} onActualizado={() => cargarContactos({})} />
       <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
 
+// ... (rest of the code remains the same)
       <DialogoCrearLead 
         abierto={dialogoCrearAbierto} 
         onCerrar={() => setDialogoCrearAbierto(false)} 

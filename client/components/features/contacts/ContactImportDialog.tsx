@@ -14,7 +14,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Upload } from "lucide-react"
+import { Upload, Loader2 } from "lucide-react"
+import { useContactos } from "@/hooks/useContactos"
+import { toast } from "@/hooks/use-toast"
+import googleAuthService from "@/services/api/google-auth.service"
 
 interface ContactImportDialogProps {
   onImport: () => void
@@ -22,10 +25,25 @@ interface ContactImportDialogProps {
 
 export function ContactImportDialog({ onImport }: ContactImportDialogProps) {
   const [open, setOpen] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const { iniciarImportacionGoogle } = useContactos()
 
-  const handleImport = () => {
-    onImport()
-    setOpen(false)
+  const handleImport = async () => {
+    setCargando(true)
+    try {
+      // Iniciar el flujo de autenticación con Google
+      await iniciarImportacionGoogle()
+      setOpen(false)
+      onImport()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo iniciar la importación",
+        variant: "destructive",
+      })
+    } finally {
+      setCargando(false)
+    }
   }
 
   return (
@@ -62,9 +80,17 @@ export function ContactImportDialog({ onImport }: ContactImportDialogProps) {
           </div>
           <Button
             onClick={handleImport}
+            disabled={cargando}
             className="w-full bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
           >
-            Conectar e Importar
+            {cargando ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Conectando...
+              </>
+            ) : (
+              "Conectar e Importar"
+            )}
           </Button>
         </div>
       </DialogContent>
