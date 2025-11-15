@@ -10,8 +10,9 @@ interface MessageListProps {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
     const isUser = message.role === Role.User;
     
-    const bubbleBase = 'self-end rounded-br-none';
-    const bubbleOther = 'self-start rounded-bl-none';
+    const bubbleClasses = isUser
+        ? 'bg-amber-500 text-black self-end rounded-br-none'
+        : 'bg-[#2c2c2e] text-gray-100 self-start rounded-bl-none';
 
     const createMarkup = (text: string) => {
         const sanitizedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -28,14 +29,10 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
             <div className={`flex items-end space-x-3 max-w-xl lg:max-w-3xl ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                  {!isUser && <AssistantAvatar />}
                 <div
-                    className={`px-5 py-3 rounded-2xl shadow-md transition-all duration-300 ${isUser ? bubbleBase : bubbleOther}`}
-                    style={{
-                        backgroundColor: isUser ? 'var(--bubble-user)' : 'var(--bubble-assistant)',
-                        color: isUser ? 'var(--accent-contrast)' : 'var(--text)'
-                    }}
+                    className={`px-5 py-3 rounded-2xl shadow-md transition-all duration-300 ${bubbleClasses}`}
                 >
                     <div
-                        className={`prose prose-sm md:prose-base prose-p:my-2 prose-headings:my-3`}
+                        className={`prose prose-sm md:prose-base prose-p:my-2 prose-headings:my-3 ${isUser ? '' : 'prose-invert'}`}
                         dangerouslySetInnerHTML={createMarkup(message.text)}
                     />
                 </div>

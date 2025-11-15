@@ -10,7 +10,7 @@ import type { Contacto } from "@/types/contacto.types"
 interface ContactCardProps {
   contacto: Contacto
   isSelected: boolean
-  onSeleccionar: (id: string) => void
+  onSeleccionar: (id: string, checked: boolean) => void
   onConvertir: (contacto: Contacto) => void
   onEditar: (contacto: Contacto) => void
   onEliminar: (contacto: Contacto) => void
@@ -35,7 +35,7 @@ export function ContactCard({
           <Checkbox
             id={`contacto-${contacto.id}`}
             checked={isSelected}
-            onCheckedChange={() => onSeleccionar(contacto.id)}
+            onCheckedChange={(value) => onSeleccionar(contacto.id, value === true)}
             className="mt-1"
           />
           <div className="flex-1 space-y-2">

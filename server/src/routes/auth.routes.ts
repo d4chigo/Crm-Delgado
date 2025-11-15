@@ -11,6 +11,18 @@ router.post('/registro', validar(registroSchema), authController.registrar.bind(
 router.post('/login', validar(loginSchema), authController.login.bind(authController));
 router.post('/login-cliente', authController.loginCliente.bind(authController)); // Login para clientes del portal
 
+// Ruta pública para obtener la API key de Google (para el botcrm)
+router.get('/config/google-api-key', (req, res) => {
+  const apiKey = process.env.SERVER_GEMINI_API_KEY || '';
+  if (!apiKey) {
+    return res.status(503).json({ 
+      error: 'Google API key no configurada',
+      apiKey: null 
+    });
+  }
+  res.json({ apiKey });
+});
+
 // Rutas protegidas
 router.get('/perfil', autenticar, authController.obtenerPerfil.bind(authController));
 

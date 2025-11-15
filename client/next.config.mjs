@@ -12,6 +12,10 @@ const nextConfig = {
   },
   // Habilitar standalone solo en producción
   ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
+  // Optimizaciones de rendimiento
+  compress: true,
+  productionBrowserSourceMaps: false,
+  swcMinify: true,
   // Habilitar polling para hot-reload en Docker (Windows/WSL)
   webpack: (config, { dev, isServer }) => {
     if (dev) {
@@ -23,6 +27,11 @@ const nextConfig = {
       }
     }
     return config
+  },
+  // Optimizar caché
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000,
+    pagesBufferLength: 5,
   },
 }
 

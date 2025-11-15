@@ -10,40 +10,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-          --bg: #f7f7f8;
-          --panel: #ffffff;
-          --panel-border: rgba(0,0,0,0.08);
-          --text: #111827;
-          --subtext: #4b5563;
-          --accent: rgb(245, 158, 11); /* amber-500 */
-          --accent-contrast: #111827;
-          --bubble-user: rgb(245, 158, 11);
-          --bubble-assistant: #eef2ff; /* slate-50-ish */
-        }
-        [data-theme="dark"] {
-          --bg: #0d0d0d;
-          --panel: #000000;
-          --panel-border: rgba(255,255,255,0.10);
-          --text: #f3f4f6;
-          --subtext: #9ca3af;
-          --accent: rgb(245, 158, 11);
-          --accent-contrast: #111827;
-          --bubble-user: rgb(245, 158, 11);
-          --bubble-assistant: #2c2c2e;
-        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            background-color: #0d0d0d;
         }
         /* Custom scrollbar for a sleeker look */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
-        [data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
-        [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 <script type="importmap">
 {
@@ -56,9 +40,9 @@
   }
 }
 </script>
-<link rel="stylesheet" href="./index.css">
+<link rel="stylesheet" href="/index.css">
 </head>
-<body class="antialiased" data-theme="dark">
+<body class="text-white antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

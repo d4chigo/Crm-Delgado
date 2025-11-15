@@ -16,6 +16,7 @@ export enum Tab {
 
 export enum CallStatus {
     Inactive = 'INACTIVO',
+    CheckingPermission = 'VERIFICANDO PERMISOS...',
     RequestingMic = 'SOLICITANDO MICRÓFONO',
     Connecting = 'CONECTANDO...',
     Listening = 'ESCUCHANDO...',

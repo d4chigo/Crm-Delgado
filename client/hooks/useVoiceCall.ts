@@ -122,10 +122,26 @@ export const useVoiceCall = () => {
       const cleanPath = u.pathname.replace(/\/+$/, '');
       const noApi = cleanPath.endsWith('/api') ? cleanPath.slice(0, -4) : cleanPath;
       u.pathname = `${noApi}/api/voice`.replace(/\/+/, '/');
+      
+      console.log('[VoiceCall] Conectando a WebSocket:', u.toString());
+      
       const ws = new WebSocket(u.toString());
       wsRef.current = ws;
+      
+      // Timeout para conexión WebSocket
+      const wsTimeout = setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          console.error('[VoiceCall] WebSocket connection timeout');
+          ws.close();
+          setStatus(CallStatus.Error);
+          alert('Timeout al conectar con el servidor de voz. Intenta de nuevo.');
+          stopCallCleanup();
+        }
+      }, 10000); // 10 segundos
 
       ws.onopen = () => {
+        clearTimeout(wsTimeout);
+        console.log('[VoiceCall] WebSocket connected');
         if (!mediaStreamRef.current || !inputAudioContextRef.current) return;
         setStatus(CallStatus.Listening);
         const source = inputAudioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
@@ -223,10 +239,27 @@ export const useVoiceCall = () => {
       ws.onclose = () => {
         if (isCallActiveRef.current) stopCallCleanup();
       };
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error setting up voice call:', err);
       setStatus(CallStatus.Error);
-      alert('Se necesita permiso para acceder al micrófono o no es compatible.');
+      
+      // Determinar el tipo de error específico
+      let errorMessage = 'Se necesita permiso para acceder al micrófono o no es compatible.';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Permiso de micrófono denegado. Por favor, verifica la configuración de permisos del navegador.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No se encontró ningún micrófono. Verifica que tu dispositivo tenga un micrófono conectado.';
+      } else if (err.name === 'NotReadableError') {
+        errorMessage = 'El micrófono está siendo usado por otra aplicación. Ciérrala e intenta de nuevo.';
+      } else if (err.name === 'SecurityError') {
+        errorMessage = 'Error de seguridad. El acceso al micrófono no está permitido en este contexto.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      console.error('Error details:', { name: err.name, message: err.message });
+      alert(errorMessage);
       stopCallCleanup();
     }
   }, [stopCallCleanup]);

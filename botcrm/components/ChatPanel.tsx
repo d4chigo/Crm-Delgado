@@ -31,8 +31,6 @@ const ChatPanel: React.FC = () => {
         }]);
     }, []);
 
-    // El tema se controla desde el header de la app; no duplicar toggle aquí
-
     const handleSendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
 
@@ -51,12 +49,12 @@ const ChatPanel: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full relative" style={{ backgroundColor: 'var(--panel)' }}>
+        <div className="flex flex-col h-full">
             <MessageList messages={messages} />
             <div ref={messagesEndRef} />
-            {isLoading && <TypingIndicator />}
-            <div className="mt-auto p-2 md:p-4" style={{ backgroundColor: 'var(--panel)' }}>
-                <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+             {isLoading && <TypingIndicator />}
+            <div className="mt-auto p-2 md:p-4 bg-black">
+              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
             </div>
         </div>
     );

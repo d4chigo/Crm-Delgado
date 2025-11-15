@@ -3,7 +3,7 @@ import { FunctionDeclaration, Type } from '@google/genai';
 
 export const createContactFunction: FunctionDeclaration = {
   name: 'createContact',
-  description: 'Crea un nuevo contacto o lead en el CRM.',
+  description: 'Crea un nuevo lead o cliente en el CRM.',
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -11,7 +11,7 @@ export const createContactFunction: FunctionDeclaration = {
       apellido: { type: Type.STRING, description: 'Apellido del contacto.' },
       correo: { type: Type.STRING, description: 'Correo electrónico del contacto.' },
       telefono: { type: Type.STRING, description: 'Número de teléfono del contacto.' },
-      tipo: { type: Type.STRING, description: "Tipo de contacto, puede ser 'LEAD', 'CONTACTO' o 'CLIENTE'.", enum: ['LEAD', 'CONTACTO', 'CLIENTE'] },
+      tipo: { type: Type.STRING, description: "Tipo de contacto, puede ser 'LEAD' o 'CLIENTE'.", enum: ['LEAD', 'CLIENTE'] },
     },
     required: ['nombre', 'correo', 'tipo'],
   },
@@ -64,56 +64,44 @@ export const deleteContactFunction: FunctionDeclaration = {
     }
 };
 
-export const getCRMStatsFunction: FunctionDeclaration = {
-    name: 'getCRMStats',
-    description: 'Obtiene estadísticas generales del CRM incluyendo total de contactos, proyectos, tasa de conversión e ingresos.',
-    parameters: {
-        type: Type.OBJECT,
-        properties: {},
-        required: [],
-    }
-};
-
-export const getMarketingAnalysisFunction: FunctionDeclaration = {
-    name: 'getMarketingAnalysis',
-    description: 'Genera un análisis completo de marketing basado en los datos del CRM, incluyendo recomendaciones de dónde enfocar esfuerzos.',
-    parameters: {
-        type: Type.OBJECT,
-        properties: {},
-        required: [],
-    }
-};
-
-export const getRecommendationsFunction: FunctionDeclaration = {
-    name: 'getRecommendations',
-    description: 'Obtiene recomendaciones personalizadas para mejorar el negocio basadas en los datos actuales del CRM.',
-    parameters: {
-        type: Type.OBJECT,
-        properties: {},
-        required: [],
-    }
-};
-
-export const getContactosByStateFunction: FunctionDeclaration = {
-    name: 'getContactosByState',
-    description: 'Obtiene contactos filtrados por estado (NUEVO, CONTACTADO, CALIFICADO, etc.)',
+export const searchContactsFunction: FunctionDeclaration = {
+    name: 'searchContacts',
+    description: 'Busca contactos en el CRM con varios filtros. Puede devolver una lista de contactos o solo el conteo total. IMPORTANTE: Esta función obtiene datos REALES del backend.',
     parameters: {
         type: Type.OBJECT,
         properties: {
-            estado: { type: Type.STRING, description: 'Estado del lead a filtrar', enum: ['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA'] },
-            limite: { type: Type.INTEGER, description: 'Número máximo de contactos a retornar (default: 10)' }
+            q: {
+                type: Type.STRING,
+                description: "Término de búsqueda (nombre, email, teléfono). Dejar vacío para obtener todos.",
+            },
+            tipo: {
+                type: Type.STRING,
+                description: "Filtrar por tipo de contacto.",
+                enum: ['LEAD', 'CLIENTE'],
+            },
+            estadoLead: {
+                type: Type.STRING,
+                description: "Filtrar por el estado del lead.",
+                enum: ['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA'],
+            },
+            prioridad: {
+                type: Type.STRING,
+                description: "Filtrar por prioridad.",
+                enum: ['BAJA', 'MEDIA', 'ALTA', 'URGENTE'],
+            },
+            soloContar: {
+                type: Type.BOOLEAN,
+                description: 'Si es verdadero, solo devuelve el número total de contactos que coinciden, en lugar de la lista completa.'
+            }
         },
-        required: ['estado']
     }
 };
+
 
 export const crmTools: FunctionDeclaration[] = [
     createContactFunction,
     getContactFunction,
     updateContactFunction,
     deleteContactFunction,
-    getCRMStatsFunction,
-    getMarketingAnalysisFunction,
-    getRecommendationsFunction,
-    getContactosByStateFunction
+    searchContactsFunction,
 ];

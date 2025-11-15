@@ -1,15 +1,12 @@
 
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Message, Role, CallStatus } from '../types';
 import { SYSTEM_INSTRUCTION } from '../constants';
 import { ai } from '../services/geminiService';
+// FIX: Remove CloseEvent and ErrorEvent from @google/genai import, as they are global DOM types.
 import { GoogleGenAI, LiveServerMessage, Modality, Blob, FunctionCall } from '@google/genai';
 import { crmTools } from '../services/tools';
-import { AI_MODEL } from '../config';
-
-// Tipos para eventos de la sesión en vivo
-type CloseEvent = any;
-type ErrorEvent = any;
 
 // --- Type Definitions for Web APIs ---
 declare global {
@@ -85,6 +82,25 @@ async function executeVoiceTool(toolCall: FunctionCall): Promise<any> {
             return { success: true, message: `Contacto ${args.identificador} actualizado.` };
         case 'deleteContact':
             return { success: true, message: `Contacto ${args.identificador} borrado.` };
+        case 'searchContacts':
+            try {
+                const apiUrl = 'http://localhost:5000';
+                const searchQuery = String(args.q || '');
+                const response = await fetch(`${apiUrl}/api/crm-data/contactos/search?q=${encodeURIComponent(searchQuery)}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    return { success: false, message: 'Error obteniendo contactos del servidor' };
+                }
+                
+                const data = await response.json();
+                return { success: true, contactos: data.datos.contactos };
+            } catch (error) {
+                console.error('Error en searchContacts:', error);
+                return { success: false, message: 'Error conectando al servidor' };
+            }
         default:
             return { success: false, message: `Función ${name} desconocida.` };
     }
@@ -97,6 +113,7 @@ export const useVoiceCall = () => {
     const [status, setStatus] = useState<CallStatus>(CallStatus.Inactive);
     const [liveTranscript, setLiveTranscript] = useState('');
     const [isCallActive, setIsCallActive] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const inputAudioContextRef = useRef<AudioContext | null>(null);
     const outputAudioContextRef = useRef<AudioContext | null>(null);
@@ -104,6 +121,11 @@ export const useVoiceCall = () => {
     const mediaStreamRef = useRef<MediaStream | null>(null);
     const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
     const isCallActiveRef = useRef(isCallActive);
+
+    // Refs for Voice Activity Detection (VAD)
+    const isUserSpeakingRef = useRef(false);
+    const silenceTimerRef = useRef<number | null>(null);
+
 
     useEffect(() => {
         isCallActiveRef.current = isCallActive;
@@ -119,6 +141,12 @@ export const useVoiceCall = () => {
                 }
             }).catch(e => console.error("Error closing session:", e));
         }
+
+        if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+        }
+        isUserSpeakingRef.current = false;
 
         if (scriptProcessorRef.current) {
             scriptProcessorRef.current.disconnect();
@@ -141,7 +169,10 @@ export const useVoiceCall = () => {
         setIsCallActive(false);
         setStatus(CallStatus.Inactive);
         setLiveTranscript('');
+        setErrorMessage(null);
     }, []);
+
+
 
     useEffect(() => {
         return () => stopCallCleanup();
@@ -151,13 +182,27 @@ export const useVoiceCall = () => {
     const startCall = useCallback(async () => {
         if (isCallActiveRef.current) return;
         
+        setIsCallActive(true);
         setConversation([]);
         setLiveTranscript('');
-        setIsCallActive(true);
-        setStatus(CallStatus.RequestingMic);
+        setErrorMessage(null);
+        setStatus(CallStatus.CheckingPermission);
 
         try {
+             // 1. Proactively check for permissions
+            if (!navigator.permissions || !navigator.mediaDevices) {
+                 throw new Error("La API de permisos o de media no es compatible con este navegador.");
+            }
+            const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+            
+            if (permissionStatus.state === 'denied') {
+                throw new Error("El permiso del micrófono está bloqueado. Habilítalo en la configuración de tu navegador.");
+            }
+
+            // 2. Request microphone access (will prompt if 'prompt', will be instant if 'granted')
+            setStatus(CallStatus.RequestingMic);
             mediaStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
             setStatus(CallStatus.Connecting);
 
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -168,11 +213,8 @@ export const useVoiceCall = () => {
             let currentInputTranscription = '';
             let currentOutputTranscription = '';
 
-            // Usar modelo de audio en vivo (debe ser compatible con live API)
-            const liveModel = 'gemini-2.0-flash-exp';
-            
             sessionPromiseRef.current = ai.live.connect({
-                model: liveModel,
+                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 config: {
                     responseModalities: [Modality.AUDIO],
                     speechConfig: {
@@ -188,51 +230,85 @@ export const useVoiceCall = () => {
                         if (!mediaStreamRef.current || !inputAudioContextRef.current) return;
                         setStatus(CallStatus.Listening);
                         const source = inputAudioContextRef.current.createMediaStreamSource(mediaStreamRef.current);
-                        
-                        // Usar AudioWorkletNode en lugar de ScriptProcessorNode (deprecado)
-                        // Por ahora usamos ScriptProcessorNode como fallback
                         scriptProcessorRef.current = inputAudioContextRef.current.createScriptProcessor(4096, 1, 1);
+                        
+                        const analyser = inputAudioContextRef.current.createAnalyser();
+                        analyser.fftSize = 512;
+                        analyser.smoothingTimeConstant = 0.2;
+                        
+                        source.connect(analyser);
+                        analyser.connect(scriptProcessorRef.current);
+                        scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
 
                         scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
                             if (!isCallActiveRef.current) return;
-                            try {
+                           
+                            const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+                            analyser.getByteFrequencyData(frequencyData);
+                            
+                            // VAD Logic: Focus on human speech frequencies (approx. 300-3400Hz)
+                            const sampleRate = inputAudioContextRef.current?.sampleRate || 16000;
+                            const binWidth = sampleRate / analyser.fftSize;
+                            const speechBinStart = Math.floor(300 / binWidth);
+                            const speechBinEnd = Math.ceil(3400 / binWidth);
+
+                            let speechVolume = 0;
+                            for (let i = speechBinStart; i <= speechBinEnd; i++) {
+                                speechVolume += frequencyData[i];
+                            }
+                            const averageSpeechVolume = speechVolume / (speechBinEnd - speechBinStart + 1);
+                            
+                            const SPEECH_THRESHOLD = 35; // Adjusted threshold for speech frequencies
+                            const SILENCE_TIMEOUT = 1200; // ms of silence before stopping transmission
+
+                            if (averageSpeechVolume > SPEECH_THRESHOLD) {
+                                isUserSpeakingRef.current = true;
+                                if (silenceTimerRef.current) {
+                                    clearTimeout(silenceTimerRef.current);
+                                    silenceTimerRef.current = null;
+                                }
+                            } else if (isUserSpeakingRef.current) {
+                                if (!silenceTimerRef.current) {
+                                    silenceTimerRef.current = window.setTimeout(() => {
+                                        isUserSpeakingRef.current = false;
+                                    }, SILENCE_TIMEOUT);
+                                }
+                            }
+
+                            if (isUserSpeakingRef.current) {
                                 const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                                // Crear una copia del buffer para evitar problemas de referencia
-                                const audioData = new Float32Array(inputData);
-                                const pcmBlob = createPcmBlob(audioData);
+                                const pcmBlob = createPcmBlob(inputData);
                                 sessionPromiseRef.current?.then((session) => {
-                                    if (session && typeof session.sendRealtimeInput === 'function') {
-                                        session.sendRealtimeInput({ media: pcmBlob });
-                                    }
-                                }).catch(err => console.error('Error sending audio:', err));
-                            } catch (err) {
-                                console.error('Error processing audio:', err);
+                                    if(session) session.sendRealtimeInput({ media: pcmBlob });
+                                });
                             }
                         };
-                        source.connect(scriptProcessorRef.current);
-                        scriptProcessorRef.current.connect(inputAudioContextRef.current.destination);
                     },
                     onmessage: async (message: LiveServerMessage) => {
                         if (message.toolCall) {
                             for (const fc of message.toolCall.functionCalls) {
                                 const result = await executeVoiceTool(fc);
                                 sessionPromiseRef.current?.then((session) => {
-                                    session.sendToolResponse({
-                                        functionResponses: {
-                                            id: fc.id,
-                                            name: fc.name,
-                                            response: result,
-                                        }
-                                    });
+                                    if(session) {
+                                      session.sendToolResponse({
+                                          functionResponses: {
+                                              id: fc.id,
+                                              name: fc.name,
+                                              response: result,
+                                          }
+                                      });
+                                    }
                                 });
                             }
                         }
 
                         if (message.serverContent?.inputTranscription) {
-                            setLiveTranscript(currentInputTranscription + message.serverContent.inputTranscription.text);
-                            if ((message.serverContent.inputTranscription as any).isFinal) {
-                                currentInputTranscription += message.serverContent.inputTranscription.text + ' ';
-                            }
+                            const newText = message.serverContent.inputTranscription.text;
+                            setLiveTranscript(currentInputTranscription + newText);
+                            // FIX: The `isFinal` property does not exist on the Transcription object.
+                            // Append the text chunk as it arrives. The `turnComplete` signal
+                            // indicates the final transcription for the turn.
+                            currentInputTranscription += newText;
                         }
                         if (message.serverContent?.outputTranscription) {
                             currentOutputTranscription += message.serverContent.outputTranscription.text;
@@ -267,23 +343,30 @@ export const useVoiceCall = () => {
                     },
                     onerror: (e: ErrorEvent) => {
                         console.error('Live session error:', e);
-                        const errorMsg = (e as any)?.message || String(e);
-                        console.error('Error details:', errorMsg);
+                        setErrorMessage("Error en la conexión con el servicio de voz.");
                         setStatus(CallStatus.Error);
-                        setTimeout(() => stopCallCleanup(), 500);
+                        stopCallCleanup();
                     },
                     onclose: (e: CloseEvent) => {
-                        console.log('Live session closed:', e);
-                        setTimeout(() => stopCallCleanup(), 500);
+                        console.log('Live session closed.');
+                        stopCallCleanup();
                     },
                 },
             });
 
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error setting up voice call:", err);
+            let msg = err.message || "No se pudo iniciar la llamada. Inténtalo de nuevo.";
+            if (err instanceof DOMException) {
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    msg = "Permiso de micrófono denegado. Habilítalo para continuar.";
+                } else if (err.name === 'NotFoundError') {
+                    msg = "No se encontró ningún micrófono conectado.";
+                }
+            }
+            setErrorMessage(msg);
             setStatus(CallStatus.Error);
-            alert("Se necesita permiso para acceder al micrófono o no es compatible.");
-            stopCallCleanup();
+            setIsCallActive(false); // Manually set to false as cleanup might not run fully
         }
     }, [stopCallCleanup]);
 
@@ -291,5 +374,5 @@ export const useVoiceCall = () => {
         stopCallCleanup();
     }, [stopCallCleanup]);
 
-    return { conversation, status, liveTranscript, isCallActive, startCall, stopCall };
+    return { conversation, status, liveTranscript, isCallActive, startCall, stopCall, errorMessage };
 };

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 
 import { useContactos } from "@/hooks/useContactos"
 import { FormularioContacto } from "@/components/features/contacts/FormularioContacto";
@@ -27,6 +28,7 @@ const AssistantPanel = dynamicImport(() => import("@/components/assistant/Assist
 export const dynamic = 'force-dynamic'
 
 export default function PaginaContactos() {
+  const router = useRouter()
   const {
     contactos,
     estadisticas,
@@ -63,12 +65,12 @@ export default function PaginaContactos() {
   // Lista memorizada (si se aplican filtros adicionales en el futuro)
   const contactosFiltrados = useMemo(() => contactos, [contactos])
 
-  // Cargar contactos con filtro LEAD al montar el componente
+  // Cargar contactos con filtro CLIENTE al montar el componente
   useEffect(() => {
-    console.log('🎯 Cargando contactos iniciales con filtro: solo LEAD')
+    console.log('🎯 Cargando contactos iniciales con filtro: solo CLIENTE')
     setFiltros(prev => ({
       ...prev,
-      tipo: TipoContacto.LEAD,
+      tipo: TipoContacto.CLIENTE,
       pagina: 1,
       limite: 6,
       busqueda: ''
@@ -78,15 +80,19 @@ export default function PaginaContactos() {
 
   // Verificar si hay un callback de Google al cargar la página
   useEffect(() => {
+    let isMounted = true
+    
     const procesarCallbackGoogle = async () => {
       // Verificar si hay un error en el callback
       const error = googleAuthService.getErrorFromCallback()
       if (error) {
-        toast({
-          title: "Error al importar",
-          description: googleAuthService.getErrorMessage(error.error) + (error.message ? `: ${error.message}` : ''),
-          variant: "destructive",
-        })
+        if (isMounted) {
+          toast({
+            title: "Error al importar",
+            description: googleAuthService.getErrorMessage(error.error) + (error.message ? `: ${error.message}` : ''),
+            variant: "destructive",
+          })
+        }
         googleAuthService.clearPendingImport()
         return
       }
@@ -97,23 +103,37 @@ export default function PaginaContactos() {
         try {
           console.log('📥 Completando importación de Google con token recibido...')
           const resultado = await completarImportacionGoogle(token)
-          setResultadoImportacion(resultado)
-          toast({
-            title: "✅ Importación completada",
-            description: `Se importaron ${resultado.importados} contactos correctamente`,
-          })
+          if (isMounted) {
+            setResultadoImportacion(resultado)
+            toast({
+              title: "✅ Importación completada",
+              description: `Se importaron ${resultado.importados} contactos correctamente`,
+            })
+            // Redirigir a leads después de 2 segundos
+            setTimeout(() => {
+              if (isMounted) {
+                router.push('/dashboard/leads')
+              }
+            }, 2000)
+          }
         } catch (err: any) {
-          toast({
-            title: "Error al importar",
-            description: err.message || "No se pudieron importar los contactos",
-            variant: "destructive",
-          })
+          if (isMounted) {
+            toast({
+              title: "Error al importar",
+              description: err.message || "No se pudieron importar los contactos",
+              variant: "destructive",
+            })
+          }
         }
       }
     }
 
     procesarCallbackGoogle()
-  }, [completarImportacionGoogle, toast])
+    
+    return () => {
+      isMounted = false
+    }
+  }, [completarImportacionGoogle, toast, router])
 
   // Búsqueda con debounce para reducir requests
   const [busqueda, setBusqueda] = useState("")
@@ -160,22 +180,20 @@ export default function PaginaContactos() {
     }
   }
 
-  const handleSeleccionarContacto = (contactoId: string) => {
-    setContactosSeleccionados(prev => {
-      if (prev.includes(contactoId)) {
-        return prev.filter(id => id !== contactoId)
-      } else {
-        return [...prev, contactoId]
-      }
-    })
+  const todosSeleccionados =
+    contactosFiltrados.length > 0 &&
+    contactosSeleccionados.length === contactosFiltrados.length
+
+  const handleSeleccionarContacto = (contactoId: string, checked: boolean) => {
+    setContactosSeleccionados(prev =>
+      checked ? [...prev, contactoId] : prev.filter(id => id !== contactoId)
+    )
   }
 
-  const handleSeleccionarTodos = () => {
-    if (contactosSeleccionados.length === contactosFiltrados.length) {
-      setContactosSeleccionados([])
-    } else {
-      setContactosSeleccionados(contactosFiltrados.map(c => c.id))
-    }
+  const handleSeleccionarTodos = (checked: boolean) => {
+    setContactosSeleccionados(
+      checked ? contactosFiltrados.map(c => c.id) : []
+    )
   }
 
   const handleConvertirVariosALeads = async () => {
@@ -361,8 +379,8 @@ export default function PaginaContactos() {
         <div className="flex items-center space-x-2">
           <Checkbox
             id="seleccionar-todos"
-            checked={contactosSeleccionados.length === contactosFiltrados.length}
-            onCheckedChange={handleSeleccionarTodos}
+            checked={todosSeleccionados}
+            onCheckedChange={(value) => handleSeleccionarTodos(value === true)}
           />
           <label
             htmlFor="seleccionar-todos"

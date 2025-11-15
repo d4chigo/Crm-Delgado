@@ -18,11 +18,19 @@ export default function AssistantPanel({ open, onClose }: { open: boolean; onClo
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [iframeReady, setIframeReady] = useState(false);
 
   const { conversation, status, liveTranscript, isCallActive, startCall, stopCall } = useVoiceCall();
 
   const isListeningState = status === CallStatus.Listening;
   const isSpeakingState = status === CallStatus.Speaking;
+  
+  // Solo cargar el iframe cuando el panel esté abierto
+  useEffect(() => {
+    if (open) {
+      setIframeReady(true);
+    }
+  }, [open]);
 
   // Procesar automáticamente mensajes finales provenientes de la pestaña de voz
   const processedVoiceIdxRef = useRef<Set<number>>(new Set());
@@ -117,13 +125,15 @@ export default function AssistantPanel({ open, onClose }: { open: boolean; onClo
             ×
           </button>
           <div className="rounded-2xl overflow-hidden bg-white dark:bg-neutral-900 max-h-[80vh]">
-            <iframe
-              title="Asistente Delgado"
-              src={src}
-              className="w-full h-[70vh]"
-              style={{ border: 0 }}
-              allow="microphone; autoplay; clipboard-read; clipboard-write"
-            />
+            {iframeReady && (
+              <iframe
+                title="Asistente Delgado"
+                src={src}
+                className="w-full h-[70vh]"
+                style={{ border: 0 }}
+                allow="microphone; autoplay; clipboard-read; clipboard-write"
+              />
+            )}
           </div>
         </div>
       </div>

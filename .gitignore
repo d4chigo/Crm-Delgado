@@ -13,8 +13,7 @@ out/
 build/
 
 # Environment files
-.env
-.env.*
+
 client/.env
 client/.env.*
 server/.env

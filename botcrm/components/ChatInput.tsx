@@ -40,10 +40,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
     };
 
     return (
-        <div
-            className="p-2 rounded-2xl flex items-end w-full max-w-4xl mx-auto border transition-colors"
-            style={{ backgroundColor: 'var(--panel)', borderColor: 'var(--panel-border)' }}
-        >
+        <div className="bg-[#1c1c1e] p-2 rounded-2xl flex items-end w-full max-w-4xl mx-auto border border-white/10 focus-within:border-amber-400 transition-colors">
             <textarea
                 ref={textareaRef}
                 value={text}
@@ -51,15 +48,13 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu consulta aquí..."
                 rows={1}
-                className="w-full bg-transparent p-2 resize-none focus:outline-none max-h-48"
-                style={{ color: 'var(--text)' }}
+                className="w-full bg-transparent p-2 text-gray-200 resize-none focus:outline-none placeholder-gray-500 max-h-48"
                 disabled={isLoading}
             />
             <button
                 onClick={handleSend}
                 disabled={isLoading || !text.trim()}
-                className="ml-2 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none transition-all transform hover:scale-110"
-                style={{ backgroundColor: 'var(--accent)', color: 'var(--accent-contrast)' }}
+                className="ml-2 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-amber-500 text-black disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all transform hover:scale-110"
                 aria-label="Enviar mensaje"
             >
                <SendIcon />

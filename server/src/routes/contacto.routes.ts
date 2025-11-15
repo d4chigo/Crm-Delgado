@@ -13,12 +13,7 @@ const router = Router();
 // Todas las rutas requieren autenticación
 router.use(autenticar);
 
-// GET /api/contactos - Obtener todos los contactos
-router.get(
-  '/',
-  validar(filtrosContactoSchema),
-  contactoController.obtenerContactos.bind(contactoController)
-);
+// Rutas específicas (deben ir ANTES de las rutas con parámetros)
 
 // GET /api/contactos/estadisticas - Obtener estadísticas
 router.get(
@@ -32,10 +27,25 @@ router.get(
   contactoController.obtenerContactosRecientes.bind(contactoController)
 );
 
-// GET /api/contactos/:id - Obtener un contacto
+// POST /api/contactos/importar/google - Importar contactos desde Google
+router.post(
+  '/importar/google',
+  contactoController.importarDesdeGoogle.bind(contactoController)
+);
+
+// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
+router.post(
+  '/convertir-leads/masivo',
+  contactoController.convertirVariosALeads.bind(contactoController)
+);
+
+// Rutas genéricas (van DESPUÉS de las específicas)
+
+// GET /api/contactos - Obtener todos los contactos
 router.get(
-  '/:id',
-  contactoController.obtenerContactoPorId.bind(contactoController)
+  '/',
+  validar(filtrosContactoSchema),
+  contactoController.obtenerContactos.bind(contactoController)
 );
 
 // POST /api/contactos - Crear contacto
@@ -45,10 +55,10 @@ router.post(
   contactoController.crearContacto.bind(contactoController)
 );
 
-// POST /api/contactos/importar/google - Importar contactos desde Google
-router.post(
-  '/importar/google',
-  contactoController.importarDesdeGoogle.bind(contactoController)
+// GET /api/contactos/:id - Obtener un contacto
+router.get(
+  '/:id',
+  contactoController.obtenerContactoPorId.bind(contactoController)
 );
 
 // PUT /api/contactos/:id - Actualizar contacto
@@ -68,12 +78,6 @@ router.delete(
 router.post(
   '/:id/convertir-lead',
   contactoController.convertirALead.bind(contactoController)
-);
-
-// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
-router.post(
-  '/convertir-leads/masivo',
-  contactoController.convertirVariosALeads.bind(contactoController)
 );
 
 // POST /api/contactos/:id/convertir-cliente - Convertir lead a cliente

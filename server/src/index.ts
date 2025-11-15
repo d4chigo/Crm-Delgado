@@ -51,6 +51,7 @@ import testRoutes from '@/routes/test.routes';
 import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
 import devRoutes from '@/routes/dev.routes';
+import crmDataRoutes from '@/routes/crm-data.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -64,8 +65,11 @@ app.use(helmet());
 // Orígenes base por defecto (desarrollo)
 const defaultOrigins = [
   process.env.CORS_ORIGIN || 'http://localhost:3000',  // Frontend del CRM
+  'http://127.0.0.1:3000',  // Frontend del CRM (localhost alternativo)
   'http://localhost:8081',  // Portal de clientes PGDP
   'http://localhost:8080',  // Alternativa
+  'http://127.0.0.1:8081',  // Portal de clientes PGDP (alternativo)
+  'http://127.0.0.1:8080',  // Alternativa (127.0.0.1)
 ];
 
 // Orígenes extra configurables por entorno (separados por comas)
@@ -82,6 +86,14 @@ app.use(cors({
     // Permitir requests sin origin (como Postman, curl, etc.)
     if (!origin) return callback(null, true);
 
+    // En desarrollo, permitir cualquier origen localhost/127.0.0.1
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+
+    // En producción, verificar contra lista blanca
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -133,6 +145,7 @@ app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/crm-data', crmDataRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimoniosRoutes);
@@ -178,7 +191,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/crm-data, /api/calendar`);
 });
 
 export default app;

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useVoiceCall } from '../hooks/useVoiceCall';
 import MessageList from './MessageList';
@@ -5,10 +6,12 @@ import MicrophoneButton from './MicrophoneButton';
 import { CallStatus } from '../types';
 
 const CallPanel: React.FC = () => {
-    const { conversation, status, liveTranscript, isCallActive, startCall, stopCall } = useVoiceCall();
+    const { conversation, status, liveTranscript, isCallActive, startCall, stopCall, errorMessage } = useVoiceCall();
 
     const getStatusInfo = () => {
         switch (status) {
+            case CallStatus.CheckingPermission:
+                return { text: 'Verificando permisos...', color: 'text-gray-400', pulse: false };
             case CallStatus.RequestingMic:
                 return { text: 'Solicitando micrófono...', color: 'text-gray-400', pulse: false };
             case CallStatus.Connecting:
@@ -20,7 +23,7 @@ const CallPanel: React.FC = () => {
             case CallStatus.Speaking:
                 return { text: 'Hablando...', color: 'text-amber-400', pulse: false };
             case CallStatus.Error:
-                return { text: 'Error en la conexión', color: 'text-red-500', pulse: false };
+                return { text: errorMessage || 'Error en la conexión', color: 'text-red-500', pulse: false };
             default:
                 return { text: 'Toca el micrófono para iniciar', color: 'text-gray-400', pulse: false };
         }
@@ -28,6 +31,7 @@ const CallPanel: React.FC = () => {
     
     const statusInfo = getStatusInfo();
     const displayTranscript = status === CallStatus.Listening && liveTranscript.trim() !== '';
+    const statusText = displayTranscript ? liveTranscript : statusInfo.text;
 
     return (
         <div className="flex flex-col h-full text-center">
@@ -46,7 +50,7 @@ const CallPanel: React.FC = () => {
             <div className="flex flex-col items-center justify-end space-y-4 flex-shrink-0 p-6 bg-black/50 backdrop-blur-sm border-t border-white/10">
                 <div className="h-8">
                     <p className={`text-xl font-medium transition-all duration-300 ${statusInfo.color} ${statusInfo.pulse ? 'animate-pulse' : ''}`}>
-                        {displayTranscript ? liveTranscript : statusInfo.text}
+                        {statusText}
                     </p>
                 </div>
                 <MicrophoneButton

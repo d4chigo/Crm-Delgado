@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
+import ChatbotWidget from "@/components/ChatbotWidget"
 
 export default function PaginaDashboard() {
   const enrutador = useRouter()
@@ -235,6 +236,11 @@ export default function PaginaDashboard() {
           title="Link Delgado"
           description="Portal principal de servicios digitales"
         />
+      </div>
+
+      {/* Chatbot Widget */}
+      <div className="mt-8">
+        <ChatbotWidget />
       </div>
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
