@@ -119,6 +119,35 @@ export function DialogoAgendarReunion({
     setConflictoHorario(hayConflicto)
   }
 
+  const validarFechaYHora = (): { valida: boolean; mensaje?: string } => {
+    const fechaSeleccionada = new Date(fecha)
+    const ahora = new Date()
+    const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())
+    
+    // Validar que no sea una fecha pasada
+    if (fechaSeleccionada < hoy) {
+      return { valida: false, mensaje: 'No puedes agendar una reunión en un día pasado' }
+    }
+
+    // Si es hoy, validar que la hora no sea pasada
+    if (fechaSeleccionada.getTime() === hoy.getTime()) {
+      const [horaHoy, minutoHoy] = [ahora.getHours().toString().padStart(2, '0'), ahora.getMinutes().toString().padStart(2, '0')]
+      const horaActual = `${horaHoy}:${minutoHoy}`
+      
+      if (horaInicio < horaActual) {
+        return { valida: false, mensaje: 'No puedes agendar una reunión a una hora ya pasada' }
+      }
+    }
+
+    return { valida: true }
+  }
+
+  const obtenerFechaMinima = () => {
+    const hoy = new Date()
+    hoy.setDate(hoy.getDate() + 1) // Mañana como mínimo
+    return hoy.toISOString().split('T')[0]
+  }
+
   const handleGuardarReunion = async () => {
     if (!asunto.trim()) {
       toast({ title: 'Error', description: 'El asunto es requerido', variant: 'destructive' })
@@ -128,6 +157,19 @@ export function DialogoAgendarReunion({
     if (!fecha) {
       toast({ title: 'Error', description: 'La fecha es requerida', variant: 'destructive' })
       return
+    }
+
+    // Validar fecha y hora (solo para nuevos eventos)
+    if (!eventoExistente) {
+      const validacion = validarFechaYHora()
+      if (!validacion.valida) {
+        toast({ 
+          title: '⚠️ Fecha u hora inválida', 
+          description: validacion.mensaje, 
+          variant: 'destructive' 
+        })
+        return
+      }
     }
 
     // Validar que no haya conflicto de horario
@@ -377,7 +419,12 @@ export function DialogoAgendarReunion({
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Fecha *</label>
-              <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+              <Input 
+                type="date" 
+                value={fecha} 
+                onChange={(e) => setFecha(e.target.value)}
+                min={eventoExistente ? undefined : obtenerFechaMinima()}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Hora Inicio *</label>
