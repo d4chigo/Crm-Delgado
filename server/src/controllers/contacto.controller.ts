@@ -374,10 +374,11 @@ export class ContactoController {
   async importarDesdeGoogle(req: Request, res: Response): Promise<void> {
     try {
       console.log('[Contacto Controller] Importar desde Google iniciado');
+      console.log('[Contacto Controller] req.usuario completo:', JSON.stringify(req.usuario, null, 2));
       const usuarioId = req.usuario?.usuarioId;
       const { accessToken } = req.body;
 
-      console.log('[Contacto Controller] Usuario ID:', usuarioId);
+      console.log('[Contacto Controller] Usuario ID extraído:', usuarioId);
       console.log('[Contacto Controller] Access token recibido:', accessToken ? `Sí (${accessToken.length} chars)` : 'No');
 
       if (!usuarioId) {

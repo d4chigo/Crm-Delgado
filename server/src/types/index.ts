@@ -1,4 +1,4 @@
-import { Rol, Sexo, TipoContacto } from '@prisma/client';
+import { Rol, Sexo, TipoContacto, EstadoLead, Prioridad } from '@prisma/client';
 
 // ==================== USUARIO ====================
 export interface Usuario {
@@ -89,14 +89,28 @@ export interface Contacto {
 
 export interface CrearContactoDTO {
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;
   dni?: string;
   sexo?: Sexo;
   fechaNacimiento?: string; // ISO string
+  tipo?: TipoContacto;
+  estadoLead?: EstadoLead;
+  fuente?: string;
+  empresa?: string;
+  cargo?: string;
+  presupuesto?: number;
+  prioridad?: Prioridad;
+  probabilidad?: number;
+  fechaSeguimiento?: string;
+  notas?: string;
+  intereses?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
 }
 
 export interface ActualizarContactoDTO {

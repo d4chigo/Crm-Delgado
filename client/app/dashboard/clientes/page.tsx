@@ -64,7 +64,7 @@ export default function PaginaClientes() {
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
 
   useEffect(() => {
-    cargarContactos({ tipo: TipoContacto.CLIENTE, pagina: 1, limite: 10 })
+    cargarContactos({ tipo: TipoContacto.CLIENTE, pagina: 1, limite: 6 })
   }, [])
 
   useEffect(() => { cargarEtiquetas() }, [])
@@ -172,37 +172,61 @@ export default function PaginaClientes() {
         {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
         {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
 
-        {!estaCargando && clientesFiltrados.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clientesFiltrados.map((cliente) => (
-              <ClientCard
-                key={cliente.id}
-                cliente={cliente}
-                onVerDetalles={handleVerDetalles}
-                onCotizar={handleCotizar}
-                onEditar={handleEditar}
-                onWhatsApp={handleWhatsApp}
-                onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
-                onCrearAccesoWeb={(cliente) => {
-                  setClienteParaAccesoWeb(cliente);
-                  setDialogoAccesoWebAbierto(true);
-                }}
-                onEliminar={(cliente) => {
-                  setContactoAEliminar(cliente)
-                  setDialogoEliminarAbierto(true)
-                }}
-              />
-            ))}
+                {!estaCargando && clientesFiltrados.length > 0 && (
+          <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+              {clientesFiltrados.map((cliente) => (
+                <ClientCard
+                  key={cliente.id}
+                  cliente={cliente}
+                  onVerDetalles={handleVerDetalles}
+                  onCotizar={handleCotizar}
+                  onEditar={handleEditar}
+                  onWhatsApp={handleWhatsApp}
+                  onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
+                  onCrearAccesoWeb={(cliente) => {
+                    setClienteParaAccesoWeb(cliente);
+                    setDialogoAccesoWebAbierto(true);
+                  }}
+                  onEliminar={(cliente) => {
+                    setContactoAEliminar(cliente)
+                    setDialogoEliminarAbierto(true)
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {!estaCargando && clientesFiltrados.length > 0 && paginacion.totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-muted-foreground">Mostrando {clientesFiltrados.length} de {paginacion.total} clientes</p>
+                {!estaCargando && contactos.length > 0 && paginacion.totalPaginas > 1 && (
+          <div className="flex items-center justify-between mt-8 pt-6 border-t">
+            <p className="text-sm text-muted-foreground">
+              Mostrando <span className="font-semibold">{clientesFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> clientes
+            </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina - 1)} disabled={paginacion.pagina === 1 || estaCargando}><ChevronLeft className="h-4 w-4 mr-1" />Anterior</Button>
-              <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
-              <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina + 1)} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>Siguiente<ChevronRight className="h-4 w-4 ml-1" /></Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cambiarPagina(paginacion.pagina - 1)} 
+                disabled={paginacion.pagina === 1 || estaCargando}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
+                {paginacion.pagina} / {paginacion.totalPaginas}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cambiarPagina(paginacion.pagina + 1)} 
+                disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                className="gap-1"
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}

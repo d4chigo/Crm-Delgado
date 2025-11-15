@@ -13,12 +13,15 @@ import { etiquetaService } from "@/services/api/etiqueta.service"
 import leadService from "@/services/api/lead.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
 import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
+import { ContactImportDialog } from "@/components/features/contacts/ContactImportDialog"
 import { FormularioCotizacion } from "@/components/features/cotizaciones"
 import { cotizacionService } from "@/services/api/cotizacion.service"
 import { CrearCotizacionDTO } from "@/types/cotizacion.types"
 import { Loader2, Search, Users, TrendingUp, Tag, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react"
 import { FILTROS_LEADS } from "@/types/estadoLead.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
+import googleAuthService from "@/services/api/google-auth.service"
+import contactoService from "@/services/api/contacto.service"
 import dynamic from "next/dynamic"
 
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
@@ -57,6 +60,7 @@ export default function PaginaLeads() {
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
   const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+  const [importando, setImportando] = useState(false)
 
   const cargarLeads = async (filtros?: any) => {
     setEstaCargando(true)
@@ -65,7 +69,7 @@ export default function PaginaLeads() {
       const resultado: any = await leadService.obtenerLeads({
         tipo: "LEAD",
         pagina: filtros?.pagina || 1,
-        limite: 10,
+        limite: 6,
         busqueda: filtros?.busqueda || "",
         estadoLead: filtros?.estadoLead || ""
       })
@@ -145,6 +149,86 @@ export default function PaginaLeads() {
       toast({ title: "Error", description: "No se pudo guardar la cotización.", variant: "destructive" })
     }
   }
+
+  const handleImportarGoogle = async () => {
+    if (importando) return
+    
+    setImportando(true)
+    try {
+      // Iniciar flujo de autenticación OAuth
+      await googleAuthService.startAuthFlow()
+      
+      toast({
+        title: "Importación iniciada",
+        description: "Redirigiendo a Google para autorizar el acceso..."
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error al iniciar importación",
+        description: error.message || "No se pudo iniciar el proceso de importación",
+        variant: "destructive"
+      })
+      setImportando(false)
+    }
+  }
+
+  // Procesar callback de Google OAuth
+  useEffect(() => {
+    const procesarCallback = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const googleToken = params.get('google_token')
+      const googleError = params.get('google_error')
+      const errorMessage = params.get('message') || params.get('description')
+      
+      // Manejar error de Google
+      if (googleError) {
+        const errorMessages: { [key: string]: string } = {
+          'access_denied': 'Acceso denegado. Necesitas autorizar el acceso a tus contactos.',
+          'no_code': 'No se recibió código de autorización de Google',
+          'auth_failed': 'Error al autenticar con Google',
+        }
+        
+        toast({
+          title: "Error en la importación",
+          description: errorMessages[googleError] || errorMessage || "No se pudo completar la autenticación",
+          variant: "destructive"
+        })
+        
+        // Limpiar URL
+        window.history.replaceState({}, '', window.location.pathname)
+        return
+      }
+      
+      // Procesar token e importar contactos
+      if (googleToken) {
+        setImportando(true)
+        try {
+          // Importar contactos usando el token
+          const resultado = await contactoService.importarDesdeGoogle(googleToken)
+          
+          toast({
+            title: "✅ Importación completada",
+            description: `Se importaron ${resultado.importados} contactos como leads. ${resultado.duplicados > 0 ? `${resultado.duplicados} duplicados omitidos.` : ''}`
+          })
+          
+          // Recargar leads
+          await cargarLeads({ estadoLead: estadoFiltro })
+        } catch (error: any) {
+          toast({
+            title: "Error en la importación",
+            description: error.message || "No se pudieron importar los contactos",
+            variant: "destructive"
+          })
+        } finally {
+          setImportando(false)
+          // Limpiar URL
+          window.history.replaceState({}, '', window.location.pathname)
+        }
+      }
+    }
+    
+    procesarCallback()
+  }, [])
 
   const handleCotizar = (lead: Lead) => {
     setLeadParaCotizar(lead)
@@ -229,6 +313,7 @@ export default function PaginaLeads() {
               ))}
             </SelectContent>
           </Select>
+          <ContactImportDialog onImport={handleImportarGoogle} />
           <Button 
             onClick={() => setDialogoCrearAbierto(true)}
             className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
@@ -251,45 +336,63 @@ export default function PaginaLeads() {
         )}
 
         {!estaCargando && leadsFiltrados.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {leadsFiltrados.map((lead) => (
-              <LeadCard
-                key={lead.id}
-                lead={lead}
-                isConverting={convirtiendoCliente === lead.id}
-                onVerDetalles={(l) => {
-                  setLeadSeleccionado(l)
-                  setDialogoDetallesAbierto(true)
-                }}
-                onConvertir={handleConvertirCliente}
-                onEditar={(l) => {
-                  setLeadSeleccionado(l)
-                  setDialogoEditarAbierto(true)
-                }}
-                onWhatsApp={(tel) => handleWhatsApp(tel)}
-                onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
-                onCotizar={handleCotizar}
-                onEliminar={(l) => {
-                  setLeadAEliminar(l)
-                  setDialogoEliminarAbierto(true)
-                }}
-              />
-            ))}
+          <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+              {leadsFiltrados.map((lead) => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  isConverting={convirtiendoCliente === lead.id}
+                  onVerDetalles={(l) => {
+                    setLeadSeleccionado(l)
+                    setDialogoDetallesAbierto(true)
+                  }}
+                  onConvertir={handleConvertirCliente}
+                  onEditar={(l) => {
+                    setLeadSeleccionado(l)
+                    setDialogoEditarAbierto(true)
+                  }}
+                  onWhatsApp={(tel) => handleWhatsApp(tel)}
+                  onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
+                  onCotizar={handleCotizar}
+                  onEliminar={(l) => {
+                    setLeadAEliminar(l)
+                    setDialogoEliminarAbierto(true)
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {!estaCargando && leadsFiltrados.length > 0 && paginacion.totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-muted-foreground">Mostrando {leadsFiltrados.length} de {paginacion.total} leads</p>
+        {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
+          <div className="flex items-center justify-between mt-8 pt-6 border-t">
+            <p className="text-sm text-muted-foreground">
+              Mostrando <span className="font-semibold">{leadsFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
+            </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => cargarLeads({ pagina: paginacion.pagina - 1 })} disabled={paginacion.pagina === 1 || estaCargando}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cargarLeads({ pagina: paginacion.pagina - 1 })} 
+                disabled={paginacion.pagina === 1 || estaCargando}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
                 Anterior
               </Button>
-              <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
-              <Button variant="outline" size="sm" onClick={() => cargarLeads({ pagina: paginacion.pagina + 1 })} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>
+              <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
+                {paginacion.pagina} / {paginacion.totalPaginas}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cargarLeads({ pagina: paginacion.pagina + 1 })} 
+                disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                className="gap-1"
+              >
                 Siguiente
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>

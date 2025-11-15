@@ -263,6 +263,28 @@ export class ContactoService {
   }
 
   /**
+   * Convertir varios contactos a leads (bulk operation)
+   */
+  async convertirVariosALeads(ids: string[], usuarioId: string) {
+    let convertidos = 0;
+    let errores = 0;
+    const resultados: Array<{ id: string; exito: boolean; error?: string }> = [];
+
+    for (const id of ids) {
+      try {
+        await this.convertirALead(id, usuarioId);
+        convertidos++;
+        resultados.push({ id, exito: true });
+      } catch (error: any) {
+        errores++;
+        resultados.push({ id, exito: false, error: error.message });
+      }
+    }
+
+    return { convertidos, errores, resultados };
+  }
+
+  /**
    * Convertir un lead a cliente
    */
   async convertirLeadACliente(id: string, usuarioId: string) {
@@ -570,11 +592,10 @@ export class ContactoService {
   /**
    * Obtener o crear la etiqueta "Fuente: Google Contacts"
    */
-  private async obtenerOCrearEtiquetaGoogle(usuarioId: string) {
+  private async obtenerOCrearEtiquetaGoogle() {
     let etiqueta = await prisma.etiqueta.findFirst({
       where: {
-        nombre: 'Fuente: Google Contacts',
-        usuarioId
+        nombre: 'Fuente: Google Contacts'
       }
     });
 
@@ -586,7 +607,6 @@ export class ContactoService {
           descripcion: 'Contactos importados desde Google Contacts',
           color: '#4285F4', // Color azul de Google
           icono: 'Mail',
-          usuarioId,
           activa: true,
           orden: 1
         }
@@ -615,7 +635,7 @@ export class ContactoService {
 
     try {
       // Obtener o crear la etiqueta de Google
-      const etiquetaGoogle = await this.obtenerOCrearEtiquetaGoogle(usuarioId);
+      const etiquetaGoogle = await this.obtenerOCrearEtiquetaGoogle();
       console.log('🏷️ Etiqueta Google obtenida/creada:', etiquetaGoogle.id);
 
       // Obtener contactos de Google usando el access token
@@ -677,12 +697,21 @@ export class ContactoService {
           }
 
           // Crear el nuevo contacto como LEAD
-          const nuevoContacto = await this.crearContacto({
+          const datosContacto: any = {
             nombre: nombre.trim() || 'Sin nombre',
-            apellido: apellido.trim() || '',
+            apellido: apellido?.trim() || '',
             correo: correoFinal!.toLowerCase().trim(),
-            telefono: telefono?.trim()
-          }, usuarioId);
+            tipo: 'LEAD',
+            estadoLead: 'NUEVO',
+            fuente: 'Google Contacts'
+          };
+
+          // Solo agregar teléfono si existe
+          if (telefono?.trim()) {
+            datosContacto.telefono = telefono.trim();
+          }
+
+          const nuevoContacto = await this.crearContacto(datosContacto, usuarioId);
 
           // Asignar la etiqueta "Fuente: Google Contacts"
           await prisma.contactoEtiqueta.create({
