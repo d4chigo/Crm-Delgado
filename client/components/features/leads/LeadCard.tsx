@@ -147,76 +147,24 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
           {/* Botones de acción */}
           <div className="grid grid-cols-2 gap-2 pt-2">
-            {(() => {
-              // Normalizar teléfono y default Perú (+51) -> wa.me requiere sin '+'
-              const raw = (lead.telefono || '').replace(/\D/g, '');
-              const phone = raw.length === 9 ? `51${raw}` : raw;
-
-              // Mismo rango horario por defecto que el botón "Agendar"
-              const start = new Date();
-              start.setHours(9, 0, 0, 0);
-              const fecha = start.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-              const hora = start.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-
-              const msgLines = [
-                `Hola${lead.nombre ? ` ${lead.nombre}` : ''}, ¿qué tal?`,
-                `Te escribo de CRM Delgado para confirmar nuestra reunión.`,
-                `Fecha: ${fecha}`,
-                `Hora: ${hora}`,
-                lead.correo ? `Te envié la invitación al correo: ${lead.correo}` : undefined,
-                `Si necesitas reprogramar, avísame por este medio. ¡Gracias!`
-              ].filter(Boolean);
-              const msg = msgLines.join('\n');
-              const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : '';
-
-              return (
-                <Button asChild variant="outline" size="sm" className="cursor-pointer" disabled={!phone}>
-                  <a
-                    href={waUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (!phone) return;
-                      try { window.open(waUrl, '_blank'); } catch (_) { /* ignore */ }
-                    }}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    WhatsApp Cita
-                  </a>
-                </Button>
-              );
-            })()}
-            {(() => {
-              const asunto = `Reunión con ${lead.nombre} - CRM Delgado`;
-              const descripcion = `Reunión de seguimiento con ${lead.nombre} ${lead.apellido || ''}. Email: ${lead.correo || ''}`;
-              const start = new Date();
-              start.setHours(9, 0, 0, 0);
-              const end = new Date(start);
-              end.setHours(10, 0, 0, 0);
-              const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-              const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fmt(start)}%2F${fmt(end)}${lead.correo ? `&add=${encodeURIComponent(lead.correo)}` : ''}`;
-              return (
-                <Button asChild variant="outline" size="sm" className="cursor-pointer">
-                  <a
-                    href={calUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try { window.open(calUrl, '_blank'); } catch (_) { /* ignore */ }
-                      // Notificar al padre para abrir el modal de WhatsApp con datos prellenados
-                      onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined);
-                    }}
-                  >
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Agendar
-                  </a>
-                </Button>
-              );
-            })()}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
+              disabled={!lead.telefono}
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              WhatsApp Cita
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
+              disabled={!lead.correo}
+            >
+              <Calendar className="h-4 w-4 mr-1" />
+              Agendar
+            </Button>
           </div>
           <div className="grid grid-cols-2 gap-2 pt-2">
             <Button

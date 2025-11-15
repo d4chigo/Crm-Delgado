@@ -15,6 +15,7 @@ import contactoService from "@/services/api/contacto.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
 import { ClientCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
 import { DialogoCrearOportunidad, DialogoCrearAccesoWeb } from "@/components/features/contacts";
+import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
 import { FormularioCotizacion } from "@/components/features/cotizaciones";
 import { cotizacionService } from "@/services/api/cotizacion.service";
 import { CrearCotizacionDTO } from "@/types/cotizacion.types";
@@ -62,6 +63,10 @@ export default function PaginaClientes() {
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
   const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+
+  // Agendar reunión
+  const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
+  const [clienteParaAgendar, setClienteParaAgendar] = useState<Contacto | null>(null)
 
   useEffect(() => {
     cargarContactos({ tipo: TipoContacto.CLIENTE, pagina: 1, limite: 6 })
@@ -118,21 +123,12 @@ export default function PaginaClientes() {
   }
 
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
-    const fechaInicio = new Date();
-    fechaInicio.setHours(9, 0, 0, 0);
-    const fecha = fechaInicio.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-    const hora = fechaInicio.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    const lineas = [
-      `Hola${nombre ? ` ${nombre}` : ''}, ¿qué tal?`,
-      `Te confirmo nuestra reunión agendada desde CRM Delgado.`,
-      `Fecha: ${fecha}`,
-      `Hora: ${hora}`,
-      correo ? `Te envié la invitación al correo: ${correo}` : undefined,
-      `Si necesitas reprogramar, avísame por este medio. ¡Gracias!`
-    ].filter(Boolean) as string[];
-    setWhatsappMensaje(lineas.join('\n'));
-    setWhatsappTelefono(telefono || null);
-    setDialogoWhatsappAbierto(true);
+    // Encontrar el cliente actual para obtener más información
+    const clienteActual = contactos.find(c => c.nombre === nombre && c.correo === correo)
+    if (clienteActual) {
+      setClienteParaAgendar(clienteActual)
+      setDialogoAgendarAbierto(true)
+    }
   }
 
   return (
@@ -148,7 +144,7 @@ export default function PaginaClientes() {
         <div className="flex gap-4 items-end">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar clientes: ej. 'Juan Pérez', 'correo@example.com'..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar clientes" value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
             <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
@@ -183,6 +179,7 @@ export default function PaginaClientes() {
                   onCotizar={handleCotizar}
                   onEditar={handleEditar}
                   onWhatsApp={handleWhatsApp}
+                  onScheduleMeeting={handleScheduleMeeting}
                   onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
                   onCrearAccesoWeb={(cliente) => {
                     setClienteParaAccesoWeb(cliente);
@@ -317,6 +314,22 @@ export default function PaginaClientes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {clienteParaAgendar && (
+        <DialogoAgendarReunion
+          abierto={dialogoAgendarAbierto}
+          onCerrar={() => {
+            setDialogoAgendarAbierto(false)
+            setClienteParaAgendar(null)
+          }}
+          contactoNombre={clienteParaAgendar.nombre}
+          contactoEmail={clienteParaAgendar.correo}
+          contactoTelefono={clienteParaAgendar.telefono}
+          onEventoCreado={() => {
+            cargarContactos({})
+          }}
+        />
+      )}
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

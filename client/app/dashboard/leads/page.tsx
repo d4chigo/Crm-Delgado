@@ -15,6 +15,7 @@ import type { Etiqueta } from "@/types/etiqueta.types"
 import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
 import { ContactImportDialog } from "@/components/features/contacts/ContactImportDialog"
 import { FormularioCotizacion } from "@/components/features/cotizaciones"
+import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
 import { cotizacionService } from "@/services/api/cotizacion.service"
 import { CrearCotizacionDTO } from "@/types/cotizacion.types"
 import { Loader2, Search, Users, TrendingUp, Tag, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react"
@@ -61,6 +62,8 @@ export default function PaginaLeads() {
   const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
+  const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
+  const [leadParaAgendar, setLeadParaAgendar] = useState<Lead | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const cargarLeads = useCallback(async (filtros?: any) => {
@@ -264,21 +267,17 @@ export default function PaginaLeads() {
   }
 
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
-    const fechaInicio = new Date()
-    fechaInicio.setHours(9, 0, 0, 0)
-    const fecha = fechaInicio.toLocaleDateString("es-PE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
-    const hora = fechaInicio.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })
-    const lineas = [
-      `Hola$${nombre ? ` $${nombre}` : ""}, ¿qué tal?`,
-      `Te confirmo nuestra reunión agendada desde CRM Delgado.`,
-      `Fecha: $${fecha}`,
-      `Hora: $${hora}`,
-      correo ? `Te envié la invitación al correo: $${correo}` : undefined,
-      `Si necesitas reprogramar, avísame por este medio. ¡Gracias!`
-    ].filter(Boolean) as string[]
-    setWhatsappMensaje(lineas.join("\n"))
-    setWhatsappTelefono(telefono || null)
-    setDialogoWhatsappAbierto(true)
+    // Encontrar el lead actual para obtener más información
+    const leadActual = leads.find(l => l.nombre === nombre && l.correo === correo)
+    setLeadParaAgendar({
+      id: leadActual?.id || '',
+      nombre,
+      correo,
+      telefono,
+      tipo: 'LEAD',
+      apellido: leadActual?.apellido
+    })
+    setDialogoAgendarAbierto(true)
   }
 
   return (
@@ -307,7 +306,7 @@ export default function PaginaLeads() {
         <div className="flex gap-4 items-end flex-wrap">
           <div className="flex-1 relative min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar leads: ej. 'tío Juan', 'correo@example.com', '12345678'..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar leads" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
             <SelectTrigger className="w-[220px]">
@@ -506,6 +505,22 @@ export default function PaginaLeads() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {leadParaAgendar && (
+        <DialogoAgendarReunion
+          abierto={dialogoAgendarAbierto}
+          onCerrar={() => {
+            setDialogoAgendarAbierto(false)
+            setLeadParaAgendar(null)
+          }}
+          contactoNombre={leadParaAgendar.nombre}
+          contactoEmail={leadParaAgendar.correo}
+          contactoTelefono={leadParaAgendar.telefono}
+          onEventoCreado={() => {
+            cargarLeads()
+          }}
+        />
+      )}
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

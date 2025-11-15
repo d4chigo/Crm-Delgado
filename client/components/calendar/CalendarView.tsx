@@ -14,6 +14,7 @@ import {
   guardarTokens,
   type CalendarEvent,
 } from "@/services/api/calendar.service";
+import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion";
 import { Calendar as IconoCalendario, RefreshCcw, Bell, LogOut, AlertCircle } from "lucide-react";
 
 type Evento = {
@@ -28,8 +29,19 @@ type Evento = {
   enlace?: string;
 };
 
+// Función para obtener la fecha actual en zona horaria de Perú
+function obtenerHoyEnPerú(): Date {
+  const ahora = new Date();
+  // Perú está en UTC-5
+  const zonaHorariaPerú = ahora.toLocaleDateString('es-PE').split('/');
+  const dia = parseInt(zonaHorariaPerú[0]);
+  const mes = parseInt(zonaHorariaPerú[1]) - 1;
+  const año = parseInt(zonaHorariaPerú[2]);
+  return new Date(año, mes, dia);
+}
+
 function formatDateLabel(date: Date) {
-  return date.toLocaleString(undefined, {
+  return date.toLocaleDateString('es-PE', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -43,13 +55,19 @@ interface CalendarViewProps {
 export default function CalendarView({ onAuthChange }: CalendarViewProps) {
   const { toast } = useToast();
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [fechaBase, setFechaBase] = useState(new Date());
+  const [fechaBase, setFechaBase] = useState(() => obtenerHoyEnPerú());
   const [permisoNotifs, setPermisoNotifs] = useState<NotificationPermission>('default');
   const [minutosAntes, setMinutosAntes] = useState<5 | 10 | 15 | 30>(15);
   const [autenticado, setAutenticado] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notificacionesAutomaticas, setNotificacionesAutomaticas] = useState(true);
   const timersRef = useState<number[]>([])[0];
+  const intervaloCheckRef = useState<NodeJS.Timeout | null>(null)[0];
+  
+  // Estados para el modal de edición
+  const [dialogoAbierto, setDialogoAbierto] = useState(false);
+  const [eventoEdicion, setEventoEdicion] = useState<Evento | null>(null);
 
   // Manejar callback OAuth
   useEffect(() => {
@@ -100,12 +118,56 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
         enlace: evento.htmlLink,
       }));
       setEventos(eventosFormateados);
+      // Programar notificaciones automáticas un día antes
+      if (notificacionesAutomaticas && permisoNotifs === 'granted') {
+        programarNotificacionesUnDiaAntes(eventosFormateados);
+      }
     } catch (e: any) {
       console.error('Error al cargar eventos:', e);
       setError('Error al cargar eventos del calendario');
       toast({ title: 'Error al cargar eventos', description: String(e.message), variant: 'destructive' });
     } finally {
       setCargando(false);
+    }
+  }
+
+  function programarNotificacionesUnDiaAntes(eventosLista: Evento[]) {
+    const hoy = obtenerHoyEnPerú();
+    const mañana = new Date(hoy);
+    mañana.setDate(mañana.getDate() + 1);
+    
+    // Encontrar eventos para mañana
+    const eventosMañana = eventosLista.filter(ev => {
+      const fechaEvento = ev.inicio.slice(0, 10);
+      const fechaMañana = mañana.toISOString().slice(0, 10);
+      return fechaEvento === fechaMañana;
+    });
+    
+    // Si hay eventos mañana, programar notificación para hoy a las 10:00 AM
+    if (eventosMañana.length > 0) {
+      const horaNotif = new Date();
+      horaNotif.setHours(10, 0, 0, 0);
+      
+      // Si ya pasó las 10 AM hoy, programar para mañana a las 10 AM
+      if (horaNotif < new Date()) {
+        horaNotif.setDate(horaNotif.getDate() + 1);
+      }
+      
+      const delay = horaNotif.getTime() - Date.now();
+      
+      if (delay > 0) {
+        const timeoutId = window.setTimeout(() => {
+          const lista = eventosMañana.map(e => `• ${e.resumen}`).join('\n');
+          new Notification('📅 Recordatorio de reuniones mañana', {
+            body: `Tienes ${eventosMañana.length} reunión${eventosMañana.length > 1 ? 'es' : ''} programada${eventosMañana.length > 1 ? 's' : ''}:\n${lista}`,
+            icon: '/placeholder-logo.png',
+            tag: 'reuniones-manana',
+            requireInteraction: true
+          });
+        }, delay);
+        
+        timersRef.push(timeoutId);
+      }
     }
   }
 
@@ -135,12 +197,20 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
     const y = fechaBase.getFullYear();
     const m = fechaBase.getMonth();
     const primerDiaMes = new Date(y, m, 1);
-    const primerDiaSemana = new Date(primerDiaMes);
-    primerDiaSemana.setDate(primerDiaMes.getDate() - ((primerDiaMes.getDay() + 6) % 7)); // lunes como primer día
+    
+    // Obtener el primer día de la semana de este mes (lunes como primer día)
+    // getDay(): 0=domingo, 1=lunes, ..., 6=sábado
+    const diaSemanaInicio = primerDiaMes.getDay();
+    const diasAntesDelMes = diaSemanaInicio === 0 ? 6 : diaSemanaInicio - 1; // Ajustar para que lunes sea 0
+    
+    // Crear fecha de inicio (primer día a mostrar)
+    const fechaInicio = new Date(primerDiaMes);
+    fechaInicio.setDate(primerDiaMes.getDate() - diasAntesDelMes);
+    
     const celdas: Date[] = [];
     for (let i = 0; i < 42; i++) {
-      const d = new Date(primerDiaSemana);
-      d.setDate(primerDiaSemana.getDate() + i);
+      const d = new Date(fechaInicio);
+      d.setDate(fechaInicio.getDate() + i);
       celdas.push(d);
     }
     return celdas;
@@ -233,6 +303,30 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
               <option value={30}>30 min</option>
             </select>
             <Button 
+              variant={notificacionesAutomaticas ? "default" : "outline"}
+              onClick={async () => {
+                try {
+                  const p = await Notification.requestPermission();
+                  setPermisoNotifs(p);
+                  if (p !== 'granted') {
+                    toast({ title: 'Permiso denegado', description: 'Activa notificaciones del navegador', variant: 'destructive' });
+                    return;
+                  }
+                  setNotificacionesAutomaticas(!notificacionesAutomaticas);
+                  toast({ title: notificacionesAutomaticas ? 'Desactivadas' : 'Activadas', description: 'Notificaciones automáticas ' + (notificacionesAutomaticas ? 'un día antes desactivadas' : 'un día antes activadas') });
+                  // Reprogramar notificaciones si se activan
+                  if (!notificacionesAutomaticas) {
+                    programarNotificacionesUnDiaAntes(eventos);
+                  }
+                } catch (e: any) {
+                  toast({ title: 'Error', description: String(e.message), variant: 'destructive' });
+                }
+              }}
+              className={notificacionesAutomaticas ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+            >
+              <Bell className="h-4 w-4 mr-1" /> {notificacionesAutomaticas ? '✓ Un día' : 'Un día'}
+            </Button>
+            <Button 
               variant="outline" 
               onClick={async () => {
                 try {
@@ -276,7 +370,8 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
           {diasMes.map((d, i) => {
             const enMes = d.getMonth() === fechaBase.getMonth();
             const lista = eventosDelDia(d);
-            const esHoy = d.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10);
+            const hoy = obtenerHoyEnPerú();
+            const esHoy = d.toISOString().slice(0, 10) === hoy.toISOString().slice(0, 10);
             
             return (
               <div 
@@ -298,21 +393,9 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
                       key={ev.id}
                       className="text-left w-full text-xs truncate rounded bg-[#FCBA00]/20 px-1 py-0.5 hover:bg-[#FCBA00]/30 text-[#303030]"
                       onClick={() => {
-                        if (permisoNotifs !== 'granted') return;
-                        const inicioMs = new Date(ev.inicio).getTime();
-                        const delay = inicioMs - Date.now() - minutosAntes * 60 * 1000;
-                        if (delay > 0) {
-                          const id = window.setTimeout(() => {
-                            new Notification('Recordatorio de reunión', {
-                              body: `${ev.resumen} empieza en ${minutosAntes} minutos`,
-                              icon: '/placeholder-logo.png'
-                            });
-                          }, delay);
-                          timersRef.push(id);
-                          toast({ title: 'Recordatorio programado', description: `${ev.resumen}` });
-                        } else {
-                          toast({ title: 'Evento muy próximo', description: 'No se pudo programar con el margen elegido' });
-                        }
+                        // Abrir modal de edición al hacer clic en un evento
+                        setEventoEdicion(ev);
+                        setDialogoAbierto(true);
                       }}
                       title={`${ev.resumen} - ${formatearHora(ev.inicio)}`}
                     >
@@ -328,6 +411,27 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
           })}
         </div>
       </Card>
+
+      {/* Modal para editar/eliminar eventos */}
+      {eventoEdicion && (
+        <DialogoAgendarReunion
+          abierto={dialogoAbierto}
+          onCerrar={() => {
+            setDialogoAbierto(false);
+            setEventoEdicion(null);
+          }}
+          eventoExistente={{
+            id: eventoEdicion.id,
+            summary: eventoEdicion.resumen,
+            description: eventoEdicion.descripcion,
+            location: eventoEdicion.ubicacion,
+            startDateTime: eventoEdicion.inicio,
+            endDateTime: eventoEdicion.fin,
+            attendees: eventoEdicion.participantes,
+          }}
+          onEventoCreado={recargarEventos}
+        />
+      )}
     </div>
   );
 }

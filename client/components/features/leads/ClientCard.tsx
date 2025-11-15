@@ -13,7 +13,7 @@ interface ClientCardProps {
   onAgregarOportunidad: (cliente: Contacto) => void
   onEditar: (cliente: Contacto) => void
   onWhatsApp: (telefono: string) => void
-  onScheduleMeeting?: (nombre: string, correo: string) => void
+  onScheduleMeeting?: (nombre: string, correo: string, telefono?: string) => void
   onCrearAccesoWeb?: (cliente: Contacto) => void
   onEliminar?: (cliente: Contacto) => void
 }
@@ -147,38 +147,24 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
 
           {/* Botones de acción para clientes */}
           <div className="grid grid-cols-2 gap-2 pt-2">
-            {(() => {
-              const raw = (cliente.telefono || '').replace(/\D/g, '');
-              const phone = raw.length === 9 ? `51${raw}` : raw;
-              const msg = `Hola ${cliente.nombre || ''}, te contacto desde CRM Delgado para hacer seguimiento.`.trim();
-              const waUrl = `https://wa.me/${phone}${phone ? `?text=${encodeURIComponent(msg)}` : ''}`;
-              return (
-                <Button asChild variant="outline" size="sm" className="cursor-pointer">
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer">
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    WhatsApp
-                  </a>
-                </Button>
-              );
-            })()}
-            {(() => {
-              const asunto = `Reunión con ${cliente.nombre} - CRM Delgado`;
-              const descripcion = `Reunión de seguimiento con ${cliente.nombre} ${cliente.apellido || ''}. Email: ${cliente.correo || ''}`;
-              const start = new Date();
-              start.setHours(9, 0, 0, 0);
-              const end = new Date(start);
-              end.setHours(10, 0, 0, 0);
-              const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-              const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&dates=${fmt(start)}%2F${fmt(end)}${cliente.correo ? `&add=${encodeURIComponent(cliente.correo)}` : ''}`;
-              return (
-                <Button asChild variant="outline" size="sm" className="cursor-pointer">
-                  <a href={calUrl} target="_blank" rel="noopener noreferrer">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Agendar
-                  </a>
-                </Button>
-              );
-            })()}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
+              disabled={!cliente.telefono}
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
+              disabled={!cliente.correo}
+            >
+              <Calendar className="h-4 w-4 mr-1" />
+              Agendar
+            </Button>
           </div>
           <div className="grid grid-cols-3 gap-2 pt-2">
             <Button
