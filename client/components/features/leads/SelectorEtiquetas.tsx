@@ -3,26 +3,25 @@
 import { useState, useEffect } from 'react';
 import { Etiqueta } from '@/types/etiqueta.types';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 interface SelectorEtiquetasProps {
   contactoId: string;
-  etiquetasSeleccionadas?: string[]; // IDs de etiquetas ya asignadas
+  etiquetasSeleccionadas?: string[]; // IDs de etiquetas ya asignadas (solo una)
   onCambio?: (etiquetasIds: string[]) => void;
-  modo?: 'checkbox' | 'badge-only'; // checkbox: permite editar, badge-only: solo muestra
+  modo?: 'radio' | 'badge-only'; // radio: permite editar una sola, badge-only: solo muestra
 }
 
 export function SelectorEtiquetas({
   contactoId,
   etiquetasSeleccionadas = [],
   onCambio,
-  modo = 'checkbox'
+  modo = 'radio'
 }: SelectorEtiquetasProps) {
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
-  const [etiquetasActuales, setEtiquetasActuales] = useState<string[]>(etiquetasSeleccionadas);
+  const [etiquetaSeleccionada, setEtiquetaSeleccionada] = useState<string>(etiquetasSeleccionadas[0] || '');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
@@ -31,7 +30,7 @@ export function SelectorEtiquetas({
   }, []);
 
   useEffect(() => {
-    setEtiquetasActuales(etiquetasSeleccionadas);
+    setEtiquetaSeleccionada(etiquetasSeleccionadas[0] || '');
   }, [etiquetasSeleccionadas]);
 
   const cargarEtiquetas = async () => {
@@ -96,19 +95,17 @@ export function SelectorEtiquetas({
   };
 
   const toggleEtiqueta = async (etiquetaId: string) => {
-    const nuevasEtiquetas = etiquetasActuales.includes(etiquetaId)
-      ? etiquetasActuales.filter(id => id !== etiquetaId)
-      : [...etiquetasActuales, etiquetaId];
-
-    setEtiquetasActuales(nuevasEtiquetas);
+    // Si la etiqueta ya está seleccionada, deseleccionar (permitir sin etiqueta)
+    const nuevaEtiqueta = etiquetaSeleccionada === etiquetaId ? '' : etiquetaId;
+    setEtiquetaSeleccionada(nuevaEtiqueta);
 
     // Si hay callback, notificar el cambio
     if (onCambio) {
-      onCambio(nuevasEtiquetas);
+      onCambio(nuevaEtiqueta ? [nuevaEtiqueta] : []);
     }
 
     // Guardar automáticamente en el servidor
-    await guardarEtiquetas(nuevasEtiquetas);
+    await guardarEtiquetas(nuevaEtiqueta ? [nuevaEtiqueta] : []);
   };
 
   const guardarEtiquetas = async (etiquetaIds: string[]) => {
@@ -164,7 +161,7 @@ export function SelectorEtiquetas({
         variant: 'destructive',
       });
       // Revertir cambios en caso de error
-      setEtiquetasActuales(etiquetasSeleccionadas);
+      setEtiquetaSeleccionada(etiquetasSeleccionadas[0] || '');
     } finally {
       setGuardando(false);
     }
@@ -180,37 +177,35 @@ export function SelectorEtiquetas({
 
   // Modo solo visualización (badges)
   if (modo === 'badge-only') {
-    const etiquetasMostrar = etiquetasDisponibles.filter(e =>
-      etiquetasActuales.includes(e.id)
+    const etiquetaMostrar = etiquetasDisponibles.find(e =>
+      etiquetasSeleccionadas.includes(e.id)
     );
 
-    if (etiquetasMostrar.length === 0) {
+    if (!etiquetaMostrar) {
       return (
-        <p className="text-sm text-muted-foreground italic">Sin etiquetas asignadas</p>
+        <p className="text-sm text-muted-foreground italic">Sin etiqueta asignada</p>
       );
     }
 
     return (
       <div className="flex flex-wrap gap-2">
-        {etiquetasMostrar.map(etiqueta => (
-          <Badge
-            key={etiqueta.id}
-            style={{
-              backgroundColor: etiqueta.color + '20',
-              color: etiqueta.color,
-              borderColor: etiqueta.color,
-            }}
-            className="border"
-          >
-            {etiqueta.icono && <span className="mr-1">{etiqueta.icono}</span>}
-            {etiqueta.nombre}
-          </Badge>
-        ))}
+        <Badge
+          key={etiquetaMostrar.id}
+          style={{
+            backgroundColor: etiquetaMostrar.color + '20',
+            color: etiquetaMostrar.color,
+            borderColor: etiquetaMostrar.color,
+          }}
+          className="border"
+        >
+          {etiquetaMostrar.icono && <span className="mr-1">{etiquetaMostrar.icono}</span>}
+          {etiquetaMostrar.nombre}
+        </Badge>
       </div>
     );
   }
 
-  // Modo con checkboxes (editable)
+  // Modo con radio buttons (selección única, editable)
   return (
     <div className="space-y-3">
       {guardando && (
@@ -220,20 +215,47 @@ export function SelectorEtiquetas({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-2">
+        {/* Opción para sin etiqueta */}
+        <div className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+          <input
+            type="radio"
+            id="etiqueta-ninguna"
+            name="etiqueta"
+            value=""
+            checked={etiquetaSeleccionada === ''}
+            onChange={() => toggleEtiqueta('')}
+            disabled={guardando}
+            className="mt-1"
+          />
+          <div className="flex-1">
+            <Label
+              htmlFor="etiqueta-ninguna"
+              className="cursor-pointer text-muted-foreground"
+            >
+              Sin etiqueta
+            </Label>
+          </div>
+        </div>
+
+        {/* Opciones de etiquetas */}
         {etiquetasDisponibles.map(etiqueta => {
-          const estaSeleccionada = etiquetasActuales.includes(etiqueta.id);
+          const estaSeleccionada = etiquetaSeleccionada === etiqueta.id;
 
           return (
             <div
               key={etiqueta.id}
               className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
             >
-              <Checkbox
+              <input
+                type="radio"
                 id={`etiqueta-${etiqueta.id}`}
+                name="etiqueta"
+                value={etiqueta.id}
                 checked={estaSeleccionada}
-                onCheckedChange={() => toggleEtiqueta(etiqueta.id)}
+                onChange={() => toggleEtiqueta(etiqueta.id)}
                 disabled={guardando}
+                className="mt-1"
               />
               <div className="flex-1">
                 <Label
