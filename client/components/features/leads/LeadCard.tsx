@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp } from "lucide-react"
+import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp, Building2, IdCard, Cake } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
@@ -112,40 +112,58 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
       {/* Contenido principal */}
       <CardContent className="space-y-3">
-        {/* Info de contacto en formato compacto */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        {/* Info de contacto con iconos */}
+        <div className="space-y-2">
           {lead.empresa && (
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground font-medium">🏢 EMPRESA</p>
-              <p className="text-sm font-medium text-gray-700">{lead.empresa}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <span className="text-gray-700 font-medium">{lead.empresa}</span>
             </div>
           )}
 
           {lead.correo && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">CORREO</p>
-              <p className="text-xs text-blue-600 truncate" title={lead.correo}>{lead.correo}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
+              <a href={`mailto:${lead.correo}`} className="text-blue-600 hover:underline truncate" title={lead.correo}>
+                {lead.correo}
+              </a>
             </div>
           )}
           
           {lead.telefono && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">TELÉFONO</p>
-              <p className="text-xs font-medium text-gray-700">{lead.telefono}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+              <a href={`tel:${lead.telefono}`} className="text-gray-700 hover:underline font-medium">
+                {lead.telefono}
+              </a>
             </div>
           )}
 
           {lead.presupuesto && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">PRESUPUESTO</p>
-              <p className="text-sm font-bold text-green-600">S/ {lead.presupuesto.toLocaleString('es-PE')}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <span className="font-bold text-green-600">S/ {lead.presupuesto.toLocaleString('es-PE')}</span>
             </div>
           )}
           
           {lead.ciudad && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">CIUDAD</p>
-              <p className="text-xs text-gray-600">{lead.ciudad}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+              <span className="text-gray-600">{lead.ciudad}</span>
+            </div>
+          )}
+
+          {lead.dni && (
+            <div className="flex items-center gap-2 text-sm">
+              <IdCard className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+              <span className="text-gray-600 font-mono">{lead.dni}</span>
+            </div>
+          )}
+
+          {lead.fechaNacimiento && (
+            <div className="flex items-center gap-2 text-sm">
+              <Cake className="h-4 w-4 text-pink-500 flex-shrink-0" />
+              <span className="text-gray-600">{new Date(lead.fechaNacimiento).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           )}
         </div>

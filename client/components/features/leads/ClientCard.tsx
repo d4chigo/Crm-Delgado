@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe, Trash2 } from "lucide-react"
+import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe, Trash2, Building2 } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
@@ -98,40 +98,58 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
 
       {/* Contenido principal */}
       <CardContent className="space-y-3">
-        {/* Info de contacto en formato compacto */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        {/* Info de contacto con iconos */}
+        <div className="space-y-2">
           {cliente.empresa && (
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground font-medium">🏢 EMPRESA</p>
-              <p className="text-sm font-medium text-gray-700">{cliente.empresa}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <span className="text-gray-700 font-medium">{cliente.empresa}</span>
             </div>
           )}
 
           {cliente.cargo && (
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground font-medium">CARGO</p>
-              <p className="text-sm text-gray-600">{cliente.cargo}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-purple-600 flex-shrink-0" />
+              <span className="text-gray-600">{cliente.cargo}</span>
             </div>
           )}
 
           {cliente.correo && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">CORREO</p>
-              <p className="text-xs text-blue-600 truncate" title={cliente.correo}>{cliente.correo}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
+              <a href={`mailto:${cliente.correo}`} className="text-blue-600 hover:underline truncate">
+                {cliente.correo}
+              </a>
             </div>
           )}
           
           {cliente.telefono && (
-            <div>
-              <p className="text-xs text-muted-foreground font-medium">TELÉFONO</p>
-              <p className="text-xs font-medium text-gray-700">{cliente.telefono}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+              <a href={`tel:${cliente.telefono}`} className="text-green-600 hover:underline">
+                {cliente.telefono}
+              </a>
             </div>
           )}
 
           {cliente.ciudad && (
-            <div className="col-span-2">
-              <p className="text-xs text-muted-foreground font-medium">CIUDAD</p>
-              <p className="text-xs text-gray-600">{cliente.ciudad}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+              <span className="text-gray-600">{cliente.ciudad}</span>
+            </div>
+          )}
+
+          {cliente.dni && (
+            <div className="flex items-center gap-2 text-sm">
+              <IdCard className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+              <span className="text-gray-600 font-mono">{cliente.dni}</span>
+            </div>
+          )}
+
+          {cliente.fechaNacimiento && (
+            <div className="flex items-center gap-2 text-sm">
+              <Cake className="h-4 w-4 text-pink-500 flex-shrink-0" />
+              <span className="text-gray-600">{new Date(cliente.fechaNacimiento).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           )}
         </div>
