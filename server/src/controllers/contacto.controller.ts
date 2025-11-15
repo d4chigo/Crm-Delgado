@@ -20,6 +20,7 @@ export class ContactoController {
         tipo: req.query.tipo as any,
         ciudad: req.query.ciudad as string,
         busqueda: req.query.busqueda as string,
+        estadoLead: req.query.estadoLead as string,
         pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
         limite: req.query.limite ? Number(req.query.limite) : undefined
       };
