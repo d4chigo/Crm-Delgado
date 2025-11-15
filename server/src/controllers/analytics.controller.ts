@@ -129,13 +129,21 @@ export async function getReporteConversionPorOrigen(req: Request, res: Response)
       ganadasPorFuente.set(key, { count: prev.count + 1, value: prev.value + Number(o.valor || 0) });
     }
 
-    const data = leadsPorFuente.map((l: { fuente: string | null; _count: { _all: number } }) => {
-      const key = (l.fuente as string) || 'DESCONOCIDO';
-      const won = ganadasPorFuente.get(key)?.count || 0;
-      const valor = ganadasPorFuente.get(key)?.value || 0;
-      const conversion = l._count._all > 0 ? Math.round((won * 10000) / l._count._all) / 100 : 0;
-      return { origen: key, leads: l._count._all, ganadas: won, conversion, valorGanado: valor };
-    });
+    // Filtrar solo fuentes permitidas (excluir Google Ads)
+    const fuentesPermitidas = ['TikTok', 'Facebook', 'YouTube', 'Instagram', 'Página Web', 'DESCONOCIDO'];
+    
+    const data = leadsPorFuente
+      .filter((l: { fuente: string | null }) => {
+        const key = (l.fuente as string) || 'DESCONOCIDO';
+        return fuentesPermitidas.includes(key);
+      })
+      .map((l: { fuente: string | null; _count: { _all: number } }) => {
+        const key = (l.fuente as string) || 'DESCONOCIDO';
+        const won = ganadasPorFuente.get(key)?.count || 0;
+        const valor = ganadasPorFuente.get(key)?.value || 0;
+        const conversion = l._count._all > 0 ? Math.round((won * 10000) / l._count._all) / 100 : 0;
+        return { origen: key, leads: l._count._all, ganadas: won, conversion, valorGanado: valor };
+      });
 
     try {
       await prisma.reporte.create({
@@ -351,21 +359,17 @@ export async function getMetrics(req: Request, res: Response) {
         percentage: totalValor ? Math.round((Number(v._sum.valor || 0) * 100) / totalValor) : 0,
       }));
 
-    // Ventas por "programa" no existe en schema; devolvemos agrupación por EstadoProyecto desde proyectos relacionados (proxy)
-    const proyectos = await prisma.proyecto.findMany({
-      where: { activo: true },
-      select: { estado: true },
+    // Clientes en el Pipeline: todas las oportunidades agrupadas por etapa (incluyendo GANADO y PERDIDO)
+    const oportunidadesEnPipeline = await prisma.oportunidadCliente.groupBy({
+      by: ['etapa'],
+      _count: { _all: true },
     });
-    const estadoCounts = proyectos.reduce((acc: Record<string, number>, p: { estado: string | null }) => {
-      const key = String(p.estado ?? 'DESCONOCIDO');
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    const totalProgramas = (Object.values(estadoCounts) as number[]).reduce((a, b) => a + b, 0) || 1;
-    const ventasPorPrograma = (Object.entries(estadoCounts) as Array<[string, number]>).map(([program, count]): { program: string; count: number; percentage: number } => ({
-      program: String(program),
-      count: Number(count),
-      percentage: Math.round((Number(count) * 100) / totalProgramas),
+    
+    const totalEnPipeline = oportunidadesEnPipeline.reduce((acc: number, o: { _count: { _all: number } }) => acc + o._count._all, 0) || 1;
+    const ventasPorPrograma = oportunidadesEnPipeline.map((o: { etapa: string; _count: { _all: number } }): { program: string; count: number; percentage: number } => ({
+      program: String(o.etapa),
+      count: Number(o._count._all),
+      percentage: Math.round((Number(o._count._all) * 100) / totalEnPipeline),
     }));
 
     // Mejores agentes (proxy: usuarios ordenados por cantidad de oportunidades GANADO y valor)

@@ -362,7 +362,7 @@ export default function PaginaEstadisticas() {
           <TabsList>
             <TabsTrigger value="conversion">Conversión por Origen</TabsTrigger>
             <TabsTrigger value="desempeno">Desempeño del Asesor</TabsTrigger>
-            <TabsTrigger value="programas">Ventas por Programa</TabsTrigger>
+            <TabsTrigger value="programas">Clientes en el Pipeline</TabsTrigger>
           </TabsList>
 
           {/* Conversión por Origen */}
@@ -549,7 +549,7 @@ export default function PaginaEstadisticas() {
             </div>
           </TabsContent>
 
-          {/* Ventas por Programa */}
+          {/* Clientes en el Pipeline */}
           <TabsContent value="programas" className="mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="border-border">
@@ -557,26 +557,26 @@ export default function PaginaEstadisticas() {
                   <CardTitle className="text-lg font-semibold text-[#303030]">Tabla</CardTitle>
                   <div className="flex gap-2">
                     <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => descargarExcelHtml(
-                      `ventas_por_programa_${new Date().toISOString().slice(0,10)}.xls`,
-                      'Reporte: Ventas por Programa',
+                      `clientes_pipeline_${new Date().toISOString().slice(0,10)}.xls`,
+                      'Reporte: Clientes en el Pipeline',
                       [
-                        { key: 'programa', titulo: 'Programa' },
-                        { key: 'cantidad', titulo: 'Cantidad' },
+                        { key: 'etapa', titulo: 'Etapa del Pipeline' },
+                        { key: 'cantidad', titulo: 'Clientes' },
                         { key: 'participacion', titulo: 'Participación (%)' },
                       ],
-                      programas.map(p => ({ programa: p.program, cantidad: p.count, participacion: `${p.percentage}%` }))
+                      programas.map(p => ({ etapa: p.program, cantidad: p.count, participacion: `${p.percentage}%` }))
                     )}>Exportar Excel</Button>
                     <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
                       const img: string | null = null
                       descargarPDFJsPDF(
-                      `ventas_por_programa_${new Date().toISOString().slice(0,10)}.pdf`,
-                      'Reporte: Ventas por Programa',
+                      `clientes_pipeline_${new Date().toISOString().slice(0,10)}.pdf`,
+                      'Reporte: Clientes en el Pipeline',
                       [
-                        { key: 'programa', titulo: 'Programa' },
-                        { key: 'cantidad', titulo: 'Cantidad' },
+                        { key: 'etapa', titulo: 'Etapa del Pipeline' },
+                        { key: 'cantidad', titulo: 'Clientes' },
                         { key: 'participacion', titulo: 'Participación (%)' },
                       ],
-                      programas.map(p => ({ programa: p.program, cantidad: p.count, participacion: `${p.percentage}%` })),
+                      programas.map(p => ({ etapa: p.program, cantidad: p.count, participacion: `${p.percentage}%` })),
                       img ? [img] : undefined
                     )
                     }}>
@@ -588,8 +588,8 @@ export default function PaginaEstadisticas() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Programa</TableHead>
-                        <TableHead>Cantidad</TableHead>
+                        <TableHead>Etapa del Pipeline</TableHead>
+                        <TableHead>Clientes</TableHead>
                         <TableHead>Participación</TableHead>
                       </TableRow>
                     </TableHeader>
