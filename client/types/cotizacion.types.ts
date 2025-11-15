@@ -2,7 +2,7 @@
  * Tipos relacionados con cotizaciones inmobiliarias
  */
 
-export type TipoCuota = 'FIJA' | 'FLEXIBLE' | 'FLEXIBLE_ESPECIAL';
+export type TipoCuota = 'FIJA' | 'FLEXIBLE' | 'FLEXIBLE_ESPECIAL_AMORTIZACION' | 'FLEXIBLE_ESPECIAL';
 export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'VENCIDA';
 
 export type ModalidadPago = 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL';
@@ -120,7 +120,8 @@ export interface RespuestaPaginadaCotizaciones {
 export const TIPOS_CUOTA_LABELS: Record<TipoCuota, string> = {
   FIJA: 'Cuota Fija',
   FLEXIBLE: 'Cuota Flexible',
-  FLEXIBLE_ESPECIAL: 'Cuota Flexible Especial'
+  FLEXIBLE_ESPECIAL_AMORTIZACION: 'Flexible Especial (Amortización Fija)',
+  FLEXIBLE_ESPECIAL: 'Flexible Especial (Recalculable)'
 };
 
 export const ESTADOS_COTIZACION_LABELS: Record<EstadoCotizacion, string> = {

@@ -62,10 +62,19 @@ export const cotizacionService = {
   ) {
     if (monto <= 0 || tasaAnual < 0 || plazoMeses <= 0) return [];
 
+    const modalidad = options?.modalidadPago || 'FIJA';
+    
+    // FLEXIBLE_ESPECIAL_AMORTIZACION: manejo especial - cuota fija + pago especial cada N meses
+    if (modalidad === 'FLEXIBLE_ESPECIAL_AMORTIZACION' && options?.frecuenciaCuotaEspecial && options?.cuotaEspecialValor !== undefined) {
+      return this.calcularCronogramaFlexibleEspecial(monto, tasaAnual, options.frecuenciaCuotaEspecial, options.cuotaEspecialValor, options.cuotaEspecialTipo, options.montoCuotaManual);
+    }
+  
   let cuota = this.calcularCuotaMensual(monto, tasaAnual, plazoMeses);
+  
   if (options?.montoCuotaManual && options.montoCuotaManual > 0) {
     cuota = options.montoCuotaManual;
   }
+  
     let saldo = monto;
     const cronograma: Array<any> = [];
 
@@ -90,8 +99,6 @@ export const cotizacionService = {
         if (!isNaN(m) && !isNaN(v)) overrides[m] = v;
       });
     }
-
-    const modalidad = options?.modalidadPago || 'FIJA';
 
     // grace period tracking
     const graciaMeses = options?.periodoGraciaMeses ?? 0;
@@ -251,8 +258,8 @@ export const cotizacionService = {
         break;
       }
 
-      // After a special payment, recompute cuota for remaining months
-      if (esCuotaEspecial) {
+      // After a special payment, recompute cuota for remaining months SOLO para modalidades que no sean FLEXIBLE_ESPECIAL
+      if (esCuotaEspecial && modalidad !== 'FLEXIBLE_ESPECIAL') {
         const mesesRestantes = plazoMeses - mes;
         if (mesesRestantes > 0) {
           cuota = this.calcularCuotaMensual(saldo, tasaAnual, mesesRestantes);
@@ -412,6 +419,128 @@ export const cotizacionService = {
     const cuota = monto * (tasaMensual * factor) / (factor - 1);
     
     return Math.round(cuota * 100) / 100;
+  },
+
+  /**
+   * Calcular cuota mensual para FLEXIBLE_ESPECIAL considerando pagos especiales
+   */
+  calcularCuotaMensualFlexibleEspecial(
+    monto: number,
+    tasaAnual: number,
+    plazoMeses: number,
+    frecuenciaMeses: number,
+    cuotaEspecialValor: number
+  ): number {
+    if (monto <= 0 || plazoMeses <= 0) return 0;
+    
+    // Calcular cuántos pagos especiales habrá
+    const cantidadPagosEspeciales = Math.floor(plazoMeses / frecuenciaMeses);
+    
+    // Monto total a pagar en especiales (sin considerar reinversión de saldo)
+    const totalPagosEspeciales = cantidadPagosEspeciales * cuotaEspecialValor;
+    
+    // Monto restante a amortizar con cuotas regulares
+    const montoRegular = monto - totalPagosEspeciales;
+    
+    // Meses regulares (no especiales)
+    const mesesRegulares = plazoMeses - cantidadPagosEspeciales;
+    
+    if (mesesRegulares <= 0) return 0;
+    
+    // Calcular cuota mensual para los meses regulares
+    if (tasaAnual === 0) {
+      return Math.round((montoRegular / mesesRegulares) * 100) / 100;
+    }
+    
+    const tasaMensual = tasaAnual / 100 / 12;
+    const factor = Math.pow(1 + tasaMensual, plazoMeses);
+    const cuota = montoRegular * (tasaMensual * factor) / (factor - 1);
+    
+    return Math.round(cuota * 100) / 100;
+  },
+
+  /**
+   * Calcular cronograma para FLEXIBLE_ESPECIAL: cuota fija base + pago especial cada N meses
+   * No recalcula, mantiene patrón constante hasta agotar saldo
+   */
+  calcularCronogramaFlexibleEspecial(
+    monto: number,
+    tasaAnual: number,
+    frecuenciaCuotaEspecial: 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL',
+    cuotaEspecialValor: number,
+    cuotaEspecialTipo?: 'FIJO' | 'PORCENTAJE',
+    montoCuotaManual?: number
+  ) {
+    const freqToMonths: Record<string, number> = {
+      TRIMESTRAL: 3,
+      SEMESTRAL: 6,
+      ANUAL: 12
+    };
+
+    const freq = freqToMonths[frecuenciaCuotaEspecial];
+    let cuotaBase = montoCuotaManual ?? 0;
+    
+    // Si no hay cuota manual, calcular una razonable
+    if (!montoCuotaManual || montoCuotaManual <= 0) {
+      cuotaBase = Math.round((monto / (monto > 10000 ? 36 : 24)) * 100) / 100;
+    }
+
+    let saldo = monto;
+    const cronograma: Array<any> = [];
+    const tasaMensual = tasaAnual === 0 ? 0 : tasaAnual / 100 / 12;
+    let mes = 1;
+
+    // Continuar hasta agotar el saldo
+    while (saldo > 0.01) {
+      const interes = Math.round(saldo * tasaMensual * 100) / 100;
+      
+      // Determinar si este mes es especial (cada N meses)
+      const esEspecial = mes % freq === 0;
+      
+      let cuotaMes = cuotaBase;
+      if (esEspecial) {
+        if (cuotaEspecialTipo === 'PORCENTAJE') {
+          cuotaMes = Math.round(cuotaBase * (1 + cuotaEspecialValor / 100) * 100) / 100;
+        } else {
+          // FIJO: suma el valor especial
+          cuotaMes = Math.round((cuotaBase + cuotaEspecialValor) * 100) / 100;
+        }
+      }
+
+      // Capital = cuota - interes
+      let capital = Math.round((cuotaMes - interes) * 100) / 100;
+
+      // Si el capital calculado es mayor al saldo, ajustar para agotar exactamente
+      if (capital > saldo) {
+        capital = saldo;
+        cuotaMes = Math.round((capital + interes) * 100) / 100;
+      }
+
+      saldo = Math.round((saldo - capital) * 100) / 100;
+      if (saldo < 0) saldo = 0;
+
+      cronograma.push({
+        mes,
+        cuota: cuotaMes,
+        cuotaBase: cuotaBase,
+        pagoEspecial: esEspecial ? cuotaEspecialValor : 0,
+        pagoEspecialAplicado: esEspecial ? cuotaEspecialValor : 0,
+        pagoEspecialNoUtilizado: 0,
+        interes,
+        capital,
+        saldo,
+        esCuotaEspecial: esEspecial
+      });
+
+      // Si saldo se agotó, terminar
+      if (saldo <= 0) break;
+
+      mes++;
+      // Seguridad: no exceder más de 360 meses
+      if (mes > 360) break;
+    }
+
+    return cronograma;
   },
 
   /**
