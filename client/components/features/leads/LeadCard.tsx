@@ -44,14 +44,20 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
 
 export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onEliminar }: LeadCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">
-              {lead.nombre} {lead.apellido}
-            </CardTitle>
-            <div className="flex gap-2 mt-2 flex-wrap">
+    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20">
+      {/* Header con nombre y acciones rápidas */}
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <CardTitle className="text-lg truncate">
+                {lead.nombre} {lead.apellido}
+              </CardTitle>
+            </div>
+            
+            {/* Estados y Prioridad */}
+            <div className="flex gap-2 flex-wrap">
               <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
                 LEAD
               </Badge>
@@ -67,116 +73,15 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
               )}
             </div>
           </div>
-          <User className="h-5 w-5 text-muted-foreground" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2 text-sm">
-          {lead.empresa && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="font-medium">🏢 {lead.empresa}</span>
-            </div>
-          )}
 
-          {lead.cargo && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span>{lead.cargo}</span>
-            </div>
-          )}
-
-          {lead.correo && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate min-w-0 flex-1" title={lead.correo}>{lead.correo}</span>
-            </div>
-          )}
-          
-          {lead.telefono && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{lead.telefono}</span>
-            </div>
-          )}
-
-          {lead.presupuesto && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <DollarSign className="h-4 w-4" />
-              <span>S/ {lead.presupuesto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          
-          {lead.ciudad && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>{lead.ciudad}</span>
-            </div>
-          )}
-
-          {/* Etiquetas */}
-          {lead.etiquetas && lead.etiquetas.length > 0 && (
-            <div className="pt-2 border-t">
-              <div className="flex flex-wrap gap-1">
-                {lead.etiquetas.map((ce) => (
-                  <Badge
-                    key={ce.etiqueta.id}
-                    variant="outline"
-                    style={{
-                      backgroundColor: ce.etiqueta.color + '20',
-                      color: ce.etiqueta.color,
-                      borderColor: ce.etiqueta.color,
-                    }}
-                    className="text-xs"
-                  >
-                    {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
-                    {ce.etiqueta.nombre}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="pt-3 mt-3 border-t">
-            <p className="text-xs text-muted-foreground">
-              Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              })}
-            </p>
-          </div>
-
-          {/* Botones principales de contacto */}
-          <div className="flex gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => onWhatsApp(lead.telefono || '')}
-              disabled={!lead.telefono}
-              className="flex-1"
-              title={lead.telefono ? 'Enviar mensaje por WhatsApp' : 'Sin teléfono'}
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">WhatsApp</span>
-              <span className="sm:hidden">WA</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
-              disabled={!lead.correo}
-              className="flex-1"
-              title={lead.correo ? 'Agendar reunión' : 'Sin correo'}
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Agendar</span>
-              <span className="sm:hidden">📅</span>
-            </Button>
+          {/* Acciones rápidas en el header */}
+          <div className="flex gap-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onVerDetalles(lead)}
-              className="px-2"
-              title="Ver detalles completos"
+              className="hover:bg-yellow-100"
+              title="Ver detalles"
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -184,52 +89,147 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
               variant="ghost"
               size="sm"
               onClick={() => onEditar(lead)}
-              className="px-2"
-              title="Editar información"
+              className="hover:bg-yellow-100"
+              title="Editar"
             >
               <Edit className="h-4 w-4" />
             </Button>
           </div>
-
-          {/* Botones secundarios */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCotizar(lead)}
-              className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              Cotizar
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => onConvertir(lead.id)}
-              disabled={isConverting}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs"
-            >
-              {isConverting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <>
-                  <ArrowRight className="h-3 w-3 mr-1" />
-                  Convertir
-                </>
-              )}
-            </Button>
-            {onEliminar && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEliminar(lead)}
-                className="col-span-2 border-red-300 text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Eliminar
-              </Button>
-            )}
-          </div>
         </div>
+      </CardHeader>
+
+      {/* Contenido principal */}
+      <CardContent className="space-y-3">
+        {/* Info de contacto en formato compacto */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {lead.empresa && (
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground font-medium">🏢 EMPRESA</p>
+              <p className="text-sm font-medium text-gray-700">{lead.empresa}</p>
+            </div>
+          )}
+
+          {lead.correo && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">CORREO</p>
+              <p className="text-xs text-blue-600 truncate" title={lead.correo}>{lead.correo}</p>
+            </div>
+          )}
+          
+          {lead.telefono && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">TELÉFONO</p>
+              <p className="text-xs font-medium text-gray-700">{lead.telefono}</p>
+            </div>
+          )}
+
+          {lead.presupuesto && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">PRESUPUESTO</p>
+              <p className="text-sm font-bold text-green-600">S/ {lead.presupuesto.toLocaleString('es-PE')}</p>
+            </div>
+          )}
+          
+          {lead.ciudad && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">CIUDAD</p>
+              <p className="text-xs text-gray-600">{lead.ciudad}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Etiquetas */}
+        {lead.etiquetas && lead.etiquetas.length > 0 && (
+          <div className="pt-2 border-t">
+            <div className="flex flex-wrap gap-1">
+              {lead.etiquetas.map((ce) => (
+                <Badge
+                  key={ce.etiqueta.id}
+                  variant="outline"
+                  style={{
+                    backgroundColor: ce.etiqueta.color + '20',
+                    color: ce.etiqueta.color,
+                    borderColor: ce.etiqueta.color,
+                  }}
+                  className="text-xs"
+                >
+                  {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                  {ce.etiqueta.nombre}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fecha de creación */}
+        <p className="text-xs text-muted-foreground pt-2 border-t">
+          Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE')}
+        </p>
+
+        {/* Botones de acción - PRINCIPALES */}
+        <div className="flex gap-2 pt-3">
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={() => onWhatsApp(lead.telefono || '')}
+            disabled={!lead.telefono}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
+            disabled={!lead.correo}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Agendar
+          </Button>
+        </div>
+
+        {/* Botones secundarios */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCotizar(lead)}
+            className="text-blue-700 border-blue-300 hover:bg-blue-50"
+          >
+            <FileText className="h-3 w-3 mr-1" />
+            Cotizar
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => onConvertir(lead.id)}
+            disabled={isConverting}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {isConverting ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <ArrowRight className="h-3 w-3 mr-1" />
+                <span className="hidden sm:inline">Convertir</span>
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Botón eliminar si existe */}
+        {onEliminar && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEliminar(lead)}
+            className="w-full border-red-300 text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Eliminar
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

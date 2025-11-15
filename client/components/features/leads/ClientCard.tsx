@@ -44,15 +44,21 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
 
 export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb, onEliminar }: ClientCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow border-green-200">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg">
-              {cliente.nombre} {cliente.apellido}
-            </CardTitle>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <Badge className="bg-green-100 text-green-700 border-green-200">
+    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-br from-white to-blue-50/20">
+      {/* Header con nombre y acciones rápidas */}
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <CardTitle className="text-lg truncate">
+                {cliente.nombre} {cliente.apellido}
+              </CardTitle>
+            </div>
+            
+            {/* Estado */}
+            <div className="flex gap-2 flex-wrap">
+              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
                 CLIENTE
               </Badge>
               {cliente.estadoLead && (
@@ -67,182 +73,163 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
               )}
             </div>
           </div>
-          <User className="h-5 w-5 text-green-600" />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2 text-sm">
-          {cliente.empresa && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="font-medium">🏢 {cliente.empresa}</span>
-            </div>
-          )}
 
-          {cliente.cargo && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span>{cliente.cargo}</span>
-            </div>
-          )}
-
-          {cliente.correo && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-4 w-4 flex-shrink-0" />
-              <span className="truncate min-w-0 flex-1" title={cliente.correo}>{cliente.correo}</span>
-            </div>
-          )}
-          
-          {cliente.telefono && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{cliente.telefono}</span>
-            </div>
-          )}
-
-          {cliente.presupuesto && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <DollarSign className="h-4 w-4" />
-              <span>S/ {cliente.presupuesto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          
-          {cliente.ciudad && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>{cliente.ciudad}</span>
-            </div>
-          )}
-
-          {/* Etiquetas */}
-          {cliente.etiquetas && cliente.etiquetas.length > 0 && (
-            <div className="pt-2 border-t">
-              <div className="flex flex-wrap gap-1">
-                {cliente.etiquetas.map((ce) => (
-                  <Badge
-                    key={ce.etiqueta.id}
-                    variant="outline"
-                    style={{
-                      backgroundColor: ce.etiqueta.color + '20',
-                      color: ce.etiqueta.color,
-                      borderColor: ce.etiqueta.color,
-                    }}
-                    className="text-xs"
-                  >
-                    {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
-                    {ce.etiqueta.nombre}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="pt-3 mt-3 border-t">
-            <p className="text-xs text-muted-foreground">
-              Creado: {new Date(cliente.creadoEn).toLocaleDateString('es-PE', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              })}
-            </p>
-          </div>
-
-          {/* Botones principales de contacto */}
-          <div className="flex gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => onWhatsApp(cliente.telefono || '')}
-              disabled={!cliente.telefono}
-              className="flex-1"
-              title={cliente.telefono ? 'Enviar mensaje por WhatsApp' : 'Sin teléfono'}
-            >
-              <MessageSquare className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">WhatsApp</span>
-              <span className="sm:hidden">WA</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
-              disabled={!cliente.correo}
-              className="flex-1"
-              title={cliente.correo ? 'Agendar reunión' : 'Sin correo'}
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Agendar</span>
-              <span className="sm:hidden">📅</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onVerDetalles(cliente)}
-              className="px-2"
-              title="Ver detalles completos"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+          {/* Acciones rápidas en el header */}
+          <div className="flex gap-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onEditar(cliente)}
-              className="px-2"
-              title="Editar información"
+              className="hover:bg-blue-100"
+              title="Editar"
             >
               <Edit className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+      </CardHeader>
 
-          {/* Botones secundarios */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCotizar(cliente)}
-              className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
-            >
-              <FileText className="h-3 w-3 mr-1" />
-              Cotizar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onAgregarOportunidad(cliente)}
-              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] text-xs font-medium"
-            >
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Pipeline
-            </Button>
-          </div>
+      {/* Contenido principal */}
+      <CardContent className="space-y-3">
+        {/* Info de contacto en formato compacto */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          {cliente.empresa && (
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground font-medium">🏢 EMPRESA</p>
+              <p className="text-sm font-medium text-gray-700">{cliente.empresa}</p>
+            </div>
+          )}
 
-          {/* Botones accionales opcionales */}
-          {(onCrearAccesoWeb || onEliminar) && (
-            <div className="grid grid-cols-2 gap-2 pt-2">
-              {onCrearAccesoWeb && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onCrearAccesoWeb(cliente)}
-                  className="border-green-600 text-green-700 hover:bg-green-50 text-xs"
-                  title="Crear acceso web para cliente"
-                >
-                  <Globe className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Web</span>
-                </Button>
-              )}
-              {onEliminar && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEliminar(cliente)}
-                  className="border-red-300 text-red-700 hover:bg-red-50 text-xs"
-                  title="Eliminar cliente"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  <span className="hidden sm:inline">Eliminar</span>
-                </Button>
-              )}
+          {cliente.cargo && (
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground font-medium">CARGO</p>
+              <p className="text-sm text-gray-600">{cliente.cargo}</p>
+            </div>
+          )}
+
+          {cliente.correo && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">CORREO</p>
+              <p className="text-xs text-blue-600 truncate" title={cliente.correo}>{cliente.correo}</p>
+            </div>
+          )}
+          
+          {cliente.telefono && (
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">TELÉFONO</p>
+              <p className="text-xs font-medium text-gray-700">{cliente.telefono}</p>
+            </div>
+          )}
+
+          {cliente.ciudad && (
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground font-medium">CIUDAD</p>
+              <p className="text-xs text-gray-600">{cliente.ciudad}</p>
             </div>
           )}
         </div>
+
+        {/* Etiquetas */}
+        {cliente.etiquetas && cliente.etiquetas.length > 0 && (
+          <div className="pt-2 border-t">
+            <div className="flex flex-wrap gap-1">
+              {cliente.etiquetas.map((ce) => (
+                <Badge
+                  key={ce.etiqueta.id}
+                  variant="outline"
+                  style={{
+                    backgroundColor: ce.etiqueta.color + '20',
+                    color: ce.etiqueta.color,
+                    borderColor: ce.etiqueta.color,
+                  }}
+                  className="text-xs"
+                >
+                  {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                  {ce.etiqueta.nombre}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fecha de creación */}
+        <p className="text-xs text-muted-foreground pt-2 border-t">
+          Creado: {new Date(cliente.creadoEn).toLocaleDateString('es-PE')}
+        </p>
+
+        {/* Botones de acción - PRINCIPALES */}
+        <div className="flex gap-2 pt-3">
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={() => onWhatsApp(cliente.telefono || '')}
+            disabled={!cliente.telefono}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
+            disabled={!cliente.correo}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Agendar
+          </Button>
+        </div>
+
+        {/* Botones secundarios */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCotizar(cliente)}
+            className="text-blue-700 border-blue-300 hover:bg-blue-50"
+          >
+            <FileText className="h-3 w-3 mr-1" />
+            Cotizar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAgregarOportunidad(cliente)}
+            className="text-purple-700 border-purple-300 hover:bg-purple-50"
+          >
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Pipeline
+          </Button>
+        </div>
+
+        {/* Botones opcionales */}
+        {(onCrearAccesoWeb || onEliminar) && (
+          <div className="space-y-2 pt-2 border-t">
+            {onCrearAccesoWeb && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onCrearAccesoWeb(cliente)}
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                <Globe className="h-3 w-3 mr-1" />
+                Crear Acceso Web
+              </Button>
+            )}
+            {onEliminar && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEliminar(cliente)}
+                className="w-full border-red-300 text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Eliminar
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
