@@ -13,13 +13,15 @@ interface SelectorEtiquetasProps {
   etiquetasSeleccionadas?: string[]; // IDs de etiquetas ya asignadas
   onCambio?: (etiquetasIds: string[]) => void;
   modo?: 'checkbox' | 'badge-only'; // checkbox: permite editar, badge-only: solo muestra
+  maxSelecciones?: number; // Máximo número de etiquetas a seleccionar (default: ilimitado)
 }
 
 export function SelectorEtiquetas({
   contactoId,
   etiquetasSeleccionadas = [],
   onCambio,
-  modo = 'checkbox'
+  modo = 'checkbox',
+  maxSelecciones
 }: SelectorEtiquetasProps) {
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
   const [etiquetasActuales, setEtiquetasActuales] = useState<string[]>(etiquetasSeleccionadas);
@@ -96,9 +98,29 @@ export function SelectorEtiquetas({
   };
 
   const toggleEtiqueta = async (etiquetaId: string) => {
-    const nuevasEtiquetas = etiquetasActuales.includes(etiquetaId)
-      ? etiquetasActuales.filter(id => id !== etiquetaId)
-      : [...etiquetasActuales, etiquetaId];
+    let nuevasEtiquetas: string[];
+    
+    if (etiquetasActuales.includes(etiquetaId)) {
+      // Si ya está seleccionada, deseleccionar
+      nuevasEtiquetas = etiquetasActuales.filter(id => id !== etiquetaId);
+    } else {
+      // Si no está seleccionada, agregar
+      if (maxSelecciones === 1) {
+        // Si máximo es 1, reemplazar la actual
+        nuevasEtiquetas = [etiquetaId];
+      } else if (maxSelecciones && etiquetasActuales.length >= maxSelecciones) {
+        // Si ya alcanzó el máximo, mostrar error
+        toast({
+          title: 'Límite alcanzado',
+          description: `Solo puedes seleccionar máximo ${maxSelecciones} etiqueta(s)`,
+          variant: 'destructive',
+        });
+        return;
+      } else {
+        // Agregar normalmente
+        nuevasEtiquetas = [...etiquetasActuales, etiquetaId];
+      }
+    }
 
     setEtiquetasActuales(nuevasEtiquetas);
 

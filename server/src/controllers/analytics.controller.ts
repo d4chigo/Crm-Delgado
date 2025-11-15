@@ -255,37 +255,89 @@ export async function getReporteForecast(req: Request, res: Response) {
   try {
     const oportunidades = await prisma.oportunidadCliente.findMany({
       where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } },
-      select: { valor: true, probabilidad: true, creadoEn: true, proyecto: true },
+      select: { valor: true, probabilidad: true, creadoEn: true, etapa: true },
     });
 
-    let totalEsperado = 0;
-    const porMes = new Map<number, number>();
+    const now = new Date();
+    const forecast30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const forecast60 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+    const forecast90 = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    let total30 = 0, total60 = 0, total90 = 0, totalGeneral = 0;
+    const porEtapa = new Map<string, { forecast: number; count: number }>();
+
     for (const o of oportunidades) {
-      const p = Math.max(0, Math.min(100, Number(o.probabilidad ?? 0))) / 100;
-      const v = Number(o.valor || 0) * p;
-      totalEsperado += v;
-      const m = (new Date(o.creadoEn).getMonth() + 1);
-      porMes.set(m, (porMes.get(m) || 0) + v);
+      const probabilidad = Math.max(0, Math.min(100, Number(o.probabilidad ?? 0))) / 100;
+      const valor = Number(o.valor || 0);
+      const forecastValor = valor * probabilidad;
+
+      // Acumular por etapa
+      const etapaKey = o.etapa as string;
+      const prev = porEtapa.get(etapaKey) || { forecast: 0, count: 0 };
+      porEtapa.set(etapaKey, { forecast: prev.forecast + forecastValor, count: prev.count + 1 });
+
+      // Acumular totales
+      totalGeneral += forecastValor;
+      
+      // Asumir que las oportunidades se cierran en los próximos 90 días
+      // Distribuir según la etapa (más avanzada = más probable que cierre pronto)
+      if (o.etapa === 'PROPUESTA' || o.etapa === 'NEGOCIACION') {
+        total30 += forecastValor * 0.5; // 50% en 30 días
+        total60 += forecastValor * 0.3; // 30% en 60 días
+        total90 += forecastValor * 0.2; // 20% en 90 días
+      } else {
+        total30 += forecastValor * 0.2;
+        total60 += forecastValor * 0.4;
+        total90 += forecastValor * 0.4;
+      }
     }
 
-    const mensual = Array.from(porMes.entries()).sort((a, b) => a[0] - b[0]).map(([mes, valor]) => ({ mes, valor: Math.round(valor * 100) / 100 }));
+    const porEtapaArray = Array.from(porEtapa.entries()).map(([etapa, data]) => ({
+      etapa,
+      forecast: Math.round(data.forecast * 100) / 100,
+      oportunidades: data.count,
+      promedioPorOportunidad: Math.round((data.forecast / data.count) * 100) / 100,
+    }));
 
     try {
       await prisma.reporte.create({
         data: {
           tipo: 'forecast_ingresos',
           parametros: {},
-          resultadosResumen: { totalEsperado: Math.round(totalEsperado * 100) / 100 },
+          resultadosResumen: {
+            total30: Math.round(total30 * 100) / 100,
+            total60: Math.round(total60 * 100) / 100,
+            total90: Math.round(total90 * 100) / 100,
+            totalGeneral: Math.round(totalGeneral * 100) / 100,
+          },
         },
       });
     } catch (auditErr) {
       console.warn('[Analytics] No se pudo registrar reporte forecast_ingresos:', auditErr);
     }
 
-    res.json({ exito: true, datos: { totalEsperado: Math.round(totalEsperado * 100) / 100, mensual } });
+    res.json({
+      exito: true,
+      datos: {
+        forecast30: Math.round(total30 * 100) / 100,
+        forecast60: Math.round(total60 * 100) / 100,
+        forecast90: Math.round(total90 * 100) / 100,
+        totalGeneral: Math.round(totalGeneral * 100) / 100,
+        porEtapa: porEtapaArray,
+      },
+    });
   } catch (error) {
     console.error('[Analytics] Error forecast:', error);
-    res.json({ exito: true, datos: { totalEsperado: 0, mensual: [] } });
+    res.json({
+      exito: true,
+      datos: {
+        forecast30: 0,
+        forecast60: 0,
+        forecast90: 0,
+        totalGeneral: 0,
+        porEtapa: [],
+      },
+    });
   }
 }
 
@@ -428,5 +480,86 @@ export async function getMetrics(req: Request, res: Response) {
       mejoresAgentes: [],
       ventasMensuales: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0, value: 0 })),
     }});
+  }
+}
+
+export async function getReporteCuelloBotella(req: Request, res: Response) {
+  try {
+    const oportunidades = await prisma.oportunidadCliente.findMany({
+      select: { etapa: true, creadoEn: true, actualizadoEn: true },
+    });
+
+    const agg = new Map<string, { totalDias: number; count: number }>();
+    const now = new Date();
+    
+    for (const o of oportunidades) {
+      const end = o.actualizadoEn || now;
+      const diffMs = (new Date(end).getTime() - new Date(o.creadoEn).getTime());
+      const dias = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+      const key = o.etapa as string;
+      const prev = agg.get(key) || { totalDias: 0, count: 0 };
+      agg.set(key, { totalDias: prev.totalDias + dias, count: prev.count + 1 });
+    }
+
+    // Calcular tiempo promedio por etapa y detectar cuellos de botella
+    const data = Array.from(agg.entries()).map(([etapa, v]) => {
+      const tiempoPromedio = v.count ? Math.round((v.totalDias / v.count) * 100) / 100 : 0;
+      // Cuello de botella: si el tiempo promedio es > 15 días
+      const esCuelloBotella = tiempoPromedio > 15;
+      
+      return {
+        etapa,
+        tiempoPromedioDias: tiempoPromedio,
+        oportunidades: v.count,
+        esCuelloBotella,
+        severidad: esCuelloBotella ? (tiempoPromedio > 30 ? 'CRÍTICO' : 'ALTO') : 'NORMAL',
+      };
+    }).sort((a, b) => b.tiempoPromedioDias - a.tiempoPromedioDias);
+
+    // Identificar cuellos de botella principales
+    const cuellosBotella = data.filter(d => d.esCuelloBotella);
+
+    try {
+      await prisma.reporte.create({
+        data: {
+          tipo: 'cuello_botella',
+          parametros: {},
+          resultadosResumen: {
+            totalEtapas: data.length,
+            cuellosBotella: cuellosBotella.length,
+            etapaCritica: cuellosBotella.length > 0 ? cuellosBotella[0].etapa : null,
+          },
+        },
+      });
+    } catch (auditErr) {
+      console.warn('[Analytics] No se pudo registrar reporte cuello_botella:', auditErr);
+    }
+
+    res.json({
+      exito: true,
+      datos: {
+        etapas: data,
+        cuellosBotella,
+        resumen: {
+          totalEtapas: data.length,
+          etapasConCuelloBotella: cuellosBotella.length,
+          tiempoPromedioGlobal: Math.round((data.reduce((acc, d) => acc + d.tiempoPromedioDias, 0) / data.length) * 100) / 100,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[Analytics] Error cuello-botella:', error);
+    res.json({
+      exito: true,
+      datos: {
+        etapas: [],
+        cuellosBotella: [],
+        resumen: {
+          totalEtapas: 0,
+          etapasConCuelloBotella: 0,
+          tiempoPromedioGlobal: 0,
+        },
+      },
+    });
   }
 }

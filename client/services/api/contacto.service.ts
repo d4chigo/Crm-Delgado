@@ -27,6 +27,7 @@ class ContactoService {
     const params = new URLSearchParams();
     
     if (filtros.tipo) params.append('tipo', filtros.tipo);
+    if (filtros.estadoLead) params.append('estadoLead', filtros.estadoLead);
     if (filtros.ciudad) params.append('ciudad', filtros.ciudad);
     if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
     if (filtros.pagina) params.append('pagina', filtros.pagina.toString());

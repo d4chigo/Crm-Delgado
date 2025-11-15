@@ -22,6 +22,7 @@ model Usuario {
   oportunidades OportunidadCliente[]
   proyectos     Proyecto[]
   reportes      Reporte[]            @relation("UsuarioReportes")
+  notificaciones Notificacion[]
 
   @@map("usuarios")
 }
@@ -491,4 +492,22 @@ model ClienteActividad {
   @@index([contactoId])
   @@index([fecha])
   @@map("cliente_actividades")
+}
+
+// Notificaciones en tiempo real
+model Notificacion {
+  id            String   @id @default(uuid())
+  usuarioId     String   @map("usuario_id")
+  tipo          String   // 'NUEVO_LEAD', 'OPORTUNIDAD_GANADA', 'SEGUIMIENTO_VENCIDO', 'CAMBIO_ETAPA'
+  titulo        String
+  mensaje       String
+  leida         Boolean  @default(false)
+  referencia    String?  // ID del contacto/oportunidad
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([leida])
+  @@index([creadoEn])
+  @@map("notificaciones")
 }

@@ -188,7 +188,7 @@ export function ListaCotizacionesSoloLectura({ cotizaciones, loading, onEliminar
           <div>${(c.notas || '—').replace(/</g,'&lt;')}</div>
         </div>
 
-        <div class="footer">Generado por CRM Delgado • ${new Date().toLocaleString('es-PE')} • ${usuarioNombre || ''}</div>
+        <div class="footer">Generado por CRM Delgado • ${usuarioNombre || ''}</div>
       </body>
     </html>`;
   };

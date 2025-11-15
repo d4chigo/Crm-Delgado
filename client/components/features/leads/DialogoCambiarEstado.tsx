@@ -56,7 +56,7 @@ export function DialogoCambiarEstado({
       const respuesta = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}`,
         {
-          method: 'PATCH',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`

@@ -18,6 +18,7 @@ export class ContactoController {
 
       const filtros: FiltrosContacto = {
         tipo: req.query.tipo as any,
+        estadoLead: req.query.estadoLead as string,
         ciudad: req.query.ciudad as string,
         busqueda: req.query.busqueda as string,
         pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
@@ -218,8 +219,16 @@ export class ContactoController {
         return;
       }
 
-      const resultado = await contactoService.convertirVariosALeads(ids, usuarioId);
-      respuestaExito(res, resultado, `${resultado.convertidos} contacto(s) convertido(s) a leads exitosamente`);
+      let convertidos = 0;
+      for (const id of ids) {
+        try {
+          await contactoService.convertirALead(id as string, usuarioId);
+          convertidos++;
+        } catch (err) {
+          console.error(`Error al convertir ${id}:`, err);
+        }
+      }
+      respuestaExito(res, { convertidos }, `${convertidos} contacto(s) convertido(s) a leads exitosamente`);
     } catch (error: any) {
       respuestaError(res, error.message || 'Error al convertir contactos', 500);
     }

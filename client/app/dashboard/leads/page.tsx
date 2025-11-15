@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useContactos } from "@/hooks/useContactos";
 import { PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -67,18 +67,12 @@ export default function PaginaLeads() {
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
 
   useEffect(() => {
-    const filtros: any = { tipo: TipoContacto.LEAD, pagina: 1, limite: 10 }
-    if (estadoFiltro) filtros.estadoLead = estadoFiltro
-    cargarContactos(filtros)
-  }, [estadoFiltro])
+    const nuevosFiltros: any = { tipo: TipoContacto.LEAD, pagina: 1, limite: 10 }
+    if (estadoFiltro) nuevosFiltros.estadoLead = estadoFiltro
+    cargarContactos(nuevosFiltros)
+  }, [estadoFiltro, cargarContactos])
 
-  useEffect(() => { cargarEtiquetas() }, [])
-
-  useEffect(() => {
-    setTotalLeads(paginacion.total)
-  }, [paginacion.total])
-
-  const cargarEtiquetas = async () => {
+  const cargarEtiquetas = useCallback(async () => {
     try {
       const etiquetasObtenidas = await etiquetaService.obtenerTodas()
       if (Array.isArray(etiquetasObtenidas)) setEtiquetas(etiquetasObtenidas)
@@ -86,7 +80,13 @@ export default function PaginaLeads() {
     } catch {
       setEtiquetas([])
     }
-  }
+  }, [])
+
+  useEffect(() => { cargarEtiquetas() }, [cargarEtiquetas])
+
+  useEffect(() => {
+    setTotalLeads(paginacion.total)
+  }, [paginacion.total])
 
   const [busqueda, setBusqueda] = useState("")
   const handleBusqueda = (query: string) => { setBusqueda(query) }
@@ -270,7 +270,6 @@ export default function PaginaLeads() {
       <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} onActualizado={() => cargarContactos({})} />
       <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
 
-// ... (rest of the code remains the same)
       <DialogoCrearLead 
         abierto={dialogoCrearAbierto} 
         onCerrar={() => setDialogoCrearAbierto(false)} 

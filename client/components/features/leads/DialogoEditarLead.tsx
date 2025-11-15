@@ -24,8 +24,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { SelectorEtiquetas } from './SelectorEtiquetas';
-import { ProyectosAsociados } from './ProyectosAsociados';
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
 
@@ -232,12 +230,10 @@ export function DialogoEditarLead({
         </DialogHeader>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="profesional">Profesional</TabsTrigger>
             <TabsTrigger value="comercial">Comercial</TabsTrigger>
-            <TabsTrigger value="proyectos">Proyectos</TabsTrigger>
-            <TabsTrigger value="etiquetas">Etiquetas</TabsTrigger>
             <TabsTrigger value="adicional">Adicional</TabsTrigger>
           </TabsList>
 
@@ -532,31 +528,6 @@ export function DialogoEditarLead({
             </div>
           </TabsContent>
 
-          {/* Tab: Proyectos */}
-          <TabsContent value="proyectos" className="space-y-4">
-            <div className="space-y-2">
-              <Label>Proyectos asociados</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Gestiona los proyectos o propiedades asociados a este cliente
-              </p>
-              <ProyectosAsociados clienteId={lead.id} />
-            </div>
-          </TabsContent>
-
-          {/* Tab: Etiquetas */}
-          <TabsContent value="etiquetas" className="space-y-4">
-            <div className="space-y-2">
-              <Label>Programas y etiquetas</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Selecciona los programas o categorías que aplican a este lead
-              </p>
-              <SelectorEtiquetas
-                contactoId={lead.id}
-                etiquetasSeleccionadas={lead.etiquetas?.map(e => e.etiqueta.id) || []}
-                modo="checkbox"
-              />
-            </div>
-          </TabsContent>
 
           {/* Tab: Información Adicional */}
           <TabsContent value="adicional" className="space-y-4">

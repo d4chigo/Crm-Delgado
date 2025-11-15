@@ -174,6 +174,7 @@ export interface ActualizarContactoDTO {
 // Filtros de búsqueda
 export interface FiltrosContacto {
   tipo?: TipoContacto;
+  estadoLead?: string;
   ciudad?: string;
   busqueda?: string;
   pagina?: number;
