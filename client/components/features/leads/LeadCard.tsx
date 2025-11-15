@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2 } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface LeadCardProps {
@@ -75,26 +76,36 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
           </div>
 
           {/* Acciones rápidas en el header */}
-          <div className="flex gap-1 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onVerDetalles(lead)}
-              className="hover:bg-yellow-100"
-              title="Ver detalles"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEditar(lead)}
-              className="hover:bg-yellow-100"
-              title="Editar"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </div>
+          <TooltipProvider>
+            <div className="flex gap-0 flex-shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onVerDetalles(lead)}
+                    className="hover:bg-yellow-100"
+                  >
+                    <Eye className="h-5 w-5 text-yellow-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Ver detalles</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditar(lead)}
+                    className="hover:bg-yellow-100"
+                  >
+                    <Edit className="h-5 w-5 text-yellow-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Editar</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
       </CardHeader>
 
@@ -166,70 +177,84 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
           Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE')}
         </p>
 
-        {/* Botones de acción - PRINCIPALES */}
-        <div className="flex gap-2 pt-3">
-          <Button 
-            variant="default"
-            size="sm"
-            onClick={() => onWhatsApp(lead.telefono || '')}
-            disabled={!lead.telefono}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            WhatsApp
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
-            disabled={!lead.correo}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Agendar
-          </Button>
-        </div>
-
-        {/* Botones secundarios */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onCotizar(lead)}
-            className="text-blue-700 border-blue-300 hover:bg-blue-50"
-          >
-            <FileText className="h-3 w-3 mr-1" />
-            Cotizar
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onConvertir(lead.id)}
-            disabled={isConverting}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {isConverting ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <>
-                <ArrowRight className="h-3 w-3 mr-1" />
-                <span className="hidden sm:inline">Convertir</span>
-              </>
+        {/* Botones de acción - ICONOS */}
+        <TooltipProvider>
+          <div className="flex gap-2 pt-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="default"
+                  size="sm"
+                  onClick={() => onWhatsApp(lead.telefono || '')}
+                  disabled={!lead.telefono}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>WhatsApp</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
+                  disabled={!lead.correo}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Calendar className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Agendar reunión</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCotizar(lead)}
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                >
+                  <FileText className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Cotizar</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={() => onConvertir(lead.id)}
+                  disabled={isConverting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {isConverting ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-5 w-5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Convertir a cliente</TooltipContent>
+            </Tooltip>
+            {onEliminar && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEliminar(lead)}
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Eliminar</TooltipContent>
+              </Tooltip>
             )}
-          </Button>
-        </div>
-
-        {/* Botón eliminar si existe */}
-        {onEliminar && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEliminar(lead)}
-            className="w-full border-red-300 text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="h-3 w-3 mr-1" />
-            Eliminar
-          </Button>
-        )}
+          </div>
+        </TooltipProvider>
       </CardContent>
     </Card>
   )
