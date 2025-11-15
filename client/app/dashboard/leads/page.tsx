@@ -56,6 +56,7 @@ export default function PaginaLeads() {
   const [importando, setImportando] = useState(false)
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [leadParaAgendar, setLeadParaAgendar] = useState<Lead | null>(null)
+  const [agregandonPipeline, setAgregandoPipeline] = useState<string | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const cargarLeads = useCallback(async (filtros?: any) => {
@@ -264,6 +265,45 @@ export default function PaginaLeads() {
     setDialogoAgendarAbierto(true)
   }
 
+  const handleAgregarAlPipeline = async (lead: Lead) => {
+    setAgregandoPipeline(lead.id)
+    try {
+      const token = localStorage.getItem("crm_token")
+      if (!token) {
+        toast({ title: "Sesión expirada", description: "Por favor inicia sesión nuevamente", variant: "destructive" })
+        if (typeof window !== "undefined") window.location.href = "/login"
+        return
+      }
+      
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${lead.id}/agregar-pipeline`, { 
+        method: "POST", 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({})
+      })
+      
+      if (respuesta.status === 401) {
+        localStorage.removeItem("crm_token")
+        localStorage.removeItem("crm_user")
+        toast({ title: "Sesión expirada", description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.", variant: "destructive" })
+        if (typeof window !== "undefined") window.location.href = "/login"
+        return
+      }
+      
+      const resultado = await respuesta.json()
+      if (!respuesta.ok) throw new Error(resultado.mensaje || "Error al agregar al pipeline")
+      
+      toast({ title: "Éxito", description: "Lead agregado al pipeline correctamente" })
+      cargarLeads()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo agregar al pipeline", variant: "destructive" })
+    } finally {
+      setAgregandoPipeline(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Leads" description="Gestiona tus prospectos y oportunidades de negocio" />
@@ -353,6 +393,7 @@ export default function PaginaLeads() {
                   onWhatsApp={(tel) => handleWhatsApp(tel)}
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
+                  onPipeline={handleAgregarAlPipeline}
                   onEliminar={(l) => {
                     setLeadAEliminar(l)
                     setDialogoEliminarAbierto(true)
@@ -470,17 +511,31 @@ export default function PaginaLeads() {
               }}>
                 Copiar
               </Button>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => {
+              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={async () => {
                 let raw = (whatsappTelefono || "").replace(/\D/g, "")
-                if (raw.length === 9) raw = `51$${raw}`
+                if (raw.length === 9) raw = `51${raw}`
                 if (!raw) {
                   toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
                   return
                 }
-                const url = `https://wa.me/$${raw}?text=$${encodeURIComponent(whatsappMensaje)}`
+                
+                // Actualizar estado a CONTACTADO si es NUEVO
+                const leadActual = leads.find(l => l.telefono === whatsappTelefono)
+                if (leadActual && leadActual.estadoLead === 'NUEVO') {
+                  try {
+                    await leadService.actualizarLead(leadActual.id, { estadoLead: 'CONTACTADO' })
+                  } catch (error) {
+                    console.error('Error al actualizar estado:', error)
+                  }
+                }
+                
+                const url = `https://wa.me/${raw}?text=${encodeURIComponent(whatsappMensaje)}`
                 try {
                   window.open(url, "_blank")
                 } catch {}
+                
+                // Recargar después de actualizar
+                setTimeout(() => cargarLeads(), 500)
                 setDialogoWhatsappAbierto(false)
               }}>
                 Abrir WhatsApp

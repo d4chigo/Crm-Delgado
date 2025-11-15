@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2 } from "lucide-react"
+import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
@@ -16,6 +16,7 @@ interface LeadCardProps {
   onEditar: (lead: Contacto) => void
   onWhatsApp: (telefono: string) => void
   onScheduleMeeting: (nombre: string, correo: string, telefono?: string) => void
+  onPipeline?: (lead: Contacto) => void
   onEliminar?: (lead: Contacto) => void
 }
 
@@ -43,7 +44,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onEliminar }: LeadCardProps) {
+export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onEliminar }: LeadCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20">
       {/* Header con nombre y acciones rápidas */}
@@ -238,6 +239,21 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
               </TooltipTrigger>
               <TooltipContent>Convertir a cliente</TooltipContent>
             </Tooltip>
+            {onPipeline && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPipeline(lead)}
+                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                  >
+                    <TrendingUp className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Agregar al Pipeline</TooltipContent>
+              </Tooltip>
+            )}
             {onEliminar && (
               <Tooltip>
                 <TooltipTrigger asChild>

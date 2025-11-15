@@ -122,6 +122,20 @@ class LeadService {
       headers: { Authorization: `Bearer ${token}` },
     });
   }
+
+  /**
+   * Agregar un lead al pipeline (crear oportunidad)
+   */
+  async agregarAlPipeline(id: string, datos?: any) {
+    const token = authService.obtenerToken();
+    if (!token) throw new Error('No hay token de autenticación');
+
+    return fetchAPI(`/contactos/${id}/agregar-pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: datos ? JSON.stringify(datos) : undefined,
+    });
+  }
 }
 
 export default new LeadService();
