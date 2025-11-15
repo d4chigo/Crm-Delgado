@@ -28,6 +28,7 @@ import { SelectorEtiquetas } from './SelectorEtiquetas';
 import { ProyectosAsociados } from './ProyectosAsociados';
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
+import { dniService } from '@/services/api/dni.service';
 
 interface DialogoEditarLeadProps {
   lead: Contacto | null;
@@ -45,6 +46,7 @@ export function DialogoEditarLead({
   const [guardando, setGuardando] = useState(false);
   const [datos, setDatos] = useState<ActualizarContactoDTO>({});
   const [edad, setEdad] = useState<number | null>(null);
+  const [consultandoDNI, setConsultandoDNI] = useState(false);
 
   // Inicializar datos cuando el lead cambia o el diálogo se abre
   useEffect(() => {
@@ -82,6 +84,43 @@ export function DialogoEditarLead({
       }
     }
   }, [lead, abierto]);
+
+  const handleConsultarDNI = async () => {
+    const dniLimpio = (datos.dni || '').replace(/\D/g, '');
+    
+    if (!dniLimpio || dniLimpio.length !== 8) {
+      toast({
+        title: 'Error',
+        description: 'Ingresa un DNI válido (8 dígitos)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setConsultandoDNI(true);
+    try {
+      const resultado = await dniService.consultarDNI(dniLimpio);
+      
+      setDatos({
+        ...datos,
+        nombre: resultado.nombre || datos.nombre,
+        apellido: resultado.apellido || datos.apellido,
+      });
+
+      toast({
+        title: 'DNI consultado',
+        description: `Datos encontrados para ${resultado.nombre} ${resultado.apellido}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error al consultar DNI',
+        description: error.message || 'No se pudo obtener los datos del DNI',
+        variant: 'destructive',
+      });
+    } finally {
+      setConsultandoDNI(false);
+    }
+  };
 
   const handleGuardar = async () => {
     if (!lead) return;
@@ -287,13 +326,30 @@ export function DialogoEditarLead({
 
               <div className="space-y-2">
                 <Label htmlFor="dni">DNI</Label>
-                <Input
-                  id="dni"
-                  value={datos.dni || ''}
-                  onChange={(e) => setDatos({ ...datos, dni: validarDNI(e.target.value) })}
-                  placeholder="12345678"
-                  maxLength={8}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="dni"
+                    value={datos.dni || ''}
+                    onChange={(e) => setDatos({ ...datos, dni: validarDNI(e.target.value) })}
+                    placeholder="12345678"
+                    maxLength={8}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleConsultarDNI}
+                    disabled={consultandoDNI || !datos.dni}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {consultandoDNI ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </>
+                    ) : (
+                      'Consultar'
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
