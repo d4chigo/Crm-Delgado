@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { PageHeader } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/ui/stat-card"
@@ -61,8 +61,9 @@ export default function PaginaLeads() {
   const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const cargarLeads = async (filtros?: any) => {
+  const cargarLeads = useCallback(async (filtros?: any) => {
     setEstaCargando(true)
     setError(null)
     try {
@@ -81,9 +82,9 @@ export default function PaginaLeads() {
     } finally {
       setEstaCargando(false)
     }
-  }
+  }, [])
 
-  const cargarEtiquetas = async () => {
+  const cargarEtiquetas = useCallback(async () => {
     try {
       const etiquetasObtenidas = await etiquetaService.obtenerTodas()
       if (Array.isArray(etiquetasObtenidas)) setEtiquetas(etiquetasObtenidas)
@@ -91,26 +92,40 @@ export default function PaginaLeads() {
     } catch {
       setEtiquetas([])
     }
-  }
+  }, [])
 
   useEffect(() => {
-    cargarLeads({ estadoLead: estadoFiltro })
+    cargarLeads({ estadoLead: estadoFiltro, pagina: 1 })
     cargarEtiquetas()
-  }, [estadoFiltro])
+  }, [estadoFiltro, cargarEtiquetas, cargarLeads])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      cargarLeads({ busqueda, estadoLead: estadoFiltro })
-    }, 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
-
-  const leadsFiltrados = leads.filter((lead: Lead) => {
-    if (etiquetaFiltro !== "todas") {
-      return lead.etiquetas?.some((e: any) => e.etiqueta.id === etiquetaFiltro)
+    // Limpiar timeout anterior si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
-    return true
-  })
+
+    // Configurar nuevo timeout con debounce
+    searchTimeoutRef.current = setTimeout(() => {
+      cargarLeads({ busqueda, estadoLead: estadoFiltro, pagina: 1 })
+    }, 500)
+
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [busqueda, estadoFiltro, cargarLeads])
+
+  const leadsFiltrados = useMemo(() => {
+    if (etiquetaFiltro !== "todas") {
+      return leads.filter((lead: Lead) => 
+        lead.etiquetas?.some((e: any) => e.etiqueta.id === etiquetaFiltro)
+      )
+    }
+    return leads
+  }, [leads, etiquetaFiltro])
 
   const handleConvertirCliente = async (leadId: string) => {
     setConvirtiendoCliente(leadId)
@@ -292,7 +307,7 @@ export default function PaginaLeads() {
         <div className="flex gap-4 items-end flex-wrap">
           <div className="flex-1 relative min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre, apellido, correo o DNI..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar leads: ej. 'tío Juan', 'correo@example.com', '12345678'..." value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
             <SelectTrigger className="w-[220px]">

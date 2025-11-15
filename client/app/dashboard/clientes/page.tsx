@@ -86,9 +86,9 @@ export default function PaginaClientes() {
   const [busqueda, setBusqueda] = useState("")
   const handleBusqueda = (query: string) => { setBusqueda(query) }
   useEffect(() => {
-    const t = setTimeout(() => { buscarContactos(busqueda) }, 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
+    const debounceTimer = setTimeout(() => { buscarContactos(busqueda) }, 500)
+    return () => clearTimeout(debounceTimer)
+  }, [busqueda, buscarContactos])
 
   const clientesFiltrados = useMemo(() => {
     return etiquetaFiltro === "todas"
@@ -148,7 +148,7 @@ export default function PaginaClientes() {
         <div className="flex gap-4 items-end">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar clientes por nombre, apellido o correo..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar clientes: ej. 'Juan Pérez', 'correo@example.com'..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
             <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>

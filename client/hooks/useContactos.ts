@@ -243,7 +243,7 @@ export function useContactos() {
   }, [paginacion, contactos, refrescarContactos])
 
   /**
-   * Buscar contactos
+   * Buscar contactos con debounce
    */
   const buscarContactos = useCallback((busqueda: string) => {
     console.log('🔍 Buscando:', busqueda);
@@ -254,26 +254,28 @@ export function useContactos() {
       searchTimeoutRef.current = null;
     }
 
-    // Actualizar los filtros inmediatamente
-    setFiltros(prevFiltros => {
-      // Si el término de búsqueda está vacío, lo eliminamos del filtro
-      if (!busqueda || busqueda.trim() === '') {
-        const { busqueda: _, ...nuevosFiltros } = prevFiltros;
-        return { ...nuevosFiltros, pagina: 1 };
-      }
-      
-      // Si el término de búsqueda es el mismo, no hacemos nada
-      if (prevFiltros.busqueda === busqueda.trim()) {
-        return prevFiltros;
-      }
-      
-      // Actualizar el término de búsqueda
-      return {
-        ...prevFiltros,
-        busqueda: busqueda.trim(),
-        pagina: 1 // Resetear a la primera página al buscar
-      };
-    });
+    // Actualizar los filtros con debounce
+    searchTimeoutRef.current = window.setTimeout(() => {
+      setFiltros(prevFiltros => {
+        // Si el término de búsqueda está vacío, lo eliminamos del filtro
+        if (!busqueda || busqueda.trim() === '') {
+          const { busqueda: _, ...nuevosFiltros } = prevFiltros;
+          return { ...nuevosFiltros, pagina: 1 };
+        }
+        
+        // Si el término de búsqueda es el mismo, no hacemos nada
+        if (prevFiltros.busqueda === busqueda.trim()) {
+          return prevFiltros;
+        }
+        
+        // Actualizar el término de búsqueda y resetear a página 1
+        return {
+          ...prevFiltros,
+          busqueda: busqueda.trim(),
+          pagina: 1
+        };
+      });
+    }, 500); // Debounce de 500ms
   }, []);
 
   /**

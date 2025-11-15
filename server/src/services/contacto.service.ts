@@ -65,12 +65,36 @@ export class ContactoService {
     }
 
     if (busqueda) {
-      where.OR = [
-        { nombre: { contains: busqueda } },
-        { apellido: { contains: busqueda } },
-        { correo: { contains: busqueda } },
-        { dni: { contains: busqueda } }
-      ];
+      // Convertir búsqueda a minúsculas para búsqueda case-insensitive
+      const busquedaLower = busqueda.trim().toLowerCase();
+      
+      // Si contiene espacios, buscar por cualquiera de las palabras
+      const palabras = busquedaLower.split(/\s+/).filter(p => p.length > 0);
+      
+      if (palabras.length > 0) {
+        if (palabras.length === 1) {
+          // Para una sola palabra, buscar en cualquier campo
+          where.OR = [
+            { nombre: { contains: palabras[0] } },
+            { apellido: { contains: palabras[0] } },
+            { correo: { contains: palabras[0] } },
+            { dni: { contains: palabras[0] } }
+          ];
+        } else {
+          // Para múltiples palabras, buscar un contacto que contenga TODAS las palabras
+          // Concatenamos nombre + apellido y verificamos que contenga todas las palabras
+          where.AND = palabras.map(palabra => ({
+            OR: [
+              { nombre: { contains: palabra } },
+              { apellido: { contains: palabra } },
+              { correo: { contains: palabra } },
+              { dni: { contains: palabra } }
+            ]
+          }));
+        }
+        
+        console.log(`🔍 Buscando por palabras: ${palabras.join(', ')}`);
+      }
     }
     // Obtener contactos y total
     const [contactos, total] = await Promise.all([
