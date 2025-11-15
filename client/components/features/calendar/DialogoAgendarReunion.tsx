@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Calendar, Trash2 } from 'lucide-react'
+import { Loader2, Calendar, Trash2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { crearEventoEnCalendar, actualizarEventoEnCalendar, eliminarEventoEnCalendar } from '@/services/api/calendar.service'
+import { crearEventoEnCalendar, actualizarEventoEnCalendar, eliminarEventoEnCalendar, listarEventos } from '@/services/api/calendar.service'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface DialogoAgendarReunionProps {
   abierto: boolean
@@ -50,6 +51,8 @@ export function DialogoAgendarReunion({
   const [horaInicio, setHoraInicio] = useState('10:00')
   const [horaFin, setHoraFin] = useState('11:00')
   const [correoParticipante, setCorreoParticipante] = useState(contactoEmail || '')
+  const [eventosDelDia, setEventosDelDia] = useState<any[]>([])
+  const [conflictoHorario, setConflictoHorario] = useState(false)
 
   // Cargar datos del evento existente si se proporciona
   useEffect(() => {
@@ -70,6 +73,52 @@ export function DialogoAgendarReunion({
     }
   }, [eventoExistente, abierto, contactoEmail])
 
+  // Cargar eventos del día cuando cambia la fecha
+  useEffect(() => {
+    if (abierto && fecha) {
+      cargarEventosDelDia()
+    }
+  }, [fecha, abierto])
+
+  // Detectar conflictos de horario cuando cambian las horas
+  useEffect(() => {
+    if (eventosDelDia.length > 0 && fecha && horaInicio && horaFin) {
+      verificarConflictoHorario()
+    } else {
+      setConflictoHorario(false)
+    }
+  }, [horaInicio, horaFin, eventosDelDia, fecha])
+
+  const cargarEventosDelDia = async () => {
+    try {
+      const eventos = await listarEventos()
+      // Filtrar eventos del día seleccionado
+      const eventosFiltered = eventos.filter((evento: any) => {
+        const fechaEvento = evento.start.split('T')[0]
+        return fechaEvento === fecha && evento.id !== eventoExistente?.id
+      })
+      setEventosDelDia(eventosFiltered)
+    } catch (error) {
+      console.error('Error cargando eventos del día:', error)
+      setEventosDelDia([])
+    }
+  }
+
+  const verificarConflictoHorario = () => {
+    const inicio = new Date(`2000-01-01T${horaInicio}:00`)
+    const fin = new Date(`2000-01-01T${horaFin}:00`)
+
+    const hayConflicto = eventosDelDia.some((evento: any) => {
+      const eventoInicio = new Date(`2000-01-01T${evento.start.split('T')[1].substring(0, 5)}:00`)
+      const eventoFin = new Date(`2000-01-01T${evento.end.split('T')[1].substring(0, 5)}:00`)
+
+      // Detectar solapamiento
+      return inicio < eventoFin && fin > eventoInicio
+    })
+
+    setConflictoHorario(hayConflicto)
+  }
+
   const handleGuardarReunion = async () => {
     if (!asunto.trim()) {
       toast({ title: 'Error', description: 'El asunto es requerido', variant: 'destructive' })
@@ -78,6 +127,16 @@ export function DialogoAgendarReunion({
 
     if (!fecha) {
       toast({ title: 'Error', description: 'La fecha es requerida', variant: 'destructive' })
+      return
+    }
+
+    // Validar que no haya conflicto de horario
+    if (conflictoHorario && !eventoExistente) {
+      toast({ 
+        title: '⚠️ Conflicto de horario', 
+        description: 'Ya existe una reunión en este horario', 
+        variant: 'destructive' 
+      })
       return
     }
 
@@ -252,6 +311,37 @@ export function DialogoAgendarReunion({
         </DialogHeader>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+          {/* Alerta de conflicto de horario */}
+          {conflictoHorario && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                ⚠️ Ya existe una reunión en este horario el {fecha}. 
+                Por favor, elige otro horario para evitar conflictos.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Mostrar reuniones del día */}
+          {eventosDelDia.length > 0 && (
+            <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+              <p className="text-sm font-medium text-blue-900 mb-2">
+                📅 Reuniones agendadas el {fecha}:
+              </p>
+              <div className="space-y-1">
+                {eventosDelDia.map((evento: any, idx: number) => {
+                  const inicio = evento.start.split('T')[1].substring(0, 5)
+                  const fin = evento.end.split('T')[1].substring(0, 5)
+                  return (
+                    <p key={idx} className="text-xs text-blue-800">
+                      • {evento.title} ({inicio} - {fin})
+                    </p>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Asunto */}
           <div>
             <label className="block text-sm font-medium mb-1">Asunto *</label>
@@ -341,8 +431,8 @@ export function DialogoAgendarReunion({
               
               <Button
                 onClick={handleGuardarReunion}
-                disabled={cargando || eliminando}
-                className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+                disabled={cargando || eliminando || (conflictoHorario && !eventoExistente)}
+                className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {cargando ? (
                   <>
