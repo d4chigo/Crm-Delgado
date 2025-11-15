@@ -46,51 +46,50 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
 
 export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onEliminar }: LeadCardProps) {
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20">
+    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
       {/* Header con nombre y acciones rápidas */}
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-              <CardTitle className="text-lg truncate">
-                {lead.nombre} {lead.apellido}
-              </CardTitle>
-            </div>
-            
-            {/* Estados y Prioridad */}
-            <div className="flex gap-2 flex-wrap">
-              <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
-                LEAD
+      <CardHeader className="pb-3 px-4 pt-3">
+        {/* Primera fila: Nombre */}
+        <div className="flex items-start gap-1 mb-2 w-full">
+          <User className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <CardTitle className="text-sm font-bold text-gray-900 break-words">
+            {lead.nombre} {lead.apellido}
+          </CardTitle>
+        </div>
+
+        {/* Segunda fila: Estados + Botones */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex gap-1 flex-wrap flex-1">
+            <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2 py-0.5">
+              LEAD
+            </Badge>
+            {lead.estadoLead && (
+              <Badge className={`${obtenerColorEstado(lead.estadoLead)} text-xs px-2 py-0.5`}>
+                {lead.estadoLead.replace('_', ' ')}
               </Badge>
-              {lead.estadoLead && (
-                <Badge className={obtenerColorEstado(lead.estadoLead)}>
-                  {lead.estadoLead.replace('_', ' ')}
-                </Badge>
-              )}
-              {lead.prioridad && (
-                <Badge className={obtenerColorPrioridad(lead.prioridad)}>
-                  {lead.prioridad}
-                </Badge>
-              )}
-            </div>
+            )}
+            {lead.prioridad && (
+              <Badge className={`${obtenerColorPrioridad(lead.prioridad)} text-xs px-2 py-0.5`}>
+                {lead.prioridad}
+              </Badge>
+            )}
           </div>
 
           {/* Acciones rápidas en el header */}
           <TooltipProvider>
-            <div className="flex gap-0 flex-shrink-0">
+            <div className="flex gap-0.5 flex-shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onVerDetalles(lead)}
-                    className="hover:bg-yellow-100"
+                    className="hover:bg-yellow-100 p-1.5 h-auto"
                   >
-                    <Eye className="h-5 w-5 text-yellow-700" />
+                    <Eye className="h-4 w-4 text-yellow-700" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Ver detalles</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">Ver</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -98,12 +97,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditar(lead)}
-                    className="hover:bg-yellow-100"
+                    className="hover:bg-yellow-100 p-1.5 h-auto"
                   >
-                    <Edit className="h-5 w-5 text-yellow-700" />
+                    <Edit className="h-4 w-4 text-yellow-700" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Editar</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">Editar</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>
@@ -111,19 +110,19 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
       </CardHeader>
 
       {/* Contenido principal */}
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-2 px-4 py-3">
         {/* Info de contacto con iconos */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           {lead.empresa && (
-            <div className="flex items-center gap-2 text-sm">
-              <Building2 className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-              <span className="text-gray-700 font-medium">{lead.empresa}</span>
+            <div className="flex items-center gap-2 text-xs">
+              <Building2 className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+              <span className="text-gray-700 font-medium truncate">{lead.empresa}</span>
             </div>
           )}
 
           {lead.correo && (
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-blue-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <Mail className="h-3 w-3 text-blue-500 flex-shrink-0" />
               <a href={`mailto:${lead.correo}`} className="text-blue-600 hover:underline truncate" title={lead.correo}>
                 {lead.correo}
               </a>
@@ -131,8 +130,8 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
           )}
           
           {lead.telefono && (
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-green-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <Phone className="h-3 w-3 text-green-500 flex-shrink-0" />
               <a href={`tel:${lead.telefono}`} className="text-gray-700 hover:underline font-medium">
                 {lead.telefono}
               </a>
@@ -140,29 +139,29 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
           )}
 
           {lead.presupuesto && (
-            <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <DollarSign className="h-3 w-3 text-green-600 flex-shrink-0" />
               <span className="font-bold text-green-600">S/ {lead.presupuesto.toLocaleString('es-PE')}</span>
             </div>
           )}
           
           {lead.ciudad && (
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <MapPin className="h-3 w-3 text-red-500 flex-shrink-0" />
               <span className="text-gray-600">{lead.ciudad}</span>
             </div>
           )}
 
           {lead.dni && (
-            <div className="flex items-center gap-2 text-sm">
-              <IdCard className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <IdCard className="h-3 w-3 text-indigo-500 flex-shrink-0" />
               <span className="text-gray-600 font-mono">{lead.dni}</span>
             </div>
           )}
 
           {lead.fechaNacimiento && (
-            <div className="flex items-center gap-2 text-sm">
-              <Cake className="h-4 w-4 text-pink-500 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-xs">
+              <Cake className="h-3 w-3 text-pink-500 flex-shrink-0" />
               <span className="text-gray-600">{new Date(lead.fechaNacimiento).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             </div>
           )}
@@ -170,8 +169,8 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
 
         {/* Etiquetas */}
         {lead.etiquetas && lead.etiquetas.length > 0 && (
-          <div className="pt-2 border-t">
-            <div className="flex flex-wrap gap-1">
+          <div className="py-1 border-t border-b border-gray-200">
+            <div className="flex flex-wrap gap-0.5">
               {lead.etiquetas.map((ce) => (
                 <Badge
                   key={ce.etiqueta.id}
@@ -181,9 +180,9 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     color: ce.etiqueta.color,
                     borderColor: ce.etiqueta.color,
                   }}
-                  className="text-xs"
+                  className="text-xs px-2 py-0.5"
                 >
-                  {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                  {ce.etiqueta.icono && <span className="mr-0.5">{ce.etiqueta.icono}</span>}
                   {ce.etiqueta.nombre}
                 </Badge>
               ))}
@@ -192,13 +191,13 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
         )}
 
         {/* Fecha de creación */}
-        <p className="text-xs text-muted-foreground pt-2 border-t">
+        <p className="text-xs text-muted-foreground py-1 border-t">
           Creado: {new Date(lead.creadoEn).toLocaleDateString('es-PE')}
         </p>
 
         {/* Botones de acción - ICONOS */}
         <TooltipProvider>
-          <div className="flex gap-2 pt-3">
+          <div className="flex gap-1 pt-2 flex-wrap">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -206,12 +205,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                   size="sm"
                   onClick={() => onWhatsApp(lead.telefono || '')}
                   disabled={!lead.telefono}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  className="flex-1 min-w-fit bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
                 >
-                  <MessageSquare className="h-5 w-5" />
+                  <MessageSquare className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>WhatsApp</TooltipContent>
+              <TooltipContent side="bottom">WhatsApp</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -220,12 +219,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                   size="sm"
                   onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
                   disabled={!lead.correo}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="flex-1 min-w-fit bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
                 >
-                  <Calendar className="h-5 w-5" />
+                  <Calendar className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Agendar reunión</TooltipContent>
+              <TooltipContent side="bottom">Agendar</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -233,12 +232,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                   variant="outline"
                   size="sm"
                   onClick={() => onCotizar(lead)}
-                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8 text-xs"
                 >
-                  <FileText className="h-5 w-5" />
+                  <FileText className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Cotizar</TooltipContent>
+              <TooltipContent side="bottom">Cotizar</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -246,16 +245,16 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                   size="sm"
                   onClick={() => onConvertir(lead.id)}
                   disabled={isConverting}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
                 >
                   {isConverting ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-3 w-3" />
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Convertir a cliente</TooltipContent>
+              <TooltipContent side="bottom">Convertir</TooltipContent>
             </Tooltip>
             {onPipeline && (
               <Tooltip>
@@ -264,12 +263,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     variant="outline"
                     size="sm"
                     onClick={() => onPipeline(lead)}
-                    className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                    className="border-purple-300 text-purple-600 hover:bg-purple-50 h-8 text-xs"
                   >
-                    <TrendingUp className="h-5 w-5" />
+                    <TrendingUp className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Agregar al Pipeline</TooltipContent>
+                <TooltipContent side="bottom">Pipeline</TooltipContent>
               </Tooltip>
             )}
             {onEliminar && (
@@ -279,12 +278,12 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     variant="outline"
                     size="sm"
                     onClick={() => onEliminar(lead)}
-                    className="border-red-300 text-red-600 hover:bg-red-50"
+                    className="border-red-300 text-red-600 hover:bg-red-50 h-8 text-xs"
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Eliminar</TooltipContent>
+                <TooltipContent side="bottom">Eliminar</TooltipContent>
               </Tooltip>
             )}
           </div>

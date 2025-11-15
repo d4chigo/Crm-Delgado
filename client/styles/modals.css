@@ -1,0 +1,19 @@
+/* Estilos específicos para modales de detalles */
+
+/* Modal de detalles - contenedor principal */
+[role="dialog"] > div[role="document"] {
+  --container-lg: 48rem;
+}
+
+/* Asegura que los diálogos se vean bien en diferentes tamaños */
+@media (max-width: 1024px) {
+  [role="dialog"] > div[role="document"] {
+    --container-lg: 42rem;
+  }
+}
+
+@media (max-width: 768px) {
+  [role="dialog"] > div[role="document"] {
+    --container-lg: 36rem;
+  }
+}
