@@ -24,19 +24,11 @@ import AssistantFab from "@/components/assistant/AssistantFab"
 import googleAuthService from "@/services/api/google-auth.service"
 import contactoService from "@/services/api/contacto.service"
 import dynamic from "next/dynamic"
+import type { Contacto } from "@/types/contacto.types"
 
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
-interface Lead {
-  id: string
-  nombre: string
-  apellido?: string
-  correo?: string
-  telefono?: string
-  tipo: string
-  estadoLead?: string
-  etiquetas?: Array<{ etiqueta: { id: string; nombre: string; color: string } }>
-}
+type Lead = Contacto
 
 export default function PaginaLeads() {
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
@@ -266,14 +258,9 @@ export default function PaginaLeads() {
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
     // Encontrar el lead actual para obtener más información
     const leadActual = leads.find(l => l.nombre === nombre && l.correo === correo)
-    setLeadParaAgendar({
-      id: leadActual?.id || '',
-      nombre,
-      correo,
-      telefono,
-      tipo: 'LEAD',
-      apellido: leadActual?.apellido
-    })
+    if (leadActual) {
+      setLeadParaAgendar(leadActual)
+    }
     setDialogoAgendarAbierto(true)
   }
 

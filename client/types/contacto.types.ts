@@ -46,8 +46,8 @@ export interface LeadCliente {
 export interface Contacto {
   id: string;
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;
