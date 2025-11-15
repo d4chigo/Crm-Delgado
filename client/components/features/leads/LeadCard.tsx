@@ -145,65 +145,75 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
             </p>
           </div>
 
-          {/* Botones de acción */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* Botones principales de contacto */}
+          <div className="flex gap-2 pt-4">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => onWhatsApp(lead.telefono || '')}
               disabled={!lead.telefono}
+              className="flex-1"
+              title={lead.telefono ? 'Enviar mensaje por WhatsApp' : 'Sin teléfono'}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
-              WhatsApp
+              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="sm:hidden">WA</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
               disabled={!lead.correo}
+              className="flex-1"
+              title={lead.correo ? 'Agendar reunión' : 'Sin correo'}
             >
               <Calendar className="h-4 w-4 mr-1" />
-              Agendar
+              <span className="hidden sm:inline">Agendar</span>
+              <span className="sm:hidden">📅</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onVerDetalles(lead)}
+              className="px-2"
+              title="Ver detalles completos"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEditar(lead)}
+              className="px-2"
+              title="Editar información"
+            >
+              <Edit className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Botones secundarios */}
           <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onVerDetalles(lead)}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              Ver
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEditar(lead)}
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Editar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => onCotizar(lead)}
-              className="col-span-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
             >
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="h-3 w-3 mr-1" />
               Cotizar
             </Button>
             <Button
               size="sm"
               onClick={() => onConvertir(lead.id)}
               disabled={isConverting}
-              className="col-span-2 bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white text-xs"
             >
               {isConverting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <>
-                  <ArrowRight className="h-4 w-4 mr-1" />
-                  Convertir a Cliente
+                  <ArrowRight className="h-3 w-3 mr-1" />
+                  Convertir
                 </>
               )}
             </Button>

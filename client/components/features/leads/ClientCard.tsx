@@ -145,81 +145,102 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
             </p>
           </div>
 
-          {/* Botones de acción para clientes */}
-          <div className="grid grid-cols-2 gap-2 pt-2">
+          {/* Botones principales de contacto */}
+          <div className="flex gap-2 pt-4">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => onWhatsApp(cliente.telefono || '')}
               disabled={!cliente.telefono}
+              className="flex-1"
+              title={cliente.telefono ? 'Enviar mensaje por WhatsApp' : 'Sin teléfono'}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
-              WhatsApp
+              <span className="hidden sm:inline">WhatsApp</span>
+              <span className="sm:hidden">WA</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
               disabled={!cliente.correo}
+              className="flex-1"
+              title={cliente.correo ? 'Agendar reunión' : 'Sin correo'}
             >
               <Calendar className="h-4 w-4 mr-1" />
-              Agendar
+              <span className="hidden sm:inline">Agendar</span>
+              <span className="sm:hidden">📅</span>
             </Button>
-          </div>
-          <div className="grid grid-cols-3 gap-2 pt-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onVerDetalles(cliente)}
+              className="px-2"
+              title="Ver detalles completos"
             >
-              <Eye className="h-4 w-4 mr-1" />
-              Ver
+              <Eye className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onEditar(cliente)}
+              className="px-2"
+              title="Editar información"
             >
-              <Edit className="h-4 w-4 mr-1" />
-              Editar
+              <Edit className="h-4 w-4" />
             </Button>
+          </div>
+
+          {/* Botones secundarios */}
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onCotizar(cliente)}
-              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
             >
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="h-3 w-3 mr-1" />
               Cotizar
             </Button>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onCrearAccesoWeb?.(cliente)}
-            className="w-full mt-2 border-green-600 text-green-700 hover:bg-green-50"
-          >
-            <Globe className="h-4 w-4 mr-2" />
-            Crear Acceso Web
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onAgregarOportunidad(cliente)}
-            className="w-full mt-2 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
-          >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Agregar al Pipeline
-          </Button>
-          {onEliminar && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onEliminar(cliente)}
-              className="w-full mt-2 border-red-300 text-red-700 hover:bg-red-50"
+              onClick={() => onAgregarOportunidad(cliente)}
+              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] text-xs font-medium"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Eliminar
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Pipeline
             </Button>
+          </div>
+
+          {/* Botones accionales opcionales */}
+          {(onCrearAccesoWeb || onEliminar) && (
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              {onCrearAccesoWeb && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCrearAccesoWeb(cliente)}
+                  className="border-green-600 text-green-700 hover:bg-green-50 text-xs"
+                  title="Crear acceso web para cliente"
+                >
+                  <Globe className="h-3 w-3 mr-1" />
+                  <span className="hidden sm:inline">Web</span>
+                </Button>
+              )}
+              {onEliminar && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEliminar(cliente)}
+                  className="border-red-300 text-red-700 hover:bg-red-50 text-xs"
+                  title="Eliminar cliente"
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  <span className="hidden sm:inline">Eliminar</span>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </CardContent>
