@@ -258,12 +258,9 @@ export default function PaginaLeads() {
       toast({ title: "Sin teléfono", description: "No hay número disponible.", variant: "destructive" })
       return
     }
-    let tel = telefono.replace(/\D/g, "")
-    if (tel.length === 9) tel = "51" + tel
-    const url = `https://wa.me/$${tel}`
-    try {
-      window.open(url, "_blank")
-    } catch {}
+    setWhatsappTelefono(telefono)
+    setWhatsappMensaje("")
+    setDialogoWhatsappAbierto(true)
   }
 
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
