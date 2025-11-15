@@ -67,7 +67,8 @@ export const FormularioCotizacion = ({
   nombreContacto
 }: FormularioCotizacionProps) => {
   const [guardando, setGuardando] = useState(false);
-  const [datos, setDatos] = useState<CrearCotizacionDTO>({
+  
+  const estadoInicial = (): CrearCotizacionDTO => ({
     contactoId,
     nombreProyecto: '',
     tipoInmueble: '',
@@ -90,14 +91,27 @@ export const FormularioCotizacion = ({
     fechaValidez: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   });
 
+  const [datos, setDatos] = useState<CrearCotizacionDTO>(estadoInicial());
+
   // Clave de borrador por contacto
   const DRAFT_KEY = useMemo(() => `cotizacion_draft_${contactoId}`, [contactoId]);
 
+  // Resetear formulario cuando se cierra el diálogo (si no es edición)
   useEffect(() => {
+    if (!open && !cotizacion) {
+      // Limpiar el formulario y el borrador cuando se cierra sin estar editando
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      setDatos(estadoInicial());
+    }
+  }, [open, cotizacion, DRAFT_KEY]);
+
+  useEffect(() => {
+    if (!open) return; // Solo actuar cuando el diálogo está abierto
+    
     if (cotizacion) {
       setDatos(prev => ({ ...prev, ...cotizacion }));
     } else {
-      // Intentar cargar borrador persistido
+      // Para nueva cotización, intentar cargar borrador
       try {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
@@ -106,9 +120,10 @@ export const FormularioCotizacion = ({
           return;
         }
       } catch {}
-      setDatos(prev => ({ ...prev, contactoId }));
+      // Si no hay borrador, resetear al estado inicial
+      setDatos(estadoInicial());
     }
-  }, [cotizacion, contactoId, DRAFT_KEY]);
+  }, [cotizacion, contactoId, DRAFT_KEY, open]);
 
   // Auto-guardar borrador en localStorage (debounce simple)
   useEffect(() => {
@@ -442,10 +457,6 @@ export const FormularioCotizacion = ({
                         <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
                         <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
                     </div>
-                    <div>
-                        <Label htmlFor="fechaValidez" className="text-xs font-medium">Válido Hasta</Label>
-                        <Input id="fechaValidez" type="date" value={datos.fechaValidez} onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })} className="text-sm h-9" />
-                    </div>
                 </div>
                 
                 {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
@@ -462,18 +473,6 @@ export const FormularioCotizacion = ({
                                 placeholder="Ej: 1000"
                             />
                             <p className="text-xs text-gray-500 mt-1">Dejar en blanco para cuota calculada automáticamente.</p>
-                        </div>
-                        <h4 className="text-xs font-semibold text-gray-600 my-3">Beneficios Flexibles</h4>
-                        <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permitePostergar" checked={datos.permitePostergar} onCheckedChange={(c) => setDatos({...datos, permitePostergar: c as boolean})} /><Label htmlFor="permitePostergar" className="text-sm font-normal">Permitir postergar pagos</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permiteDoble" checked={datos.permiteDoble} onCheckedChange={(c) => setDatos({...datos, permiteDoble: c as boolean})} /><Label htmlFor="permiteDoble" className="text-sm font-normal">Permitir cuotas dobles</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permiteCambioFecha" checked={datos.permiteCambioFecha} onCheckedChange={(c) => setDatos({...datos, permiteCambioFecha: c as boolean})} /><Label htmlFor="permiteCambioFecha" className="text-sm font-normal">Permitir cambio de fecha de pago</Label>
-                            </div>
                         </div>
                     </div>
                 )}
