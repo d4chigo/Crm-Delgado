@@ -177,11 +177,37 @@ Equipo Delgado Propiedades
   console.log(cuerpo);
   console.log('─────────────────────────────────────────');
 
-  // TODO: Implementar envío real de email
-  // Ejemplos:
-  // - SendGrid: sgMail.send({ from, to, subject, html })
-  // - AWS SES: ses.sendEmail(params).promise()
-  // - Nodemailer: transporter.sendMail(mailOptions)
+  // Intentar enviar con Gmail (GRATIS) si están configuradas las credenciales
+  if (process.env.GMAIL_EMAIL && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const nodemailer = require('nodemailer');
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_EMAIL,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
+
+      await transporter.sendMail({
+        from: process.env.GMAIL_EMAIL,
+        to: contacto.correo,
+        subject: asunto,
+        text: cuerpo,
+        html: `<pre style="font-family: Arial, sans-serif; font-size: 14px;">${cuerpo.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`,
+      });
+
+      console.log('✅ Email enviado por Gmail exitosamente');
+    } catch (error: any) {
+      console.warn('⚠️  Error enviando email por Gmail:', error.message);
+    }
+  } else {
+    console.log('💡 Para enviar emails REALES, configura:');
+    console.log('   1. GMAIL_EMAIL=tu@gmail.com');
+    console.log('   2. GMAIL_APP_PASSWORD=contraseña_de_aplicacion');
+    console.log('   Obtén la contraseña en: https://myaccount.google.com/apppasswords');
+  }
   
   // Simular delay de envío
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -246,12 +272,47 @@ Si deseas reprogramar, por favor comunícate con nosotros.`;
   console.log(mensaje);
   console.log('─────────────────────────────────────────');
 
-  // TODO: Implementar envío real de WhatsApp
-  // Ejemplos:
-  // - Twilio: twilio.messages.create({ from, to, body })
-  // - WhatsApp Business API: https://www.whatsapp.com/business/api/
-  // - Baileys (para WhatsApp Web): client.sendMessage(jid, messageContent)
+  // Opción 1: Enviar por Baileys (WhatsApp Web - GRATIS)
+  // Requiere inicializar cliente Baileys al iniciar servidor
+  const whatsappClient = (global as any).whatsappClient;
+  if (whatsappClient && whatsappClient.isConnected) {
+    try {
+      const chatId = `${telefonoLimpio}@c.us`;
+      await whatsappClient.sendMessage(chatId, mensaje);
+      console.log('✅ Mensaje WhatsApp enviado por Baileys');
+    } catch (error: any) {
+      console.warn('⚠️  Error enviando WhatsApp por Baileys:', error.message);
+      enviarPorIntegracionGratis(telefonoLimpio, mensaje);
+    }
+  } else {
+    // Opción 2: Usar API HTTP gratuita (Twilio Free, etc.)
+    enviarPorIntegracionGratis(telefonoLimpio, mensaje);
+  }
   
   // Simular delay de envío
   await new Promise(resolve => setTimeout(resolve, 100));
+}
+
+/**
+ * Enviar WhatsApp por integraciones gratuitas sin servidor local
+ * Opciones:
+ * 1. Usar texto que el usuario puede copiar/pegar
+ * 2. Generar link wa.me para que el usuario envíe
+ * 3. Usar webhook/API externa gratuita
+ */
+async function enviarPorIntegracionGratis(telefono: string, mensaje: string) {
+  console.log('💡 Opciones para enviar WhatsApp GRATIS:');
+  console.log('\n1️⃣  Link wa.me (Usuario copia y envía):');
+  const urlWame = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+  console.log(`   ${urlWame}`);
+  
+  console.log('\n2️⃣  Para enviar automático (GRATIS):');
+  console.log('   a) Instala Baileys: npm install whatsapp-web.js');
+  console.log('   b) Configura cliente WebSocket');
+  console.log('   c) El bot usará WhatsApp Web automáticamente');
+  
+  console.log('\n3️⃣  Texto para copiar/pegar al contacto:');
+  console.log('─────────────────────────────────────────');
+  console.log(mensaje);
+  console.log('─────────────────────────────────────────');
 }

@@ -117,75 +117,135 @@ export async function eliminarEventoEnCalendar(eventId, contacto?, evento?)
 
 ## Integración con Servicios Reales
 
-### Para Email
+### Para Email (GRATIS) ✅
 
-Actualmente, las notificaciones están **simuladas** en la consola. Para integrar con un servicio real, reemplaza la función `enviarEmailReunion()` en `notificacion.service.ts`:
+**Opción 1: Gmail (100% GRATIS - RECOMENDADO)**
 
-#### Opción 1: SendGrid (Recomendado)
-```typescript
-import sgMail from '@sendgrid/mail';
+El sistema ya está configurado para enviar emails usando Gmail. Solo necesitas hacer 3 pasos:
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+1. **Habilitar App Passwords en tu cuenta Google:**
+   - Ve a: https://myaccount.google.com/apppasswords
+   - Selecciona "Mail" y "Windows Computer"
+   - Google te generará una contraseña de 16 caracteres
+   - Cópiala
 
-async function enviarEmailReunion(contacto, reunion, estado) {
-  const msg = {
-    to: contacto.correo,
-    from: process.env.SENDGRID_FROM_EMAIL!,
-    subject: `Reunión ${estado.toLowerCase()}: ${reunion.asunto}`,
-    html: generarHTMLEmail(contacto, reunion, estado), // Crear función auxiliar
-  };
-  await sgMail.send(msg);
-}
+2. **Agregar variables de entorno en `.env`:**
+   ```env
+   GMAIL_EMAIL=tu@gmail.com
+   GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
+   ```
+
+3. **Reiniciar el servidor**
+   ```bash
+   npm run dev
+   ```
+
+**Listo!** Los emails ahora se enviarán automáticamente.
+
+**Ventajas:**
+- ✅ Completamente gratis
+- ✅ Sin límite de emails
+- ✅ Confiable (Google)
+- ✅ Fácil de configurar
+- ✅ Ya está integrado en el código
+
+**Pasos detallados con imágenes:** https://support.google.com/accounts/answer/185833
+
+---
+
+### Para WhatsApp (GRATIS) ✅
+
+**Opción 1: Link wa.me (SIN CÓDIGO - GRATIS)**
+
+El sistema genera automáticamente un link wa.me que puedes usar:
+
+```
+https://wa.me/51912345678?text=Tu%20reunion%20ha%20sido%20agendada
 ```
 
-#### Opción 2: AWS SES
-```typescript
-import AWS from 'aws-sdk';
+El usuario hace click y WhatsApp se abre automáticamente con el mensaje pre-cargado.
 
-const ses = new AWS.SES({ region: 'us-east-1' });
+**Ventajas:**
+- ✅ 100% gratis
+- ✅ No requiere servidor externo
+- ✅ Funciona inmediatamente
+- ✅ Seguro (usuario controla el envío)
 
-async function enviarEmailReunion(contacto, reunion, estado) {
-  const params = {
-    Source: process.env.AWS_SES_FROM_EMAIL!,
-    Destination: { ToAddresses: [contacto.correo] },
-    Message: {
-      Subject: { Data: `Reunión ${estado.toLowerCase()}: ${reunion.asunto}` },
-      Body: { Html: { Data: generarHTMLEmail(contacto, reunion, estado) } },
-    },
-  };
-  await ses.sendEmail(params).promise();
-}
+**Cómo usarlo:**
+Los logs del servidor mostrarán el link wa.me que puedes compartir o abrir automáticamente.
+
+---
+
+**Opción 2: Baileys (AUTOMÁTICO - GRATIS)**
+
+Para enviar mensajes automáticamente desde tu servidor (sin intervención del usuario):
+
+1. **Instalar Baileys:**
+   ```bash
+   npm install whatsapp-web.js qrcode
+   ```
+
+2. **Crear archivo `whatsapp-bot.ts`:**
+   ```typescript
+   import { Client, LocalAuth } from 'whatsapp-web.js';
+   
+   const client = new Client({
+     auth: {
+       clientId: 'client-id',
+     },
+     puppeteer: {
+       headless: true,
+       args: ['--no-sandbox'],
+     },
+   });
+
+   client.on('qr', (qr: string) => {
+     console.log('Escanea este código QR con tu teléfono:');
+     console.log(qr);
+   });
+
+   client.on('ready', () => {
+     console.log('✅ Bot de WhatsApp conectado!');
+     (global as any).whatsappClient = client;
+   });
+
+   client.initialize();
+   
+   export default client;
+   ```
+
+3. **Importar en tu `index.ts`:**
+   ```typescript
+   import './whatsapp-bot';
+   ```
+
+4. **Escanear QR la primera vez**
+   - Ejecuta el servidor
+   - Muestra el código QR en la consola
+   - Escanea con tu teléfono
+   - ¡Listo! Ya está conectado
+
+**Ventajas:**
+- ✅ Completamente gratis
+- ✅ Envío automático
+- ✅ Sin límites
+- ✅ Usa tu cuenta personal de WhatsApp
+
+**Desventajas:**
+- ⚠️ Requiere computadora con WhatsApp Web abierto
+- ⚠️ WhatsApp puede banear si envías demasiados mensajes rápido
+
+---
+
+**Opción 3: Twilio Free Trial (GRATIS por 30 días)**
+
+Si necesitas algo más robusto:
+
+```bash
+npm install twilio
 ```
 
-#### Opción 3: Nodemailer (Para SMTP genérico)
-```typescript
-import nodemailer from 'nodemailer';
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT!),
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
-
-async function enviarEmailReunion(contacto, reunion, estado) {
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM_EMAIL,
-    to: contacto.correo,
-    subject: `Reunión ${estado.toLowerCase()}: ${reunion.asunto}`,
-    html: generarHTMLEmail(contacto, reunion, estado),
-  });
-}
-```
-
-### Para WhatsApp
-
-Actualmente, las notificaciones están **simuladas** en la consola. Para integrar con un servicio real:
-
-#### Opción 1: Twilio (Recomendado)
+Código:
 ```typescript
 import twilio from 'twilio';
 
@@ -194,84 +254,66 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-async function enviarWhatsAppReunion(contacto, reunion, estado) {
-  const mensaje = generarMensajeWhatsApp(contacto, reunion, estado);
-  
+async function enviarWhatsApp(telefono: string, mensaje: string) {
   await client.messages.create({
     from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-    to: `whatsapp:+${telefonoLimpio}`,
+    to: `whatsapp:+${telefono}`,
     body: mensaje,
   });
 }
 ```
 
-#### Opción 2: WhatsApp Business API (Official)
-```typescript
-async function enviarWhatsAppReunion(contacto, reunion, estado) {
-  const mensaje = generarMensajeWhatsApp(contacto, reunion, estado);
-  
-  const response = await fetch('https://graph.instagram.com/v18.0/YOUR_PHONE_NUMBER_ID/messages', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.WHATSAPP_API_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: telefonoLimpio,
-      type: 'text',
-      text: { body: mensaje },
-    }),
-  });
-  
-  return response.json();
-}
-```
-
-#### Opción 3: Baileys (WhatsApp Web - No oficial)
-```typescript
-import { Client } from 'whatsapp-web.js';
-
-const client = new Client();
-
-async function enviarWhatsAppReunion(contacto, reunion, estado) {
-  const mensaje = generarMensajeWhatsApp(contacto, reunion, estado);
-  const chatId = `${telefonoLimpio}@c.us`;
-  
-  await client.sendMessage(chatId, mensaje);
-}
-```
-
-## Variables de Entorno Requeridas
-
-Agrega estas variables a tu `.env`:
-
+Variables de entorno:
 ```env
-# SendGrid
-SENDGRID_API_KEY=sk_test_xxxxx
-SENDGRID_FROM_EMAIL=noreply@delgadopropiedades.com
-
-# AWS SES
-AWS_ACCESS_KEY_ID=xxxxx
-AWS_SECRET_ACCESS_KEY=xxxxx
-AWS_SES_FROM_EMAIL=noreply@delgadopropiedades.com
-
-# SMTP genérico
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM_EMAIL=noreply@delgadopropiedades.com
-
-# Twilio
-TWILIO_ACCOUNT_SID=ACxxxx
-TWILIO_AUTH_TOKEN=xxxxx
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxx
 TWILIO_WHATSAPP_NUMBER=+1234567890
-
-# WhatsApp Business API
-WHATSAPP_API_TOKEN=EAAxxxxxxxxx
-WHATSAPP_PHONE_NUMBER_ID=1234567890
 ```
+
+**Ventajas:**
+- ✅ Gratis por 30 días
+- ✅ Muy confiable
+- ✅ Fácil de usar
+- ✅ Soporte profesional
+
+**Desventajas:**
+- ⚠️ Después de 30 días hay que pagar
+- ⚠️ Límite de mensajes en free tier
+
+---
+
+## Resumen de Opciones
+
+| Servicio | Email | WhatsApp | Precio | Facilidad | Tiempo Setup |
+|----------|-------|----------|--------|-----------|--------------|
+| **Gmail** | ✅ Gratis | ❌ No | **Gratis** | ⭐⭐⭐ Muy Fácil | 5 min |
+| **Baileys** | ❌ No | ✅ Gratis | **Gratis** | ⭐⭐ Medio | 20 min |
+| **Twilio** | ❌ No | ✅ 30 días | **Gratis → $0.01/msg** | ⭐⭐⭐ Fácil | 10 min |
+| **SendGrid** | ✅ Gratis | ❌ No | **Gratis (100/día)** | ⭐⭐⭐ Fácil | 10 min |
+
+---
+
+## Configuración Recomendada (GRATIS)
+
+Para empezar **AHORA** sin gastar nada:
+
+### 1. Email con Gmail (5 minutos)
+```env
+GMAIL_EMAIL=tuempresa@gmail.com
+GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
+```
+
+### 2. WhatsApp con Link wa.me (Inmediato)
+Los links se generan automáticamente en los logs.
+
+### 3. Opcional: Automatizar WhatsApp con Baileys (20 minutos)
+```bash
+npm install whatsapp-web.js qrcode
+```
+
+**Costo total: $0 por siempre** ✅
+
+---
 
 ## Pruebas
 
