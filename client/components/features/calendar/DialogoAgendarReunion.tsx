@@ -97,16 +97,22 @@ export function DialogoAgendarReunion({
                    !correoParticipante.includes('.local') ? [correoParticipante] : [],
       }
 
+      const datosContacto = {
+        nombre: contactoNombre,
+        correo: contactoEmail,
+        telefono: contactoTelefono,
+      }
+
       if (eventoExistente) {
         // Actualizar evento existente
-        await actualizarEventoEnCalendar(eventoExistente.id, evento)
+        await actualizarEventoEnCalendar(eventoExistente.id, evento, datosContacto)
         toast({
           title: '✅ Reunión actualizada',
           description: `"${asunto}" ha sido actualizada en Google Calendar`,
         })
       } else {
         // Crear nuevo evento
-        await crearEventoEnCalendar(evento)
+        await crearEventoEnCalendar(evento, datosContacto)
         toast({
           title: '✅ Reunión agendada',
           description: `"${asunto}" ha sido creada en Google Calendar`,
@@ -142,7 +148,19 @@ export function DialogoAgendarReunion({
 
     setEliminando(true)
     try {
-      await eliminarEventoEnCalendar(eventoExistente.id)
+      const datosContacto = {
+        nombre: contactoNombre,
+        correo: contactoEmail,
+        telefono: contactoTelefono,
+      }
+
+      await eliminarEventoEnCalendar(eventoExistente.id, datosContacto, {
+        summary: eventoExistente.summary,
+        description: eventoExistente.description,
+        location: eventoExistente.location,
+        startDateTime: eventoExistente.startDateTime,
+        endDateTime: eventoExistente.endDateTime,
+      })
       toast({
         title: '✅ Reunión eliminada',
         description: `"${eventoExistente.summary}" ha sido eliminada de Google Calendar`,

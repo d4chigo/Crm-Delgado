@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { google } from 'googleapis';
+import { notificarReunionAgendada, notificarReunionActualizada, notificarReunionCancelada } from '@/services/notificacion.service';
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CALENDAR_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
@@ -190,7 +191,7 @@ export async function syncEvents(req: Request, res: Response) {
 
 export async function crearEvento(req: Request, res: Response) {
   try {
-    const { tokens, evento } = req.body;
+    const { tokens, evento, contacto } = req.body;
     
     if (!tokens) {
       console.warn('[Calendar] No hay tokens para crear evento');
@@ -269,6 +270,32 @@ export async function crearEvento(req: Request, res: Response) {
     });
 
     console.log('[Calendar] Evento creado exitosamente:', response.data.id);
+    
+    // Enviar notificaciones por email y WhatsApp si hay datos del contacto
+    if (contacto) {
+      try {
+        await notificarReunionAgendada(
+          {
+            nombre: contacto.nombre || 'Cliente',
+            correo: contacto.correo,
+            telefono: contacto.telefono,
+          },
+          {
+            asunto: evento.summary,
+            fecha: evento.startDateTime.split('T')[0],
+            horaInicio: evento.startDateTime.split('T')[1].substring(0, 5),
+            horaFin: evento.endDateTime.split('T')[1].substring(0, 5),
+            descripcion: evento.description || undefined,
+            ubicacion: evento.location || undefined,
+            enlaceCalendario: response.data.htmlLink || undefined,
+          }
+        );
+      } catch (notificationError: any) {
+        console.warn('[Calendar] Error enviando notificaciones:', notificationError.message);
+        // No interrumpir el flujo si hay error en notificaciones
+      }
+    }
+    
     res.json({ 
       exito: true, 
       mensaje: 'Evento creado correctamente',
@@ -301,7 +328,7 @@ export async function crearEvento(req: Request, res: Response) {
 
 export async function actualizarEvento(req: Request, res: Response) {
   try {
-    const { tokens, eventId, evento } = req.body;
+    const { tokens, eventId, evento, contacto } = req.body;
     
     if (!tokens) {
       console.warn('[Calendar] No hay tokens para actualizar evento');
@@ -363,6 +390,32 @@ export async function actualizarEvento(req: Request, res: Response) {
     });
 
     console.log('[Calendar] Evento actualizado exitosamente:', response.data.id);
+    
+    // Enviar notificaciones por email y WhatsApp si hay datos del contacto
+    if (contacto) {
+      try {
+        await notificarReunionActualizada(
+          {
+            nombre: contacto.nombre || 'Cliente',
+            correo: contacto.correo,
+            telefono: contacto.telefono,
+          },
+          {
+            asunto: evento.summary,
+            fecha: evento.startDateTime.split('T')[0],
+            horaInicio: evento.startDateTime.split('T')[1].substring(0, 5),
+            horaFin: evento.endDateTime.split('T')[1].substring(0, 5),
+            descripcion: evento.description || undefined,
+            ubicacion: evento.location || undefined,
+            enlaceCalendario: response.data.htmlLink || undefined,
+          }
+        );
+      } catch (notificationError: any) {
+        console.warn('[Calendar] Error enviando notificaciones:', notificationError.message);
+        // No interrumpir el flujo si hay error en notificaciones
+      }
+    }
+    
     res.json({ 
       exito: true, 
       mensaje: 'Evento actualizado correctamente',
@@ -389,7 +442,7 @@ export async function actualizarEvento(req: Request, res: Response) {
 
 export async function eliminarEvento(req: Request, res: Response) {
   try {
-    const { tokens, eventId } = req.body;
+    const { tokens, eventId, contacto, evento } = req.body;
     
     if (!tokens) {
       console.warn('[Calendar] No hay tokens para eliminar evento');
@@ -410,6 +463,31 @@ export async function eliminarEvento(req: Request, res: Response) {
     });
 
     console.log('[Calendar] Evento eliminado exitosamente:', eventId);
+    
+    // Enviar notificaciones por email y WhatsApp si hay datos del contacto
+    if (contacto && evento) {
+      try {
+        await notificarReunionCancelada(
+          {
+            nombre: contacto.nombre || 'Cliente',
+            correo: contacto.correo,
+            telefono: contacto.telefono,
+          },
+          {
+            asunto: evento.summary || 'Reunión',
+            fecha: evento.startDateTime?.split('T')[0] || 'N/A',
+            horaInicio: evento.startDateTime?.split('T')[1]?.substring(0, 5) || 'N/A',
+            horaFin: evento.endDateTime?.split('T')[1]?.substring(0, 5) || 'N/A',
+            descripcion: evento.description,
+            ubicacion: evento.location,
+          }
+        );
+      } catch (notificationError: any) {
+        console.warn('[Calendar] Error enviando notificaciones:', notificationError.message);
+        // No interrumpir el flujo si hay error en notificaciones
+      }
+    }
+    
     res.json({ 
       exito: true, 
       mensaje: 'Evento eliminado correctamente'

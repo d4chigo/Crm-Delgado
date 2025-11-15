@@ -136,6 +136,10 @@ export async function crearEventoEnCalendar(evento: {
   startDateTime: string;
   endDateTime: string;
   attendees?: string[];
+}, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
 }): Promise<{ id: string; htmlLink: string }> {
   const tokens = obtenerTokensGuardados();
   if (!tokens) {
@@ -147,7 +151,7 @@ export async function crearEventoEnCalendar(evento: {
     htmlLink: string;
   }>('/calendar/create-event', {
     method: 'POST',
-    body: JSON.stringify({ tokens, evento }),
+    body: JSON.stringify({ tokens, evento, contacto }),
   });
 
   if (!response) {
@@ -164,6 +168,10 @@ export async function actualizarEventoEnCalendar(eventId: string, evento: {
   startDateTime: string;
   endDateTime: string;
   attendees?: string[];
+}, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
 }): Promise<{ id: string; htmlLink: string }> {
   const tokens = obtenerTokensGuardados();
   if (!tokens) {
@@ -175,7 +183,7 @@ export async function actualizarEventoEnCalendar(eventId: string, evento: {
     htmlLink: string;
   }>('/calendar/update-event', {
     method: 'PUT',
-    body: JSON.stringify({ tokens, eventId, evento }),
+    body: JSON.stringify({ tokens, eventId, evento, contacto }),
   });
 
   if (!response) {
@@ -185,7 +193,17 @@ export async function actualizarEventoEnCalendar(eventId: string, evento: {
   return response;
 }
 
-export async function eliminarEventoEnCalendar(eventId: string): Promise<void> {
+export async function eliminarEventoEnCalendar(eventId: string, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
+}, evento?: {
+  summary?: string;
+  description?: string;
+  location?: string;
+  startDateTime?: string;
+  endDateTime?: string;
+}): Promise<void> {
   const tokens = obtenerTokensGuardados();
   if (!tokens) {
     throw new Error('No autenticado - por favor conecta tu Google Calendar');
@@ -193,6 +211,6 @@ export async function eliminarEventoEnCalendar(eventId: string): Promise<void> {
 
   await fetchAPI<void>('/calendar/delete-event', {
     method: 'DELETE',
-    body: JSON.stringify({ tokens, eventId }),
+    body: JSON.stringify({ tokens, eventId, contacto, evento }),
   });
 }
