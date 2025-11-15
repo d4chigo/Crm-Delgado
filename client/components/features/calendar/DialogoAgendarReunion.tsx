@@ -61,15 +61,32 @@ export function DialogoAgendarReunion({
       setDescripcion(eventoExistente.description || '')
       setUbicacion(eventoExistente.location || '')
       
-      // Extraer fecha y hora del datetime
-      const startDate = eventoExistente.startDateTime.split('T')[0]
-      const startTime = eventoExistente.startDateTime.split('T')[1].substring(0, 5)
-      const endTime = eventoExistente.endDateTime.split('T')[1].substring(0, 5)
-      
-      setFecha(startDate)
-      setHoraInicio(startTime)
-      setHoraFin(endTime)
-      setCorreoParticipante(eventoExistente.attendees?.[0] || contactoEmail || '')
+      // Extraer fecha y hora del datetime con validación
+      try {
+        const startDateTime = eventoExistente.startDateTime || ''
+        const endDateTime = eventoExistente.endDateTime || ''
+        
+        // Verificar que los datos existan antes de procesar
+        if (startDateTime && endDateTime) {
+          const startDateParts = startDateTime.split('T')
+          const endDateParts = endDateTime.split('T')
+          
+          if (startDateParts.length >= 2 && endDateParts.length >= 2) {
+            const startDate = startDateParts[0]
+            const startTime = startDateParts[1].substring(0, 5)
+            const endTime = endDateParts[1].substring(0, 5)
+            
+            setFecha(startDate)
+            setHoraInicio(startTime)
+            setHoraFin(endTime)
+          }
+        }
+        
+        setCorreoParticipante(eventoExistente.attendees?.[0] || contactoEmail || '')
+      } catch (error) {
+        console.error('Error al procesar fecha del evento:', error)
+        setCorreoParticipante(contactoEmail || '')
+      }
     }
   }, [eventoExistente, abierto, contactoEmail])
 
