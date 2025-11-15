@@ -68,6 +68,7 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
   // Estados para el modal de edición
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const [eventoEdicion, setEventoEdicion] = useState<Evento | null>(null);
+  const [diaExpandido, setDiaExpandido] = useState<string | null>(null);
 
   // Manejar callback OAuth
   useEffect(() => {
@@ -403,7 +404,12 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
                     </button>
                   ))}
                   {lista.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground">+{lista.length - 3} más</div>
+                    <button
+                      onClick={() => setDiaExpandido(d.toISOString().slice(0, 10))}
+                      className="text-[10px] text-[#FCBA00] font-semibold hover:underline cursor-pointer"
+                    >
+                      +{lista.length - 3} más
+                    </button>
                   )}
                 </div>
               </div>
@@ -431,6 +437,64 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
           }}
           onEventoCreado={recargarEventos}
         />
+      )}
+
+      {/* Modal para ver todos los eventos del día */}
+      {diaExpandido && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[#303030]">
+                  Eventos del {new Date(diaExpandido).toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </h2>
+                <button
+                  onClick={() => setDiaExpandido(null)}
+                  className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {eventos
+                  .filter(ev => ev.inicio.slice(0, 10) === diaExpandido)
+                  .sort((a, b) => a.inicio.localeCompare(b.inicio))
+                  .map(ev => (
+                    <button
+                      key={ev.id}
+                      onClick={() => {
+                        setEventoEdicion(ev);
+                        setDialogoAbierto(true);
+                        setDiaExpandido(null);
+                      }}
+                      className="w-full text-left p-3 rounded-lg bg-[#FCBA00]/10 hover:bg-[#FCBA00]/20 border border-[#FCBA00]/30 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[#303030] truncate">{ev.resumen}</p>
+                          <p className="text-xs text-gray-600">
+                            {formatearHora(ev.inicio)} - {formatearHora(ev.fin)}
+                          </p>
+                          {ev.ubicacion && (
+                            <p className="text-xs text-gray-500 mt-1">📍 {ev.ubicacion}</p>
+                          )}
+                        </div>
+                        <div className="text-[#FCBA00] text-lg">→</div>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+              
+              <button
+                onClick={() => setDiaExpandido(null)}
+                className="w-full mt-4 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </Card>
+        </div>
       )}
     </div>
   );
