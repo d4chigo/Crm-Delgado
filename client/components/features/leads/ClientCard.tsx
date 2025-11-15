@@ -150,7 +150,7 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => onScheduleMeeting?.(cliente.nombre || '', cliente.correo || '', cliente.telefono || undefined)}
+              onClick={() => onWhatsApp(cliente.telefono || '')}
               disabled={!cliente.telefono}
             >
               <MessageSquare className="h-4 w-4 mr-1" />

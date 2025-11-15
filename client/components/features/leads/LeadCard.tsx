@@ -150,11 +150,11 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => onScheduleMeeting(lead.nombre || '', lead.correo || '', lead.telefono || undefined)}
+              onClick={() => onWhatsApp(lead.telefono || '')}
               disabled={!lead.telefono}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
-              WhatsApp Cita
+              WhatsApp
             </Button>
             <Button
               variant="outline"
