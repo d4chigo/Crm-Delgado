@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Contacto, Cotizacion } from '@/types';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Phone, MapPin, Building2, Briefcase, DollarSign, Calendar, IdCard, Cake, FileText, Tag, TrendingUp, ChevronDown, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building2, Briefcase, DollarSign, Calendar, IdCard, Cake, FileText, Tag, TrendingUp, X } from 'lucide-react';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCotizaciones } from '@/hooks/useCotizaciones';
 import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones/ListaCotizacionesSoloLectura';
-import { DialogoCambiarEstado } from './DialogoCambiarEstado';
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 
 // Componente para mostrar un campo de información
@@ -34,7 +33,6 @@ interface DialogoDetallesLeadProps {
 
 export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: DialogoDetallesLeadProps) {
   const { cotizaciones, loading: loadingCotizaciones, cargarPorContacto } = useCotizaciones();
-  const [dialogoCambiarEstadoAbierto, setDialogoCambiarEstadoAbierto] = useState(false);
 
   useEffect(() => {
     if (abierto && lead) {
@@ -76,13 +74,6 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <Button
-              onClick={() => setDialogoCambiarEstadoAbierto(true)}
-              className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
-            >
-              <ChevronDown className="h-4 w-4 mr-2" />
-              Cambiar Estado
-            </Button>
-            <Button
               onClick={onCerrar}
               variant="ghost"
               size="sm"
@@ -95,63 +86,39 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
 
         {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-3 gap-0 divide-x divide-gray-200">
+          <div className="grid grid-cols-4 gap-0 divide-x divide-gray-200">
             
-            {/* Column 1 - Información Personal y Comercial */}
-            <div className="p-6 space-y-6">
-              {/* Sección Personal */}
+            {/* Column 1 - Información Personal */}
+            <div className="p-4 space-y-4">
               <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b-2 border-yellow-500">
-                  Información Personal
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-yellow-500">
+                  Personal
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <InfoField icon={Mail} label="Correo" value={lead.correo} color="text-blue-500" />
                   <InfoField icon={Phone} label="Teléfono" value={lead.telefono} color="text-green-500" />
                   <InfoField icon={IdCard} label="DNI" value={lead.dni} color="text-indigo-500" />
-                  <InfoField icon={MapPin} label="Dirección" value={lead.direccion} color="text-red-500" />
                   <InfoField icon={MapPin} label="Ciudad" value={lead.ciudad} color="text-orange-500" />
                   <InfoField 
-                    icon={MapPin} 
-                    label="Departamento" 
-                    value={lead.departamento} 
-                    color="text-teal-500" 
-                  />
-                  <InfoField 
-                    icon={MapPin} 
-                    label="Provincia" 
-                    value={lead.provincia} 
-                    color="text-cyan-500" 
-                  />
-                  <InfoField 
-                    icon={MapPin} 
-                    label="Distrito" 
-                    value={lead.distrito} 
-                    color="text-sky-500" 
-                  />
-                  <InfoField 
                     icon={Cake} 
-                    label="Fecha de Nacimiento" 
+                    label="Nacimiento" 
                     value={lead.fechaNacimiento 
-                      ? new Date(lead.fechaNacimiento).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })
+                      ? new Date(lead.fechaNacimiento).toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' })
                       : undefined}
                     color="text-pink-500"
                   />
-                  <InfoField icon={Calendar} label="Edad" value={lead.edad?.toString()} color="text-purple-500" />
-                  <InfoField 
-                    icon={User} 
-                    label="Sexo" 
-                    value={lead.sexo} 
-                    color="text-violet-500" 
-                  />
+                  <InfoField icon={User} label="Edad" value={lead.edad?.toString()} color="text-purple-500" />
                 </div>
               </section>
+            </div>
 
-              {/* Sección Comercial */}
+            {/* Column 2 - Información Comercial */}
+            <div className="p-4 space-y-4">
               <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b-2 border-blue-500">
-                  Información Comercial
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-blue-500">
+                  Comercial
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <InfoField icon={Building2} label="Empresa" value={lead.empresa} color="text-yellow-600" />
                   <InfoField icon={Briefcase} label="Cargo" value={lead.cargo} color="text-slate-600" />
                   <InfoField 
@@ -164,18 +131,20 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
                   <InfoField icon={FileText} label="Intereses" value={lead.intereses} color="text-purple-600" />
                 </div>
               </section>
+            </div>
 
-              {/* Sección de Seguimiento */}
+            {/* Column 3 - Seguimiento y Etiquetas */}
+            <div className="p-4 space-y-4 bg-gray-50">
               <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b-2 border-green-500">
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-green-500">
                   Seguimiento
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <InfoField 
                     icon={Calendar} 
-                    label="Próximo Seguimiento" 
+                    label="Próximo" 
                     value={lead.fechaSeguimiento 
-                      ? new Date(lead.fechaSeguimiento).toLocaleDateString('es-PE')
+                      ? new Date(lead.fechaSeguimiento).toLocaleDateString('es-PE', { month: '2-digit', day: '2-digit' })
                       : undefined}
                     color="text-green-600"
                   />
@@ -185,27 +154,15 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
                     value={lead.probabilidad !== undefined ? `${lead.probabilidad}%` : undefined}
                     color="text-blue-600"
                   />
-                  <InfoField 
-                    icon={Calendar} 
-                    label="Fecha de Conversión" 
-                    value={lead.fechaConversion 
-                      ? new Date(lead.fechaConversion).toLocaleDateString('es-PE')
-                      : undefined}
-                    color="text-indigo-600"
-                  />
                 </div>
               </section>
-            </div>
 
-            {/* Column 2 - Etiquetas y Notas */}
-            <div className="p-6 space-y-6 bg-gray-50">
-              {/* Etiquetas */}
               <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-amber-500">
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-amber-500">
                   Etiquetas
                 </h2>
                 {lead.etiquetas && lead.etiquetas.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     {lead.etiquetas.map(et => (
                       <Badge
                         key={et.etiqueta.id}
@@ -216,49 +173,46 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
                           border: `1px solid ${et.etiqueta.color}`
                         }}
                       >
-                        {et.etiqueta.icono && <span className="mr-1">{et.etiqueta.icono}</span>}
+                        {et.etiqueta.icono && <span className="mr-0.5">{et.etiqueta.icono}</span>}
                         {et.etiqueta.nombre}
                       </Badge>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 italic">No hay etiquetas.</p>
+                  <p className="text-xs text-gray-500 italic">Sin etiquetas</p>
                 )}
-              </section>
-
-              {/* Notas */}
-              <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-amber-500">
-                  Notas
-                </h2>
-                <div className="bg-white p-3 rounded border border-gray-200 min-h-24">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-                    {lead.notas || 'No hay notas.'}
-                  </p>
-                </div>
-              </section>
-
-              {/* Metadatos */}
-              <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-amber-500">
-                  Información del Sistema
-                </h2>
-                <div className="text-xs space-y-2 text-gray-600">
-                  <p><span className="font-semibold">Tipo:</span> {lead.tipo}</p>
-                  <p><span className="font-semibold">Creado:</span> {new Date(lead.creadoEn).toLocaleDateString('es-PE')}</p>
-                  <p><span className="font-semibold">Actualizado:</span> {new Date(lead.actualizadoEn).toLocaleDateString('es-PE')}</p>
-                  <p><span className="font-semibold">ID:</span> <span className="font-mono text-xs">{lead.id}</span></p>
-                </div>
               </section>
             </div>
 
-            {/* Column 3 - Cotizaciones */}
-            <div className="p-6 space-y-4 bg-white">
+            {/* Column 4 - Notas y Sistema */}
+            <div className="p-4 space-y-4 bg-white">
               <section>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b-2 border-violet-500">
-                  Historial de Cotizaciones
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 pb-2 border-b-2 border-violet-500">
+                  Notas
                 </h2>
-                <div className="bg-gray-50 rounded p-3">
+                <div className="bg-gray-50 p-2 rounded border border-gray-200 min-h-24 text-xs text-gray-700">
+                  {lead.notas || 'Sin notas'}
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 pb-2 border-b-2 border-amber-500">
+                  Sistema
+                </h2>
+                <div className="text-xs space-y-1 text-gray-600">
+                  <p><span className="font-semibold">Tipo:</span> {lead.tipo}</p>
+                  <p><span className="font-semibold">Estado:</span> {lead.estadoLead || '-'}</p>
+                  <p><span className="font-semibold">Prioridad:</span> {lead.prioridad || '-'}</p>
+                  <p><span className="font-semibold">Creado:</span> {new Date(lead.creadoEn).toLocaleDateString('es-PE', { month: '2-digit', day: '2-digit' })}</p>
+                  <p><span className="font-semibold">Actualizado:</span> {new Date(lead.actualizadoEn).toLocaleDateString('es-PE', { month: '2-digit', day: '2-digit' })}</p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2 pb-2 border-b-2 border-violet-500">
+                  Cotizaciones
+                </h2>
+                <div className="bg-gray-50 rounded p-2 text-xs">
                   <ListaCotizacionesSoloLectura cotizaciones={cotizaciones} loading={loadingCotizaciones} />
                 </div>
               </section>
@@ -266,20 +220,6 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
           </div>
         </div>
 
-        {/* Dialog para cambiar estado */}
-        {lead && (
-          <DialogoCambiarEstado
-            abierto={dialogoCambiarEstadoAbierto}
-            onCerrar={() => setDialogoCambiarEstadoAbierto(false)}
-            leadId={lead.id}
-            estadoActual={lead.estadoLead}
-            nombreLead={`${lead.nombre} ${lead.apellido || ''}`}
-            onActualizado={() => {
-              onActualizado?.();
-              setDialogoCambiarEstadoAbierto(false);
-            }}
-          />
-        )}
       </DialogContent>
     </Dialog>
   );
