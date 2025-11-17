@@ -3,7 +3,8 @@ import {
   obtenerOportunidades, 
   obtenerEstadisticasOportunidades,
   cambiarEtapaOportunidad,
-  crearOportunidad 
+  crearOportunidad,
+  eliminarOportunidad as apiEliminarOportunidad
 } from '@/services/api/oportunidades'
 import type { 
   OportunidadCliente, 
@@ -83,6 +84,23 @@ export function useOportunidades() {
     }
   }
 
+  const eliminarOportunidadLocal = async (id: string) => {
+    try {
+      await apiEliminarOportunidad(id)
+      
+      // Eliminar localmente
+      setOportunidades(prev => prev.filter(op => op.id !== id))
+      
+      // Recargar estadísticas
+      await cargarEstadisticas()
+      
+      return true
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar oportunidad')
+      throw err
+    }
+  }
+
   useEffect(() => {
     cargarOportunidades()
     cargarEstadisticas()
@@ -97,6 +115,7 @@ export function useOportunidades() {
     cargarEstadisticas,
     moverOportunidad,
     crearNuevaOportunidad,
+    eliminarOportunidad: eliminarOportunidadLocal,
     refrescar: () => {
       cargarOportunidades()
       cargarEstadisticas()

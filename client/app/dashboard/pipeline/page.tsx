@@ -43,7 +43,7 @@ const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = 
 
 export default function PaginaPipeline() {
   const { toast } = useToast()
-  const { oportunidades, estadisticas, cargando, error, moverOportunidad, refrescar } = useOportunidades()
+  const { oportunidades, estadisticas, cargando, error, moverOportunidad, eliminarOportunidad, refrescar } = useOportunidades()
   
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>("2025")
@@ -203,36 +203,12 @@ export default function PaginaPipeline() {
     }
 
     try {
-      const token = localStorage.getItem('crm_token');
-      if (!token) {
-        toast({ title: 'Sesión expirada', description: 'Por favor inicia sesión nuevamente', variant: 'destructive' });
-        window.location.href = '/login';
-        return;
-      }
-
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/oportunidades/${oportunidadId}`;
-      console.log('📡 DELETE request a:', url);
-
-      const respuesta = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('📊 Response status:', respuesta.status);
-
-      if (!respuesta.ok) {
-        const error = await respuesta.json();
-        console.error('❌ Error response:', error);
-        throw new Error(error.error || 'Error al eliminar oportunidad');
-      }
-
+      console.log('📡 Llamando a eliminarOportunidad del hook');
+      await eliminarOportunidad(oportunidadId);
+      
       console.log('✅ Oportunidad eliminada correctamente');
       toast({ title: 'Éxito', description: 'Oportunidad eliminada correctamente' });
       setSelectedDeal(null);
-      await refrescar();
     } catch (error: any) {
       console.error('❌ Error al eliminar:', error);
       toast({ title: 'Error', description: error.message || 'No se pudo eliminar la oportunidad', variant: 'destructive' });
