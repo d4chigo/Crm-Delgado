@@ -54,6 +54,17 @@ router.post(
 // ==================== RUTAS ESPECÍFICAS CON :id ==================
 // DEBEN IR ANTES DE LAS RUTAS GENÉRICAS /:id
 
+// DEBUG: Endpoint de prueba
+router.get(
+  '/debug/test',
+  (req: any, res: any) => {
+    res.json({
+      usuario: req.usuario,
+      headers: req.headers
+    });
+  }
+);
+
 // POST /api/contactos/:id/agregar-pipeline - Agregar lead al pipeline
 router.post(
   '/:id/agregar-pipeline',
