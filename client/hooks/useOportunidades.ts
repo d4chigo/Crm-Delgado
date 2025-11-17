@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { 
   obtenerOportunidades, 
   obtenerEstadisticasOportunidades,
-  cambiarEtapaOportunidad 
+  cambiarEtapaOportunidad,
+  crearOportunidad 
 } from '@/services/api/oportunidades'
 import type { 
   OportunidadCliente, 
   EstadisticasOportunidad,
   EtapaPipeline,
-  FiltrosOportunidad 
+  FiltrosOportunidad,
+  CrearOportunidadDTO
 } from '@/types/oportunidad.types'
 
 export function useOportunidades() {
@@ -64,6 +66,23 @@ export function useOportunidades() {
     }
   }
 
+  const crearNuevaOportunidad = async (datos: CrearOportunidadDTO) => {
+    try {
+      const nuevaOportunidad = await crearOportunidad(datos)
+      
+      // Agregar localmente
+      setOportunidades(prev => [...prev, nuevaOportunidad])
+      
+      // Recargar estadísticas
+      await cargarEstadisticas()
+      
+      return nuevaOportunidad
+    } catch (err: any) {
+      setError(err.message || 'Error al crear oportunidad')
+      throw err
+    }
+  }
+
   useEffect(() => {
     cargarOportunidades()
     cargarEstadisticas()
@@ -77,6 +96,7 @@ export function useOportunidades() {
     cargarOportunidades,
     cargarEstadisticas,
     moverOportunidad,
+    crearNuevaOportunidad,
     refrescar: () => {
       cargarOportunidades()
       cargarEstadisticas()

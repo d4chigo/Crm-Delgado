@@ -93,3 +93,33 @@ export async function obtenerEstadisticasOportunidades(): Promise<EstadisticasOp
 export async function obtenerOportunidadesDeCliente(clienteId: string): Promise<OportunidadCliente[]> {
   return fetchAPI<OportunidadCliente[]>(`/oportunidades/cliente/${clienteId}`);
 }
+
+/**
+ * Actualizar etapa de oportunidad por leadId (sincronización con estado del lead)
+ */
+export async function actualizarEtapaOportunidadPorLead(
+  leadId: string,
+  estadoLead: string
+): Promise<OportunidadCliente | null> {
+  try {
+    // Mapear estados del lead a etapas del pipeline
+    const mapeoEstados: { [key: string]: EtapaPipeline } = {
+      'CALIFICADO': 'CONTACTO',
+      'DESCALIFICADO': 'PERDIDO',
+      'NEGOCIACION': 'NEGOCIACION',
+      'PROPUESTA': 'CIERRE'
+    };
+
+    const etapa = mapeoEstados[estadoLead];
+    if (!etapa) return null;
+
+    // Llamar endpoint que actualiza la oportunidad por leadId
+    return fetchAPI<OportunidadCliente>(`/oportunidades/por-lead/${leadId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ etapa })
+    });
+  } catch (error) {
+    console.error('Error al actualizar oportunidad:', error);
+    return null;
+  }
+}

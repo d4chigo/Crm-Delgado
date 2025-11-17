@@ -404,6 +404,37 @@ export class ContactoController {
       respuestaError(res, error.message || 'Error al importar contactos desde Google', 500);
     }
   }
+
+  /**
+   * POST /api/contactos/:id/agregar-pipeline
+   * Agregar un lead al pipeline creando una oportunidad
+   */
+  async agregarAlPipeline(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId } = req.params;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!leadId) {
+        respuestaError(res, 'ID del lead requerido', 400);
+        return;
+      }
+
+      // Crear la oportunidad
+      const oportunidad = await contactoService.agregarAlPipeline(leadId, usuarioId);
+      respuestaExito(res, oportunidad, 'Lead agregado al pipeline correctamente');
+    } catch (error: any) {
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al agregar al pipeline', 500);
+    }
+  }
 }
 
 export default new ContactoController();

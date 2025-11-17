@@ -358,6 +358,59 @@ export class OportunidadService {
 
     return oportunidades;
   }
+
+  /**
+   * Actualizar oportunidad por leadId (sincronización con estado del lead)
+   */
+  async actualizarOportunidadPorLead(leadId: string, etapa: EtapaPipeline, usuarioId: string) {
+    // Buscar la oportunidad asociada a este lead
+    const oportunidad = await prisma.oportunidadCliente.findFirst({
+      where: {
+        clienteId: leadId,
+        usuarioId
+      },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        }
+      }
+    });
+
+    if (!oportunidad) {
+      return null;
+    }
+
+    // Actualizar la etapa
+    const oportunidadActualizada = await prisma.oportunidadCliente.update({
+      where: { id: oportunidad.id },
+      data: {
+        etapa,
+        ultimaActividad: new Date().toISOString(),
+        notas: (oportunidad.notas || '') + `\n- Sincronizado a ${etapa} el ${new Date().toLocaleDateString('es-PE')}`
+      },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        }
+      }
+    });
+
+    return oportunidadActualizada;
+  }
 }
 
 export default new OportunidadService();

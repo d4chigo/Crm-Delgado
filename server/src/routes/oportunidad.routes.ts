@@ -19,6 +19,12 @@ router.get(
   oportunidadController.obtenerOportunidadesDeCliente.bind(oportunidadController)
 );
 
+// PATCH /api/oportunidades/por-lead/:leadId - Actualizar oportunidad por leadId
+router.patch(
+  '/por-lead/:leadId',
+  oportunidadController.actualizarOportunidadPorLead.bind(oportunidadController)
+);
+
 // GET /api/oportunidades - Obtener todas las oportunidades
 router.get(
   '/',

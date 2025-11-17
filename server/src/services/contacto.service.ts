@@ -768,6 +768,59 @@ export class ContactoService {
       throw new Error(`No se pudieron importar los contactos: ${error.message}`);
     }
   }
+
+  /**
+   * Agregar un lead al pipeline (crear una oportunidad)
+   */
+  async agregarAlPipeline(leadId: string, usuarioId: string) {
+    // Verificar que el contacto existe
+    const contacto = await prisma.contacto.findUnique({
+      where: { id: leadId }
+    });
+
+    if (!contacto) {
+      throw new Error('El lead no fue encontrado');
+    }
+
+    if (contacto.usuarioId !== usuarioId) {
+      throw new Error('No tienes permiso para modificar este lead');
+    }
+
+    // Verificar si ya existe una oportunidad para este lead
+    const oportunidadExistente = await prisma.oportunidad.findFirst({
+      where: { clienteId: leadId }
+    });
+
+    if (oportunidadExistente) {
+      throw new Error('Este lead ya está en el pipeline');
+    }
+
+    // Crear la oportunidad
+    const oportunidad = await prisma.oportunidad.create({
+      data: {
+        clienteId: leadId,
+        titulo: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
+        etapa: 'LEAD',
+        usuarioId: usuarioId,
+        ultimaActividad: new Date().toISOString(),
+        notas: `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
+      },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        }
+      }
+    });
+
+    return oportunidad;
+  }
 }
 
 export default new ContactoService();

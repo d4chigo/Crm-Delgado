@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
+import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 
 // Mapeo de etapas para el pipeline
 const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
@@ -52,7 +53,6 @@ export default function PaginaPipeline() {
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
-  const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
@@ -145,16 +145,29 @@ export default function PaginaPipeline() {
     return "text-red-600 bg-red-50"
   }
 
-  const handleWhatsApp = (telefono: string, nombre: string) => {
+  const handleWhatsApp = useCallback((telefono: string, nombre: string) => {
     console.log('[WA] handler called with', telefono, nombre)
     if (!telefono) {
       toast({ title: 'Teléfono no disponible', description: 'El contacto no tiene teléfono registrado.' })
       return
     }
     setWhatsappTelefono(telefono)
-    setWhatsappMensaje(`Hola ${nombre}, te contacto para hacer seguimiento.`)
     setDialogoWhatsappAbierto(true)
-  };
+  }, [toast])
+
+  const handleEnviarWhatsApp = useCallback((mensajeLocal: string) => {
+    let raw = (whatsappTelefono || "").replace(/\D/g, "")
+    if (raw.length === 9) raw = `51${raw}`
+    if (!raw) {
+      toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
+      return
+    }
+    const url = `https://wa.me/${raw}?text=${encodeURIComponent(mensajeLocal)}`
+    try {
+      window.open(url, "_blank")
+    } catch {}
+    setDialogoWhatsappAbierto(false)
+  }, [whatsappTelefono, toast])
 
   const handleScheduleMeeting = (nombre: string, correo: string) => {
     const asunto = `Reunión con ${nombre}`;
@@ -554,43 +567,14 @@ export default function PaginaPipeline() {
       )}
 
       {/* Modal para enviar WhatsApp */}
-      <Dialog open={dialogoWhatsappAbierto} onOpenChange={setDialogoWhatsappAbierto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              Enviar mensaje por WhatsApp
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="block text-sm text-muted-foreground">Mensaje</label>
-            <textarea className="w-full border rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00]" rows={6} value={whatsappMensaje} onChange={(e) => setWhatsappMensaje(e.target.value)} />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => {
-                navigator.clipboard.writeText(whatsappMensaje)
-                toast({ title: "Copiado", description: "Mensaje copiado al portapapeles." })
-              }}>
-                Copiar
-              </Button>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => {
-                let raw = (whatsappTelefono || "").replace(/\D/g, "")
-                if (raw.length === 9) raw = `51${raw}`
-                if (!raw) {
-                  toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
-                  return
-                }
-                const url = `https://wa.me/${raw}?text=${encodeURIComponent(whatsappMensaje)}`
-                try {
-                  window.open(url, "_blank")
-                } catch {}
-                setDialogoWhatsappAbierto(false)
-              }}>
-                Abrir WhatsApp
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DialogoWhatsApp
+        abierto={dialogoWhatsappAbierto}
+        onCerrar={() => setDialogoWhatsappAbierto(false)}
+        mensajeInicial="Hola, te contacto para hacer seguimiento."
+        telefono={whatsappTelefono}
+        titulo="Enviar mensaje por WhatsApp"
+        onEnviar={handleEnviarWhatsApp}
+      />
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

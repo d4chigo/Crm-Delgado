@@ -207,6 +207,43 @@ export class OportunidadController {
       respuestaError(res, error.message || 'Error al obtener oportunidades del cliente', 500);
     }
   }
+
+  /**
+   * PATCH /api/oportunidades/por-lead/:leadId
+   * Actualizar oportunidad por leadId (sincronización con estado del lead)
+   */
+  async actualizarOportunidadPorLead(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { leadId } = req.params;
+      const { etapa } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!leadId) {
+        respuestaError(res, 'ID del lead requerido', 400);
+        return;
+      }
+
+      if (!etapa) {
+        respuestaError(res, 'Etapa es requerida', 400);
+        return;
+      }
+
+      const oportunidad = await oportunidadService.actualizarOportunidadPorLead(leadId, etapa, usuarioId);
+      if (!oportunidad) {
+        respuestaError(res, 'Oportunidad no encontrada para este lead', 404);
+        return;
+      }
+
+      respuestaExito(res, oportunidad, 'Oportunidad actualizada correctamente');
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al actualizar oportunidad', 500);
+    }
+  }
 }
 
 export default new OportunidadController();

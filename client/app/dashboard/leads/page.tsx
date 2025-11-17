@@ -25,6 +25,7 @@ import googleAuthService from "@/services/api/google-auth.service"
 import contactoService from "@/services/api/contacto.service"
 import dynamic from "next/dynamic"
 import type { Contacto } from "@/types/contacto.types"
+import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
@@ -51,7 +52,6 @@ export default function PaginaLeads() {
   const [leadAEliminar, setLeadAEliminar] = useState<Lead | null>(null)
   const [eliminando, setEliminando] = useState(false)
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
-  const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
@@ -252,9 +252,34 @@ export default function PaginaLeads() {
       return
     }
     setWhatsappTelefono(telefono)
-    setWhatsappMensaje("")
     setDialogoWhatsappAbierto(true)
   }
+
+  const handleEnviarWhatsApp = useCallback((mensajeLocal: string) => {
+    let raw = (whatsappTelefono || "").replace(/\D/g, "")
+    if (raw.length === 9) raw = `51${raw}`
+    if (!raw) {
+      toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
+      return
+    }
+    
+    // Actualizar estado a CONTACTADO si es NUEVO
+    const leadActual = leads.find(l => l.telefono === whatsappTelefono)
+    if (leadActual && leadActual.estadoLead === 'NUEVO') {
+      leadService.actualizarLead(leadActual.id, { estadoLead: 'CONTACTADO' }).catch(error => {
+        console.error('Error al actualizar estado:', error)
+      })
+    }
+    
+    const url = `https://wa.me/${raw}?text=${encodeURIComponent(mensajeLocal)}`
+    try {
+      window.open(url, "_blank")
+    } catch {}
+    
+    // Recargar después de actualizar
+    setTimeout(() => cargarLeads(), 500)
+    setDialogoWhatsappAbierto(false)
+  }, [whatsappTelefono, leads, cargarLeads, toast])
 
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
     // Encontrar el lead actual para obtener más información
@@ -493,57 +518,14 @@ export default function PaginaLeads() {
         />
       )}
 
-      <Dialog open={dialogoWhatsappAbierto} onOpenChange={setDialogoWhatsappAbierto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Enviar confirmación por WhatsApp
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="block text-sm text-muted-foreground">Mensaje</label>
-            <textarea className="w-full border rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00]" rows={6} value={whatsappMensaje} onChange={(e) => setWhatsappMensaje(e.target.value)} />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => {
-                navigator.clipboard.writeText(whatsappMensaje)
-                toast({ title: "Copiado", description: "Mensaje copiado al portapapeles." })
-              }}>
-                Copiar
-              </Button>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={async () => {
-                let raw = (whatsappTelefono || "").replace(/\D/g, "")
-                if (raw.length === 9) raw = `51${raw}`
-                if (!raw) {
-                  toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
-                  return
-                }
-                
-                // Actualizar estado a CONTACTADO si es NUEVO
-                const leadActual = leads.find(l => l.telefono === whatsappTelefono)
-                if (leadActual && leadActual.estadoLead === 'NUEVO') {
-                  try {
-                    await leadService.actualizarLead(leadActual.id, { estadoLead: 'CONTACTADO' })
-                  } catch (error) {
-                    console.error('Error al actualizar estado:', error)
-                  }
-                }
-                
-                const url = `https://wa.me/${raw}?text=${encodeURIComponent(whatsappMensaje)}`
-                try {
-                  window.open(url, "_blank")
-                } catch {}
-                
-                // Recargar después de actualizar
-                setTimeout(() => cargarLeads(), 500)
-                setDialogoWhatsappAbierto(false)
-              }}>
-                Abrir WhatsApp
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DialogoWhatsApp
+        abierto={dialogoWhatsappAbierto}
+        onCerrar={() => setDialogoWhatsappAbierto(false)}
+        mensajeInicial="Hola, te contacto para hacer seguimiento."
+        telefono={whatsappTelefono}
+        titulo="Enviar confirmación por WhatsApp"
+        onEnviar={handleEnviarWhatsApp}
+      />
 
       {leadParaAgendar && (
         <DialogoAgendarReunion

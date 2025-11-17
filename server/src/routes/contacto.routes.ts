@@ -106,4 +106,10 @@ router.delete(
   contactoController.desasociarCliente.bind(contactoController)
 );
 
+// POST /api/contactos/:id/agregar-pipeline - Agregar lead al pipeline
+router.post(
+  '/:id/agregar-pipeline',
+  contactoController.agregarAlPipeline.bind(contactoController)
+);
+
 export default router;
