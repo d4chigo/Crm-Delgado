@@ -6,6 +6,9 @@
 // Tipos comunes
 export type * from './comunes.types'
 
+// Tipos de contactos
+export type * from './contacto.types'
+
 // Tipos de autenticación
 export type * from './autenticacion.types'
 
