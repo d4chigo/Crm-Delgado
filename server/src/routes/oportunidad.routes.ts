@@ -37,6 +37,12 @@ router.post(
   oportunidadController.crearOportunidad.bind(oportunidadController)
 );
 
+// GET /api/oportunidades - Obtener todas las oportunidades
+router.get(
+  '/',
+  oportunidadController.obtenerOportunidades.bind(oportunidadController)
+);
+
 // GET /api/oportunidades/:id - Obtener una oportunidad
 router.get(
   '/:id',
