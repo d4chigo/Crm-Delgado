@@ -773,10 +773,14 @@ export class ContactoService {
    * Agregar un lead al pipeline (crear una oportunidad)
    */
   async agregarAlPipeline(leadId: string, usuarioId: string) {
+    console.log('[ContactoService] agregarAlPipeline called with:', { leadId, usuarioId });
+    
     // Verificar que el contacto existe
     const contacto = await prisma.contacto.findUnique({
       where: { id: leadId }
     });
+
+    console.log('[ContactoService] contacto encontrado:', contacto?.id);
 
     if (!contacto) {
       throw new Error('El lead no fue encontrado');
@@ -796,6 +800,13 @@ export class ContactoService {
     }
 
     // Crear la oportunidad
+    console.log('[ContactoService] creando oportunidad con datos:', {
+      clienteId: leadId,
+      titulo: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
+      etapa: 'LEAD',
+      usuarioId: usuarioId
+    });
+
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
         clienteId: leadId,
@@ -819,6 +830,7 @@ export class ContactoService {
       }
     });
 
+    console.log('[ContactoService] oportunidad creada:', oportunidad?.id);
     return oportunidad;
   }
 }

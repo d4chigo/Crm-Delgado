@@ -414,20 +414,28 @@ export class ContactoController {
       const usuarioId = req.usuario?.usuarioId;
       const { id: leadId } = req.params;
 
+      console.log('[ContactoController] agregarAlPipeline called:', { usuarioId, leadId });
+
       if (!usuarioId) {
+        console.log('[ContactoController] usuarioId no encontrado');
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       if (!leadId) {
+        console.log('[ContactoController] leadId no encontrado');
         respuestaError(res, 'ID del lead requerido', 400);
         return;
       }
 
       // Crear la oportunidad
+      console.log('[ContactoController] llamando a contactoService.agregarAlPipeline');
       const oportunidad = await contactoService.agregarAlPipeline(leadId, usuarioId);
+      console.log('[ContactoController] oportunidad creada exitosamente');
       respuestaExito(res, oportunidad, 'Lead agregado al pipeline correctamente');
     } catch (error: any) {
+      console.error('[ContactoController] Error en agregarAlPipeline:', error.message);
+      console.error('[ContactoController] Stack:', error.stack);
       if (error.message.includes('no encontrado')) {
         respuestaError(res, error.message, 404);
         return;
