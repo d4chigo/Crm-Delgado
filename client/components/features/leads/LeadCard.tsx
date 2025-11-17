@@ -18,6 +18,7 @@ interface LeadCardProps {
   onScheduleMeeting: (nombre: string, correo: string, telefono?: string) => void
   onPipeline?: (lead: Contacto) => void
   onEliminar?: (lead: Contacto) => void
+  enPipeline?: boolean
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -44,7 +45,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onEliminar }: LeadCardProps) {
+export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onEliminar, enPipeline }: LeadCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
       {/* Header con nombre y acciones rápidas */}
@@ -263,12 +264,13 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                     variant="outline"
                     size="sm"
                     onClick={() => onPipeline(lead)}
-                    className="border-purple-300 text-purple-600 hover:bg-purple-50 h-8 text-xs"
+                    disabled={enPipeline}
+                    className={enPipeline ? "border-gray-300 text-gray-400 cursor-not-allowed h-8 text-xs" : "border-purple-300 text-purple-600 hover:bg-purple-50 h-8 text-xs"}
                   >
                     <TrendingUp className="h-3 w-3" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Pipeline</TooltipContent>
+                <TooltipContent side="bottom">{enPipeline ? "En Pipeline" : "Agregar al Pipeline"}</TooltipContent>
               </Tooltip>
             )}
             {onEliminar && (

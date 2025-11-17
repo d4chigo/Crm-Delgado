@@ -772,8 +772,19 @@ export class ContactoService {
   /**
    * Agregar un lead al pipeline (crear una oportunidad)
    */
-  async agregarAlPipeline(leadId: string, usuarioId: string) {
-    console.log('[ContactoService] agregarAlPipeline called with:', { leadId, usuarioId });
+  async agregarAlPipeline(
+    leadId: string,
+    usuarioId: string,
+    datosOportunidad?: {
+      titulo?: string;
+      etapa?: string;
+      valor?: number;
+      probabilidad?: number;
+      proximaAccion?: string;
+      notas?: string;
+    }
+  ) {
+    console.log('[ContactoService] agregarAlPipeline called with:', { leadId, usuarioId, datosOportunidad });
     
     // Verificar que el contacto existe
     const contacto = await prisma.contacto.findUnique({
@@ -800,21 +811,29 @@ export class ContactoService {
     }
 
     // Crear la oportunidad
+    const titulo = datosOportunidad?.titulo || `${contacto.nombre} ${contacto.apellido || ''}`.trim();
+    const etapa = datosOportunidad?.etapa || 'LEAD';
+    
     console.log('[ContactoService] creando oportunidad con datos:', {
       clienteId: leadId,
-      titulo: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
-      etapa: 'LEAD',
+      titulo,
+      etapa,
       usuarioId: usuarioId
     });
 
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
         clienteId: leadId,
-        titulo: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
-        etapa: 'LEAD',
+        titulo,
+        etapa,
+        valor: datosOportunidad?.valor,
+        probabilidad: datosOportunidad?.probabilidad || 25,
+        proximaAccion: datosOportunidad?.proximaAccion,
         usuarioId: usuarioId,
         ultimaActividad: new Date(),
-        notas: `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
+        notas: datosOportunidad?.notas
+          ? `${datosOportunidad.notas}\n\nAgregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
+          : `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
       },
       include: {
         cliente: {

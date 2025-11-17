@@ -280,18 +280,23 @@ export class OportunidadService {
    * Eliminar oportunidad
    */
   async eliminarOportunidad(id: string, usuarioId: string) {
+    console.log('🔍 Buscando oportunidad para eliminar:', { id, usuarioId });
+    
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
       where: { id, usuarioId }
     });
 
     if (!oportunidadExistente) {
+      console.warn('⚠️ Oportunidad no encontrada:', { id, usuarioId });
       throw new Error('Oportunidad no encontrada');
     }
 
+    console.log('🗑️ Eliminando oportunidad:', id);
     await prisma.oportunidadCliente.delete({
       where: { id }
     });
 
+    console.log('✅ Oportunidad eliminada exitosamente:', id);
     return { success: true };
   }
 

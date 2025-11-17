@@ -413,8 +413,9 @@ export class ContactoController {
     try {
       const usuarioId = req.usuario?.usuarioId;
       const { id: leadId } = req.params;
+      const datosOportunidad = req.body;
 
-      console.log('[ContactoController] agregarAlPipeline called:', { usuarioId, leadId });
+      console.log('[ContactoController] agregarAlPipeline called:', { usuarioId, leadId, datosOportunidad });
 
       if (!usuarioId) {
         console.log('[ContactoController] usuarioId no encontrado');
@@ -430,7 +431,7 @@ export class ContactoController {
 
       // Crear la oportunidad
       console.log('[ContactoController] llamando a contactoService.agregarAlPipeline');
-      const oportunidad = await contactoService.agregarAlPipeline(leadId, usuarioId);
+      const oportunidad = await contactoService.agregarAlPipeline(leadId, usuarioId, datosOportunidad);
       console.log('[ContactoController] oportunidad creada exitosamente');
       respuestaExito(res, oportunidad, 'Lead agregado al pipeline correctamente');
     } catch (error: any) {

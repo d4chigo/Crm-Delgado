@@ -23,9 +23,11 @@ import { FILTROS_LEADS } from "@/types/estadoLead.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import googleAuthService from "@/services/api/google-auth.service"
 import contactoService from "@/services/api/contacto.service"
+import { useOportunidades } from "@/hooks/useOportunidades"
 import dynamic from "next/dynamic"
 import type { Contacto } from "@/types/contacto.types"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
+import { DialogoCrearOportunidad, type DatosOportunidad } from "@/components/features/opportunities/DialogoCrearOportunidad"
 
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
@@ -57,7 +59,10 @@ export default function PaginaLeads() {
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [leadParaAgendar, setLeadParaAgendar] = useState<Lead | null>(null)
   const [agregandonPipeline, setAgregandoPipeline] = useState<string | null>(null)
+  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [leadParaOportunidad, setLeadParaOportunidad] = useState<Lead | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { oportunidades } = useOportunidades()
 
   const cargarLeads = useCallback(async (filtros?: any) => {
     setEstaCargando(true)
@@ -113,6 +118,10 @@ export default function PaginaLeads() {
       }
     }
   }, [busqueda, estadoFiltro, cargarLeads])
+
+  const leadsEnPipeline = useMemo(() => {
+    return new Set(oportunidades?.map(o => o.clienteId) || [])
+  }, [oportunidades])
 
   const leadsFiltrados = useMemo(() => {
     if (etiquetaFiltro !== "todas") {
@@ -291,7 +300,14 @@ export default function PaginaLeads() {
   }
 
   const handleAgregarAlPipeline = async (lead: Lead) => {
-    setAgregandoPipeline(lead.id)
+    setLeadParaOportunidad(lead)
+    setDialogoOportunidadAbierto(true)
+  }
+
+  const handleCrearOportunidad = async (datos: DatosOportunidad) => {
+    if (!leadParaOportunidad) return
+    
+    setAgregandoPipeline(leadParaOportunidad.id)
     try {
       const token = localStorage.getItem("crm_token")
       if (!token) {
@@ -300,13 +316,13 @@ export default function PaginaLeads() {
         return
       }
       
-      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${lead.id}/agregar-pipeline`, { 
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadParaOportunidad.id}/agregar-pipeline`, { 
         method: "POST", 
         headers: { 
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({})
+        body: JSON.stringify(datos)
       })
       
       if (respuesta.status === 401) {
@@ -320,7 +336,8 @@ export default function PaginaLeads() {
       const resultado = await respuesta.json()
       if (!respuesta.ok) throw new Error(resultado.mensaje || "Error al agregar al pipeline")
       
-      toast({ title: "Éxito", description: "Lead agregado al pipeline correctamente" })
+      toast({ title: "Éxito", description: "Oportunidad creada en el pipeline correctamente" })
+      setDialogoOportunidadAbierto(false)
       cargarLeads()
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "No se pudo agregar al pipeline", variant: "destructive" })
@@ -405,6 +422,7 @@ export default function PaginaLeads() {
                 <LeadCard
                   key={lead.id}
                   lead={lead}
+                  enPipeline={leadsEnPipeline.has(lead.id)}
                   isConverting={convirtiendoCliente === lead.id}
                   onVerDetalles={(l) => {
                     setLeadSeleccionado(l)
@@ -542,6 +560,17 @@ export default function PaginaLeads() {
           }}
         />
       )}
+
+      <DialogoCrearOportunidad
+        abierto={dialogoOportunidadAbierto}
+        onCerrar={() => {
+          setDialogoOportunidadAbierto(false)
+          setLeadParaOportunidad(null)
+        }}
+        lead={leadParaOportunidad}
+        onCrear={handleCrearOportunidad}
+        cargando={agregandonPipeline !== null}
+      />
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

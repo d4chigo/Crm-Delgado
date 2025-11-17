@@ -168,14 +168,18 @@ export class OportunidadController {
       const usuarioId = req.usuario?.usuarioId;
       const { id } = req.params;
 
+      console.log('🗑️ DELETE /oportunidades/:id', { id, usuarioId });
+
       if (!usuarioId) {
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       await oportunidadService.eliminarOportunidad(id, usuarioId);
+      console.log('✅ Oportunidad eliminada:', id);
       respuestaExito(res, null, 'Oportunidad eliminada exitosamente');
     } catch (error: any) {
+      console.error('❌ Error al eliminar oportunidad:', error.message);
       if (error.message.includes('no encontrada')) {
         respuestaError(res, error.message, 404);
         return;

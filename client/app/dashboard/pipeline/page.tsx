@@ -195,6 +195,50 @@ export default function PaginaPipeline() {
     }
   };
 
+  const handleEliminarOportunidad = async (oportunidadId: string) => {
+    console.log('🗑️ Intentando eliminar oportunidad:', oportunidadId);
+    
+    if (!confirm('¿Estás seguro de que deseas eliminar esta oportunidad?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('crm_token');
+      if (!token) {
+        toast({ title: 'Sesión expirada', description: 'Por favor inicia sesión nuevamente', variant: 'destructive' });
+        window.location.href = '/login';
+        return;
+      }
+
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/oportunidades/${oportunidadId}`;
+      console.log('📡 DELETE request a:', url);
+
+      const respuesta = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📊 Response status:', respuesta.status);
+
+      if (!respuesta.ok) {
+        const error = await respuesta.json();
+        console.error('❌ Error response:', error);
+        throw new Error(error.error || 'Error al eliminar oportunidad');
+      }
+
+      console.log('✅ Oportunidad eliminada correctamente');
+      toast({ title: 'Éxito', description: 'Oportunidad eliminada correctamente' });
+      setSelectedDeal(null);
+      await refrescar();
+    } catch (error: any) {
+      console.error('❌ Error al eliminar:', error);
+      toast({ title: 'Error', description: error.message || 'No se pudo eliminar la oportunidad', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -554,6 +598,15 @@ export default function PaginaPipeline() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    handleEliminarOportunidad(selectedDeal.id)
+                  }}
+                  className="flex-1"
+                >
+                  Eliminar
+                </Button>
                 <Button 
                   onClick={() => setSelectedDeal(null)}
                   className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"

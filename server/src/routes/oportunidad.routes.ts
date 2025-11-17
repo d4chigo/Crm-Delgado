@@ -13,28 +13,22 @@ router.get(
   oportunidadController.obtenerEstadisticas.bind(oportunidadController)
 );
 
-// GET /api/oportunidades/cliente/:clienteId - Obtener oportunidades de un cliente
-router.get(
-  '/cliente/:clienteId',
-  oportunidadController.obtenerOportunidadesDeCliente.bind(oportunidadController)
-);
-
 // PATCH /api/oportunidades/por-lead/:leadId - Actualizar oportunidad por leadId
 router.patch(
   '/por-lead/:leadId',
   oportunidadController.actualizarOportunidadPorLead.bind(oportunidadController)
 );
 
-// GET /api/oportunidades - Obtener todas las oportunidades
+// GET /api/oportunidades/cliente/:clienteId - Obtener oportunidades de un cliente
 router.get(
-  '/',
-  oportunidadController.obtenerOportunidades.bind(oportunidadController)
+  '/cliente/:clienteId',
+  oportunidadController.obtenerOportunidadesDeCliente.bind(oportunidadController)
 );
 
-// GET /api/oportunidades/:id - Obtener una oportunidad
-router.get(
-  '/:id',
-  oportunidadController.obtenerOportunidadPorId.bind(oportunidadController)
+// PATCH /api/oportunidades/:id/etapa - Cambiar etapa
+router.patch(
+  '/:id/etapa',
+  oportunidadController.cambiarEtapa.bind(oportunidadController)
 );
 
 // POST /api/oportunidades - Crear oportunidad
@@ -43,16 +37,16 @@ router.post(
   oportunidadController.crearOportunidad.bind(oportunidadController)
 );
 
+// GET /api/oportunidades/:id - Obtener una oportunidad
+router.get(
+  '/:id',
+  oportunidadController.obtenerOportunidadPorId.bind(oportunidadController)
+);
+
 // PUT /api/oportunidades/:id - Actualizar oportunidad
 router.put(
   '/:id',
   oportunidadController.actualizarOportunidad.bind(oportunidadController)
-);
-
-// PATCH /api/oportunidades/:id/etapa - Cambiar etapa
-router.patch(
-  '/:id/etapa',
-  oportunidadController.cambiarEtapa.bind(oportunidadController)
 );
 
 // DELETE /api/oportunidades/:id - Eliminar oportunidad
