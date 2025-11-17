@@ -787,7 +787,7 @@ export class ContactoService {
     }
 
     // Verificar si ya existe una oportunidad para este lead
-    const oportunidadExistente = await prisma.oportunidad.findFirst({
+    const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
       where: { clienteId: leadId }
     });
 
@@ -796,13 +796,13 @@ export class ContactoService {
     }
 
     // Crear la oportunidad
-    const oportunidad = await prisma.oportunidad.create({
+    const oportunidad = await prisma.oportunidadCliente.create({
       data: {
         clienteId: leadId,
         titulo: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
         etapa: 'LEAD',
         usuarioId: usuarioId,
-        ultimaActividad: new Date().toISOString(),
+        ultimaActividad: new Date(),
         notas: `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
       },
       include: {

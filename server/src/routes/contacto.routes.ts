@@ -32,12 +32,6 @@ router.get(
   contactoController.obtenerContactosRecientes.bind(contactoController)
 );
 
-// GET /api/contactos/:id - Obtener un contacto
-router.get(
-  '/:id',
-  contactoController.obtenerContactoPorId.bind(contactoController)
-);
-
 // POST /api/contactos - Crear contacto
 router.post(
   '/',
@@ -51,29 +45,25 @@ router.post(
   contactoController.importarDesdeGoogle.bind(contactoController)
 );
 
-// PUT /api/contactos/:id - Actualizar contacto
-router.put(
-  '/:id',
-  validar(actualizarContactoSchema),
-  contactoController.actualizarContacto.bind(contactoController)
+// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
+router.post(
+  '/convertir-leads/masivo',
+  contactoController.convertirVariosALeads.bind(contactoController)
 );
 
-// DELETE /api/contactos/:id - Eliminar contacto
-router.delete(
-  '/:id',
-  contactoController.eliminarContacto.bind(contactoController)
+// ==================== RUTAS ESPECÍFICAS CON :id ==================
+// DEBEN IR ANTES DE LAS RUTAS GENÉRICAS /:id
+
+// POST /api/contactos/:id/agregar-pipeline - Agregar lead al pipeline
+router.post(
+  '/:id/agregar-pipeline',
+  contactoController.agregarAlPipeline.bind(contactoController)
 );
 
 // POST /api/contactos/:id/convertir-lead - Convertir a lead
 router.post(
   '/:id/convertir-lead',
   contactoController.convertirALead.bind(contactoController)
-);
-
-// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
-router.post(
-  '/convertir-leads/masivo',
-  contactoController.convertirVariosALeads.bind(contactoController)
 );
 
 // POST /api/contactos/:id/convertir-cliente - Convertir lead a cliente
@@ -106,10 +96,26 @@ router.delete(
   contactoController.desasociarCliente.bind(contactoController)
 );
 
-// POST /api/contactos/:id/agregar-pipeline - Agregar lead al pipeline
-router.post(
-  '/:id/agregar-pipeline',
-  contactoController.agregarAlPipeline.bind(contactoController)
+// ==================== RUTAS GENÉRICAS /:id ==================
+// Ir al final para no interferir con rutas específicas
+
+// GET /api/contactos/:id - Obtener un contacto
+router.get(
+  '/:id',
+  contactoController.obtenerContactoPorId.bind(contactoController)
+);
+
+// PUT /api/contactos/:id - Actualizar contacto
+router.put(
+  '/:id',
+  validar(actualizarContactoSchema),
+  contactoController.actualizarContacto.bind(contactoController)
+);
+
+// DELETE /api/contactos/:id - Eliminar contacto
+router.delete(
+  '/:id',
+  contactoController.eliminarContacto.bind(contactoController)
 );
 
 export default router;

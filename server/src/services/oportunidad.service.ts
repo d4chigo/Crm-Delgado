@@ -392,7 +392,7 @@ export class OportunidadService {
       where: { id: oportunidad.id },
       data: {
         etapa,
-        ultimaActividad: new Date().toISOString(),
+        ultimaActividad: new Date(),
         notas: (oportunidad.notas || '') + `\n- Sincronizado a ${etapa} el ${new Date().toLocaleDateString('es-PE')}`
       },
       include: {
