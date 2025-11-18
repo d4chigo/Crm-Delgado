@@ -101,6 +101,30 @@ export function useOportunidades() {
     }
   }
 
+  const removerDelPipelinePoCliente = async (clienteId: string) => {
+    try {
+      // Buscar la oportunidad del cliente
+      const oportunidad = oportunidades.find(op => op.clienteId === clienteId)
+      if (!oportunidad) {
+        throw new Error('No hay oportunidad asociada a este cliente')
+      }
+
+      // Eliminar la oportunidad
+      await apiEliminarOportunidad(oportunidad.id)
+      
+      // Eliminar localmente
+      setOportunidades(prev => prev.filter(op => op.id !== oportunidad.id))
+      
+      // Recargar estadísticas
+      await cargarEstadisticas()
+      
+      return true
+    } catch (err: any) {
+      setError(err.message || 'Error al remover del pipeline')
+      throw err
+    }
+  }
+
   useEffect(() => {
     cargarOportunidades()
     cargarEstadisticas()
@@ -116,6 +140,7 @@ export function useOportunidades() {
     moverOportunidad,
     crearNuevaOportunidad,
     eliminarOportunidad: eliminarOportunidadLocal,
+    removerDelPipeline: removerDelPipelinePoCliente,
     refrescar: () => {
       cargarOportunidades()
       cargarEstadisticas()

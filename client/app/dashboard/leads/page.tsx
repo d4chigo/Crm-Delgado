@@ -62,7 +62,7 @@ export default function PaginaLeads() {
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
   const [leadParaOportunidad, setLeadParaOportunidad] = useState<Lead | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { oportunidades } = useOportunidades()
+  const { oportunidades, removerDelPipeline } = useOportunidades()
 
   const cargarLeads = useCallback(async (filtros?: any) => {
     setEstaCargando(true)
@@ -346,6 +346,19 @@ export default function PaginaLeads() {
     }
   }
 
+  const handleRemoverDelPipeline = async (lead: Lead) => {
+    setAgregandoPipeline(lead.id)
+    try {
+      await removerDelPipeline(lead.id)
+      toast({ title: "Éxito", description: "Lead removido del pipeline" })
+      cargarLeads()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo remover del pipeline", variant: "destructive" })
+    } finally {
+      setAgregandoPipeline(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Leads" description="Gestiona tus prospectos y oportunidades de negocio" />
@@ -437,6 +450,7 @@ export default function PaginaLeads() {
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
                   onPipeline={handleAgregarAlPipeline}
+                  onRemoverDelPipeline={handleRemoverDelPipeline}
                   onEliminar={(l) => {
                     setLeadAEliminar(l)
                     setDialogoEliminarAbierto(true)
