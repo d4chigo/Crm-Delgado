@@ -555,7 +555,7 @@ export function DialogoEditarLead({
               <p className="text-sm text-muted-foreground mb-4">
                 Gestiona los proyectos o propiedades asociados a este cliente
               </p>
-              <ProyectosAsociados clienteId={lead.id} />
+              <ProyectosAsociados clienteId={lead.id} onActualizado={onActualizado} />
             </div>
           </TabsContent>
 

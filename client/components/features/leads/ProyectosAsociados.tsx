@@ -31,9 +31,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ProyectosAsociadosProps {
   clienteId: string;
+  onActualizado?: () => void;
 }
 
-export function ProyectosAsociados({ clienteId }: ProyectosAsociadosProps) {
+export function ProyectosAsociados({ clienteId, onActualizado }: ProyectosAsociadosProps) {
   const { proyectos, cargarProyectos } = useProyectos();
   const [proyectosAsociados, setProyectosAsociados] = useState<Proyecto[]>([]);
   const [proyectoSeleccionado, setProyectoSeleccionado] = useState<string>('');
@@ -172,7 +173,12 @@ export function ProyectosAsociados({ clienteId }: ProyectosAsociadosProps) {
       await cargarProyectosAsociados();
       setProyectoSeleccionado('');
 
-      // 8. Notificación de éxito
+      // 8. Notificar al componente padre que se actualizó
+      if (onActualizado) {
+        onActualizado();
+      }
+
+      // 9. Notificación de éxito
       toast({
         title: '✅ Proyecto asociado exitosamente',
         description: etiquetasAsignadas > 0 
@@ -225,6 +231,11 @@ export function ProyectosAsociados({ clienteId }: ProyectosAsociadosProps) {
       setProyectoAEliminar(null);
       setRelacionesProyecto(null);
       setConfirmoConsecuencias(false);
+
+      // Notificar al componente padre que se actualizó
+      if (onActualizado) {
+        onActualizado();
+      }
 
       const mensaje = relacionesProyecto && 
         (relacionesProyecto.oportunidadesActivas > 0 || relacionesProyecto.cotizacionesPendientes > 0)
