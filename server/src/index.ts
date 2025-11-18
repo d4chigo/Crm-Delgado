@@ -121,6 +121,30 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Ruta raíz de bienvenida
+app.get('/', (req, res) => {
+  res.json({
+    message: '🚀 CRM Delgado API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      auth: '/api/auth',
+      contactos: '/api/contactos',
+      dni: '/api/dni',
+      etiquetas: '/api/etiquetas',
+      proyectos: '/api/proyectos',
+      oportunidades: '/api/oportunidades',
+      cotizaciones: '/api/cotizaciones',
+      analytics: '/api/analytics',
+      assistant: '/api/assistant',
+      'crm-data': '/api/crm-data',
+      notificaciones: '/api/notificaciones',
+      calendar: '/api/calendar',
+      public: '/api/public'
+    }
+  });
+});
+
 // Cache corto para endpoints públicos (mejora de rendimiento en sitio público)
 app.use('/api/public', (req, res, next) => {
   res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
