@@ -4,9 +4,10 @@
  */
 
 // URL base de tu API del CRM
-// En desarrollo: http://localhost:3001/api
+// En desarrollo: http://localhost:5000/api
 // En producción: https://tu-dominio.com/api
-export const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:3001/api';
+const apiUrl = (import.meta as any)?.env?.VITE_API_URL || 'http://localhost:5000';
+export const API_BASE_URL = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
 
 // Modelo de IA a usar
 // Opciones: 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'

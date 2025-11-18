@@ -10,10 +10,11 @@ import { Calendar as IconoCalendario, Download as IconoDescargar, BarChart3 as I
 import { Button } from "@/components/ui/button"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
-import { obtenerEstadisticas, obtenerMetricas, type MetricasResponse, type EstadisticasResponse, obtenerReporteConversionPorOrigen, obtenerReporteDesempenoAsesor, type ReporteConversionOrigenItem, type ReporteDesempenoAsesorItem } from "@/services/api/analytics.service"
+import { obtenerEstadisticas, obtenerMetricas, type MetricasResponse, type EstadisticasResponse, obtenerReporteConversionPorOrigen, obtenerReporteDesempenoAsesor, obtenerClientesPorEtapa, type ReporteConversionOrigenItem, type ReporteDesempenoAsesorItem, type ClientesPorEtapaItem } from "@/services/api/analytics.service"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts"
+import { ReporteForecast, ReporteCuelloBotella } from "@/components/features/reportes"
 
 export default function PaginaEstadisticas() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("month")
@@ -30,6 +31,7 @@ export default function PaginaEstadisticas() {
   const [desempenoAsesor, setDesempenoAsesor] = useState<ReporteDesempenoAsesorItem[]>([])
   const [cargandoReportes, setCargandoReportes] = useState(false)
   const [programas, setProgramas] = useState<MetricasResponse["ventasPorPrograma"]>([])
+  const [clientesPorEtapa, setClientesPorEtapa] = useState<ClientesPorEtapaItem[]>([])
 
   // Refs para capturar gráficos (SVG) y embebidos en PDF
   const refChartConversion = useRef<HTMLDivElement>(null)
@@ -141,7 +143,7 @@ export default function PaginaEstadisticas() {
     URL.revokeObjectURL(url)
   }
 
-  function svgDataUrlFromRef(ref: React.RefObject<HTMLDivElement>): string | null {
+  function svgDataUrlFromRef(ref: React.RefObject<HTMLDivElement | null>): string | null {
     const container = ref.current
     if (!container) return null
     const svg = container.querySelector('svg') as SVGSVGElement | null
@@ -294,20 +296,24 @@ export default function PaginaEstadisticas() {
         setConversionOrigen([])
         setDesempenoAsesor([])
         setProgramas([])
-        const [r1, r2, m] = await Promise.all([
+        setClientesPorEtapa([])
+        const [r1, r2, m, cpe] = await Promise.all([
           obtenerReporteConversionPorOrigen({ period: periodoSeleccionado, year: anioSeleccionado }),
           obtenerReporteDesempenoAsesor({ period: periodoSeleccionado, year: anioSeleccionado }),
           obtenerMetricas({ period: periodoSeleccionado, year: anioSeleccionado }),
+          obtenerClientesPorEtapa({ period: periodoSeleccionado, year: anioSeleccionado }),
         ])
         if (isPastYear) {
           // Si es un año pasado, mostramos vacío para evitar confusión
           setConversionOrigen([])
           setDesempenoAsesor([])
           setProgramas([])
+          setClientesPorEtapa([])
         } else {
           setConversionOrigen(r1)
           setDesempenoAsesor(r2)
           setProgramas(m.ventasPorPrograma || [])
+          setClientesPorEtapa(cpe || [])
         }
       } catch (e) {
         console.error('Error cargando reportes:', e)
@@ -362,7 +368,7 @@ export default function PaginaEstadisticas() {
           <TabsList>
             <TabsTrigger value="conversion">Conversión por Origen</TabsTrigger>
             <TabsTrigger value="desempeno">Desempeño del Asesor</TabsTrigger>
-            <TabsTrigger value="programas">Ventas por Programa</TabsTrigger>
+            <TabsTrigger value="programas">Clientes en el Pipeline</TabsTrigger>
           </TabsList>
 
           {/* Conversión por Origen */}
@@ -549,7 +555,7 @@ export default function PaginaEstadisticas() {
             </div>
           </TabsContent>
 
-          {/* Ventas por Programa */}
+          {/* Clientes en el Pipeline */}
           <TabsContent value="programas" className="mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="border-border">
@@ -557,26 +563,24 @@ export default function PaginaEstadisticas() {
                   <CardTitle className="text-lg font-semibold text-[#303030]">Tabla</CardTitle>
                   <div className="flex gap-2">
                     <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => descargarExcelHtml(
-                      `ventas_por_programa_${new Date().toISOString().slice(0,10)}.xls`,
-                      'Reporte: Ventas por Programa',
+                      `clientes_por_etapa_${new Date().toISOString().slice(0,10)}.xls`,
+                      'Reporte: Clientes en el Pipeline',
                       [
-                        { key: 'programa', titulo: 'Programa' },
-                        { key: 'cantidad', titulo: 'Cantidad' },
-                        { key: 'participacion', titulo: 'Participación (%)' },
+                        { key: 'etapa', titulo: 'Etapa' },
+                        { key: 'cantidad', titulo: 'Cantidad de Clientes' },
                       ],
-                      programas.map(p => ({ programa: p.program, cantidad: p.count, participacion: `${p.percentage}%` }))
+                      clientesPorEtapa.map(c => ({ etapa: c.etapa, cantidad: c.cantidad }))
                     )}>Exportar Excel</Button>
                     <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => {
                       const img: string | null = null
                       descargarPDFJsPDF(
-                      `ventas_por_programa_${new Date().toISOString().slice(0,10)}.pdf`,
-                      'Reporte: Ventas por Programa',
+                      `clientes_por_etapa_${new Date().toISOString().slice(0,10)}.pdf`,
+                      'Reporte: Clientes en el Pipeline',
                       [
-                        { key: 'programa', titulo: 'Programa' },
-                        { key: 'cantidad', titulo: 'Cantidad' },
-                        { key: 'participacion', titulo: 'Participación (%)' },
+                        { key: 'etapa', titulo: 'Etapa' },
+                        { key: 'cantidad', titulo: 'Cantidad de Clientes' },
                       ],
-                      programas.map(p => ({ programa: p.program, cantidad: p.count, participacion: `${p.percentage}%` })),
+                      clientesPorEtapa.map(c => ({ etapa: c.etapa, cantidad: c.cantidad })),
                       img ? [img] : undefined
                     )
                     }}>
@@ -584,26 +588,24 @@ export default function PaginaEstadisticas() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="bg-transparent">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Programa</TableHead>
-                        <TableHead>Cantidad</TableHead>
-                        <TableHead>Participación</TableHead>
+                      <TableRow className="border-b">
+                        <TableHead>Etapa</TableHead>
+                        <TableHead>Cantidad de Clientes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {programas.length === 0 ? (
+                      {clientesPorEtapa.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Sin datos</TableCell>
+                          <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">Sin datos</TableCell>
                         </TableRow>
                       ) : (
-                        programas.map((p, i) => (
-                          <TableRow key={i}>
-                            <TableCell>{p.program}</TableCell>
-                            <TableCell>{p.count}</TableCell>
-                            <TableCell>{p.percentage}%</TableCell>
+                        clientesPorEtapa.map((c, i) => (
+                          <TableRow key={i} className="border-b hover:bg-transparent">
+                            <TableCell className="font-medium">{c.etapa}</TableCell>
+                            <TableCell><Badge className="bg-transparent text-[#303030]">{c.cantidad}</Badge></TableCell>
                           </TableRow>
                         ))
                       )}
@@ -617,14 +619,13 @@ export default function PaginaEstadisticas() {
                   <CardTitle className="text-lg font-semibold text-[#303030]">Gráfico</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer config={{ cantidad: { label: 'Cantidad', color: '#303030' }, porcentaje: { label: 'Participación (%)', color: '#FCBA00' } }}>
-                    <BarChart data={programas.map(p => ({ programa: p.program, cantidad: p.count, porcentaje: p.percentage }))}>
+                  <ChartContainer config={{ cantidad: { label: 'Cantidad', color: '#FCBA00' } }}>
+                    <BarChart data={clientesPorEtapa.map(c => ({ etapa: c.etapa, cantidad: c.cantidad }))}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="programa" />
+                      <XAxis dataKey="etapa" />
                       <YAxis />
                       <Tooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="cantidad" fill="#303030" name="Cantidad" />
-                      <Bar dataKey="porcentaje" fill="#FCBA00" name="Participación (%)" />
+                      <Bar dataKey="cantidad" fill="#FCBA00" name="Cantidad de Clientes" />
                     </BarChart>
                   </ChartContainer>
                 </CardContent>
@@ -643,10 +644,8 @@ export default function PaginaEstadisticas() {
         {estadisticasGenerales.map((stat, index) => {
           const iconos = [IconoUsuarios, IconoTendenciaArriba, IconoObjetivo]
           const colores = ["text-blue-600", "text-green-600", "text-purple-600"]
-          const bgColores = ["bg-blue-100", "bg-green-100", "bg-purple-100"]
           const IconoComponente = iconos[index] || IconoUsuarios
           const color = colores[index] || "text-blue-600"
-          const bgColor = bgColores[index] || "bg-blue-100"
 
           return (
             <Card key={index} className="border-border">
@@ -666,7 +665,7 @@ export default function PaginaEstadisticas() {
                       </span>
                     </div>
                   </div>
-                  <div className={`p-3 rounded-full ${bgColor}`}>
+                  <div className="p-3 rounded-full bg-white border border-gray-200">
                     <IconoComponente className={`w-6 h-6 ${color}`} />
                   </div>
                 </div>
@@ -804,6 +803,7 @@ export default function PaginaEstadisticas() {
           </Table>
         </CardContent>
       </Card>
+
       
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

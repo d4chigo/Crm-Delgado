@@ -129,13 +129,21 @@ export async function getReporteConversionPorOrigen(req: Request, res: Response)
       ganadasPorFuente.set(key, { count: prev.count + 1, value: prev.value + Number(o.valor || 0) });
     }
 
-    const data = leadsPorFuente.map((l: { fuente: string | null; _count: { _all: number } }) => {
-      const key = (l.fuente as string) || 'DESCONOCIDO';
-      const won = ganadasPorFuente.get(key)?.count || 0;
-      const valor = ganadasPorFuente.get(key)?.value || 0;
-      const conversion = l._count._all > 0 ? Math.round((won * 10000) / l._count._all) / 100 : 0;
-      return { origen: key, leads: l._count._all, ganadas: won, conversion, valorGanado: valor };
-    });
+    // Filtrar solo fuentes permitidas (excluir Google Ads y otras)
+    const fuentesPermitidas = ['TikTok', 'Facebook', 'YouTube', 'Instagram', 'Página Web', 'DESCONOCIDO'];
+    
+    const data = leadsPorFuente
+      .filter((l: { fuente: string | null }) => {
+        const key = (l.fuente as string) || 'DESCONOCIDO';
+        return fuentesPermitidas.includes(key);
+      })
+      .map((l: { fuente: string | null; _count: { _all: number } }) => {
+        const key = (l.fuente as string) || 'DESCONOCIDO';
+        const won = ganadasPorFuente.get(key)?.count || 0;
+        const valor = ganadasPorFuente.get(key)?.value || 0;
+        const conversion = l._count._all > 0 ? Math.round((won * 10000) / l._count._all) / 100 : 0;
+        return { origen: key, leads: l._count._all, ganadas: won, conversion, valorGanado: valor };
+      });
 
     try {
       await prisma.reporte.create({
@@ -424,5 +432,40 @@ export async function getMetrics(req: Request, res: Response) {
       mejoresAgentes: [],
       ventasMensuales: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0, value: 0 })),
     }});
+  }
+}
+
+export async function getClientesPorEtapa(req: Request, res: Response) {
+  try {
+    const etapas = await prisma.oportunidadCliente.groupBy({
+      by: ['etapa'],
+      _count: { _all: true },
+    }) as Array<{ etapa: string; _count: { _all: number } }>;
+
+    // Filtrar solo etapas con cantidad > 0
+    const data = etapas
+      .filter((e) => e._count._all > 0)
+      .map((e) => ({
+        etapa: e.etapa,
+        cantidad: e._count._all,
+      }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+
+    try {
+      await prisma.reporte.create({
+        data: {
+          tipo: 'clientes_por_etapa',
+          parametros: {},
+          resultadosResumen: { totalEtapas: data.length },
+        },
+      });
+    } catch (auditErr) {
+      console.warn('[Analytics] No se pudo registrar reporte clientes_por_etapa:', auditErr);
+    }
+
+    res.json({ exito: true, datos: data });
+  } catch (error) {
+    console.error('[Analytics] Error clientes-por-etapa:', error);
+    res.json({ exito: true, datos: [] });
   }
 }

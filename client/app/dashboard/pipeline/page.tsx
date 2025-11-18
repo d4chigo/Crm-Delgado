@@ -54,6 +54,7 @@ export default function PaginaPipeline() {
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
   const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+  const [draggedOportunidad, setDraggedOportunidad] = useState<OportunidadCliente | null>(null)
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
@@ -180,6 +181,30 @@ export default function PaginaPipeline() {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, oportunidad: OportunidadCliente) => {
+    e.stopPropagation()
+    setDraggedOportunidad(oportunidad)
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", oportunidad.id)
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, etapaId: EtapaPipeline) => {
+    e.preventDefault()
+    if (draggedOportunidad && draggedOportunidad.etapa !== etapaId) {
+      await handleMoverOportunidad(draggedOportunidad.id, etapaId)
+    }
+    setDraggedOportunidad(null)
+  };
+
+  const handleDragEnd = () => {
+    setDraggedOportunidad(null)
   };
 
   return (
@@ -338,7 +363,11 @@ export default function PaginaPipeline() {
             const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
             return (
               <div key={etapa.id} className="flex-shrink-0 w-80">
-                <Card className="border-border h-full">
+                <Card 
+                  className="border-border h-full"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, etapa.id)}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -355,10 +384,18 @@ export default function PaginaPipeline() {
                   </CardHeader>
                   <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
                     {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
-                      <Card
+                      <div
                         key={oportunidad.id}
-                        className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e as any, oportunidad)}
+                        onDragEnd={handleDragEnd}
                         onClick={() => setSelectedDeal(oportunidad)}
+                        className="select-none"
+                      >
+                      <Card
+                        className={`border-border hover:shadow-md transition-shadow bg-white cursor-grab active:cursor-grabbing ${
+                          draggedOportunidad?.id === oportunidad.id ? 'opacity-50' : ''
+                        }`}
                       >
                         <CardContent className="p-4 space-y-3">
                           {/* Client Info */}
@@ -404,6 +441,7 @@ export default function PaginaPipeline() {
                           </div>
                         </CardContent>
                       </Card>
+                      </div>
                     ))}
                     {oportunidadesEtapa.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
@@ -518,24 +556,33 @@ export default function PaginaPipeline() {
 
               {/* Move Stage Actions */}
               <div className="space-y-3 pt-4 border-t">
-                <p className="text-sm font-medium text-[#303030]">Mover a:</p>
+                <p className="text-sm font-medium text-[#303030]">Etapas:</p>
                 <div className="flex flex-wrap gap-2">
-                  {ETAPAS_PIPELINE
-                    .filter((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
-                    .map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => (
+                  {ETAPAS_PIPELINE.map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => {
+                    const isCurrentStage = etapa.id === selectedDeal.etapa
+                    return (
                       <Button
                         key={etapa.id}
                         size="sm"
-                        variant="outline"
                         onClick={() => {
-                          handleMoverOportunidad(selectedDeal.id, etapa.id)
-                          setSelectedDeal(null)
+                          if (!isCurrentStage) {
+                            handleMoverOportunidad(selectedDeal.id, etapa.id)
+                            setSelectedDeal(null)
+                          }
                         }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+                        disabled={isCurrentStage}
+                        className={`${
+                          isCurrentStage
+                            ? `${etapa.color} text-white font-semibold`
+                            : 'border-border hover:bg-muted'
+                        }`}
+                        variant={isCurrentStage ? "default" : "outline"}
                       >
                         {etapa.nombre}
+                        {isCurrentStage && ' ✓'}
                       </Button>
-                    ))}
+                    )
+                  })}
                 </div>
               </div>
 

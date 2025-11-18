@@ -38,7 +38,7 @@ export function SelectorEtiquetasCreacion({
         throw new Error('No hay sesión activa');
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/etiquetas`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/etiquetas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

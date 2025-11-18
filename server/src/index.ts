@@ -51,8 +51,12 @@ import testRoutes from '@/routes/test.routes';
 import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
 import devRoutes from '@/routes/dev.routes';
+import crmDataRoutes from '@/routes/crm-data.routes';
+import notificacionRoutes from '@/routes/notificacion.routes';
+import configRoutes from '@/routes/config.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
+import { configurarSocket } from '@/config/socket';
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -133,6 +137,9 @@ app.use('/api/oportunidades', oportunidadRoutes);
 app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/crm-data', crmDataRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimoniosRoutes);
@@ -166,6 +173,12 @@ app.use(manejarErrores);
 // ==================== INICIAR SERVIDOR ====================
 const httpServer = createServer(app);
 
+// Configurar Socket.IO para notificaciones en tiempo real
+const io = configurarSocket(httpServer);
+
+// Hacer io disponible globalmente para otros módulos
+(global as any).io = io;
+
 // WebSocket Server para sesiones de voz
 const wss = new WebSocketServer({ server: httpServer, path: '/api/voice' });
 
@@ -177,8 +190,9 @@ wss.on('connection', (ws) => {
 httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
+  console.log(`🔔 Socket.IO notificaciones en tiempo real activado`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/crm-data, /api/notificaciones, /api/calendar`);
 });
 
 export default app;

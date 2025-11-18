@@ -44,9 +44,9 @@ export function SelectorEtiquetas({
         return;
       }
 
-      console.log('Cargando etiquetas desde:', `${process.env.NEXT_PUBLIC_API_URL}/etiquetas`);
+      console.log('Cargando etiquetas desde:', `${process.env.NEXT_PUBLIC_API_URL}/api/etiquetas`);
       
-      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/etiquetas`, {
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/etiquetas`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -120,7 +120,7 @@ export function SelectorEtiquetas({
       }
 
       const respuesta = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/etiquetas/contacto/${contactoId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/etiquetas/contacto/${contactoId}`,
         {
           method: 'PUT',
           headers: {

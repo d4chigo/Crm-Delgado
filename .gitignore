@@ -14,13 +14,10 @@ build/
 
 # Environment files
 .env
-.env.*
 !.env.example
 !.env.example.docker
 client/.env
-client/.env.*
 server/.env
-server/.env.*
 
 # Logs
 npm-debug.log*
@@ -52,5 +49,4 @@ coverage/
 docker-data/
 
 # Misc
-*.local
 

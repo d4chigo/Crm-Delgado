@@ -1,5 +1,10 @@
 // Configuración base de la API
-const API_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000/api';
+let API_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000/api';
+
+// Asegurar que la URL siempre termine con /api
+if (API_URL && !API_URL.endsWith('/api')) {
+  API_URL = `${API_URL}/api`;
+}
 
 // Tipos de respuesta del backend
 interface RespuestaExito<T> {

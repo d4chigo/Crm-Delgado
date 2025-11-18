@@ -47,6 +47,26 @@
     </style>
 
 <link rel="stylesheet" href="./index.css">
+<script>
+  // Inyectar API key desde el backend si está disponible
+  (async () => {
+    try {
+      const response = await fetch('/api/config/google-api-key', { 
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.apiKey) {
+          window.GOOGLE_API_KEY = data.apiKey;
+          console.log('[Botcrm] API key inyectada desde el backend');
+        }
+      }
+    } catch (err) {
+      console.log('[Botcrm] No se pudo obtener API key del backend:', err.message);
+    }
+  })();
+</script>
 <script type="importmap">
 {
   "imports": {
@@ -58,9 +78,9 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="./assets/index-BuHYAKbs.js"></script>
+  <script type="module" crossorigin src="./assets/index-5neMaOHV.js"></script>
 </head>
 <body class="antialiased" data-theme="dark">
-    <div id="root"></div>
+    <div id="root"></div>
 </body>
 </html>

@@ -40,7 +40,7 @@ interface ProyectoData {
  */
 export async function getCRMStats(): Promise<CRMStats | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/estadisticas`, {
+        const response = await fetch(`${API_BASE_URL}/crm-data/estadisticas/resumen`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
             }
@@ -72,7 +72,7 @@ export async function getContactos(filtros?: {
         if (filtros?.estadoLead) params.append('estadoLead', filtros.estadoLead);
         if (filtros?.limite) params.append('limite', filtros.limite.toString());
 
-        const response = await fetch(`${API_BASE_URL}/admin/contactos?${params}`, {
+        const response = await fetch(`${API_BASE_URL}/contactos?${params}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
             }
@@ -102,7 +102,7 @@ export async function getProyectos(filtros?: {
         if (filtros?.estado) params.append('estado', filtros.estado);
         if (filtros?.limite) params.append('limite', filtros.limite.toString());
 
-        const response = await fetch(`${API_BASE_URL}/admin/proyectos?${params}`, {
+        const response = await fetch(`${API_BASE_URL}/proyectos?${params}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
             }

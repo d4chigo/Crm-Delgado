@@ -6,6 +6,7 @@ import {
   getReporteVelocidadCiclo,
   getReporteDesempenoAsesor,
   getReporteForecast,
+  getClientesPorEtapa,
 } from '@/controllers/analytics.controller';
 
 const router = Router();
@@ -18,5 +19,6 @@ router.get('/reports/conversion-origen', getReporteConversionPorOrigen);
 router.get('/reports/velocidad-ciclo', getReporteVelocidadCiclo);
 router.get('/reports/desempeno-asesor', getReporteDesempenoAsesor);
 router.get('/reports/forecast', getReporteForecast);
+router.get('/reports/clientes-por-etapa', getClientesPorEtapa);
 
 export default router;

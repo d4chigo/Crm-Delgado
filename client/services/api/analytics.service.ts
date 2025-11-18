@@ -89,3 +89,16 @@ export async function obtenerReporteForecast(params?: { period?: string; year?: 
   const query = qs.toString() ? `?${qs.toString()}` : '';
   return await fetchAPI<ReporteForecastResponse>(`/analytics/reports/forecast${query}`);
 }
+
+export interface ClientesPorEtapaItem {
+  etapa: string;
+  cantidad: number;
+}
+
+export async function obtenerClientesPorEtapa(params?: { period?: string; year?: string | number }): Promise<ClientesPorEtapaItem[]> {
+  const qs = new URLSearchParams();
+  if (params?.period) qs.set('period', params.period);
+  if (params?.year) qs.set('year', String(params.year));
+  const query = qs.toString() ? `?${qs.toString()}` : '';
+  return await fetchAPI<ClientesPorEtapaItem[]>(`/analytics/reports/clientes-por-etapa${query}`);
+}

@@ -15,22 +15,22 @@ console.log('1️⃣  Verificando .env.local...');
 const envPath = path.join(__dirname, '.env.local');
 if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf-8');
-    if (envContent.includes('VITE_GOOGLE_API_KEY')) {
-        console.log('   ✅ .env.local existe y contiene VITE_GOOGLE_API_KEY');
+    if (envContent.includes('GEMINI_API_KEY')) {
+        console.log('   ✅ .env.local existe y contiene GEMINI_API_KEY');
         
         // Verificar que no esté vacío
-        const match = envContent.match(/VITE_GOOGLE_API_KEY=(.+)/);
+        const match = envContent.match(/GEMINI_API_KEY=(.+)/);
         if (match && match[1].trim()) {
             console.log('   ✅ API Key configurada (no vacía)');
         } else {
             console.log('   ❌ API Key está vacía. Agrega tu clave en .env.local');
         }
     } else {
-        console.log('   ❌ .env.local no contiene VITE_GOOGLE_API_KEY');
+        console.log('   ❌ .env.local no contiene GEMINI_API_KEY');
     }
 } else {
     console.log('   ⚠️  .env.local no existe. Crea uno con:');
-    console.log('      VITE_GOOGLE_API_KEY=tu_clave_aqui');
+    console.log('      GEMINI_API_KEY=tu_clave_aqui');
 }
 
 // 2. Verificar config.ts
@@ -55,10 +55,10 @@ console.log('\n3️⃣  Verificando vite.config.ts...');
 const viteConfigPath = path.join(__dirname, 'vite.config.ts');
 if (fs.existsSync(viteConfigPath)) {
     const viteContent = fs.readFileSync(viteConfigPath, 'utf-8');
-    if (viteContent.includes('VITE_GOOGLE_API_KEY')) {
+    if (viteContent.includes('GEMINI_API_KEY')) {
         console.log('   ✅ vite.config.ts configurado correctamente');
     } else {
-        console.log('   ❌ vite.config.ts no tiene VITE_GOOGLE_API_KEY');
+        console.log('   ❌ vite.config.ts no tiene GEMINI_API_KEY');
     }
 } else {
     console.log('   ❌ vite.config.ts no encontrado');
