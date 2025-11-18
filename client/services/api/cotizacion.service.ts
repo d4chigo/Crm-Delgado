@@ -335,7 +335,7 @@ export const cotizacionService = {
   async obtenerPorContacto(contactoId: string): Promise<Cotizacion[]> {
     try {
       const response = await axiosInstance.get(
-        `cotizaciones/contacto/${contactoId}`
+        `/cotizaciones/contacto/${contactoId}`
       );
       return response.data;
     } catch (error: any) {

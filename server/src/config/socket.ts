@@ -13,20 +13,27 @@ const usuariosConectados = new Map<string, SocketUser>();
 
 export function configurarSocket(httpServer: HTTPServer): SocketIOServer {
   const io = new SocketIOServer(httpServer, {
+    path: '/socket.io/',
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://127.0.0.1:3000'],
       methods: ['GET', 'POST'],
       credentials: true,
     },
     transports: ['websocket', 'polling'],
+    pingInterval: 25000,
+    pingTimeout: 60000,
   });
 
-  // Middleware de autenticación
+  // Middleware de autenticación (opcional para webhooks)
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
 
+    // Si no hay token, permitir conexión (para webhooks)
     if (!token) {
-      return next(new Error('Token no proporcionado'));
+      socket.data.usuarioId = 'webhook';
+      socket.data.nombre = 'Webhook';
+      socket.data.email = 'webhook@system.local';
+      return next();
     }
 
     try {

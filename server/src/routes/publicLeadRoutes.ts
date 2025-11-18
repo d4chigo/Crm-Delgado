@@ -94,7 +94,9 @@ router.post('/lead', async (req: Request, res: Response) => {
           telefono: telefono,
           tipo: TipoContacto.LEAD,
           estadoLead: EstadoLead.NUEVO,
-          observaciones: mensaje || contactoExistente.observaciones
+          intereses: interes || contactoExistente.intereses,
+          notas: mensaje || contactoExistente.notas,
+          fuente: origen || contactoExistente.fuente
         }
       });
     } else {
@@ -126,7 +128,9 @@ router.post('/lead', async (req: Request, res: Response) => {
           telefono: telefono,
           tipo: TipoContacto.LEAD,
           estadoLead: EstadoLead.NUEVO,
-          observaciones: mensaje || `Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
+          intereses: interes || 'No especificado',
+          notas: mensaje || `Origen: ${origen || 'Web'}`,
+          fuente: origen || 'Web',
           usuarioId: usuarioAsignado.id
         }
       });
