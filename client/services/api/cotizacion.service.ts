@@ -335,13 +335,12 @@ export const cotizacionService = {
   async obtenerPorContacto(contactoId: string): Promise<Cotizacion[]> {
     try {
       const response = await axiosInstance.get(
-        `/cotizaciones/contacto/${contactoId}`
+        `/api/cotizaciones/contacto/${contactoId}`
       );
       return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.mensaje || error.response?.data?.error || error.response?.data?.message || error.message || 'Error al obtener cotizaciones del contacto'
-      );
+      console.warn(`[Cotizaciones] No se encontraron cotizaciones para contacto ${contactoId}`);
+      return [];
     }
   },
 

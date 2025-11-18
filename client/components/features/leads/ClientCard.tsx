@@ -83,6 +83,19 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => onVerDetalles(cliente)}
+                    className="hover:bg-blue-100"
+                  >
+                    <Eye className="h-5 w-5 text-blue-700" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Ver detalles</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onEditar(cliente)}
                     className="hover:bg-blue-100"
                   >
