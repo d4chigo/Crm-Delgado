@@ -13,11 +13,11 @@ router.post('/', cotizacionController.crearCotizacion);
 // Obtener todas las cotizaciones (con filtros)
 router.get('/', cotizacionController.obtenerCotizaciones);
 
+// Obtener cotizaciones de un contacto específico (ANTES de /:id)
+router.get('/contacto/:contactoId', cotizacionController.obtenerCotizacionesPorContacto);
+
 // Obtener cotización por ID
 router.get('/:id', cotizacionController.obtenerCotizacionPorId);
-
-// Obtener cotizaciones de un contacto específico
-router.get('/contacto/:contactoId', cotizacionController.obtenerCotizacionesPorContacto);
 
 // Actualizar cotización
 router.put('/:id', cotizacionController.actualizarCotizacion);
