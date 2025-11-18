@@ -245,16 +245,15 @@ export const proyectoService = {
    * Asociar un cliente a un proyecto
    */
   async asociarCliente(proyectoId: string, datos: AsociarClienteDto) {
-    // Verificar que el contacto sea de tipo CLIENTE
+    // Verificar que el contacto exista (puede ser CLIENTE o LEAD)
     const cliente = await prisma.contacto.findFirst({
       where: {
-        id: datos.clienteId,
-        tipo: 'CLIENTE'
+        id: datos.clienteId
       }
     })
 
     if (!cliente) {
-      throw new Error('El contacto debe ser de tipo CLIENTE')
+      throw new Error('El contacto no existe')
     }
 
     // Verificar si ya está asociado
