@@ -251,11 +251,35 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    await prisma.contacto.delete({
-      where: { id }
-    });
+    console.log(`🗑️ Eliminando contacto: ${id}`);
 
-    return { mensaje: 'Contacto eliminado exitosamente' };
+    try {
+      // El cascade delete debería manejar las relaciones
+      // Pero primero eliminamos manualmente lo que sea necesario
+      
+      // Eliminar oportunidades asociadas
+      await prisma.oportunidadCliente.deleteMany({
+        where: { clienteId: id }
+      });
+      console.log(`✅ Oportunidades eliminadas`);
+
+      // Eliminar proyectos asociados
+      await prisma.proyectoCliente.deleteMany({
+        where: { clienteId: id }
+      });
+      console.log(`✅ Asociaciones de proyectos eliminadas`);
+
+      // Eliminar el contacto
+      await prisma.contacto.delete({
+        where: { id }
+      });
+      console.log(`✅ Contacto eliminado exitosamente`);
+
+      return { mensaje: 'Contacto eliminado exitosamente' };
+    } catch (error: any) {
+      console.error(`❌ Error al eliminar contacto: ${error.message}`);
+      throw new Error(`No se pudo eliminar el contacto: ${error.message}`);
+    }
   }
 
   /**

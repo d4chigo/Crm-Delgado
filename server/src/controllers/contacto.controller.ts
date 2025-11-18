@@ -157,14 +157,18 @@ export class ContactoController {
       const usuarioId = req.usuario?.usuarioId;
       const { id } = req.params;
 
+      console.log(`🗑️ DELETE /contactos/:id - ID: ${id}, Usuario: ${usuarioId}`);
+
       if (!usuarioId) {
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       const resultado = await contactoService.eliminarContacto(id, usuarioId);
+      console.log(`✅ Contacto eliminado: ${id}`);
       respuestaExito(res, resultado);
     } catch (error: any) {
+      console.error(`❌ Error al eliminar contacto: ${error.message}`);
       if (error.message === 'Contacto no encontrado') {
         respuestaError(res, error.message, 404);
         return;

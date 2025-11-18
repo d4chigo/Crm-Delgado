@@ -75,13 +75,21 @@ class LeadService {
    * Eliminar un lead
    */
   async eliminarLead(id: string) {
+    console.log(`🗑️ Eliminando lead: ${id}`);
     const token = authService.obtenerToken();
     if (!token) throw new Error('No hay token de autenticación');
 
-    return fetchAPI(`/contactos/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const resultado = await fetchAPI(`/contactos/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log(`✅ Lead eliminado: ${id}`);
+      return resultado;
+    } catch (error: any) {
+      console.error(`❌ Error al eliminar lead: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
