@@ -29,6 +29,13 @@ export interface OportunidadCliente {
     correo?: string;
     telefono?: string;
     empresa?: string;
+    proyectos?: Array<{
+      proyecto: {
+        id: string;
+        nombre: string;
+        estado: string;
+      };
+    }>;
   };
 }
 

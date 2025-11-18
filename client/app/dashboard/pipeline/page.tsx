@@ -415,7 +415,11 @@ export default function PaginaPipeline() {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Building2 className="w-3 h-3" />
-                              <span className="line-clamp-1">{oportunidad.proyecto || 'Sin proyecto'}</span>
+                              <span className="line-clamp-1">
+                                {oportunidad.cliente?.proyectos && oportunidad.cliente.proyectos.length > 0
+                                  ? oportunidad.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
+                                  : oportunidad.proyecto || 'Sin proyecto'}
+                              </span>
                             </div>
                             <p className="text-sm font-medium text-[#303030]">{oportunidad.propiedad || 'Sin propiedad'}</p>
                           </div>
@@ -531,7 +535,11 @@ export default function PaginaPipeline() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Proyecto</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.proyecto || 'Sin proyecto'}</p>
+                  <p className="font-medium text-[#303030]">
+                    {selectedDeal.cliente?.proyectos && selectedDeal.cliente.proyectos.length > 0
+                      ? selectedDeal.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
+                      : selectedDeal.proyecto || 'Sin proyecto'}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Fecha de Creación</p>

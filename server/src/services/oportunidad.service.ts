@@ -139,7 +139,18 @@ export class OportunidadService {
               apellido: true,
               correo: true,
               telefono: true,
-              empresa: true
+              empresa: true,
+              proyectos: {
+                select: {
+                  proyecto: {
+                    select: {
+                      id: true,
+                      nombre: true,
+                      estado: true
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -170,6 +181,17 @@ export class OportunidadService {
             etiquetas: {
               include: {
                 etiqueta: true
+              }
+            },
+            proyectos: {
+              select: {
+                proyecto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    estado: true
+                  }
+                }
               }
             }
           }
@@ -358,7 +380,24 @@ export class OportunidadService {
 
     const oportunidades = await prisma.oportunidadCliente.findMany({
       where: { clienteId, usuarioId },
-      orderBy: { ultimaActividad: 'desc' }
+      orderBy: { ultimaActividad: 'desc' },
+      include: {
+        cliente: {
+          include: {
+            proyectos: {
+              select: {
+                proyecto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    estado: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     return oportunidades;
