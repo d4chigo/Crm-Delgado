@@ -65,32 +65,32 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
       {/* Barra lateral */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-64 bg-[#303030] text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+          "fixed top-0 left-0 z-50 h-full w-64 bg-gradient-to-b from-[#2a2a2a] to-[#1f1f1f] text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl",
           estaAbierta ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
+          {/* Logo - Mejorado */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#FCBA00] rounded-lg flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-[#303030]" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FCBA00] to-[#E5A200] rounded-xl flex items-center justify-center shadow-lg">
+                <Building2 className="w-6 h-6 text-white font-bold" />
               </div>
               <div>
-                <h1 className="font-bold text-lg">CRM</h1>
-                <p className="text-xs text-white/60">Inmobiliario</p>
+                <h1 className="font-bold text-lg tracking-wide">CRM</h1>
+                <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Inmobiliario</p>
               </div>
             </div>
             <button 
               onClick={alCerrar} 
-              className="lg:hidden text-white/60 hover:text-white"
+              className="lg:hidden text-white/60 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Navegación */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {/* Navegación - Mejorada */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             {navegacion.map((elemento) => {
               // Si el elemento tiene children, renderizamos un grupo desplegable
               if (elemento.children && elemento.children.length > 0) {
@@ -103,17 +103,16 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
                     <button
                       onClick={(e) => toggleGroup(elemento.nombre, e)}
                       className={cn(
-                        'w-full flex items-center justify-between gap-3 px-4 py-2 rounded-lg',
-                        'transition-colors duration-200',
+                        'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium',
+                        'transition-all duration-200',
                         activoEnHijos
-                          ? 'bg-[#FCBA00] text-[#303030] font-semibold'
-                          : 'text-white/80 hover:bg-white/5',
-                        openGroups[elemento.nombre] ? 'mb-1' : ''
+                          ? 'bg-gradient-to-r from-[#FCBA00] to-[#E5A200] text-white shadow-lg shadow-[#FCBA00]/20'
+                          : 'text-white/70 hover:text-white hover:bg-white/5',
                       )}
                     >
                       <div className="flex items-center gap-3">
                         {IconoGrupo ? <IconoGrupo className="w-5 h-5" /> : <span className="w-5 h-5" />}
-                        <span>{elemento.nombre}</span>
+                        <span className="text-sm">{elemento.nombre}</span>
                       </div>
                       <ChevronDown
                         className={cn('w-4 h-4 transition-transform duration-200', {
@@ -122,14 +121,14 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
                       />
                     </button>
 
-                    {/** children - show only when open by state; active route no longer fuerza apertura */}
+                    {/** children - show only when open by state */}
                     <div 
                       className={cn(
                         'overflow-hidden transition-all duration-200 ease-in-out',
                         openGroups[elemento.nombre] === true ? 'max-h-96' : 'max-h-0'
                       )}
                     >
-                      <div className="mt-1 ml-8 flex flex-col gap-1">
+                      <div className="mt-2 ml-6 flex flex-col gap-1 border-l border-white/10 pl-3">
                         {elemento.children.map((hijo) => {
                           const IconoHijo = hijo.icono
                           const estaActivoHijo = rutaActual === hijo.href
@@ -138,10 +137,10 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
                               key={hijo.nombre}
                               href={hijo.href || '#'}
                               className={cn(
-                                'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                                'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200',
                                 estaActivoHijo
-                                  ? 'bg-[#FCBA00] text-[#303030] font-medium'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                  ? 'bg-[#FCBA00] text-white font-semibold shadow-md shadow-[#FCBA00]/20'
+                                  : 'text-white/60 hover:text-white hover:bg-white/10'
                               )}
                               onClick={handleLinkClick}
                             >
@@ -156,7 +155,7 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
                 )
               }
 
-              // Item normal
+              // Item normal - Mejorado
               const Icono = elemento.icono
               const estaActivo = rutaActual === elemento.href
               return (
@@ -164,15 +163,15 @@ export function BarraLateral({ estaAbierta, alCerrar, navegacion }: PropsBarraLa
                   key={elemento.nombre}
                   href={elemento.href || '#'}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200",
                     estaActivo
-                      ? "bg-[#FCBA00] text-[#303030] font-semibold"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
+                      ? "bg-gradient-to-r from-[#FCBA00] to-[#E5A200] text-white shadow-lg shadow-[#FCBA00]/20"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
                   )}
                   onClick={handleLinkClick}
                 >
                   {Icono ? <Icono className="w-5 h-5" /> : <span className="w-5 h-5" />}
-                  <span>{elemento.nombre}</span>
+                  <span className="text-sm">{elemento.nombre}</span>
                 </Link>
               )
             })}
