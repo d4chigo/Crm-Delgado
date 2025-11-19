@@ -460,8 +460,10 @@ export const cotizacionService = {
   },
 
   /**
-   * Calcular cronograma para FLEXIBLE_ESPECIAL: cuota fija base + pago especial cada N meses
-   * No recalcula, mantiene patrón constante hasta agotar saldo
+   * Calcular cronograma para FLEXIBLE_ESPECIAL_AMORTIZACION: 
+   * - Cuota normal en meses regulares
+   * - Cuota completamente FIJA en meses especiales (cuando cuotaEspecialTipo=FIJO)
+   * - O cuota aumentada en porcentaje (cuando cuotaEspecialTipo=PORCENTAJE)
    */
   calcularCronogramaFlexibleEspecial(
     monto: number,
@@ -499,11 +501,12 @@ export const cotizacionService = {
       
       let cuotaMes = cuotaBase;
       if (esEspecial) {
-        if (cuotaEspecialTipo === 'PORCENTAJE') {
+        if (cuotaEspecialTipo === 'FIJO') {
+          // FIJO: la cuota especial es EXACTAMENTE el valor indicado (no es suma)
+          cuotaMes = Math.round(cuotaEspecialValor * 100) / 100;
+        } else if (cuotaEspecialTipo === 'PORCENTAJE') {
+          // PORCENTAJE: suma un porcentaje adicional a la cuota base
           cuotaMes = Math.round(cuotaBase * (1 + cuotaEspecialValor / 100) * 100) / 100;
-        } else {
-          // FIJO: suma el valor especial
-          cuotaMes = Math.round((cuotaBase + cuotaEspecialValor) * 100) / 100;
         }
       }
 

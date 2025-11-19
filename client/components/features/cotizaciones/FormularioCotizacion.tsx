@@ -150,6 +150,17 @@ export const FormularioCotizacion = ({
     montoCuotaManual: datos.montoCuotaManual as any
   }), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
 
+  // Si el cronograma generado tiene un número diferente de meses, actualizar plazoMeses automáticamente
+  useEffect(() => {
+    if (cronogramaPagos.length > 0 && cronogramaPagos.length !== datos.plazoMeses) {
+      const mesesReales = cronogramaPagos.length;
+      setDatos(prev => ({
+        ...prev,
+        plazoMeses: mesesReales
+      }));
+    }
+  }, [cronogramaPagos.length]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGuardando(true);
