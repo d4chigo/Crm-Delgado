@@ -223,6 +223,12 @@ export default function PaginaLeads() {
       if (googleToken) {
         setImportando(true)
         try {
+          // Validar que tengamos sesión activa antes de importar
+          const token = localStorage.getItem('crm_token')
+          if (!token) {
+            throw new Error('Tu sesión ha expirado. Por favor recarga la página e inicia sesión nuevamente.')
+          }
+
           // Importar contactos usando el token
           const resultado = await contactoService.importarDesdeGoogle(googleToken)
           
@@ -234,11 +240,28 @@ export default function PaginaLeads() {
           // Recargar leads
           await cargarLeads({ estadoLead: estadoFiltro })
         } catch (error: any) {
-          toast({
-            title: "Error en la importación",
-            description: error.message || "No se pudieron importar los contactos",
-            variant: "destructive"
-          })
+          const errorMsg = error.message || "No se pudieron importar los contactos"
+          
+          // Si es error de sesión expirada, mostrar mensaje más claro
+          if (errorMsg.includes('sesión ha expirado') || errorMsg.includes('401')) {
+            toast({
+              title: "⚠️ Sesión expirada",
+              description: "Tu sesión ha expirado. Por favor recarga la página e inicia sesión nuevamente.",
+              variant: "destructive"
+            })
+            // Limpiar token y redirigir después de 2 segundos
+            setTimeout(() => {
+              localStorage.removeItem('crm_token')
+              localStorage.removeItem('crm_user')
+              window.location.href = '/login'
+            }, 2000)
+          } else {
+            toast({
+              title: "Error en la importación",
+              description: errorMsg,
+              variant: "destructive"
+            })
+          }
         } finally {
           setImportando(false)
           // Limpiar URL
