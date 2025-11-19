@@ -51,6 +51,7 @@ import testRoutes from '@/routes/test.routes';
 import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
 import devRoutes from '@/routes/dev.routes';
+import notificacionRoutes from '@/routes/notificacion.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -134,6 +135,7 @@ app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimoniosRoutes);
 app.use('/api/admin/team', adminTeamRoutes);

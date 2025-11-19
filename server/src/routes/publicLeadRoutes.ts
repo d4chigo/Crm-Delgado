@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '@/config/database';
-import { TipoContacto, EstadoLead } from '@prisma/client';
+import { enviarWhatsAppNuevoLead } from '@/services/whatsapp.service';
+import { crearNotificacionNuevoLead } from '@/services/notificacion-lead.service';
 
 const router = Router();
 
@@ -92,9 +93,9 @@ router.post('/lead', async (req: Request, res: Response) => {
           apellido: apellido || contactoExistente.apellido,
           correo: email,
           telefono: telefono,
-          tipo: TipoContacto.LEAD,
-          estadoLead: EstadoLead.NUEVO,
-          observaciones: mensaje || contactoExistente.observaciones
+          tipo: 'LEAD' as any,
+          estadoLead: 'NUEVO' as any,
+          notas: mensaje || contactoExistente.notas
         }
       });
     } else {
@@ -124,9 +125,9 @@ router.post('/lead', async (req: Request, res: Response) => {
           apellido: apellido || '',
           correo: email,
           telefono: telefono,
-          tipo: TipoContacto.LEAD,
-          estadoLead: EstadoLead.NUEVO,
-          observaciones: mensaje || `Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
+          tipo: 'LEAD' as any,
+          estadoLead: 'NUEVO' as any,
+          notas: mensaje || `Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
           usuarioId: usuarioAsignado.id
         }
       });
@@ -176,6 +177,37 @@ router.post('/lead', async (req: Request, res: Response) => {
           }
         }
       }
+    }
+
+    // Crear notificación en el CRM
+    try {
+      await crearNotificacionNuevoLead({
+        leadId: contacto.id,
+        nombre,
+        apellido,
+        email,
+        telefono,
+        interes,
+        origen
+      });
+    } catch (notifError) {
+      console.warn('Advertencia: Error al crear notificación:', notifError);
+    }
+
+    // Enviar notificación por WhatsApp al admin
+    try {
+      await enviarWhatsAppNuevoLead({
+        nombre,
+        apellido,
+        email,
+        telefono,
+        interes,
+        origen,
+        mensaje
+      });
+    } catch (whatsappError) {
+      console.warn('Advertencia: Error al enviar WhatsApp:', whatsappError);
+      // No interrumpir el flujo si falla WhatsApp
     }
 
     res.status(201).json({

@@ -221,6 +221,27 @@ model Reporte {
   @@map("reportes")
 }
 
+model Notificacion {
+  id            String   @id @default(uuid())
+  titulo        String
+  descripcion   String   @db.Text
+  tipo          String   @default("INFO")
+  leida         Boolean  @default(false)
+  usuarioId     String?
+  contactoId    String?
+  referencia    String?  // ID del recurso relacionado (lead, contacto, etc)
+  tipoReferencia String?  // Tipo de recurso (LEAD, CONTACTO, OPORTUNIDAD, etc)
+  creadoEn      DateTime @default(now())
+  leidaEn       DateTime?
+
+  @@index([usuarioId])
+  @@index([contactoId])
+  @@index([leida])
+  @@index([creadoEn])
+  @@index([tipoReferencia])
+  @@map("notificaciones")
+}
+
 model Proyecto {
   id            String             @id @default(uuid())
   nombre        String
