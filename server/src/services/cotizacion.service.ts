@@ -29,13 +29,16 @@ export class CotizacionService {
 
   /**
    * Calcular cuota mensual usando fórmula de amortización francesa
+   * Convierte TEA (Tasa Efectiva Anual) a TEM (Tasa Efectiva Mensual)
+   * usando la fórmula: TEM = (1 + TEA)^(1/12) - 1
    */
   private calcularCuotaMensual(monto: number, tasaAnual: number, plazoMeses: number): number {
     if (tasaAnual === 0) {
       return monto / plazoMeses;
     }
     
-    const tasaMensual = tasaAnual / 100 / 12;
+    // Convertir TEA a TEM usando capitalización compuesta
+    const tasaMensual = Math.pow(1 + tasaAnual / 100, 1 / 12) - 1;
     const cuota = monto * (tasaMensual * Math.pow(1 + tasaMensual, plazoMeses)) / 
                   (Math.pow(1 + tasaMensual, plazoMeses) - 1);
     
