@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '@/config/database';
 import { enviarWhatsAppNuevoLead } from '@/services/whatsapp.service';
 import { crearNotificacionNuevoLead } from '@/services/notificacion-lead.service';
+import { notificarNuevoLeadEnTiempoReal } from '@/services/notificacion-realtime.service';
 
 const router = Router();
 
@@ -191,7 +192,23 @@ router.post('/lead', async (req: Request, res: Response) => {
         origen
       });
     } catch (notifError) {
-      console.warn('Advertencia: Error al crear notificación:', notifError);
+      console.warn('Advertencia: Error al crear notificación en BD:', notifError);
+    }
+
+    // Enviar notificación en tiempo real (WebSocket)
+    try {
+      await notificarNuevoLeadEnTiempoReal({
+        leadId: contacto.id,
+        nombre,
+        apellido,
+        email,
+        telefono,
+        interes,
+        origen,
+        mensaje
+      });
+    } catch (realtimeError) {
+      console.warn('Advertencia: Error al enviar notificación realtime:', realtimeError);
     }
 
     // Enviar notificación por WhatsApp al admin
