@@ -254,6 +254,73 @@ export default function TeamPage() {
     }));
   };
 
+  const handleChangeOrder = async (miembroId: number, direction: 'up' | 'down') => {
+    const token = getToken();
+    if (!token) return;
+
+    const miembroIndex = miembros.findIndex(m => m.id === miembroId);
+    if (miembroIndex === -1) return;
+
+    // Validar límites
+    if (direction === 'up' && miembroIndex === 0) {
+      toast.warning('Este miembro ya está al principio');
+      return;
+    }
+    if (direction === 'down' && miembroIndex === miembros.length - 1) {
+      toast.warning('Este miembro ya está al final');
+      return;
+    }
+
+    try {
+      const otherIndex = direction === 'up' ? miembroIndex - 1 : miembroIndex + 1;
+      const currentOrden = miembros[miembroIndex].orden_mostrar;
+      const otherOrden = miembros[otherIndex].orden_mostrar;
+
+      // Intercambiar órdenes
+      const updatedMiembros = [...miembros];
+      [updatedMiembros[miembroIndex].orden_mostrar, updatedMiembros[otherIndex].orden_mostrar] = 
+      [otherOrden, currentOrden];
+
+      // Actualizar ambos miembros
+      await Promise.all([
+        fetch(api(`/admin/team/${miembros[miembroIndex].id}`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: miembros[miembroIndex].nombre,
+            position: miembros[miembroIndex].cargo,
+            description: miembros[miembroIndex].descripcion,
+            display_order: otherOrden,
+            active: miembros[miembroIndex].activo,
+          }),
+        }),
+        fetch(api(`/admin/team/${miembros[otherIndex].id}`), {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: miembros[otherIndex].nombre,
+            position: miembros[otherIndex].cargo,
+            description: miembros[otherIndex].descripcion,
+            display_order: currentOrden,
+            active: miembros[otherIndex].activo,
+          }),
+        }),
+      ]);
+
+      toast.success('Orden actualizado correctamente');
+      cargarMiembros();
+    } catch (error) {
+      console.error('Error al cambiar orden:', error);
+      toast.error('Error al cambiar el orden del miembro');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {error && (
@@ -335,18 +402,45 @@ export default function TeamPage() {
                       {miembro.orden_mostrar}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-3">
+                      <div className="flex space-x-2 items-center">
+                        <button
+                          onClick={() => handleChangeOrder(miembro.id, 'up')}
+                          disabled={miembrosPaginados[0]?.id === miembro.id}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Mover arriba"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleChangeOrder(miembro.id, 'down')}
+                          disabled={miembrosPaginados[miembrosPaginados.length - 1]?.id === miembro.id}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Mover abajo"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <div className="w-px h-5 bg-gray-200"></div>
                         <button
                           onClick={() => handleEdit(miembro)}
-                          className="text-[#303030] hover:text-[#FCBA00] transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-[#FCBA00] hover:bg-yellow-50 rounded transition-colors"
+                          title="Editar miembro"
                         >
-                          Editar
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
                         </button>
                         <button
                           onClick={() => handleDelete(miembro.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Eliminar miembro"
                         >
-                          Eliminar
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
                         </button>
                       </div>
                     </td>
