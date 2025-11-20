@@ -22,6 +22,7 @@ model Usuario {
   oportunidades OportunidadCliente[]
   proyectos     Proyecto[]
   reportes      Reporte[]            @relation("UsuarioReportes")
+  alertas       AlertaLead[]
 
   @@map("usuarios")
 }
@@ -62,6 +63,7 @@ model Contacto {
   leadsAsociados    LeadCliente[]        @relation("LeadRelacion")
   oportunidades     OportunidadCliente[]
   proyectos         ProyectoCliente[]
+  alertas           AlertaLead[]
 
   @@index([usuarioId])
   @@index([tipo])
@@ -272,6 +274,27 @@ model Proyecto {
   @@index([tipoProyecto])
   @@index([mostrarEnWeb])
   @@map("proyectos")
+}
+
+// ==================== MODELO PARA ALERTAS DE LEADS ====================
+model AlertaLead {
+  id            String           @id @default(uuid())
+  contactoId    String
+  usuarioId     String
+  fechaCreada   DateTime         @default(now())
+  fechaLimite   DateTime         // 24 horas desde creación
+  completada    Boolean          @default(false)
+  completadaEn  DateTime?
+  notas         String?          @db.Text
+  contacto      Contacto         @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
+  @@index([contactoId])
+  @@index([completada])
+  @@index([fechaLimite])
+  @@index([fechaCreada])
+  @@map("alertas_leads")
 }
 
 enum Rol {

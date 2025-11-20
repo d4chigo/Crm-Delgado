@@ -52,6 +52,7 @@ import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
 import devRoutes from '@/routes/dev.routes';
 import notificacionRoutes from '@/routes/notificacion.routes';
+import alertaRoutes from '@/routes/alerta.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -136,6 +137,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/alertas', alertaRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimoniosRoutes);
 app.use('/api/admin/team', adminTeamRoutes);
@@ -180,7 +182,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar, /api/alertas`);
 });
 
 export default app;

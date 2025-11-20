@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
+import { WidgetAlertas } from "@/components/features/alerts"
 
 export default function PaginaDashboard() {
   const enrutador = useRouter()
@@ -156,8 +157,12 @@ export default function PaginaDashboard() {
 
       {/* Sección principal: Leads Recientes y Link Delgado */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Leads Recientes - más ancho */}
-        <div className="lg:col-span-2">
+        {/* Widget de Alertas y Leads Recientes - más ancho */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Widget de Alertas */}
+          {usuario?.id && <WidgetAlertas usuarioId={usuario.id} />}
+          
+          {/* Leads Recientes Card */}
           <Card className="border-0 shadow-md h-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
