@@ -208,7 +208,8 @@ router.post('/lead', async (req: Request, res: Response) => {
         mensaje
       });
     } catch (realtimeError) {
-      console.warn('Advertencia: Error al enviar notificación realtime:', realtimeError);
+      console.warn('⚠️ Advertencia: Error al enviar notificación realtime:', realtimeError);
+      // No interrumpir el flujo - las notificaciones en BD y WhatsApp ya se enviaron
     }
 
     // Enviar notificación por WhatsApp al admin

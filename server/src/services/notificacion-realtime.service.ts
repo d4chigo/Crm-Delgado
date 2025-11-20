@@ -70,46 +70,57 @@ export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): 
     console.log('🔔 Notificando nuevo lead en tiempo real...');
 
     // Obtener todos los admins y supervisores
-    const usuarios = await prisma.usuario.findMany({
-      where: {
-        OR: [
-          { rol: 'ADMIN' },
-          { rol: 'SUPERVISOR' }
-        ],
-        activo: true
-      },
-      select: { id: true, nombre: true, email: true }
-    });
-
-    console.log(`📢 Enviando notificación a ${usuarios.length} usuarios...`);
+    let usuarios: any[] = [];
+    try {
+      usuarios = await prisma.usuario.findMany({
+        where: {
+          OR: [
+            { rol: 'ADMIN' },
+            { rol: 'SUPERVISOR' }
+          ],
+          activo: true
+        },
+        select: { id: true, nombre: true, email: true }
+      });
+      console.log(`📢 Enviando notificación a ${usuarios.length} usuarios...`);
+    } catch (dbError) {
+      console.warn('⚠️ No se pudo obtener usuarios de BD:', dbError);
+      return; // Salir silenciosamente si no hay conexión a BD
+    }
 
     // Enviar a cada usuario conectado
     for (const usuario of usuarios) {
-      const enviado = enviarNotificacionAUsuario(usuario.id, {
-        tipo: 'NUEVO_LEAD',
-        titulo: `🔔 Nuevo Lead: ${datos.nombre} ${datos.apellido || ''}`,
-        datos: {
-          leadId: datos.leadId,
-          nombre: datos.nombre,
-          apellido: datos.apellido,
-          email: datos.email,
-          telefono: datos.telefono,
-          interes: datos.interes,
-          origen: datos.origen,
-          mensaje: datos.mensaje,
-          fecha: new Date().toLocaleString('es-PE')
-        },
-        accion: 'ver_lead',
-        urgencia: 'alta'
-      });
+      try {
+        const enviado = enviarNotificacionAUsuario(usuario.id, {
+          tipo: 'NUEVO_LEAD',
+          titulo: `🔔 Nuevo Lead: ${datos.nombre} ${datos.apellido || ''}`,
+          datos: {
+            leadId: datos.leadId,
+            nombre: datos.nombre,
+            apellido: datos.apellido,
+            email: datos.email,
+            telefono: datos.telefono,
+            interes: datos.interes,
+            origen: datos.origen,
+            mensaje: datos.mensaje,
+            fecha: new Date().toLocaleString('es-PE')
+          },
+          accion: 'ver_lead',
+          urgencia: 'alta'
+        });
 
-      if (!enviado) {
-        console.log(`ℹ️ Usuario ${usuario.id} no conectado por WebSocket, usará base de datos`);
+        if (!enviado) {
+          console.log(`ℹ️ Usuario ${usuario.id} no conectado por WebSocket, usará notificación en BD`);
+        }
+      } catch (sendError) {
+        console.warn(`⚠️ Error enviando notificación a usuario ${usuario.id}:`, sendError);
+        // Continuar con el siguiente usuario
       }
     }
 
   } catch (error) {
-    console.error('❌ Error al notificar nuevo lead en tiempo real:', error);
+    console.error('❌ Error en notificarNuevoLeadEnTiempoReal:', error);
+    // No lanzar excepción - las notificaciones en BD y WhatsApp ya se enviaron
   }
 };
 
