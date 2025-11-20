@@ -12,7 +12,6 @@ interface MiembroEquipo {
   descripcion: string;
   correo?: string;
   telefono?: string;
-  whatsapp?: string;
   foto: string | null;
   activo: boolean;
   orden_mostrar: number;
@@ -40,7 +39,6 @@ export default function TeamPage() {
     descripcion: '',
     correo: '',
     telefono: '',
-    whatsapp: '',
     foto: null,
     activo: true,
     orden_mostrar: 0,
@@ -87,7 +85,6 @@ export default function TeamPage() {
         descripcion: miembro.description || '',
         correo: miembro.email || '',
         telefono: miembro.phone || '',
-        whatsapp: miembro.whatsapp_url || null,
         foto: miembro.photo || null,
         activo: miembro.active !== undefined ? miembro.active : true,
         orden_mostrar: miembro.display_order || 0,
@@ -158,7 +155,7 @@ export default function TeamPage() {
         description: formData.descripcion,
         email: formData.correo || null,
         phone: formData.telefono || null,
-        whatsapp_url: formData.whatsapp || null,
+        whatsapp_url: formData.telefono ? `https://wa.me/${formData.telefono.replace(/[^0-9]/g, '')}` : null,
         photo: formData.foto,
         active: formData.activo,
         display_order: Number(formData.orden_mostrar) || 0,
@@ -224,7 +221,6 @@ export default function TeamPage() {
       descripcion: miembro.descripcion || '',
       correo: miembro.correo || '',
       telefono: miembro.telefono || '',
-      whatsapp: miembro.whatsapp || '',
       foto: miembro.foto,
       activo: miembro.activo,
       orden_mostrar: miembro.orden_mostrar,
@@ -359,7 +355,6 @@ export default function TeamPage() {
               descripcion: '',
               correo: '',
               telefono: '',
-              whatsapp: '',
               foto: null,
               activo: true,
               orden_mostrar: maxOrden + 1,
@@ -670,17 +665,20 @@ export default function TeamPage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           <i className="fab fa-whatsapp text-green-500 mr-2"></i>
-                          WhatsApp
+                          WhatsApp (Automático)
                         </label>
                         <input
-                          type="url"
-                          value={formData.whatsapp || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
-                          placeholder="https://wa.me/51999999999"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00] focus:border-[#FCBA00]"
+                          type="text"
+                          value={
+                            formData.telefono 
+                              ? `https://wa.me/${formData.telefono.replace(/[^0-9]/g, '')}` 
+                              : 'Ingresa teléfono primero'
+                          }
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Ejemplo: https://wa.me/51999999999
+                          Se genera automáticamente desde el teléfono
                         </p>
                       </div>
 
