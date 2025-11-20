@@ -226,6 +226,13 @@ export function DialogoEditarLead({
       console.log('Resultado:', resultado);
 
       if (!respuesta.ok) {
+        // Log del error completo para debug
+        console.error('Error response:', {
+          status: respuesta.status,
+          statusText: respuesta.statusText,
+          resultado
+        });
+
         // Mostrar detalles específicos de validación
         if (resultado.detalles && Array.isArray(resultado.detalles)) {
           console.error('Detalles de validación COMPLETOS:', JSON.stringify(resultado.detalles, null, 2));
@@ -236,22 +243,31 @@ export function DialogoEditarLead({
           }).join(', ');
           throw new Error(`Error de validación: ${errores}`);
         }
+
+        // Manejo específico de errores de duplicidad (409)
+        if (respuesta.status === 409) {
+          throw new Error(resultado.mensaje || 'Este dato ya existe en el sistema');
+        }
+
         throw new Error(resultado.mensaje || resultado.error || 'Error al actualizar lead');
       }
 
       toast({
-        title: 'Lead actualizado',
+        title: '✅ Lead actualizado',
         description: 'Los cambios se han guardado exitosamente',
       });
 
       onActualizado();
       onCerrar();
     } catch (error: any) {
-      console.error('Error al guardar lead:', error);
+      console.error('❌ Error al guardar lead:', error);
+      
+      // Mostrar el error de forma prominente
       toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el lead',
+        title: '❌ Error al actualizar',
+        description: error.message || 'No se pudo actualizar el lead. Intenta nuevamente.',
         variant: 'destructive',
+        duration: 5000,
       });
     } finally {
       setGuardando(false);
