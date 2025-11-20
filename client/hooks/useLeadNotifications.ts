@@ -3,7 +3,7 @@
  * Escucha nuevos leads y otros eventos a través de WebSocket
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 
 interface NotificacionLead {
   tipo: string;
@@ -26,35 +26,66 @@ export const useLeadNotifications = (
   usuarioId: string | undefined,
   onNewLead: (lead: NotificacionLead) => void
 ) => {
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptCountRef = useRef(0);
+  const maxAttemptsRef = useRef(5);
+
   const connectWebSocket = useCallback(() => {
+    // No intentar conectar si ya tenemos una conexión
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      return () => {};
+    }
+
     if (!usuarioId) {
       console.log('⏳ useLeadNotifications: esperando usuarioId');
       return () => {};
     }
 
+    // Si ya hemos intentado muchas veces, parar
+    if (attemptCountRef.current >= maxAttemptsRef.current) {
+      console.warn('⚠️ Máximo de intentos de conexión alcanzado. WebSocket deshabilitado.');
+      return () => {};
+    }
+
+    attemptCountRef.current++;
+
     // Determinar el protocolo según si estamos en http o https
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/api/voice`;
+    
+    // Obtener la URL del API desde variables de entorno o usar localhost:5000 por defecto
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    let apiHost = '';
+    
+    try {
+      apiHost = new URL(apiUrl).host;
+    } catch (e) {
+      console.warn('⚠️ URL de API inválida, usando localhost:5000');
+      apiHost = 'localhost:5000';
+    }
+    
+    const wsUrl = `${protocol}//${apiHost}/voice`;
 
-    console.log('🔌 Conectando a WebSocket:', wsUrl);
-
-    let ws: WebSocket | null = null;
-    let reconnectTimer: NodeJS.Timeout | null = null;
+    if (attemptCountRef.current === 1) {
+      console.log('🔌 Intentando conectar a WebSocket:', wsUrl);
+    }
 
     try {
-      ws = new WebSocket(wsUrl);
+      wsRef.current = new WebSocket(wsUrl);
 
-      ws.onopen = () => {
+      wsRef.current.onopen = () => {
         console.log('✅ Conectado a WebSocket de notificaciones');
+        attemptCountRef.current = 0; // Reset counter on success
+        
         // Limpiar timer de reconexión si existe
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
-          reconnectTimer = null;
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
         }
+        
         // Enviar mensaje de registro con usuarioId
         try {
-          ws?.send(JSON.stringify({
+          wsRef.current?.send(JSON.stringify({
             tipo: 'registro',
             usuarioId: usuarioId
           }));
@@ -63,10 +94,9 @@ export const useLeadNotifications = (
         }
       };
 
-      ws.onmessage = (event) => {
+      wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 Notificación recibida:', data);
 
           if (data.tipo === 'NUEVO_LEAD') {
             console.log('🔔 ¡Nuevo lead!:', data.datos?.nombre || 'Sin nombre');
@@ -74,41 +104,50 @@ export const useLeadNotifications = (
           }
         } catch (parseError) {
           console.warn('⚠️ Error al procesar notificación:', parseError);
-          // No lanzar error, solo loguear
         }
       };
 
-      ws.onerror = (event) => {
-        console.warn('⚠️ Error en WebSocket (reconectando):', event);
-        // No lanzar error, solo loguear como warning
+      wsRef.current.onerror = (event) => {
+        if (attemptCountRef.current <= 3) {
+          console.warn(`⚠️ Error en WebSocket (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
+        }
       };
 
-      ws.onclose = () => {
-        console.log('🔌 WebSocket desconectado. Reintentando en 5 segundos...');
-        // Limpiar cualquier timer anterior
-        if (reconnectTimer) {
-          clearTimeout(reconnectTimer);
+      wsRef.current.onclose = () => {
+        if (attemptCountRef.current < maxAttemptsRef.current) {
+          console.log(`🔌 WebSocket desconectado. Reintentando en 5 segundos... (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
+          
+          // Limpiar cualquier timer anterior
+          if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+          }
+          
+          // Reconectar automáticamente después de 5 segundos
+          reconnectTimerRef.current = setTimeout(() => {
+            connectWebSocket();
+          }, 5000);
         }
-        // Reconectar automáticamente después de 5 segundos
-        reconnectTimer = setTimeout(() => {
-          connectWebSocket();
-        }, 5000);
       };
     } catch (error) {
-      console.warn('⚠️ Error al crear WebSocket:', error);
-      // Intentar reconectar
-      reconnectTimer = setTimeout(() => {
-        connectWebSocket();
-      }, 5000);
+      if (attemptCountRef.current <= 3) {
+        console.warn(`⚠️ Error al crear WebSocket (intento ${attemptCountRef.current}/${maxAttemptsRef.current}):`, error);
+      }
+      
+      // Intentar reconectar si no hemos alcanzado el máximo
+      if (attemptCountRef.current < maxAttemptsRef.current) {
+        reconnectTimerRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 5000);
+      }
     }
 
     // Cleanup function
     return () => {
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
       }
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-        ws.close();
+      if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+        wsRef.current.close();
       }
     };
   }, [usuarioId, onNewLead]);
