@@ -252,7 +252,10 @@ export function DialogoEditarLead({
 
         // Manejo específico de errores de duplicidad (409)
         if (respuesta.status === 409) {
-          throw new Error(resultado.mensaje || 'Este dato ya existe en el sistema');
+          const mensajeDuplicado = resultado.mensaje || 'Este dato ya existe en el sistema';
+          // Log explícito del error de duplicidad
+          console.error('⚠️ DUPLICIDAD DETECTADA:', mensajeDuplicado);
+          throw new Error(`⚠️ ${mensajeDuplicado}`);
         }
 
         throw new Error(resultado.mensaje || resultado.error || 'Error al actualizar lead');
@@ -268,12 +271,21 @@ export function DialogoEditarLead({
     } catch (error: any) {
       console.error('❌ Error al guardar lead:', error);
       
-      // Mostrar el error de forma prominente
+      // Extraer el mensaje de error de diferentes fuentes
+      let mensajeError = 'No se pudo actualizar el lead. Intenta nuevamente.';
+      
+      if (error?.message) {
+        mensajeError = error.message;
+      } else if (typeof error === 'string') {
+        mensajeError = error;
+      }
+
+      // Mostrar el error de forma prominente en una notificación
       toast({
-        title: '❌ Error al actualizar',
-        description: error.message || 'No se pudo actualizar el lead. Intenta nuevamente.',
+        title: '❌ Error al actualizar lead',
+        description: mensajeError,
         variant: 'destructive',
-        duration: 5000,
+        duration: 6000,
       });
     } finally {
       setGuardando(false);
