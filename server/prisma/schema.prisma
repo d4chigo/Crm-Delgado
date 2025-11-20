@@ -413,7 +413,7 @@ model Testimonio {
   nombre         String
   correo         String
   calificacion   Int
-  testimonio     String
+  testimonio     String           @db.Text
   foto           String?
   media          String?
   videoUrl       String?          @map("video_url")
