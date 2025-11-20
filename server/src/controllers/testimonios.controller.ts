@@ -115,9 +115,16 @@ export const testimoniosController = {
   // Crear testimonio (admin)
   async create(req: Request, res: Response) {
     try {
+      console.log('Creating testimonio with data:', JSON.stringify(req.body, null, 2))
       const parsed = createSchema.safeParse(req.body)
       if (!parsed.success) {
-        return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues })
+        console.log('Validation errors:', parsed.error.issues)
+        const errorMessages = parsed.error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        return res.status(400).json({ 
+          error: 'Datos inválidos',
+          message: `Errores de validación: ${errorMessages}`,
+          details: parsed.error.issues 
+        })
       }
 
       const testimonio = await prisma.testimonio.create({
@@ -133,9 +140,13 @@ export const testimoniosController = {
       })
 
       res.status(201).json(testimonio)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear testimonio:', error)
-      res.status(500).json({ error: 'Error al crear testimonio' })
+      res.status(500).json({ 
+        error: 'Error al crear testimonio',
+        message: error?.message || 'Error desconocido',
+        details: error?.toString() || 'Sin detalles'
+      })
     }
   },
 
@@ -152,7 +163,12 @@ export const testimoniosController = {
       const parsed = updateSchema.safeParse(req.body)
       if (!parsed.success) {
         console.log('Errores de validación:', parsed.error.issues)
-        return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues })
+        const errorMessages = parsed.error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        return res.status(400).json({ 
+          error: 'Datos inválidos',
+          message: `Errores de validación: ${errorMessages}`,
+          details: parsed.error.issues 
+        })
       }
 
       const updateData: any = {}
@@ -172,15 +188,28 @@ export const testimoniosController = {
 
       console.log('Datos a actualizar en BD:', JSON.stringify(updateData, null, 2))
 
+      // Verificar que existe el testimonio
+      const existingTestimonio = await prisma.testimonio.findUnique({
+        where: { id }
+      })
+      if (!existingTestimonio) {
+        return res.status(404).json({ error: 'Testimonio no encontrado' })
+      }
+
       const testimonio = await prisma.testimonio.update({
         where: { id },
         data: updateData,
       })
 
       res.json(testimonio)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar testimonio:', error)
-      res.status(500).json({ error: 'Error al actualizar testimonio' })
+      const errorMessage = error?.message || 'Error al actualizar testimonio'
+      res.status(500).json({ 
+        error: 'Error al actualizar testimonio',
+        message: errorMessage,
+        details: error?.toString() || 'Error desconocido'
+      })
     }
   },
 

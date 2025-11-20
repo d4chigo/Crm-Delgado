@@ -137,9 +137,17 @@ const TestimoniosPage: React.FC = () => {
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         console.error('Error response:', errorData);
-        const errorMessage = errorData.error || 'Error al guardar el testimonio';
-        const details = errorData.details ? JSON.stringify(errorData.details) : '';
-        throw new Error(details ? `${errorMessage}: ${details}` : errorMessage);
+        
+        // Intentar obtener el mensaje de error más descriptivo
+        let errorMessage = errorData.message || errorData.error || 'Error al guardar el testimonio';
+        
+        // Si hay detalles de validación, agregarlos
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const details = errorData.details.map((d: any) => `${d.path?.join('.') || 'campo'}: ${d.message}`).join(', ');
+          errorMessage = `${errorMessage}: ${details}`;
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const responseData = await res.json();
@@ -150,7 +158,16 @@ const TestimoniosPage: React.FC = () => {
       cargarTestimonios();
     } catch (error) {
       console.error('Error al guardar testimonio:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al guardar el testimonio';
+      let errorMessage = 'Error al guardar el testimonio';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        errorMessage = err.error || err.message || JSON.stringify(error);
+      }
+      
+      console.log('Error message final:', errorMessage);
       toast.error(errorMessage);
     }
   };
