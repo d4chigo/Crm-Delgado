@@ -65,6 +65,8 @@ router.post('/lead', async (req: Request, res: Response) => {
   try {
     const { nombre, apellido, email, telefono, interes, origen, mensaje } = req.body;
 
+    console.log('[Lead] Iniciando creación de lead:', { nombre, email, telefono });
+
     // Validaciones básicas
     if (!nombre || !email || !telefono) {
       return res.status(400).json({
@@ -74,6 +76,7 @@ router.post('/lead', async (req: Request, res: Response) => {
     }
 
     // Verificar si ya existe un contacto con ese email o teléfono
+    console.log('[Lead] Buscando contacto existente...');
     const contactoExistente = await prisma.contacto.findFirst({
       where: {
         OR: [
@@ -82,6 +85,7 @@ router.post('/lead', async (req: Request, res: Response) => {
         ]
       }
     });
+    console.log('[Lead] Búsqueda completada. Existente:', !!contactoExistente);
 
     let contacto;
 
@@ -134,17 +138,20 @@ router.post('/lead', async (req: Request, res: Response) => {
       });
     }
 
+
     // Crear actividad registrando el origen del lead
-    await prisma.actividad.create({
-      data: {
-        tipo: 'LLAMADA',
-        descripcion: `Lead generado desde formulario web. Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
-        fechaActividad: new Date(),
-        completada: false,
-        contactoId: contacto.id,
-        usuarioId: contacto.usuarioId
-      }
-    });
+    // Nota: El modelo 'Actividad' no existe en el schema, se omite
+    // await prisma.actividad.create({
+    //   data: {
+    //     tipo: 'LLAMADA',
+    //     descripcion: `Lead generado desde formulario web. Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
+    //     fechaActividad: new Date(),
+    //     completada: false,
+    //     contactoId: contacto.id,
+    //     usuarioId: contacto.usuarioId
+    //   }
+    // });
+
 
     // Si hay etiqueta según el interés, asignarla
     if (interes) {
@@ -192,7 +199,7 @@ router.post('/lead', async (req: Request, res: Response) => {
         origen
       });
     } catch (notifError) {
-      console.warn('Advertencia: Error al crear notificación en BD:', notifError);
+      console.warn('⚠️ Advertencia: Error al crear notificación en BD:', notifError);
     }
 
     // Enviar notificación en tiempo real (WebSocket)
@@ -224,10 +231,11 @@ router.post('/lead', async (req: Request, res: Response) => {
         mensaje
       });
     } catch (whatsappError) {
-      console.warn('Advertencia: Error al enviar WhatsApp:', whatsappError);
+      console.warn('⚠️ Advertencia: Error al enviar WhatsApp:', whatsappError);
       // No interrumpir el flujo si falla WhatsApp
     }
 
+    console.log('✅ Lead creado exitosamente:', contacto.id);
     res.status(201).json({
       exito: true,
       mensaje: 'Lead creado exitosamente',
@@ -241,7 +249,7 @@ router.post('/lead', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Error al crear lead:', error);
+    console.error('❌ Error al crear lead:', error);
     res.status(500).json({
       exito: false,
       mensaje: 'Error al crear el lead',
