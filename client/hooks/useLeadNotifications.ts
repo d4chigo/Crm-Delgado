@@ -64,7 +64,7 @@ export const useLeadNotifications = (
       apiHost = 'localhost:5000';
     }
     
-    const wsUrl = `${protocol}//${apiHost}/voice`;
+    const wsUrl = `${protocol}//${apiHost}/api/voice`;
 
     if (attemptCountRef.current === 1) {
       console.log('🔌 Intentando conectar a WebSocket:', wsUrl);
