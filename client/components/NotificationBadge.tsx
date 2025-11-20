@@ -7,7 +7,7 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthToken } from '@/hooks/useAuthToken';
+import { obtenerUsuario } from '@/lib/autenticacion';
 import { useLeadNotifications } from '@/hooks/useLeadNotifications';
 
 interface NotificacionLead {
@@ -28,8 +28,7 @@ interface NotificacionLead {
 }
 
 export const NotificationBadge: React.FC = () => {
-  const { getUserData } = useAuthToken();
-  const userData = getUserData();
+  const userData = obtenerUsuario();
   const [noLeidas, setNoLeidas] = useState<number>(0);
   const [ultimasNotificaciones, setUltimasNotificaciones] = useState<NotificacionLead[]>([]);
   const [mostrarPanel, setMostrarPanel] = useState(false);

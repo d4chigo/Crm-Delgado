@@ -6,20 +6,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { useAuthToken } from '@/hooks/useAuthToken';
+import { obtenerUsuario } from '@/lib/autenticacion';
 import { useLeadNotifications } from '@/hooks/useLeadNotifications';
-import { api } from '@/lib/api';
 
 export const LeadNotificationsListener: React.FC = () => {
-  const { getToken, getUserData } = useAuthToken();
-  const userData = getUserData();
+  const userData = obtenerUsuario();
   const [notificacionesRecibidas, setNotificacionesRecibidas] = useState<any[]>([]);
 
   const handleNewLead = (lead: any) => {
     // Agregar a la lista de notificaciones
     setNotificacionesRecibidas(prev => [lead, ...prev]);
 
-    // Mostrar toast con sonido
+    // Mostrar toast de notificación
     toast.success(
       `🔔 ¡Nuevo Lead! ${lead.datos.nombre} - ${lead.datos.interes}`,
       {
@@ -28,8 +26,7 @@ export const LeadNotificationsListener: React.FC = () => {
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
-        sound: true
+        draggable: true
       }
     );
 
