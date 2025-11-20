@@ -221,7 +221,13 @@ export function DialogoEditarLead({
         return;
       }
 
-      const resultado = await respuesta.json();
+      let resultado: any = {};
+      try {
+        resultado = await respuesta.json();
+      } catch (parseError) {
+        console.warn('No se pudo parsear la respuesta como JSON:', parseError);
+        resultado = { mensaje: respuesta.statusText || 'Error desconocido' };
+      }
 
       console.log('Resultado:', resultado);
 
