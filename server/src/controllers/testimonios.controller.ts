@@ -5,13 +5,34 @@ import prisma from '@/config/database'
 const createSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   email: z.string().email('Email inválido'),
-  calificacion: z.number().int().min(1).max(5),
+  calificacion: z.preprocess(
+    (val) => (typeof val === 'string' ? parseInt(val) : val),
+    z.number().int().min(1, 'La calificación debe ser al menos 1').max(5, 'La calificación no puede exceder 5')
+  ),
   testimonio: z.string().min(10, 'El testimonio debe tener al menos 10 caracteres'),
-  foto: z.union([z.string().url(), z.null()]).optional().default(null),
+  // Foto: aceptar URL válida, null, o string vacío (que se convierte a null)
+  foto: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.union([z.string().url(), z.null()]).optional().default(null)
+  ),
   estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional().default('PENDIENTE'),
 })
 
-const updateSchema = createSchema.partial()
+// Schema específico para actualización - más flexible
+const updateSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es requerido').optional(),
+  email: z.string().email('Email inválido').optional(),
+  calificacion: z.preprocess(
+    (val) => (typeof val === 'string' ? parseInt(val) : val),
+    z.number().int().min(1, 'La calificación debe ser al menos 1').max(5, 'La calificación no puede exceder 5').optional()
+  ),
+  testimonio: z.string().min(10, 'El testimonio debe tener al menos 10 caracteres').optional(),
+  foto: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.union([z.string().url(), z.null()]).optional()
+  ),
+  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional(),
+}).strict(false) // Permitir campos adicionales sin fallar
 
 export const testimoniosController = {
   // Obtener todos los testimonios (admin)
@@ -126,23 +147,30 @@ export const testimoniosController = {
         return res.status(400).json({ error: 'ID inválido' })
       }
 
+      console.log('Body recibido para actualizar:', JSON.stringify(req.body, null, 2))
+
       const parsed = updateSchema.safeParse(req.body)
       if (!parsed.success) {
+        console.log('Errores de validación:', parsed.error.issues)
         return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues })
       }
 
       const updateData: any = {}
-      if (parsed.data.nombre) updateData.nombre = parsed.data.nombre
-      if (parsed.data.email) updateData.correo = parsed.data.email
-      if (parsed.data.calificacion) updateData.calificacion = parsed.data.calificacion
-      if (parsed.data.testimonio) updateData.testimonio = parsed.data.testimonio
+      
+      // Solo actualizar campos que fueron enviados y validados
+      if (parsed.data.nombre !== undefined) updateData.nombre = parsed.data.nombre
+      if (parsed.data.email !== undefined) updateData.correo = parsed.data.email
+      if (parsed.data.calificacion !== undefined) updateData.calificacion = parsed.data.calificacion
+      if (parsed.data.testimonio !== undefined) updateData.testimonio = parsed.data.testimonio
       if (parsed.data.foto !== undefined) updateData.foto = parsed.data.foto
-      if (parsed.data.estado) {
+      if (parsed.data.estado !== undefined) {
         updateData.estado = parsed.data.estado
         if (parsed.data.estado === 'APROBADO') {
           updateData.aprobadoEn = new Date()
         }
       }
+
+      console.log('Datos a actualizar en BD:', JSON.stringify(updateData, null, 2))
 
       const testimonio = await prisma.testimonio.update({
         where: { id },

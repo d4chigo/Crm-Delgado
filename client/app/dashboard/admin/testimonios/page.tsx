@@ -98,11 +98,11 @@ const TestimoniosPage: React.FC = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
+    const { name, value } = e.target;
     
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value) : value
+      [name]: name === 'calificacion' ? parseInt(value) : value
     }));
   };
 
@@ -117,23 +117,41 @@ const TestimoniosPage: React.FC = () => {
       const token = getToken();
       if (!token) return;
 
+      // Preparar datos: convertir foto vacía a null
+      const dataToSend = {
+        ...formData,
+        foto: formData.foto?.trim() ? formData.foto : null,
+      };
+
+      console.log('Enviando datos:', dataToSend);
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
-      if (!res.ok) throw new Error('Error al guardar el testimonio');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Error response:', errorData);
+        const errorMessage = errorData.error || 'Error al guardar el testimonio';
+        const details = errorData.details ? JSON.stringify(errorData.details) : '';
+        throw new Error(details ? `${errorMessage}: ${details}` : errorMessage);
+      }
+      
+      const responseData = await res.json();
+      console.log('Respuesta exitosa:', responseData);
       
       toast.success(`Testimonio ${currentTestimonio ? 'actualizado' : 'creado'} correctamente`);
       setShowModal(false);
       cargarTestimonios();
     } catch (error) {
       console.error('Error al guardar testimonio:', error);
-      toast.error('Error al guardar el testimonio');
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar el testimonio';
+      toast.error(errorMessage);
     }
   };
 
@@ -430,12 +448,12 @@ const TestimoniosPage: React.FC = () => {
                   </label>
                   <select
                     name="calificacion"
-                    value={formData.calificacion}
+                    value={String(formData.calificacion)}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {[1, 2, 3, 4, 5].map((num) => (
-                      <option key={num} value={num}>
+                      <option key={num} value={String(num)}>
                         {num} {num === 1 ? 'estrella' : 'estrellas'}
                       </option>
                     ))}
@@ -444,16 +462,49 @@ const TestimoniosPage: React.FC = () => {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Testimonio *
+                    Testimonio * 
+                    <span className="text-xs text-gray-500 font-normal ml-2">
+                      (Mínimo 10 caracteres)
+                    </span>
                   </label>
                   <textarea
                     name="testimonio"
                     value={formData.testimonio}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      formData.testimonio.length < 10 && formData.testimonio.length > 0
+                        ? 'border-orange-300 focus:ring-orange-500'
+                        : formData.testimonio.length >= 10
+                        ? 'border-green-300 focus:ring-green-500'
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                     required
                   />
+                  <div className="flex justify-between items-start mt-2">
+                    <p className={`text-xs font-medium ${
+                      formData.testimonio.length < 10 && formData.testimonio.length > 0
+                        ? 'text-orange-600'
+                        : formData.testimonio.length >= 10
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}>
+                      {formData.testimonio.length < 10 && formData.testimonio.length > 0 ? (
+                        <>
+                          ⚠️ Faltan {10 - formData.testimonio.length} caracteres
+                        </>
+                      ) : formData.testimonio.length >= 10 ? (
+                        <>
+                          ✓ Cumple el mínimo de caracteres
+                        </>
+                      ) : (
+                        'Escribe al menos 10 caracteres'
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formData.testimonio.length}/10 caracteres
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -497,7 +548,13 @@ const TestimoniosPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#303030] bg-[#FCBA00] hover:bg-[#e6a800] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FCBA00] transition-colors"
+                  disabled={formData.testimonio.length < 10}
+                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors ${
+                    formData.testimonio.length < 10
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'text-[#303030] bg-[#FCBA00] hover:bg-[#e6a800] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FCBA00]'
+                  }`}
+                  title={formData.testimonio.length < 10 ? `Faltan ${10 - formData.testimonio.length} caracteres` : ''}
                 >
                   {currentTestimonio ? 'Actualizar' : 'Crear'}
                 </button>
