@@ -8,6 +8,26 @@ import prisma from './database';
 
 export class ContactoAdapter {
   /**
+   * Transformar include/select para que sea compatible con Lead/Cliente
+   */
+  private static transformInclude(include: any): { leadInclude: any; clienteInclude: any } {
+    const leadInclude = { ...include };
+    const clienteInclude = { ...include };
+
+    // Cambiar 'etiquetas' por 'etiquetasRel' en ambos
+    if (leadInclude.etiquetas) {
+      leadInclude.etiquetasRel = leadInclude.etiquetas;
+      delete leadInclude.etiquetas;
+    }
+    if (clienteInclude.etiquetas) {
+      clienteInclude.etiquetasRel = clienteInclude.etiquetas;
+      delete clienteInclude.etiquetas;
+    }
+
+    return { leadInclude, clienteInclude };
+  }
+
+  /**
    * Crear un lead (tratado como contacto de tipo LEAD)
    */
   static async create(data: any) {
@@ -55,28 +75,59 @@ export class ContactoAdapter {
   static async findMany(options: any = {}) {
     const { where = {}, include, select, orderBy, skip, take } = options;
 
+    // Transformar includes si existen
+    const { leadInclude, clienteInclude } = this.transformInclude(include || {});
+
     // Si especifica tipo, buscar solo en esa tabla
     if (where.tipo === 'LEAD') {
       const leadWhere = { ...where };
       delete leadWhere.tipo;
-      const leads = await prisma.lead.findMany({ where: leadWhere, include, select, orderBy, skip, take });
+      const leads = await prisma.lead.findMany({ 
+        where: leadWhere, 
+        include: Object.keys(leadInclude).length > 0 ? leadInclude : undefined, 
+        select, 
+        orderBy, 
+        skip, 
+        take 
+      });
       return leads.map((lead: any) => ({ ...lead, tipo: 'LEAD' }));
     }
 
     if (where.tipo === 'CLIENTE') {
       const clienteWhere = { ...where };
       delete clienteWhere.tipo;
-      const clientes = await prisma.cliente.findMany({ where: clienteWhere, include, select, orderBy, skip, take });
+      const clientes = await prisma.cliente.findMany({ 
+        where: clienteWhere, 
+        include: Object.keys(clienteInclude).length > 0 ? clienteInclude : undefined, 
+        select, 
+        orderBy, 
+        skip, 
+        take 
+      });
       return clientes.map((cliente: any) => ({ ...cliente, tipo: 'CLIENTE' }));
     }
 
-    // Si no especifica tipo, obtener de ambas
-    const leadWhere = { ...where };
-    delete leadWhere.tipo;
+    // Si no especifica tipo, obtener de ambas tablas
+    const baseWhere = { ...where };
+    delete baseWhere.tipo;
     
     const [leads, clientes] = await Promise.all([
-      prisma.lead.findMany({ where: leadWhere, include, select, orderBy, skip, take }),
-      prisma.cliente.findMany({ where: leadWhere, include, select, orderBy, skip, take })
+      prisma.lead.findMany({ 
+        where: baseWhere, 
+        include: Object.keys(leadInclude).length > 0 ? leadInclude : undefined, 
+        select, 
+        orderBy, 
+        skip, 
+        take 
+      }).catch(() => []),
+      prisma.cliente.findMany({ 
+        where: baseWhere, 
+        include: Object.keys(clienteInclude).length > 0 ? clienteInclude : undefined, 
+        select, 
+        orderBy, 
+        skip, 
+        take 
+      }).catch(() => [])
     ]);
 
     // Añadir tipo y mezclar
@@ -108,12 +159,12 @@ export class ContactoAdapter {
     }
 
     // Si no especifica tipo, contar en ambas
-    const leadWhere = { ...where };
-    delete leadWhere.tipo;
+    const baseWhere = { ...where };
+    delete baseWhere.tipo;
 
     const [leadsCount, clientesCount] = await Promise.all([
-      prisma.lead.count({ where: leadWhere }),
-      prisma.cliente.count({ where: leadWhere })
+      prisma.lead.count({ where: baseWhere }),
+      prisma.cliente.count({ where: baseWhere })
     ]);
 
     return leadsCount + clientesCount;
@@ -176,7 +227,7 @@ export class ContactoAdapter {
       _count,
       _sum,
       _avg
-    });
+    }).catch(() => []);
 
     const clientesGrouped = await prisma.cliente.groupBy({
       by,
@@ -184,7 +235,7 @@ export class ContactoAdapter {
       _count,
       _sum,
       _avg
-    });
+    }).catch(() => []);
 
     // Combinar resultados
     return [...leadsGrouped, ...clientesGrouped];

@@ -385,39 +385,125 @@ export class ContactoService {
    * Obtener contactos recientes
    */
   async obtenerContactosRecientes(usuarioId: string, limite: number = 10, tipo?: string) {
-    const where: any = { usuarioId };
-    
-    if (tipo) {
-      where.tipo = tipo;
+    if (tipo === 'LEAD') {
+      // Buscar solo leads
+      const leads = await prisma.lead.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          estado: true,
+          creadoEn: true
+        }
+      });
+
+      return leads.map((lead: any) => ({
+        id: lead.id,
+        nombre: `${lead.nombre} ${lead.apellido}`.trim(),
+        email: lead.correo,
+        telefono: lead.telefono,
+        empresa: lead.empresa,
+        tipo: 'LEAD',
+        estado: lead.estado,
+        fechaCreacion: lead.creadoEn
+      }));
     }
 
-    const contactos = await prisma.contacto.findMany({
-      where,
-      orderBy: { creadoEn: 'desc' },
-      take: limite,
-      select: {
-        id: true,
-        nombre: true,
-        apellido: true,
-        correo: true,
-        telefono: true,
-        empresa: true,
-        tipo: true,
-        estado: true,
-        creadoEn: true
-      }
-    });
+    if (tipo === 'CLIENTE') {
+      // Buscar solo clientes
+      const clientes = await prisma.cliente.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          prioridad: true,
+          creadoEn: true
+        }
+      });
 
-    return contactos.map((contacto: any) => ({
-      id: contacto.id,
-      nombre: `${contacto.nombre} ${contacto.apellido}`.trim(),
-      email: contacto.correo,
-      telefono: contacto.telefono,
-      empresa: contacto.empresa,
-      tipo: contacto.tipo,
-      estado: contacto.estado,
-      fechaCreacion: contacto.creadoEn
-    }));
+      return clientes.map((cliente: any) => ({
+        id: cliente.id,
+        nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
+        email: cliente.correo,
+        telefono: cliente.telefono,
+        empresa: cliente.empresa,
+        tipo: 'CLIENTE',
+        estado: cliente.prioridad,
+        fechaCreacion: cliente.creadoEn
+      }));
+    }
+
+    // Si no especifica tipo, obtener ambos
+    const [leads, clientes] = await Promise.all([
+      prisma.lead.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          estado: true,
+          creadoEn: true
+        }
+      }),
+      prisma.cliente.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          prioridad: true,
+          creadoEn: true
+        }
+      })
+    ]);
+
+    const contactos = [
+      ...leads.map((lead: any) => ({
+        id: lead.id,
+        nombre: `${lead.nombre} ${lead.apellido}`.trim(),
+        email: lead.correo,
+        telefono: lead.telefono,
+        empresa: lead.empresa,
+        tipo: 'LEAD',
+        estado: lead.estado,
+        fechaCreacion: lead.creadoEn
+      })),
+      ...clientes.map((cliente: any) => ({
+        id: cliente.id,
+        nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
+        email: cliente.correo,
+        telefono: cliente.telefono,
+        empresa: cliente.empresa,
+        tipo: 'CLIENTE',
+        estado: cliente.prioridad,
+        fechaCreacion: cliente.creadoEn
+      }))
+    ];
+
+    // Ordenar por fecha de creación y tomar solo 'limite' elementos
+    return contactos.sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime()).slice(0, limite);
   }
 
   /**
