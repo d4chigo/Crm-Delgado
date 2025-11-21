@@ -597,17 +597,21 @@ export default function PaginaPipeline() {
       {/* Deal Details Dialog */}
       {selectedDeal && (
         <Dialog open={!!selectedDeal} onOpenChange={() => setSelectedDeal(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-[#303030]">
-                {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
-              </DialogTitle>
-              <DialogDescription>{selectedDeal.titulo}</DialogDescription>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-[#FCBA00]/30">
+            <DialogHeader className="border-b border-[#FCBA00]/20 pb-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-[#303030]">
+                    {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
+                  </DialogTitle>
+                  <DialogDescription className="mt-2">{selectedDeal.titulo}</DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Stage & Probability */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center flex-wrap">
                 <Badge
                   className={`${ETAPAS_PIPELINE.find((e: { id: string; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
@@ -616,6 +620,28 @@ export default function PaginaPipeline() {
                 <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
                   Probabilidad: {selectedDeal.probabilidad || 0}%
                 </Badge>
+                {/* Etiquetas del cliente */}
+                {selectedDeal.cliente?.etiquetas && selectedDeal.cliente.etiquetas.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {selectedDeal.cliente.etiquetas.slice(0, 3).map((et: any) => (
+                      <Badge
+                        key={et.etiqueta.id}
+                        className="text-xs font-semibold"
+                        style={{
+                          backgroundColor: et.etiqueta.color || '#E5E7EB',
+                          color: 'white'
+                        }}
+                      >
+                        {et.etiqueta.nombre}
+                      </Badge>
+                    ))}
+                    {selectedDeal.cliente.etiquetas.length > 3 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{selectedDeal.cliente.etiquetas.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Contact Info */}
@@ -639,13 +665,27 @@ export default function PaginaPipeline() {
                   </p>
                 </div>
               </div>
+              
+              {/* Action Buttons - WhatsApp & Calendar */}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}><Phone className="h-4 w-4 mr-1" />WhatsApp</Button>
-                <Button variant="outline" size="sm" onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre || '', selectedDeal.cliente?.correo || '')}><Calendar className="h-4 w-4 mr-1" />Agendar</Button>
+                <Button 
+                  onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button 
+                  onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre || '', selectedDeal.cliente?.correo || '')}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Agendar Reunión
+                </Button>
               </div>
 
               {/* Property Details */}
-              <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+              <div className="p-4 bg-gradient-to-br from-[#FCBA00]/5 to-[#FCBA00]/0 border border-[#FCBA00]/20 rounded-lg space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Propiedad</p>
@@ -697,8 +737,15 @@ export default function PaginaPipeline() {
               </div>
 
               {/* Move Stage Actions */}
-              <div className="space-y-3 pt-4 border-t">
-                <p className="text-sm font-medium text-[#303030]">Mover a:</p>
+              <div className="space-y-3 pt-4 border-t border-[#FCBA00]/20">
+                <p className="text-sm font-semibold text-[#303030] flex items-center gap-2">
+                  <span>Mover a:</span>
+                  {selectedDeal.cliente?.etiquetas && selectedDeal.cliente.etiquetas.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ({selectedDeal.cliente.etiquetas.map((et: any) => et.etiqueta.nombre).join(', ')})
+                    </span>
+                  )}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {ETAPAS_PIPELINE
                     .filter((e: { id: string; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
@@ -711,7 +758,7 @@ export default function PaginaPipeline() {
                           handleMoverOportunidad(selectedDeal.id, etapa.id)
                           setSelectedDeal(null)
                         }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10"
+                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10 font-semibold"
                       >
                         {etapa.nombre}
                       </Button>
@@ -720,7 +767,7 @@ export default function PaginaPipeline() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-[#FCBA00]/20">
                 <Button 
                   variant="destructive"
                   onClick={() => {
@@ -732,7 +779,7 @@ export default function PaginaPipeline() {
                 </Button>
                 <Button 
                   onClick={() => setSelectedDeal(null)}
-                  className="flex-1 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold"
+                  className="flex-1 bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-semibold"
                 >
                   Cerrar
                 </Button>
