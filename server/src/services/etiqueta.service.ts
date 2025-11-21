@@ -6,7 +6,10 @@ export class EtiquetaService {
    */
   async obtenerEtiquetas() {
     return await prisma.etiqueta.findMany({
-      where: { activa: true },
+      where: {
+        activa: true,
+        nombre: { not: 'Fuente: Google Contacts' }
+      },
       orderBy: { orden: 'asc' }
     });
   }
