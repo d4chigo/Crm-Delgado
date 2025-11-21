@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { getStageProbability, STAGE_LABELS, STAGES_ORDER } from '@/lib/pipeline-stages'
 import type { Contacto } from '@/types/contacto.types'
 
 interface DialogoCrearOportunidadProps {
@@ -34,30 +35,31 @@ export function DialogoCrearOportunidad({
   cargando = false
 }: DialogoCrearOportunidadProps) {
   const [titulo, setTitulo] = useState('')
-  const [etapa, setEtapa] = useState('LEAD')
+  const [etapa, setEtapa] = useState('CONTACTO_INICIAL')
   const [valor, setValor] = useState('')
-  const [probabilidad, setProbabilidad] = useState('25')
   const [proximaAccion, setProximaAccion] = useState('')
   const [notas, setNotas] = useState('')
+
+  // Auto-calcular probabilidad basada en la etapa
+  const probabilidadAuto = getStageProbability(etapa)
 
   const handleCrear = useCallback(async () => {
     await onCrear({
       titulo: titulo || `${lead?.nombre} ${lead?.apellido}`.trim(),
       etapa,
       valor: valor ? parseFloat(valor) : undefined,
-      probabilidad: probabilidad ? parseInt(probabilidad) : 25,
+      probabilidad: probabilidadAuto,
       proximaAccion: proximaAccion || undefined,
       notas: notas || undefined
     })
     
     // Limpiar formulario
     setTitulo('')
-    setEtapa('LEAD')
+    setEtapa('CONTACTO_INICIAL')
     setValor('')
-    setProbabilidad('25')
     setProximaAccion('')
     setNotas('')
-  }, [titulo, etapa, valor, probabilidad, proximaAccion, notas, lead, onCrear])
+  }, [titulo, etapa, valor, proximaAccion, notas, lead, onCrear, probabilidadAuto])
 
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
@@ -96,22 +98,22 @@ export function DialogoCrearOportunidad({
 
           {/* Etapa */}
           <div className="space-y-1">
-            <Label htmlFor="etapa">Etapa</Label>
+            <Label htmlFor="etapa">Etapa del Pipeline</Label>
             <Select value={etapa} onValueChange={setEtapa} disabled={cargando}>
               <SelectTrigger id="etapa">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="LEAD">Lead</SelectItem>
-                <SelectItem value="CONTACTO">Contacto Inicial</SelectItem>
-                <SelectItem value="VISITA">Visita Agendada</SelectItem>
-                <SelectItem value="NEGOCIACION">Negociación</SelectItem>
-                <SelectItem value="CIERRE">Cierre</SelectItem>
+                {STAGES_ORDER.map((stage) => (
+                  <SelectItem key={stage} value={stage}>
+                    {STAGE_LABELS[stage]} ({getStageProbability(stage)}%)
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Valor y Probabilidad en grid */}
+          {/* Valor y Probabilidad Automática en grid */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="valor">Valor (Opcional)</Label>
@@ -126,19 +128,13 @@ export function DialogoCrearOportunidad({
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="probabilidad">Probabilidad (%)</Label>
-              <Select value={probabilidad} onValueChange={setProbabilidad} disabled={cargando}>
-                <SelectTrigger id="probabilidad">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">0%</SelectItem>
-                  <SelectItem value="25">25%</SelectItem>
-                  <SelectItem value="50">50%</SelectItem>
-                  <SelectItem value="75">75%</SelectItem>
-                  <SelectItem value="100">100%</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="probabilidad">Probabilidad (Automática)</Label>
+              <div className="flex items-center justify-center h-10 bg-blue-50 border border-blue-200 rounded-md">
+                <span className="text-lg font-bold text-blue-600">{probabilidadAuto}%</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Se calcula automáticamente según la etapa
+              </p>
             </div>
           </div>
 
