@@ -358,21 +358,34 @@ export class CotizacionService {
   }
 
   /**
-   * Obtener cotizaciones de un contacto específico
+   * Obtener cotizaciones de un contacto específico (lead o cliente)
    */
   async obtenerCotizacionesPorContacto(contactoId: string) {
+    // Verificar si el contacto es un lead o cliente
+    const lead = await prisma.lead.findUnique({ where: { id: contactoId } });
+    const cliente = !lead ? await prisma.cliente.findUnique({ where: { id: contactoId } }) : null;
+
+    if (!lead && !cliente) {
+      return [];
+    }
+
+    // Si es un lead, no tiene cotizaciones (solo clientes pueden tener)
+    if (lead) {
+      return [];
+    }
+
+    // Si es cliente, obtener sus cotizaciones
     const cotizaciones = await prisma.cotizacion.findMany({
-      where: { contactoId },
+      where: { clienteId: contactoId },
       orderBy: { creadoEn: 'desc' },
       include: {
-        contacto: {
+        cliente: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
           }
         }
       }
