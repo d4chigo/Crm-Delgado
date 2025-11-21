@@ -122,11 +122,13 @@ export default function PaginaPipeline() {
       }
     }
 
-    // Nota: El filtro por etiqueta requiere que el backend incluya las etiquetas del cliente
-    // Por ahora, este filtro está deshabilitado hasta que se actualice el tipo OportunidadCliente
+    // Filtro por etiqueta
     if (etiquetaFiltro !== "todas") {
-      // TODO: Agregar soporte de etiquetas en el backend para oportunidades
-      return true
+      // Verificar si el cliente tiene la etiqueta seleccionada
+      const tieneEtiqueta = op.cliente?.etiquetas?.some((et: any) => et.etiqueta.id === etiquetaFiltro)
+      if (!tieneEtiqueta) {
+        return false
+      }
     }
 
     return true
