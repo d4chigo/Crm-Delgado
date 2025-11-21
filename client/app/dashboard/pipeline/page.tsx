@@ -728,36 +728,6 @@ export default function PaginaPipeline() {
                 </p>
               </div>
 
-              {/* Move Stage Actions */}
-              <div className="space-y-3 pt-4 border-t border-[#FCBA00]/20">
-                <p className="text-sm font-semibold text-[#303030] flex items-center gap-2">
-                  <span>Mover a:</span>
-                  {selectedDeal.cliente?.etiquetas && selectedDeal.cliente.etiquetas.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      ({selectedDeal.cliente.etiquetas.map((et: any) => et.etiqueta.nombre).join(', ')})
-                    </span>
-                  )}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ETAPAS_PIPELINE
-                    .filter((e: { id: string; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
-                    .map((etapa: { id: string; nombre: string; color: string }) => (
-                      <Button
-                        key={etapa.id}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleMoverOportunidad(selectedDeal.id, etapa.id)
-                          setSelectedDeal(null)
-                        }}
-                        className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10 font-semibold"
-                      >
-                        {etapa.nombre}
-                      </Button>
-                    ))}
-                </div>
-              </div>
-
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-[#FCBA00]/20">
                 <Button 
