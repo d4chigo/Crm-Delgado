@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useOportunidades } from "@/hooks/useOportunidades"
 import { etiquetaService } from "@/services/api/etiqueta.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
-import type { OportunidadCliente, EtapaPipeline } from "@/types/oportunidad.types"
+import type { OportunidadCliente } from "@/types/oportunidad.types"
 import {
   Building2,
   DollarSign,
@@ -31,14 +31,13 @@ import AssistantPanel from "@/components/assistant/AssistantPanel"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 
 // Mapeo de etapas para el pipeline
-const ETAPAS_PIPELINE: { id: EtapaPipeline; nombre: string; color: string }[] = [
-  { id: "LEAD", nombre: "Lead", color: "bg-blue-500" },
-  { id: "CONTACTO", nombre: "Contacto Inicial", color: "bg-purple-500" },
-  { id: "VISITA", nombre: "Visita Agendada", color: "bg-indigo-500" },
-  { id: "NEGOCIACION", nombre: "Negociación", color: "bg-yellow-500" },
-  { id: "CIERRE", nombre: "Cierre", color: "bg-orange-500" },
-  { id: "GANADO", nombre: "Ganado", color: "bg-green-500" },
-  { id: "PERDIDO", nombre: "Perdido", color: "bg-red-500" },
+const ETAPAS_PIPELINE: { id: string; nombre: string; color: string }[] = [
+  { id: "CONTACTO_INICIAL", nombre: "Contacto Inicial", color: "bg-blue-500" },
+  { id: "AGENDAMIENTO", nombre: "Agendamiento", color: "bg-purple-500" },
+  { id: "SEPARACION", nombre: "Separación", color: "bg-indigo-500" },
+  { id: "CIERRE_GANADO", nombre: "Cierre Ganado", color: "bg-green-500" },
+  { id: "CIERRE_PERDIDO", nombre: "Cierre Perdido", color: "bg-red-500" },
+  { id: "FIDELIZACION", nombre: "Fidelización", color: "bg-cyan-500" },
 ]
 
 export default function PaginaPipeline() {
@@ -185,7 +184,7 @@ export default function PaginaPipeline() {
     }
   };
 
-  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: EtapaPipeline) => {
+  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: string) => {
     try {
       await moverOportunidad(oportunidadId, nuevaEtapa)
       await refrescar()
@@ -470,9 +469,9 @@ export default function PaginaPipeline() {
               {/* Stage & Probability */}
               <div className="flex gap-3">
                 <Badge
-                  className={`${ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
+                  className={`${ETAPAS_PIPELINE.find((e: { id: string; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
                 >
-                  {ETAPAS_PIPELINE.find((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
+                  {ETAPAS_PIPELINE.find((e: { id: string; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
                 </Badge>
                 <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
                   Probabilidad: {selectedDeal.probabilidad || 0}%
@@ -562,8 +561,8 @@ export default function PaginaPipeline() {
                 <p className="text-sm font-medium text-[#303030]">Mover a:</p>
                 <div className="flex flex-wrap gap-2">
                   {ETAPAS_PIPELINE
-                    .filter((e: { id: EtapaPipeline; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
-                    .map((etapa: { id: EtapaPipeline; nombre: string; color: string }) => (
+                    .filter((e: { id: string; nombre: string; color: string }) => e.id !== selectedDeal.etapa)
+                    .map((etapa: { id: string; nombre: string; color: string }) => (
                       <Button
                         key={etapa.id}
                         size="sm"

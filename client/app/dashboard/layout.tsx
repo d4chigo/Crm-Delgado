@@ -20,7 +20,14 @@ import type { ElementoNavegacion } from "@/types/dashboard.types"
 
 const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
-  { nombre: "Leads", href: "/dashboard/leads", icono: IconoLeads },
+  {
+    nombre: "Leads",
+    icono: IconoLeads,
+    children: [
+      { nombre: "Leads", href: "/dashboard/leads", icono: IconoLeads },
+      { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoPipeline },
+    ]
+  },
   { nombre: "Clientes", href: "/dashboard/clientes", icono: IconoClientes },
   // Grupo: Panel Admin Web
   {
@@ -33,7 +40,6 @@ const navegacion: ElementoNavegacion[] = [
       { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoProyectos },
     ]
   },
-  { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoPipeline },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoActividades },
   { nombre: "Reportes", href: "/dashboard/reports", icono: IconoReportes },
 ]
