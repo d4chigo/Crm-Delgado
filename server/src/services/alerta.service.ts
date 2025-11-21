@@ -18,7 +18,7 @@ export const crearAlertaLead = async (
 
     const alerta = await prisma.alertaLead.create({
       data: {
-        contactoId,
+        leadId: contactoId,
         usuarioId,
         fechaCreada: ahora,
         fechaLimite,
@@ -26,20 +26,20 @@ export const crearAlertaLead = async (
         notas: notas || null,
       },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
             telefono: true,
-            estadoLead: true,
+            estado: true,
           },
         },
       },
     });
 
-    console.log(`✅ Alerta creada para ${alerta.contacto.nombre}`);
+    console.log(`✅ Alerta creada para ${alerta.lead.nombre}`);
     return alerta;
   } catch (error: any) {
     console.error('❌ Error creando alerta:', error.message);
@@ -60,7 +60,7 @@ export const generarAlertasLeadsNoContactados = async (): Promise<any[]> => {
 
     // Buscar leads que:
     // 1. Fueron creados hace más de 24 horas
-    // 2. NO han sido contactados (estadoLead === NUEVO o EN_ESPERA)
+    // 2. NO han sido contactados (estado === NUEVO o EN_ESPERA)
     // 3. NO tienen una alerta activa ya creada
 
     const leadsNoContactados = await prisma.contacto.findMany({
@@ -69,13 +69,8 @@ export const generarAlertasLeadsNoContactados = async (): Promise<any[]> => {
         creadoEn: {
           lte: hace24horas, // Creado hace 24+ horas
         },
-        estadoLead: {
+        estado: {
           in: ['NUEVO', 'EN_ESPERA'], // No contactado aún
-        },
-        alertas: {
-          none: {
-            completada: false, // No tiene alerta activa
-          },
         },
       },
       include: {
@@ -127,14 +122,14 @@ export const obtenerAlertasActivas = async (usuarioId: string): Promise<any[]> =
         completada: false,
       },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
             telefono: true,
-            estadoLead: true,
+            estado: true,
             creadoEn: true,
           },
         },

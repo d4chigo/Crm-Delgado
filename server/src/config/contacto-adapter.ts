@@ -55,10 +55,28 @@ export class ContactoAdapter {
   static async findMany(options: any = {}) {
     const { where = {}, include, select, orderBy, skip, take } = options;
 
-    // Obtener tanto leads como clientes
+    // Si especifica tipo, buscar solo en esa tabla
+    if (where.tipo === 'LEAD') {
+      const leadWhere = { ...where };
+      delete leadWhere.tipo;
+      const leads = await prisma.lead.findMany({ where: leadWhere, include, select, orderBy, skip, take });
+      return leads.map((lead: any) => ({ ...lead, tipo: 'LEAD' }));
+    }
+
+    if (where.tipo === 'CLIENTE') {
+      const clienteWhere = { ...where };
+      delete clienteWhere.tipo;
+      const clientes = await prisma.cliente.findMany({ where: clienteWhere, include, select, orderBy, skip, take });
+      return clientes.map((cliente: any) => ({ ...cliente, tipo: 'CLIENTE' }));
+    }
+
+    // Si no especifica tipo, obtener de ambas
+    const leadWhere = { ...where };
+    delete leadWhere.tipo;
+    
     const [leads, clientes] = await Promise.all([
-      prisma.lead.findMany({ where, include, select, orderBy, skip, take }),
-      prisma.cliente.findMany({ where, include, select, orderBy, skip, take })
+      prisma.lead.findMany({ where: leadWhere, include, select, orderBy, skip, take }),
+      prisma.cliente.findMany({ where: leadWhere, include, select, orderBy, skip, take })
     ]);
 
     // Añadir tipo y mezclar
@@ -76,9 +94,26 @@ export class ContactoAdapter {
   static async count(options: any = {}) {
     const { where = {} } = options;
 
+    // Si especifica tipo, contar solo en esa tabla
+    if (where.tipo === 'LEAD') {
+      const leadWhere = { ...where };
+      delete leadWhere.tipo;
+      return await prisma.lead.count({ where: leadWhere });
+    }
+
+    if (where.tipo === 'CLIENTE') {
+      const clienteWhere = { ...where };
+      delete clienteWhere.tipo;
+      return await prisma.cliente.count({ where: clienteWhere });
+    }
+
+    // Si no especifica tipo, contar en ambas
+    const leadWhere = { ...where };
+    delete leadWhere.tipo;
+
     const [leadsCount, clientesCount] = await Promise.all([
-      prisma.lead.count({ where }),
-      prisma.cliente.count({ where })
+      prisma.lead.count({ where: leadWhere }),
+      prisma.cliente.count({ where: leadWhere })
     ]);
 
     return leadsCount + clientesCount;

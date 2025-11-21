@@ -37,7 +37,23 @@ const prisma = new PrismaClient({
 
 // Agregar adaptadores para compatibilidad backwards-compatible
 // Proporciona acceso a leads y clientes como "contacto"
-(prisma as any).contacto = ContactoAdapter;
-(prisma as any).contactoEtiqueta = ContactoEtiquetaAdapter;
+(prisma as any).contacto = {
+  count: (options?: any) => ContactoAdapter.count(options),
+  findMany: (options?: any) => ContactoAdapter.findMany(options),
+  findFirst: (where?: any) => ContactoAdapter.findFirst(where),
+  findUnique: (where?: any) => ContactoAdapter.findUnique(where),
+  create: (data?: any) => ContactoAdapter.create(data),
+  update: (options?: any) => ContactoAdapter.update(options),
+  delete: (where?: any) => ContactoAdapter.delete(where),
+  groupBy: (options?: any) => ContactoAdapter.groupBy(options),
+};
+
+(prisma as any).contactoEtiqueta = {
+  create: (data?: any) => ContactoEtiquetaAdapter.create(data),
+  findMany: (options?: any) => ContactoEtiquetaAdapter.findMany(options),
+  findUnique: (options?: any) => ContactoEtiquetaAdapter.findUnique(options),
+  createMany: (options?: any) => ContactoEtiquetaAdapter.createMany(options),
+  deleteMany: (options?: any) => ContactoEtiquetaAdapter.deleteMany(options),
+};
 
 export default prisma;

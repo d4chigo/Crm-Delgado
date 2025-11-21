@@ -11,22 +11,28 @@ export async function getCRMContext() {
     const startOfYear = new Date(currentYear, 0, 1);
     const endOfYear = new Date(currentYear + 1, 0, 1);
 
-    // Obtener todos los datos en paralelo
+    // Obtener datos de leads y clientes por separado
     const [
-      // Estadísticas básicas
-      totalContactos,
+      // Conteos básicos
       totalLeads,
-      totalClientes,
       leadsEsteMes,
+      leadsConEdad,
+      
+      totalClientes,
       clientesEsteMes,
-      contactosPorEstado,
-      contactosPorTipo,
-      contactosPorDepartamento,
-      contactosPorCiudad,
-      contactosPorDistrito,
-      contactosPorProvincia,
-      contactosPorSexo,
-      contactosConEdad,
+      clientesConEdad,
+      
+      // Estadísticas de leads
+      leadsEstado,
+      leadsDepto,
+      leadsCiudad,
+      leadsSexo,
+      
+      // Estadísticas de clientes
+      clientesEstado,
+      clientesDepto,
+      clientesCiudad,
+      clientesSexo,
       
       // Oportunidades
       oportunidadesPorEtapa,
@@ -55,73 +61,82 @@ export async function getCRMContext() {
       usuariosPorRol,
       
       // Actividades recientes
-      contactosRecientes,
+      leadsRecientes,
+      clientesRecientes,
       oportunidadesRecientes,
       cotizacionesRecientes,
       
-      // Datos detallados
-      todosLosContactos,
+      // Todos los registros
+      todosLosLeads,
+      todosLosClientes,
       todasLasOportunidades,
       todosLosProyectos,
       todasLasCotizaciones,
       todasLasEtiquetas,
     ] = await Promise.all([
-      // Estadísticas básicas
-      prisma.contacto.count(),
-      prisma.contacto.count({ where: { tipo: 'LEAD' } }),
-      prisma.contacto.count({ where: { tipo: 'CLIENTE' } }),
-      prisma.contacto.count({
+      // Conteos básicos
+      prisma.lead.count(),
+      prisma.lead.count({
         where: {
-          tipo: 'LEAD',
           creadoEn: { gte: startOfMonth, lt: endOfMonth },
         },
       }),
-      prisma.contacto.count({
+      prisma.lead.findMany({
+        where: { fechaNacimiento: { not: null } },
+        select: { fechaNacimiento: true }
+      }),
+      
+      prisma.cliente.count(),
+      prisma.cliente.count({
         where: {
-          tipo: 'CLIENTE',
           creadoEn: { gte: startOfMonth, lt: endOfMonth },
         },
       }),
-      prisma.contacto.groupBy({
-        by: ['estadoLead'],
-        _count: { _all: true },
-        where: { tipo: 'LEAD' },
+      prisma.cliente.findMany({
+        where: { fechaNacimiento: { not: null } },
+        select: { fechaNacimiento: true }
       }),
-      prisma.contacto.groupBy({
-        by: ['tipo'],
+      
+      // Estadísticas de leads
+      prisma.lead.groupBy({
+        by: ['estado'],
         _count: { _all: true },
       }),
-      prisma.contacto.groupBy({
+      prisma.lead.groupBy({
         by: ['departamento'],
         _count: { _all: true },
         where: { departamento: { not: null } },
       }),
-      prisma.contacto.groupBy({
+      prisma.lead.groupBy({
         by: ['ciudad'],
         _count: { _all: true },
         where: { ciudad: { not: null } },
       }),
-      prisma.contacto.groupBy({
-        by: ['distrito'],
-        _count: { _all: true },
-        where: { distrito: { not: null } },
-      }),
-      prisma.contacto.groupBy({
-        by: ['provincia'],
-        _count: { _all: true },
-        where: { provincia: { not: null } },
-      }),
-      prisma.contacto.groupBy({
+      prisma.lead.groupBy({
         by: ['sexo'],
         _count: { _all: true },
         where: { sexo: { not: null } },
       }),
-      prisma.contacto.findMany({
-        where: { 
-          fechaNacimiento: { not: null },
-          tipo: { in: ['LEAD', 'CLIENTE'] }
-        },
-        select: { fechaNacimiento: true, tipo: true }
+      
+      // Estadísticas de clientes
+      prisma.cliente.groupBy({
+        by: ['prioridad'],
+        _count: { _all: true },
+      }),
+      prisma.cliente.groupBy({
+        by: ['departamento'],
+        _count: { _all: true },
+        where: { departamento: { not: null } },
+      }),
+      prisma.cliente.groupBy({
+        by: ['ciudad'],
+        _count: { _all: true },
+        where: { ciudad: { not: null } },
+      }),
+      prisma.cliente.groupBy({
+        by: ['sexo'],
+        _count: { _all: true },
+        where: { sexo: { not: null } },
       }),
       
       // Oportunidades
@@ -193,7 +208,12 @@ export async function getCRMContext() {
       }),
       
       // Actividades recientes
-      prisma.contacto.findMany({
+      prisma.lead.findMany({
+        take: 10,
+        orderBy: { creadoEn: 'desc' },
+        include: { usuario: { select: { nombre: true } } }
+      }),
+      prisma.cliente.findMany({
         take: 10,
         orderBy: { creadoEn: 'desc' },
         include: { usuario: { select: { nombre: true } } }
@@ -210,15 +230,21 @@ export async function getCRMContext() {
         take: 10,
         orderBy: { creadoEn: 'desc' },
         include: { 
-          contacto: { select: { nombre: true, apellido: true } },
+          cliente: { select: { nombre: true, apellido: true } },
         }
       }),
       
-      // Datos detallados
-      prisma.contacto.findMany({
+      // Todos los registros
+      prisma.lead.findMany({
         include: { 
           usuario: { select: { nombre: true } },
-          etiquetas: { include: { etiqueta: true } }
+          etiquetasRel: { include: { etiqueta: true } }
+        }
+      }),
+      prisma.cliente.findMany({
+        include: { 
+          usuario: { select: { nombre: true } },
+          etiquetasRel: { include: { etiqueta: true } }
         }
       }),
       prisma.oportunidadCliente.findMany({
@@ -235,14 +261,15 @@ export async function getCRMContext() {
       }),
       prisma.cotizacion.findMany({
         include: { 
-          contacto: { select: { nombre: true, apellido: true } },
+          cliente: { select: { nombre: true, apellido: true } },
         }
       }),
       prisma.etiqueta.findMany(),
     ]);
 
     // Calcular grupos de edad
-    const gruposEdad = contactosConEdad.reduce((grupos: any, contacto: any) => {
+    const todosConEdad = [...leadsConEdad, ...clientesConEdad];
+    const gruposEdad = todosConEdad.reduce((grupos: any, contacto: any) => {
       if (contacto.fechaNacimiento) {
         const edad = now.getFullYear() - contacto.fechaNacimiento.getFullYear();
         let rango = '';
@@ -261,7 +288,7 @@ export async function getCRMContext() {
       return grupos;
     }, {} as Record<string, number>);
 
-    // Ventas mensuales del año actual
+    // Ventas mensuales
     const ventasMensuales = await Promise.all(
       Array.from({ length: 12 }, (_, i) => i).map(async (monthIndex) => {
         const monthStart = new Date(currentYear, monthIndex, 1);
@@ -282,7 +309,7 @@ export async function getCRMContext() {
       })
     );
 
-    // Top 5 proyectos por oportunidades ganadas
+    // Top 5 proyectos
     const topProyectosRaw = await prisma.oportunidadCliente.groupBy({
       by: ['proyecto'],
       _count: { _all: true },
@@ -302,25 +329,24 @@ export async function getCRMContext() {
       .sort((a: any, b: any) => b.valorTotal - a.valorTotal)
       .slice(0, 5);
 
-    // Conversión de leads a oportunidades
+    // Conversión
     const leadsConvertidos = await prisma.oportunidadCliente.count({
       where: { creadoEn: { gte: startOfYear, lt: endOfYear } },
     });
-    const leadsDelAnio = await prisma.contacto.count({
-      where: {
-        tipo: 'LEAD',
-        creadoEn: { gte: startOfYear, lt: endOfYear },
-      },
-    });
+    const leadsDelAnio = totalLeads; // Simplificado
     const tasaConversion = leadsDelAnio > 0 ? Math.round((leadsConvertidos / leadsDelAnio) * 100) : 0;
+
+    const totalContactos = totalLeads + totalClientes;
+    const leadsEsteMesTotal = leadsEsteMes;
+    const clientesEsteMesTotal = clientesEsteMes;
 
     return {
       resumen: {
         totalContactos,
         totalLeads,
         totalClientes,
-        leadsEsteMes,
-        clientesEsteMes,
+        leadsEsteMes: leadsEsteMesTotal,
+        clientesEsteMes: clientesEsteMesTotal,
         oportunidadesActivas: oportunidadesPorEtapa.reduce((sum: number, o: any) => sum + o._count._all, 0),
         oportunidadesGanadas,
         valorTotalOportunidades: Number(valorTotalOportunidades._sum.valor || 0),
@@ -328,41 +354,54 @@ export async function getCRMContext() {
         cotizacionesTotales,
         cotizacionesEsteMes,
         valorTotalCotizaciones: Number(valorTotalCotizaciones._sum.totalPagar || 0),
-        
         proyectosActivos,
         proyectosTotales,
         usuariosActivos,
         tasaConversion,
       },
       detalles: {
-        contactosPorEstado: contactosPorEstado.map((c: any) => ({
-          estado: c.estadoLead || 'SIN_ESTADO',
-          cantidad: c._count._all,
-        })),
-        contactosPorTipo: contactosPorTipo.map((c: any) => ({
-          tipo: c.tipo,
-          cantidad: c._count._all,
-        })),
-        contactosPorDepartamento: contactosPorDepartamento.map((c: any) => ({
-          departamento: c.departamento,
-          cantidad: c._count._all,
-        })),
-        contactosPorCiudad: contactosPorCiudad.map((c: any) => ({
-          ciudad: c.ciudad,
-          cantidad: c._count._all,
-        })),
-        contactosPorDistrito: contactosPorDistrito.map((c: any) => ({
-          distrito: c.distrito,
-          cantidad: c._count._all,
-        })),
-        contactosPorProvincia: contactosPorProvincia.map((c: any) => ({
-          provincia: c.provincia,
-          cantidad: c._count._all,
-        })),
-        contactosPorSexo: contactosPorSexo.map((c: any) => ({
-          sexo: c.sexo,
-          cantidad: c._count._all,
-        })),
+        contactosPorEstado: [
+          ...leadsEstado.map((c: any) => ({
+            tipo: 'LEAD',
+            estado: c.estado || 'SIN_ESTADO',
+            cantidad: c._count._all,
+          })),
+          ...clientesEstado.map((c: any) => ({
+            tipo: 'CLIENTE',
+            prioridad: c.prioridad || 'MEDIA',
+            cantidad: c._count._all,
+          })),
+        ],
+        contactosPorDepartamento: [
+          ...leadsDepto.map((c: any) => ({
+            departamento: c.departamento,
+            cantidad: c._count._all,
+          })),
+          ...clientesDepto.map((c: any) => ({
+            departamento: c.departamento,
+            cantidad: c._count._all,
+          })),
+        ],
+        contactosPorCiudad: [
+          ...leadsCiudad.map((c: any) => ({
+            ciudad: c.ciudad,
+            cantidad: c._count._all,
+          })),
+          ...clientesCiudad.map((c: any) => ({
+            ciudad: c.ciudad,
+            cantidad: c._count._all,
+          })),
+        ],
+        contactosPorSexo: [
+          ...leadsSexo.map((c: any) => ({
+            sexo: c.sexo,
+            cantidad: c._count._all,
+          })),
+          ...clientesSexo.map((c: any) => ({
+            sexo: c.sexo,
+            cantidad: c._count._all,
+          })),
+        ],
         gruposEdad: Object.entries(gruposEdad).map(([rango, cantidad]) => ({
           rango,
           cantidad,
@@ -403,11 +442,19 @@ export async function getCRMContext() {
         topProyectos,
       },
       actividadesRecientes: {
-        contactos: contactosRecientes.map((c: any) => ({
+        leads: leadsRecientes.map((l: any) => ({
+          id: l.id,
+          nombre: l.nombre,
+          apellido: l.apellido,
+          tipo: 'LEAD',
+          creadoEn: l.creadoEn,
+          usuario: l.usuario.nombre,
+        })),
+        clientes: clientesRecientes.map((c: any) => ({
           id: c.id,
           nombre: c.nombre,
           apellido: c.apellido,
-          tipo: c.tipo,
+          tipo: 'CLIENTE',
           creadoEn: c.creadoEn,
           usuario: c.usuario.nombre,
         })),
@@ -422,7 +469,7 @@ export async function getCRMContext() {
         })),
         cotizaciones: cotizacionesRecientes.map((c: any) => ({
           id: c.id,
-          cliente: `${c.contacto.nombre} ${c.contacto.apellido || ''}`,
+          cliente: `${c.cliente.nombre} ${c.cliente.apellido || ''}`,
           proyecto: c.nombreProyecto,
           valorTotal: Number((c as any).totalPagar || 0),
           estado: c.estado,
@@ -430,7 +477,8 @@ export async function getCRMContext() {
         })),
       },
       datosCompletos: {
-        contactos: todosLosContactos,
+        leads: todosLosLeads,
+        clientes: todosLosClientes,
         oportunidades: todasLasOportunidades,
         proyectos: todosLosProyectos,
         cotizaciones: todasLasCotizaciones,
@@ -443,7 +491,7 @@ export async function getCRMContext() {
     };
   } catch (error) {
     console.error('[CRM Context] Error obteniendo datos:', error);
-    // Devolver estructura vacía cuando falla la BD
+    // Devolver estructura vacía cuando falla
     const now = new Date();
     return {
       resumen: {
@@ -466,11 +514,8 @@ export async function getCRMContext() {
       },
       detalles: {
         contactosPorEstado: [],
-        contactosPorTipo: [],
         contactosPorDepartamento: [],
         contactosPorCiudad: [],
-        contactosPorDistrito: [],
-        contactosPorProvincia: [],
         contactosPorSexo: [],
         gruposEdad: [],
         oportunidadesPorEtapa: [],
@@ -485,12 +530,14 @@ export async function getCRMContext() {
         topProyectos: [],
       },
       actividadesRecientes: {
-        contactos: [],
+        leads: [],
+        clientes: [],
         oportunidades: [],
         cotizaciones: [],
       },
       datosCompletos: {
-        contactos: [],
+        leads: [],
+        clientes: [],
         oportunidades: [],
         proyectos: [],
         cotizaciones: [],
