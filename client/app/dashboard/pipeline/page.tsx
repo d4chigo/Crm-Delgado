@@ -408,6 +408,30 @@ export default function PaginaPipeline() {
               ))}
             </SelectContent>
           </Select>
+          
+          {/* Trash Icon */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setOverTrash(true)
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault()
+              setOverTrash(false)
+            }}
+            onDrop={handleDropTrash}
+            className={`p-3 rounded-lg border-2 transition-all cursor-move ${
+              overTrash
+                ? 'border-red-500 bg-red-50'
+                : 'border-gray-300 hover:border-red-400 hover:bg-red-50/50'
+            }`}
+            title="Arrastra oportunidades aquí para eliminar"
+          >
+            <Trash2 className={`w-5 h-5 ${
+              overTrash ? 'text-red-600' : 'text-gray-600'
+            }`} />
+          </div>
         </div>
       </div>
 
@@ -546,42 +570,6 @@ export default function PaginaPipeline() {
               </div>
             )
           })}
-          
-          {/* Trash Zone */}
-          <div
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setOverTrash(true)
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault()
-              setOverTrash(false)
-            }}
-            onDrop={handleDropTrash}
-            className={`flex-shrink-0 w-80 transition-all ${
-              overTrash ? 'scale-110' : 'scale-100'
-            }`}
-          >
-            <Card className={`border-2 border-dashed min-h-[500px] flex flex-col items-center justify-center ${
-              overTrash
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 bg-gray-50'
-            }`}>
-              <div className="text-center space-y-3 p-4">
-                <Trash2 className={`w-16 h-16 mx-auto ${
-                  overTrash ? 'text-red-600' : 'text-gray-400'
-                }`} />
-                <div>
-                  <p className={`font-semibold text-sm ${
-                    overTrash ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {overTrash ? '¡Suelta para eliminar!' : 'Arrastra aquí para eliminar'}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
         </div>
       </div>
 
