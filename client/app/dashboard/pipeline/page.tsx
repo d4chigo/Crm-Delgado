@@ -30,6 +30,7 @@ import {
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
+import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
 
 // Mapeo de etapas para el pipeline
 const ETAPAS_PIPELINE: { id: string; nombre: string; color: string }[] = [
@@ -54,6 +55,7 @@ export default function PaginaPipeline() {
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+  const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
     if (element) {
@@ -179,20 +181,8 @@ export default function PaginaPipeline() {
     setDialogoWhatsappAbierto(false)
   }, [whatsappTelefono, toast])
 
-  const handleScheduleMeeting = (nombre: string, correo: string) => {
-    const asunto = `Reunión con ${nombre}`;
-    const descripcion = `Discutir detalles de la oportunidad con ${nombre}`;
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(asunto)}&details=${encodeURIComponent(descripcion)}&add=${encodeURIComponent(correo)}`
-    try {
-      toast({ title: 'Abriendo calendario', description: url })
-      if (typeof window !== 'undefined' && (window as any).electron?.shell?.openExternal) {
-        ;(window as any).electron.shell.openExternal(url)
-      } else if (typeof window !== 'undefined') {
-        window.open(url, '_blank')
-      }
-    } catch (e) {
-      try { window.open(url, '_blank') } catch (_) { /* ignore */ }
-    }
+  const handleScheduleMeeting = () => {
+    setDialogoAgendarAbierto(true)
   };
 
   const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: string) => {
@@ -676,7 +666,7 @@ export default function PaginaPipeline() {
                   WhatsApp
                 </Button>
                 <Button 
-                  onClick={() => handleScheduleMeeting(selectedDeal.cliente?.nombre || '', selectedDeal.cliente?.correo || '')}
+                  onClick={() => handleScheduleMeeting()}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -798,6 +788,18 @@ export default function PaginaPipeline() {
         titulo="Enviar mensaje por WhatsApp"
         onEnviar={handleEnviarWhatsApp}
       />
+
+      {/* Modal para agendar reunión */}
+      {selectedDeal && (
+        <DialogoAgendarReunion
+          abierto={dialogoAgendarAbierto}
+          onCerrar={() => setDialogoAgendarAbierto(false)}
+          contactoNombre={selectedDeal.cliente?.nombre}
+          contactoEmail={selectedDeal.cliente?.correo}
+          contactoTelefono={selectedDeal.cliente?.telefono}
+          onEventoCreado={refrescar}
+        />
+      )}
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
