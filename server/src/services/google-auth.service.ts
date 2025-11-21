@@ -39,18 +39,34 @@ class GoogleAuthService {
    */
   async getTokens(code: string) {
     console.log('🔄 Intentando obtener tokens con código de autorización...');
+    console.log('Code recibido, longitud:', code?.length || 0);
     
     try {
       const { tokens } = await this.oauth2Client.getToken(code);
       this.oauth2Client.setCredentials(tokens);
       
       console.log('✅ Tokens obtenidos exitosamente');
-      console.log('Access token:', tokens.access_token ? 'Presente' : 'Ausente');
+      console.log('Access token:', tokens.access_token ? `Presente (${tokens.access_token.length} chars)` : 'Ausente ❌');
       console.log('Refresh token:', tokens.refresh_token ? 'Presente' : 'Ausente');
+      console.log('Token type:', tokens.token_type);
+      console.log('Expiry date:', tokens.expiry_date);
+      
+      if (!tokens.access_token) {
+        console.error('❌ Access token no recibido en la respuesta de Google');
+        console.error('Tokens recibidos:', {
+          access_token: tokens.access_token ? 'PRESENTE' : 'AUSENTE',
+          refresh_token: tokens.refresh_token ? 'PRESENTE' : 'AUSENTE',
+          token_type: tokens.token_type,
+          expiry_date: tokens.expiry_date,
+          scope: tokens.scope
+        });
+      }
       
       return tokens;
     } catch (error: any) {
       console.error('❌ Error al obtener tokens:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error response:', error.response?.data);
       throw new Error(`Error al obtener tokens de Google: ${error.message}`);
     }
   }
@@ -61,6 +77,11 @@ class GoogleAuthService {
   async getContacts(accessToken: string) {
     console.log('[Google Auth] Obteniendo contactos...');
     console.log('[Google Auth] Access token recibido, longitud:', accessToken?.length || 0);
+    console.log('[Google Auth] Primeros 20 chars del token:', accessToken?.substring(0, 20) || 'N/A');
+    
+    if (!accessToken || accessToken.trim() === '') {
+      throw new Error('Access token vacío o inválido');
+    }
     
     this.oauth2Client.setCredentials({ access_token: accessToken });
     
@@ -74,12 +95,28 @@ class GoogleAuthService {
         personFields: 'names,emailAddresses,phoneNumbers,addresses'
       });
 
-      console.log('[Google Auth] Contactos recibidos:', response.data.connections?.length || 0);
+      console.log('[Google Auth] Respuesta recibida');
+      console.log('[Google Auth] Contactos en respuesta:', response.data.connections?.length || 0);
+      console.log('[Google Auth] Datos de respuesta:', {
+        totalConnections: response.data.totalPeople,
+        nextPageToken: response.data.nextPageToken ? 'Presente' : 'No',
+        hasConnections: !!response.data.connections
+      });
+      
       return response.data.connections || [];
     } catch (error: any) {
       console.error('[Google Auth] Error al obtener contactos de Google:', error.message);
       console.error('[Google Auth] Error code:', error.code);
+      console.error('[Google Auth] Status code:', error.response?.status);
       console.error('[Google Auth] Error response:', error.response?.data);
+      
+      // Proporcionar mensaje de error más específico
+      if (error.response?.status === 403) {
+        throw new Error(`Permiso denegado: El token no tiene permisos para acceder a los contactos. Detalle: ${error.response?.data?.error?.message || error.message}`);
+      } else if (error.response?.status === 401) {
+        throw new Error(`Token inválido o expirado. Por favor vuelve a autorizar.`);
+      }
+      
       throw new Error(`No se pudieron obtener los contactos de Google: ${error.message}`);
     }
   }
