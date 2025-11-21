@@ -762,6 +762,11 @@ export class ContactoService {
     console.log('[Contacto Service] Iniciando importación desde Google');
     console.log('[Contacto Service] Usuario ID:', usuarioId);
     console.log('[Contacto Service] Access token longitud:', accessToken?.length || 0);
+    console.log('[Contacto Service] Access token primeros 30 chars:', accessToken?.substring(0, 30) || 'N/A');
+    
+    if (!accessToken || accessToken.trim() === '') {
+      throw new Error('Token de acceso vacío o inválido. Por favor vuelve a autorizar con Google.');
+    }
     
     let importados = 0;
     let duplicados = 0;
