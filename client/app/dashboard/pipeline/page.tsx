@@ -26,6 +26,7 @@ import {
   Search,
   Tag,
   GripVertical,
+  Trash2,
 } from "lucide-react"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
@@ -57,6 +58,7 @@ export default function PaginaPipeline() {
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
+  const [overTrash, setOverTrash] = useState(false)
   const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
     if (element) {
       (window as any).__pipelineScrollContainer = element
@@ -291,6 +293,33 @@ export default function PaginaPipeline() {
     if (rect.right - e.clientX < threshold) {
       container.scrollLeft += scrollSpeed
     }
+  }
+
+  const handleDropTrash = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setOverTrash(false)
+    
+    if (!draggedItem) return
+
+    const oportunidad = oportunidades.find(op => op.id === draggedItem)
+    if (!oportunidad) return
+
+    const confirmar = confirm(
+      `¿Deseas eliminar la oportunidad de ${oportunidad.cliente?.nombre}?\n\nEsta acción no se puede deshacer.`
+    )
+
+    if (!confirmar) {
+      setDraggedItem(null)
+      return
+    }
+
+    try {
+      await handleEliminarOportunidad(draggedItem)
+      toast({ title: 'Éxito', description: 'Oportunidad eliminada' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al eliminar', variant: 'destructive' })
+    }
+    setDraggedItem(null)
   }
 
   return (
@@ -583,6 +612,33 @@ export default function PaginaPipeline() {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      {/* Trash Zone */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setOverTrash(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          setOverTrash(false)
+        }}
+        onDrop={handleDropTrash}
+        className={`mt-8 p-8 border-2 border-dashed rounded-lg transition-all ${
+          overTrash
+            ? 'border-red-500 bg-red-50/50 scale-105'
+            : 'border-gray-300 bg-gray-50'
+        } flex flex-col items-center justify-center gap-3`}
+      >
+        <Trash2 className={`w-8 h-8 ${overTrash ? 'text-red-600' : 'text-gray-400'}`} />
+        <div className="text-center">
+          <p className={`font-semibold ${overTrash ? 'text-red-600' : 'text-gray-600'}`}>
+            {overTrash ? '¡Suelta para eliminar!' : 'Arrastra oportunidades aquí para eliminar'}
+          </p>
+          <p className="text-xs text-gray-500">Se pedirá confirmación antes de eliminar</p>
         </div>
       </div>
 
