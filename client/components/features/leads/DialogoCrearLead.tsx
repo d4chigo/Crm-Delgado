@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Search } from 'lucide-react'
+import { Loader2, Search, User, Mail, Phone, MapPin, Calendar, Building, Users } from 'lucide-react'
 import { Sexo, type CrearContactoDTO } from '@/types/contacto.types'
 import { dniService } from '@/services/api/dni.service'
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones'
@@ -176,18 +176,34 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
 
   return (
     <Dialog open={abierto} onOpenChange={onCerrar}>
-      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Agregar Nuevo {tipo === 'cliente' ? 'Cliente' : 'Lead'}</DialogTitle>
-          <DialogDescription>
-            Solo el <strong>nombre</strong> es obligatorio. Completa los demás campos cuando tengas la información disponible.
-          </DialogDescription>
+      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto border-[#FCBA00]/30">
+        <DialogHeader className="border-b border-[#FCBA00]/20 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#FCBA00] rounded-lg flex items-center justify-center shadow-lg">
+              {tipo === 'cliente' ? (
+                <Users className="w-5 h-5 text-[#303030]" />
+              ) : (
+                <User className="w-5 h-5 text-[#303030]" />
+              )}
+            </div>
+            <div>
+              <DialogTitle className="text-xl">
+                Agregar Nuevo {tipo === 'cliente' ? 'Cliente' : 'Lead'}
+              </DialogTitle>
+              <DialogDescription className="text-sm mt-1">
+                Solo el <strong>nombre</strong> es obligatorio. Los demás campos son opcionales.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
           {/* DNI con botón de búsqueda - PRIMERO */}
           <div className="space-y-2">
-            <Label htmlFor="dni">DNI (Perú)</Label>
+            <Label htmlFor="dni" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+              <Building className="w-4 h-4 text-[#FCBA00]" />
+              DNI (Perú)
+            </Label>
             <div className="flex gap-2">
               <Input
                 id="dni"
@@ -195,14 +211,13 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
                 onChange={(e) => handleChange('dni', validarDNI(e.target.value))}
                 placeholder="12345678"
                 maxLength={8}
-                className="flex-1"
+                className="flex-1 border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
               />
               <Button
                 type="button"
-                variant="outline"
                 onClick={handleBuscarDNI}
                 disabled={buscandoDNI || !formulario.dni || formulario.dni.length !== 8}
-                className="flex-shrink-0"
+                className="flex-shrink-0 bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-semibold px-4"
               >
                 {buscandoDNI ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -220,7 +235,8 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
           <div className="grid grid-cols-2 gap-4">
             {/* Nombre */}
             <div className="space-y-2">
-              <Label htmlFor="nombre">
+              <Label htmlFor="nombre" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <User className="w-4 h-4 text-[#FCBA00]" />
                 Nombre <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -229,12 +245,14 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
                 onChange={(e) => handleChange('nombre', validarTexto(e.target.value))}
                 placeholder="Juan"
                 required
+                className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
               />
             </div>
 
             {/* Apellido */}
             <div className="space-y-2">
-              <Label htmlFor="apellido">
+              <Label htmlFor="apellido" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <User className="w-4 h-4 text-[#FCBA00]" />
                 Apellido
               </Label>
               <Input
@@ -242,26 +260,33 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
                 value={formulario.apellido}
                 onChange={(e) => handleChange('apellido', validarTexto(e.target.value))}
                 placeholder="Pérez"
+                className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
               />
             </div>
           </div>
 
           {/* Correo */}
           <div className="space-y-2">
-            <Label htmlFor="correo">
-              Correo Electrónico (Opcional)
+            <Label htmlFor="correo" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+              <Mail className="w-4 h-4 text-[#FCBA00]" />
+              Correo Electrónico
             </Label>
             <Input
               id="correo"
               type="text"
               value={formulario.correo}
               onChange={(e) => handleChange('correo', e.target.value)}
-              placeholder="juan@example.com (opcional)"
+              placeholder="juan@example.com"
+              className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
             />
           </div>
 
           {/* Selector de Etiquetas */}
-          <div className="space-y-2">
+          <div className="space-y-3 bg-gradient-to-br from-[#FCBA00]/5 to-[#FCBA00]/0 border border-[#FCBA00]/20 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-1 h-4 bg-[#FCBA00] rounded-full"></div>
+              <Label className="text-sm font-bold text-[#303030]">Etiquetas y programas</Label>
+            </div>
             <SelectorEtiquetasCreacion
               etiquetasSeleccionadas={etiquetasSeleccionadas}
               onCambio={setEtiquetasSeleccionadas}
@@ -271,24 +296,31 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
           <div className="grid grid-cols-2 gap-4">
             {/* Teléfono */}
             <div className="space-y-2">
-              <Label htmlFor="telefono">Teléfono</Label>
+              <Label htmlFor="telefono" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <Phone className="w-4 h-4 text-[#FCBA00]" />
+                Teléfono
+              </Label>
               <Input
                 id="telefono"
                 type="tel"
                 value={formulario.telefono}
                 onChange={(e) => handleChange('telefono', validarTelefono(e.target.value))}
                 placeholder="+51 987 654 321"
+                className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
               />
             </div>
 
             {/* Sexo */}
             <div className="space-y-2">
-              <Label htmlFor="sexo">Sexo <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
+              <Label htmlFor="sexo" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <User className="w-4 h-4 text-[#FCBA00]" />
+                Sexo
+              </Label>
               <Select
                 value={formulario.sexo || ''}
                 onValueChange={(value) => handleChange('sexo', value as Sexo)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]">
                   <SelectValue placeholder="Selecciona..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,9 +334,10 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
           <div className="grid grid-cols-2 gap-4">
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
-              <Label htmlFor="fechaNacimiento">
-                Fecha de Nacimiento <span className="text-xs text-muted-foreground">(Recomendado)</span>
-                {edad !== null && <span className="text-muted-foreground ml-2">({edad} años)</span>}
+              <Label htmlFor="fechaNacimiento" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <Calendar className="w-4 h-4 text-[#FCBA00]" />
+                Fecha de Nacimiento
+                {edad !== null && <span className="text-xs text-muted-foreground ml-1">({edad} años)</span>}
               </Label>
               <Input
                 id="fechaNacimiento"
@@ -312,16 +345,20 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
                 max={obtenerFechaMaxima()}
                 value={formulario.fechaNacimiento}
                 onChange={(e) => handleChange('fechaNacimiento', e.target.value)}
+                className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
               />
               {edad !== null && edad < 18 && (
-                <p className="text-sm text-destructive">El contacto debe ser mayor de 18 años</p>
+                <p className="text-xs text-destructive font-semibold">⚠️ Debe ser mayor de 18 años</p>
               )}
             </div>
             {/* Departamento */}
             <div className="space-y-2">
-              <Label htmlFor="departamento">Departamento <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
+              <Label htmlFor="departamento" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+                <MapPin className="w-4 h-4 text-[#FCBA00]" />
+                Departamento
+              </Label>
               <Select value={formulario.departamento} onValueChange={(v) => handleChange('departamento', v)}>
-                <SelectTrigger id="departamento">
+                <SelectTrigger id="departamento" className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]">
                   <SelectValue placeholder="Selecciona..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -357,46 +394,56 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
 
           {/* Dirección */}
           <div className="space-y-2">
-            <Label htmlFor="direccion">Dirección</Label>
+            <Label htmlFor="direccion" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+              <MapPin className="w-4 h-4 text-[#FCBA00]" />
+              Dirección
+            </Label>
             <Input
               id="direccion"
               value={formulario.direccion}
               onChange={(e) => handleChange('direccion', e.target.value)}
               placeholder="Av. Principal 123"
+              className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
             />
           </div>
 
           {/* Ciudad */}
           <div className="space-y-2">
-            <Label htmlFor="ciudad">Ciudad</Label>
+            <Label htmlFor="ciudad" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
+              <MapPin className="w-4 h-4 text-[#FCBA00]" />
+              Ciudad
+            </Label>
             <Input
               id="ciudad"
               value={formulario.ciudad}
               onChange={(e) => handleChange('ciudad', e.target.value)}
               placeholder="Lima"
+              className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
             />
           </div>
 
           {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
+              <span className="text-lg">⚠️</span>
+              <div>{error}</div>
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-[#FCBA00]/20 pt-4 mt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onCerrar}
               disabled={cargando}
+              className="border-[#FCBA00]/30 hover:bg-[#FCBA00]/5"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={cargando || !esValido}
-              className="bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030]"
+              className="bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-bold shadow-lg shadow-[#FCBA00]/20"
             >
               {cargando ? (
                 <>
