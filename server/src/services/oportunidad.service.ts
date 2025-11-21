@@ -326,6 +326,14 @@ export class OportunidadService {
     // Auto-calcular probabilidad según la nueva etapa
     const probabilidad = this.getProcentajePorEtapa(etapa)
 
+    // Determinar el nuevo estado del lead según la etapa del pipeline
+    let estadoLead: string | undefined = undefined;
+    if (etapa === 'CIERRE_GANADO') {
+      estadoLead = 'CALIFICADO';
+    } else if (etapa === 'CIERRE_PERDIDO') {
+      estadoLead = 'DESCALIFICADO';
+    }
+
     // Actualizar etapa
     const oportunidad = await prisma.oportunidadCliente.update({
       where: { id },
@@ -365,6 +373,22 @@ export class OportunidadService {
         }
       }
     });
+
+    // Actualizar estado del lead si es necesario
+    if (estadoLead) {
+      try {
+        await prisma.contacto.update({
+          where: { id: oportunidadExistente.clienteId },
+          data: {
+            estado: estadoLead,
+            actualizadoEn: new Date()
+          }
+        });
+        console.log(`✅ Estado del lead ${oportunidadExistente.clienteId} actualizado a ${estadoLead}`);
+      } catch (error) {
+        console.warn('⚠️ No se pudo actualizar el estado del lead:', error);
+      }
+    }
 
     // Sincronizar estado del lead con la nueva etapa
     try {
