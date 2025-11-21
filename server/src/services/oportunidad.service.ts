@@ -92,7 +92,23 @@ export class OportunidadService {
             apellido: true,
             correo: true,
             telefono: true,
-            empresa: true
+            empresa: true,
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            },
+            proyectos: {
+              select: {
+                proyecto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    estado: true
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -159,6 +175,11 @@ export class OportunidadService {
               correo: true,
               telefono: true,
               empresa: true,
+              etiquetas: {
+                include: {
+                  etiqueta: true
+                }
+              },
               proyectos: {
                 select: {
                   proyecto: {
@@ -257,7 +278,23 @@ export class OportunidadService {
             apellido: true,
             correo: true,
             telefono: true,
-            empresa: true
+            empresa: true,
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            },
+            proyectos: {
+              select: {
+                proyecto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    estado: true
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -320,7 +357,23 @@ export class OportunidadService {
             tipo: true,
             correo: true,
             telefono: true,
-            empresa: true
+            empresa: true,
+            etiquetas: {
+              include: {
+                etiqueta: true
+              }
+            },
+            proyectos: {
+              select: {
+                proyecto: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    estado: true
+                  }
+                }
+              }
+            }
           }
         }
       }
