@@ -836,7 +836,7 @@ export class ContactoService {
 
     // Crear la oportunidad
     const titulo = datosOportunidad?.titulo || `${contacto.nombre} ${contacto.apellido || ''}`.trim();
-    const etapa = datosOportunidad?.etapa || 'LEAD';
+    const etapa = datosOportunidad?.etapa || 'CONTACTO_INICIAL';
     
     console.log('[ContactoService] creando oportunidad con datos:', {
       clienteId: leadId,

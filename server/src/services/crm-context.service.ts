@@ -134,10 +134,10 @@ export async function getCRMContext() {
       }),
       prisma.oportunidadCliente.aggregate({
         _sum: { valor: true },
-        where: { etapa: 'GANADO' },
+        where: { etapa: 'CIERRE_GANADO' },
       }),
       prisma.oportunidadCliente.count({
-        where: { etapa: 'GANADO' },
+        where: { etapa: 'CIERRE_GANADO' },
       }),
       prisma.oportunidadCliente.count({
         where: {
@@ -270,7 +270,7 @@ export async function getCRMContext() {
           _sum: { valor: true },
           _count: { _all: true },
           where: {
-            etapa: 'GANADO',
+            etapa: 'CIERRE_GANADO',
             creadoEn: { gte: monthStart, lt: monthEnd },
           },
         });
@@ -288,7 +288,7 @@ export async function getCRMContext() {
       _count: { _all: true },
       _sum: { valor: true },
       where: {
-        etapa: 'GANADO',
+        etapa: 'CIERRE_GANADO',
         proyecto: { not: null },
         creadoEn: { gte: startOfYear, lt: endOfYear },
       },

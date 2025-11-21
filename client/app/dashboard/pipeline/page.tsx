@@ -25,6 +25,7 @@ import {
   Loader2,
   Search,
   Tag,
+  GripVertical,
 } from "lucide-react"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
@@ -53,6 +54,12 @@ export default function PaginaPipeline() {
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+  const [draggedItem, setDraggedItem] = useState<string | null>(null)
+  const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
+    if (element) {
+      (window as any).__pipelineScrollContainer = element
+    }
+  }, [])
 
   const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
 
@@ -131,10 +138,10 @@ export default function PaginaPipeline() {
 
   // Estadísticas generales
   const valorPipeline = oportunidadesFiltradas
-    .filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa))
+    .filter((op: OportunidadCliente) => !["CIERRE_GANADO", "CIERRE_PERDIDO"].includes(op.etapa))
     .reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
-  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "GANADO")
+  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "CIERRE_GANADO")
   const valorGanado = oportunidadesGanadas.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
 
   const getProbabilityColor = (probability?: number | null) => {
@@ -213,6 +220,82 @@ export default function PaginaPipeline() {
       toast({ title: 'Error', description: error.message || 'No se pudo eliminar la oportunidad', variant: 'destructive' });
     }
   };
+
+  const handleDragEnd = async (result: DragEndEvent) => {
+    const { active, over } = result
+
+    // Si se soltó fuera de una zona droppable
+    if (!over) {
+      return
+    }
+
+    // Si se soltó en el mismo lugar
+    if (active.id === over.id) {
+      return
+    }
+
+    // El ID del over debería ser la etapa, el ID del active es el oportunidad.id
+    const nuevaEtapa = String(over.id)
+    const oportunidadId = String(active.id)
+
+    try {
+      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await refrescar()
+      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
+      // Refrescar para revertir cambios en UI
+      await refrescar()
+    }
+    setDraggedItem(null)
+  }
+
+  const handleDragStart = (oportunidadId: string) => {
+    setDraggedItem(oportunidadId)
+  }
+
+  const handleDropZone = async (etapaId: string, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedItem) return
+
+    if (draggedItem === etapaId) {
+      setDraggedItem(null)
+      return
+    }
+
+    try {
+      await moverOportunidad(draggedItem, etapaId)
+      await refrescar()
+      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
+      await refrescar()
+    }
+    setDraggedItem(null)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    
+    const container = (window as any).__pipelineScrollContainer
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const threshold = 100 // Píxeles desde el borde para activar scroll
+    const scrollSpeed = 20 // Píxeles por scroll
+
+    // Scroll izquierda
+    if (e.clientX - rect.left < threshold) {
+      container.scrollLeft -= scrollSpeed
+    }
+    
+    // Scroll derecha
+    if (rect.right - e.clientX < threshold) {
+      container.scrollLeft += scrollSpeed
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -311,7 +394,7 @@ export default function PaginaPipeline() {
               <div>
                 <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
                 <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["GANADO", "PERDIDO"].includes(op.etapa)).length}
+                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["CIERRE_GANADO", "CIERRE_PERDIDO"].includes(op.etapa)).length}
                 </p>
               </div>
               <div className="bg-blue-50 p-3 rounded-xl">
@@ -363,14 +446,35 @@ export default function PaginaPipeline() {
         </Card>
       </div>
 
-      {/* Kanban Board */}
-      <div className="overflow-x-auto pb-4">
+      {/* Kanban Board con Drag and Drop */}
+      <div 
+        ref={scrollContainerRef}
+        className="overflow-x-auto pb-4"
+        onDragOver={handleDragOver}
+      >
         <div className="flex gap-4 min-w-max">
           {etapasConDatos.map((etapa) => {
             const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
             return (
-              <div key={etapa.id} className="flex-shrink-0 w-80">
-                <Card className="border-border h-full">
+              <div
+                key={etapa.id}
+                className="flex-shrink-0 w-80"
+              >
+                <Card 
+                  className="border-border h-full"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.add('bg-muted/50', 'border-2', 'border-[#FCBA00]')
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('bg-muted/50', 'border-2', 'border-[#FCBA00]')
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove('bg-muted/50', 'border-2', 'border-[#FCBA00]')
+                    handleDropZone(etapa.id, e)
+                  }}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -387,59 +491,71 @@ export default function PaginaPipeline() {
                   </CardHeader>
                   <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
                     {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
-                      <Card
+                      <div
                         key={oportunidad.id}
-                        className="border-border hover:shadow-md transition-shadow cursor-pointer bg-white"
-                        onClick={() => setSelectedDeal(oportunidad)}
+                        draggable
+                        onDragStart={() => handleDragStart(oportunidad.id)}
+                        onDragEnd={() => setDraggedItem(null)}
+                        className={`transition-all cursor-move ${draggedItem === oportunidad.id ? 'opacity-50' : ''}`}
                       >
-                        <CardContent className="p-4 space-y-3">
-                          {/* Client Info */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="w-8 h-8 bg-[#FCBA00]">
-                                <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                  {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
-                                  {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
-                                </h4>
-                                <p className="text-xs text-muted-foreground">{oportunidad.titulo}</p>
+                        <Card
+                          className="border-border hover:shadow-md transition-shadow bg-white group"
+                          onClick={() => setSelectedDeal(oportunidad)}
+                        >
+                          <CardContent className="p-4 space-y-3 relative">
+                            {/* Drag Handle */}
+                            <div className="absolute top-2 right-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                              <GripVertical className="w-4 h-4" />
+                            </div>
+
+                            {/* Client Info */}
+                            <div className="flex items-start justify-between pr-6">
+                              <div className="flex items-center gap-2 flex-1">
+                                <Avatar className="w-8 h-8 bg-[#FCBA00]">
+                                  <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
+                                    {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
+                                    {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
+                                  </h4>
+                                  <p className="text-xs text-muted-foreground line-clamp-1">{oportunidad.titulo}</p>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Property */}
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Building2 className="w-3 h-3" />
-                              <span className="line-clamp-1">
-                                {oportunidad.cliente?.proyectos && oportunidad.cliente.proyectos.length > 0
-                                  ? oportunidad.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
-                                  : oportunidad.proyecto || 'Sin proyecto'}
-                              </span>
+                            {/* Property */}
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Building2 className="w-3 h-3 flex-shrink-0" />
+                                <span className="line-clamp-1">
+                                  {oportunidad.cliente?.proyectos && oportunidad.cliente.proyectos.length > 0
+                                    ? oportunidad.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
+                                    : oportunidad.proyecto || 'Sin proyecto'}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium text-[#303030] line-clamp-1">{oportunidad.propiedad || 'Sin propiedad'}</p>
                             </div>
-                            <p className="text-sm font-medium text-[#303030]">{oportunidad.propiedad || 'Sin propiedad'}</p>
-                          </div>
 
-                          {/* Value */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border">
-                            <span className="text-lg font-bold text-[#FCBA00]">
-                              S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
-                            </span>
-                            <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
-                              {oportunidad.probabilidad || 0}%
-                            </Badge>
-                          </div>
+                            {/* Value */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border">
+                              <span className="text-lg font-bold text-[#FCBA00]">
+                                S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
+                              </span>
+                              <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
+                                {oportunidad.probabilidad || 0}%
+                              </Badge>
+                            </div>
 
-                          {/* Last Activity */}
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
+                            {/* Last Activity */}
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     ))}
                     {oportunidadesEtapa.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">

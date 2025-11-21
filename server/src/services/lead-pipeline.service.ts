@@ -104,7 +104,7 @@ export class LeadPipelineService {
         where: {
           clienteId: leadId,
           etapa: {
-            notIn: ['GANADO', 'PERDIDO']
+            notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO']
           }
         },
         orderBy: {
@@ -119,13 +119,12 @@ export class LeadPipelineService {
 
       // Mapear etapa de oportunidad a estado de lead
       const mapeoEstados: Record<string, string> = {
-        'LEAD': 'NUEVO',
-        'CONTACTO': 'CONTACTADO',
-        'VISITA': 'CONTACTADO',
-        'NEGOCIACION': 'CONTACTADO',
-        'CIERRE': 'CONTACTADO',
-        'GANADO': 'CONVERTIDO',
-        'PERDIDO': 'DESCALIFICADO'
+        'CONTACTO_INICIAL': 'NUEVO',
+        'AGENDAMIENTO': 'CONTACTADO',
+        'SEPARACION': 'CONTACTADO',
+        'CIERRE_GANADO': 'CONVERTIDO',
+        'CIERRE_PERDIDO': 'DESCALIFICADO',
+        'FIDELIZACION': 'CONVERTIDO'
       };
 
       const nuevoEstado = mapeoEstados[oportunidad.etapa];
@@ -302,7 +301,7 @@ export class LeadPipelineService {
         }
       });
 
-      // Leads convertidos (con oportunidades)
+      // Leads convertidos (con oportunidad)
       const leadsConOportunidad = await prisma.contacto.count({
         where: {
           usuarioId,
@@ -310,7 +309,7 @@ export class LeadPipelineService {
           oportunidades: {
             some: {
               etapa: {
-                notIn: ['GANADO', 'PERDIDO']
+                notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO']
               }
             }
           }
@@ -321,7 +320,7 @@ export class LeadPipelineService {
       const oportunidadesGanadasDesdeLead = await prisma.oportunidadCliente.count({
         where: {
           usuarioId,
-          etapa: 'GANADO',
+          etapa: 'CIERRE_GANADO',
           cliente: {
             tipo: 'LEAD'
           }
@@ -332,7 +331,7 @@ export class LeadPipelineService {
       const valorGanado = await prisma.oportunidadCliente.aggregate({
         where: {
           usuarioId,
-          etapa: 'GANADO',
+          etapa: 'CIERRE_GANADO',
           cliente: {
             tipo: 'LEAD'
           }
@@ -370,7 +369,7 @@ export class LeadPipelineService {
           oportunidades: {
             none: {
               etapa: {
-                notIn: ['GANADO', 'PERDIDO']
+                notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO']
               }
             }
           }

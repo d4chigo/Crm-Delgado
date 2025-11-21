@@ -118,7 +118,7 @@ export async function getReporteConversionPorOrigen(req: Request, res: Response)
     }) as Array<{ fuente: string | null; _count: { _all: number } }>;
 
     const oportunidadesGanadas = await prisma.oportunidadCliente.findMany({
-      where: { etapa: 'GANADO' },
+      where: { etapa: 'CIERRE_GANADO' },
       select: { cliente: { select: { fuente: true } }, valor: true },
     });
 
@@ -203,8 +203,8 @@ export async function getReporteDesempenoAsesor(req: Request, res: Response) {
     const [usuarios, leadsPorAsesor, oportunidadesActivas, valorActivas] = await Promise.all([
       prisma.usuario.findMany({ select: { id: true, nombre: true } }),
       prisma.contacto.groupBy({ by: ['usuarioId'], _count: { _all: true }, where: { tipo: 'LEAD' } }),
-      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _count: { _all: true }, where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } } }),
-      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _sum: { valor: true }, where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } } }),
+      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _count: { _all: true }, where: { etapa: { notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO'] } } }),
+      prisma.oportunidadCliente.groupBy({ by: ['usuarioId'], _sum: { valor: true }, where: { etapa: { notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO'] } } }),
     ]);
 
     const leadsMap = new Map<string, number>(
@@ -246,7 +246,7 @@ export async function getReporteDesempenoAsesor(req: Request, res: Response) {
 export async function getReporteForecast(req: Request, res: Response) {
   try {
     const oportunidades = await prisma.oportunidadCliente.findMany({
-      where: { etapa: { notIn: ['GANADO', 'PERDIDO'] } },
+      where: { etapa: { notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO'] } },
       select: { valor: true, probabilidad: true, creadoEn: true, proyecto: true },
     });
 
@@ -313,7 +313,7 @@ export async function getMetrics(req: Request, res: Response) {
       prisma.oportunidadCliente.aggregate({
         _sum: { valor: true },
         _count: { _all: true },
-        where: { etapa: 'GANADO' },
+        where: { etapa: 'CIERRE_GANADO' },
       }),
       // Serie mensual de "ventas" como oportunidades GANADO por mes
       Promise.all(
@@ -323,7 +323,7 @@ export async function getMetrics(req: Request, res: Response) {
           const agg = await prisma.oportunidadCliente.aggregate({
             _sum: { valor: true },
             _count: { _all: true },
-            where: { etapa: 'GANADO', creadoEn: { gte: ini, lt: fin } },
+            where: { etapa: 'CIERRE_GANADO', creadoEn: { gte: ini, lt: fin } },
           });
           return { month: m + 1, count: agg._count._all, value: Number(agg._sum.valor || 0) };
         })
@@ -335,7 +335,7 @@ export async function getMetrics(req: Request, res: Response) {
       by: ['proyecto'],
       _count: { _all: true },
       _sum: { valor: true },
-      where: { etapa: 'GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
+      where: { etapa: 'CIERRE_GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
     });
 
     const totalValor = ventasPorProyectoRaw.reduce(
@@ -374,7 +374,7 @@ export async function getMetrics(req: Request, res: Response) {
       by: ['usuarioId'],
       _count: { _all: true },
       _sum: { valor: true },
-      where: { etapa: 'GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
+      where: { etapa: 'CIERRE_GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
     }) as unknown as GroupByUsuario[];
     const usuarios = await prisma.usuario.findMany({ select: { id: true, nombre: true } });
     const userMap = new Map<string, string>(

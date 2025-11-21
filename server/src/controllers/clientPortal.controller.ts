@@ -338,7 +338,7 @@ class ClientPortalController {
       const totalCerrados = await prisma.oportunidadCliente.count({
         where: {
           usuarioId: cliente.usuario.id,
-          etapa: 'GANADO'
+          etapa: 'CIERRE_GANADO'
         }
       });
 
@@ -447,7 +447,7 @@ class ClientPortalController {
         data: {
           cliente,
           estadisticas: {
-            oportunidadesActivas: oportunidades.filter((o: any) => o.etapa !== 'GANADO' && o.etapa !== 'PERDIDO').length,
+            oportunidadesActivas: oportunidades.filter((o: any) => o.etapa !== 'CIERRE_GANADO' && o.etapa !== 'CIERRE_PERDIDO').length,
             documentosVerificados: documentosSubidos.filter((d: any) => d.estado === 'VERIFICADO').length,
             documentosPendientes: documentosSubidos.filter((d: any) => d.estado === 'PENDIENTE').length,
             cotizacionesPendientes: cotizaciones.filter((c: any) => c.estado === 'ENVIADA').length
