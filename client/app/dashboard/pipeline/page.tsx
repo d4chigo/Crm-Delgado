@@ -615,7 +615,7 @@ export default function PaginaPipeline() {
         </div>
       </div>
 
-      {/* Trash Zone */}
+      {/* Floating Trash Icon */}
       <div
         onDragOver={(e) => {
           e.preventDefault()
@@ -627,18 +627,17 @@ export default function PaginaPipeline() {
           setOverTrash(false)
         }}
         onDrop={handleDropTrash}
-        className={`mt-8 p-8 border-2 border-dashed rounded-lg transition-all ${
-          overTrash
-            ? 'border-red-500 bg-red-50/50 scale-105'
-            : 'border-gray-300 bg-gray-50'
-        } flex flex-col items-center justify-center gap-3`}
+        className={`fixed bottom-8 right-8 transition-all duration-200 ${
+          overTrash ? 'scale-150' : 'scale-100'
+        }`}
       >
-        <Trash2 className={`w-8 h-8 ${overTrash ? 'text-red-600' : 'text-gray-400'}`} />
-        <div className="text-center">
-          <p className={`font-semibold ${overTrash ? 'text-red-600' : 'text-gray-600'}`}>
-            {overTrash ? '¡Suelta para eliminar!' : 'Arrastra oportunidades aquí para eliminar'}
-          </p>
-          <p className="text-xs text-gray-500">Se pedirá confirmación antes de eliminar</p>
+        <div className={`p-4 rounded-full shadow-lg cursor-move ${
+          overTrash
+            ? 'bg-red-600 text-white scale-125'
+            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+        } transition-all`}
+        title="Arrastra oportunidades aquí para eliminar">
+          <Trash2 className="w-6 h-6" />
         </div>
       </div>
 
