@@ -299,6 +299,25 @@ export class OportunidadService {
     try {
       const leadPipelineService = require('./lead-pipeline.service').default;
       await leadPipelineService.sincronizarEstadoLead(oportunidadExistente.clienteId);
+      
+      // Registrar el cambio en el historial
+      await leadPipelineService.registrarCambioEtapa(
+        id,
+        oportunidadExistente.clienteId,
+        oportunidadExistente.etapa,
+        etapa,
+        usuarioId,
+        {
+          probabilidad: oportunidadExistente.probabilidad,
+          valor: oportunidadExistente.valor
+        },
+        {
+          probabilidad,
+          valor: oportunidadExistente.valor
+        },
+        undefined,
+        notas
+      );
     } catch (error) {
       console.warn('⚠️ No se pudo sincronizar el estado del lead:', error);
       // No fallar si la sincronización falla

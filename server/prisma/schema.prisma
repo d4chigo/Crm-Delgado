@@ -146,6 +146,29 @@ model OportunidadCliente {
   @@map("oportunidades_clientes")
 }
 
+model HistorialPipelineLead {
+  id                    String        @id @default(uuid())
+  oportunidadId         String
+  leadId                String
+  etapaAnterior         EtapaPipeline
+  etapaNueva            EtapaPipeline
+  probabilidadAnterior  Int?
+  probabilidadNueva     Int?
+  valorAnterior         Float?
+  valorNuevo            Float?
+  cambiadoEn            DateTime      @default(now())
+  cambiadoPor           String
+  notas                 String?       @db.Text
+  razon                 String?
+
+  @@index([oportunidadId])
+  @@index([leadId])
+  @@index([cambiadoPor])
+  @@index([cambiadoEn])
+  @@index([etapaNueva])
+  @@map("historial_pipeline_leads")
+}
+
 model ProyectoEtiqueta {
   proyectoId String
   etiquetaId String

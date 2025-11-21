@@ -130,9 +130,56 @@ export class LeadPipelineService {
   }
 
   /**
+   * Registrar un cambio de etapa en el historial
+   */
+  async registrarCambioEtapa(
+    oportunidadId: string,
+    leadId: string,
+    etapaAnterior: EtapaPipeline,
+    etapaNueva: EtapaPipeline,
+    cambiadoPor: string,
+    datosAnteriores: { probabilidad?: number; valor?: number },
+    datosNuevos: { probabilidad?: number; valor?: number },
+    razon?: string,
+    notas?: string
+  ) {
+    try {
+      const historial = await prisma.historialPipelineLead.create({
+        data: {
+          oportunidadId,
+          leadId,
+          etapaAnterior,
+          etapaNueva,
+          probabilidadAnterior: datosAnteriores.probabilidad,
+          probabilidadNueva: datosNuevos.probabilidad,
+          valorAnterior: datosAnteriores.valor,
+          valorNuevo: datosNuevos.valor,
+          cambiadoPor,
+          razon,
+          notas,
+          cambiadoEn: new Date()
+        }
+      });
+
+      console.log(`📝 Cambio de etapa registrado en historial: ${etapaAnterior} → ${etapaNueva}`);
+      return historial;
+    } catch (error: any) {
+      console.error(`❌ Error al registrar cambio de etapa:`, error.message);
+      // No lanzar error para no interrumpir el flujo principal
+      return null;
+    }
+  }
+
+  /**
    * Cuando una oportunidad cambia de etapa, actualizar el estado del lead
    */
-  async actualizarEtapaOportunidad(oportunidadId: string, nuevaEtapa: EtapaPipeline) {
+  async actualizarEtapaOportunidad(
+    oportunidadId: string,
+    nuevaEtapa: EtapaPipeline,
+    usuarioId?: string,
+    razon?: string,
+    notas?: string
+  ) {
     try {
       // Obtener la oportunidad
       const oportunidad = await prisma.oportunidadCliente.findUnique({
@@ -152,6 +199,25 @@ export class LeadPipelineService {
         }
       });
 
+      // Registrar en historial
+      await this.registrarCambioEtapa(
+        oportunidadId,
+        oportunidad.clienteId,
+        oportunidad.etapa,
+        nuevaEtapa,
+        usuarioId || 'SISTEMA',
+        {
+          probabilidad: oportunidad.probabilidad,
+          valor: oportunidad.valor
+        },
+        {
+          probabilidad: oportunidadActualizada.probabilidad,
+          valor: oportunidadActualizada.valor
+        },
+        razon,
+        notas
+      );
+
       // Sincronizar el estado del lead con la nueva etapa
       await this.sincronizarEstadoLead(oportunidad.clienteId);
 
@@ -159,6 +225,48 @@ export class LeadPipelineService {
       return oportunidadActualizada;
     } catch (error: any) {
       console.error(`❌ Error al actualizar etapa de oportunidad:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener historial de cambios de etapa para un lead/oportunidad
+   */
+  async obtenerHistorialCambios(leadId: string) {
+    try {
+      const historial = await prisma.historialPipelineLead.findMany({
+        where: {
+          leadId
+        },
+        orderBy: {
+          cambiadoEn: 'desc'
+        }
+      });
+
+      return historial;
+    } catch (error: any) {
+      console.error(`❌ Error al obtener historial de cambios:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener historial por oportunidad
+   */
+  async obtenerHistorialPorOportunidad(oportunidadId: string) {
+    try {
+      const historial = await prisma.historialPipelineLead.findMany({
+        where: {
+          oportunidadId
+        },
+        orderBy: {
+          cambiadoEn: 'desc'
+        }
+      });
+
+      return historial;
+    } catch (error: any) {
+      console.error(`❌ Error al obtener historial de oportunidad:`, error.message);
       throw error;
     }
   }

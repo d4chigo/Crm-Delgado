@@ -180,4 +180,52 @@ router.post('/:id/completar-alerta-y-convertir', autenticar, async (req: Request
   }
 });
 
+/**
+ * GET /api/leads/:id/historial
+ * Obtener historial de cambios de etapa para un lead
+ */
+router.get('/:id/historial', autenticar, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const historial = await leadPipelineService.obtenerHistorialCambios(id);
+
+    res.json({
+      exito: true,
+      total: historial.length,
+      historial
+    });
+  } catch (error: any) {
+    console.error('Error al obtener historial del lead:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: error.message || 'Error al obtener historial'
+    });
+  }
+});
+
+/**
+ * GET /api/leads/oportunidades/:oportunidadId/historial
+ * Obtener historial de cambios para una oportunidad específica
+ */
+router.get('/oportunidades/:oportunidadId/historial', autenticar, async (req: Request, res: Response) => {
+  try {
+    const { oportunidadId } = req.params;
+
+    const historial = await leadPipelineService.obtenerHistorialPorOportunidad(oportunidadId);
+
+    res.json({
+      exito: true,
+      total: historial.length,
+      historial
+    });
+  } catch (error: any) {
+    console.error('Error al obtener historial de oportunidad:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: error.message || 'Error al obtener historial'
+    });
+  }
+});
+
 export default router;
