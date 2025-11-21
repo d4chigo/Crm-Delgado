@@ -1,5 +1,4 @@
 import prisma from '@/config/database';
-import { TipoContacto } from '@prisma/client';
 
 export interface CrearOportunidadDTO {
   clienteId: string;
@@ -52,17 +51,16 @@ export class OportunidadService {
    * Crear nueva oportunidad para un cliente
    */
   async crearOportunidad(usuarioId: string, datos: CrearOportunidadDTO) {
-    // Verificar que el cliente existe y es de tipo CLIENTE
-    const cliente = await prisma.contacto.findFirst({
+    // Verificar que el cliente existe
+    const cliente = await prisma.cliente.findFirst({
       where: {
         id: datos.clienteId,
-        usuarioId,
-        tipo: TipoContacto.CLIENTE
+        usuarioId
       }
     });
 
     if (!cliente) {
-      throw new Error('Cliente no encontrado o no es un cliente válido');
+      throw new Error('Cliente no encontrado');
     }
 
     // Usar CONTACTO_INICIAL como etapa por defecto si no se especifica

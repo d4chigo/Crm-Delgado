@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import oportunidadService from '@/services/oportunidad.service';
 import { respuestaExito, respuestaError } from '@/utils/respuesta.util';
 import { CrearOportunidadDTO, ActualizarOportunidadDTO, FiltrosOportunidad } from '@/services/oportunidad.service';
-import { EtapaPipeline } from '@prisma/client';
 
 export class OportunidadController {
   /**
@@ -49,7 +48,7 @@ export class OportunidadController {
 
       const filtros: FiltrosOportunidad = {
         clienteId: req.query.clienteId as string,
-        etapa: req.query.etapa as EtapaPipeline,
+        etapa: req.query.etapa as string,
         busqueda: req.query.busqueda as string,
         pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
         limite: req.query.limite ? Number(req.query.limite) : undefined

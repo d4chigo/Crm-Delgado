@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { ContactoAdapter } from './contacto-adapter';
+import { ContactoEtiquetaAdapter } from './contacto-etiqueta-adapter';
 
 // Asegurar que si el .env está en la raíz, se cargue antes de inicializar prisma
 const rootEnv = path.resolve(process.cwd(), '.env');
@@ -32,5 +34,10 @@ try {
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
 });
+
+// Agregar adaptadores para compatibilidad backwards-compatible
+// Proporciona acceso a leads y clientes como "contacto"
+(prisma as any).contacto = ContactoAdapter;
+(prisma as any).contactoEtiqueta = ContactoEtiquetaAdapter;
 
 export default prisma;

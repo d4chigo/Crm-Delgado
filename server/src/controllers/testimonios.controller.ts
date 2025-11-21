@@ -32,7 +32,7 @@ const updateSchema = z.object({
     z.union([z.string().url(), z.null()]).optional()
   ),
   estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional(),
-}).strict(false) // Permitir campos adicionales sin fallar
+})
 
 export const testimoniosController = {
   // Obtener todos los testimonios (admin)

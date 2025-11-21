@@ -1,7 +1,7 @@
 -- Establecer estado por defecto para leads existentes sin estado
-UPDATE `contactos`
-SET `estadoLead` = 'NUEVO'
-WHERE `estadoLead` IS NULL AND `tipo` = 'LEAD';
+UPDATE `leads`
+SET `estado` = 'NUEVO'
+WHERE `estado` IS NULL;
 
 -- Crear índice para búsquedas rápidas por estado
-CREATE INDEX `idx_estadoLead_tipo` ON `contactos`(`estadoLead`, `tipo`);
+CREATE INDEX `idx_estado_leads` ON `leads`(`estado`);

@@ -18,7 +18,8 @@ model Usuario {
   activo        Boolean              @default(true)
   creadoEn      DateTime             @default(now())
   actualizadoEn DateTime             @updatedAt
-  contactos     Contacto[]
+  leads         Lead[]
+  clientes      Cliente[]
   oportunidades OportunidadCliente[]
   proyectos     Proyecto[]
   reportes      Reporte[]            @relation("UsuarioReportes")
@@ -27,7 +28,7 @@ model Usuario {
   @@map("usuarios")
 }
 
-model Contacto {
+model Lead {
   id                String               @id @default(uuid())
   nombre            String
   apellido          String?
@@ -38,7 +39,6 @@ model Contacto {
   dni               String?
   sexo              Sexo?
   fechaNacimiento   DateTime?
-  tipo              TipoContacto         @default(LEAD)
   creadoEn          DateTime             @default(now())
   actualizadoEn     DateTime             @updatedAt
   usuarioId         String
@@ -46,33 +46,68 @@ model Contacto {
   departamento      String?
   distrito          String?
   empresa           String?
-  estadoLead        EstadoLead?
-  fechaConversion   DateTime?
+  estado            EstadoLead?          @default(NUEVO)
   fechaSeguimiento  DateTime?
   fuente            String?
-  intereses         String?
+  etiquetas         String?
   notas             String?
   presupuesto       Float?
   prioridad         Prioridad            @default(MEDIA)
   probabilidad      Int?
   provincia         String?
-  etiquetas         ContactoEtiqueta[]
+  etiquetasRel      LeadEtiqueta[]
   usuario           Usuario              @relation(fields: [usuarioId], references: [id])
-  cotizaciones      Cotizacion[]
-  clientesAsociados LeadCliente[]        @relation("ClienteRelacion")
-  leadsAsociados    LeadCliente[]        @relation("LeadRelacion")
   oportunidades     OportunidadCliente[]
-  proyectos         ProyectoCliente[]
+  clientesAsociados LeadClienteAsociacion[] @relation("LeadRelacion")
   alertas           AlertaLead[]
 
   @@index([usuarioId])
-  @@index([tipo])
   @@index([correo])
   @@index([creadoEn])
   @@index([departamento])
-  @@index([estadoLead])
+  @@index([estado])
   @@index([prioridad])
-  @@map("contactos")
+  @@map("leads")
+}
+
+model Cliente {
+  id                String               @id @default(uuid())
+  nombre            String
+  apellido          String?
+  correo            String?
+  telefono          String?
+  direccion         String?
+  ciudad            String?
+  dni               String?
+  sexo              Sexo?
+  fechaNacimiento   DateTime?
+  creadoEn          DateTime             @default(now())
+  actualizadoEn     DateTime             @updatedAt
+  usuarioId         String
+  cargo             String?
+  departamento      String?
+  distrito          String?
+  empresa           String?
+  fechaConversion   DateTime?
+  fechaSeguimiento  DateTime?
+  notas             String?
+  presupuesto       Float?
+  prioridad         Prioridad            @default(MEDIA)
+  probabilidad      Int?
+  provincia         String?
+  etiquetasRel      ClienteEtiqueta[]
+  usuario           Usuario              @relation(fields: [usuarioId], references: [id])
+  cotizaciones      Cotizacion[]
+  oportunidades     OportunidadCliente[]
+  proyectos         ProyectoCliente[]
+  leadsAsociados    LeadClienteAsociacion[] @relation("ClienteRelacion")
+
+  @@index([usuarioId])
+  @@index([correo])
+  @@index([creadoEn])
+  @@index([departamento])
+  @@index([prioridad])
+  @@map("clientes")
 }
 
 model Etiqueta {
@@ -85,7 +120,8 @@ model Etiqueta {
   orden         Int                @default(0)
   creadoEn      DateTime           @default(now())
   actualizadoEn DateTime           @updatedAt
-  contactos     ContactoEtiqueta[]
+  leads         LeadEtiqueta[]
+  clientes      ClienteEtiqueta[]
   proyectos     ProyectoEtiqueta[]
 
   @@index([activa])
@@ -93,37 +129,51 @@ model Etiqueta {
   @@map("etiquetas")
 }
 
-model ContactoEtiqueta {
-  contactoId String
+model LeadEtiqueta {
+  leadId     String
   etiquetaId String
   asignadoEn DateTime @default(now())
-  contacto   Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
 
-  @@id([contactoId, etiquetaId])
-  @@index([contactoId])
+  @@id([leadId, etiquetaId])
+  @@index([leadId])
   @@index([etiquetaId])
-  @@map("contacto_etiquetas")
+  @@map("lead_etiquetas")
 }
 
-model LeadCliente {
+model ClienteEtiqueta {
+  clienteId  String
+  etiquetaId String
+  asignadoEn DateTime @default(now())
+  cliente    Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([clienteId, etiquetaId])
+  @@index([clienteId])
+  @@index([etiquetaId])
+  @@map("cliente_etiquetas")
+}
+
+model LeadClienteAsociacion {
   leadId     String
   clienteId  String
   asociadoEn DateTime @default(now())
   notas      String?
   estado     String?
-  cliente    Contacto @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
-  lead       Contacto @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
+  cliente    Cliente  @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
 
   @@id([leadId, clienteId])
   @@index([leadId])
   @@index([clienteId])
-  @@map("lead_clientes")
+  @@map("lead_cliente_asociaciones")
 }
 
 model OportunidadCliente {
   id              String        @id @default(uuid())
-  clienteId       String
+  leadId          String?
+  clienteId       String?
   titulo          String
   proyecto        String?
   propiedad       String?
@@ -136,9 +186,11 @@ model OportunidadCliente {
   creadoEn        DateTime      @default(now())
   actualizadoEn   DateTime      @updatedAt
   usuarioId       String
-  cliente         Contacto      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  lead            Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cliente         Cliente?      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   usuario         Usuario       @relation(fields: [usuarioId], references: [id])
 
+  @@index([leadId])
   @@index([clienteId])
   @@index([usuarioId])
   @@index([etapa])
@@ -187,7 +239,7 @@ model ProyectoCliente {
   clienteId  String
   asociadoEn DateTime  @default(now())
   notas      String?
-  cliente    Contacto  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  cliente    Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
 
   @@id([proyectoId, clienteId])
@@ -198,7 +250,7 @@ model ProyectoCliente {
 
 model Cotizacion {
   id                     String           @id @default(uuid())
-  contactoId             String
+  clienteId              String
   numeroReferencia       String           @unique
   nombreProyecto         String
   tipoInmueble           String?
@@ -225,9 +277,9 @@ model Cotizacion {
   fechaValidez           DateTime?
   creadoEn               DateTime         @default(now())
   actualizadoEn          DateTime         @updatedAt
-  contacto               Contacto         @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  cliente                Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
-  @@index([contactoId])
+  @@index([clienteId])
   @@index([estado])
   @@index([tipoCuota])
   @@map("cotizaciones")
@@ -302,18 +354,18 @@ model Proyecto {
 // ==================== MODELO PARA ALERTAS DE LEADS ====================
 model AlertaLead {
   id            String           @id @default(uuid())
-  contactoId    String
+  leadId        String?
   usuarioId     String
   fechaCreada   DateTime         @default(now())
   fechaLimite   DateTime         // 24 horas desde creación
   completada    Boolean          @default(false)
   completadaEn  DateTime?
   notas         String?          @db.Text
-  contacto      Contacto         @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  lead          Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
   usuario       Usuario          @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
-  @@index([contactoId])
+  @@index([leadId])
   @@index([completada])
   @@index([fechaLimite])
   @@index([fechaCreada])
@@ -330,11 +382,6 @@ enum Rol {
 enum Sexo {
   MASCULINO
   FEMENINO
-}
-
-enum TipoContacto {
-  LEAD
-  CLIENTE
 }
 
 enum EstadoLead {

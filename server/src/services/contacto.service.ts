@@ -1,6 +1,6 @@
 import prisma from '@/config/database';
 import { CrearContactoDTO, ActualizarContactoDTO, FiltrosContacto, Contacto } from '@/types';
-import { TipoContacto, EstadoLead } from '@prisma/client';
+import { EstadoLead } from '@prisma/client';
 import googleAuthService from './google-auth.service';
 
 export class ContactoService {
@@ -40,7 +40,7 @@ export class ContactoService {
       tipo,
       ciudad,
       busqueda,
-      estadoLead,
+      estado,
       pagina = 1,
       limite = 6
     } = filtros;
@@ -55,9 +55,9 @@ export class ContactoService {
       console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
     }
 
-    if (estadoLead) {
-      where.estadoLead = estadoLead;
-      console.log(`🔍 Filtrando contactos por estado: ${estadoLead}`);
+    if (estado) {
+      where.estado = estado;
+      console.log(`🔍 Filtrando contactos por estado: ${estado}`);
     }
 
     if (ciudad) {
@@ -297,12 +297,12 @@ export class ContactoService {
 
     console.log(`🔄 Verificando contacto ${id} - Tipo actual: ${contacto.tipo}`);
 
-    if (contacto.tipo === TipoContacto.LEAD) {
+    if (contacto.tipo === 'LEAD') {
       console.log(`✅ Contacto ${id} ya es un LEAD`);
       return this.agregarEdad(contacto);
     }
 
-    if (contacto.tipo === TipoContacto.CLIENTE) {
+    if (contacto.tipo === 'CLIENTE') {
       console.log(`❌ Error: Contacto ${id} ya es un CLIENTE`);
       throw new Error('Este contacto ya es un cliente y no puede convertirse a lead');
     }
@@ -341,7 +341,7 @@ export class ContactoService {
       where: {
         id,
         usuarioId,
-        tipo: TipoContacto.LEAD
+        tipo: 'LEAD'
       }
     });
 
@@ -353,7 +353,7 @@ export class ContactoService {
     const contactoActualizado = await prisma.contacto.update({
       where: { id },
       data: {
-        tipo: TipoContacto.CLIENTE,
+        tipo: 'CLIENTE',
         fechaConversion: new Date()
       }
     });
@@ -367,10 +367,10 @@ export class ContactoService {
   async obtenerEstadisticas(usuarioId: string) {
     const [totalLeads, totalClientes] = await Promise.all([
       prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.LEAD }
+        where: { usuarioId, tipo: 'LEAD' }
       }),
       prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.CLIENTE }
+        where: { usuarioId, tipo: 'CLIENTE' }
       })
     ]);
 
@@ -403,7 +403,7 @@ export class ContactoService {
         telefono: true,
         empresa: true,
         tipo: true,
-        estadoLead: true,
+        estado: true,
         creadoEn: true
       }
     });
@@ -415,7 +415,7 @@ export class ContactoService {
       telefono: contacto.telefono,
       empresa: contacto.empresa,
       tipo: contacto.tipo,
-      estado: contacto.estadoLead,
+      estado: contacto.estado,
       fechaCreacion: contacto.creadoEn
     }));
   }
@@ -435,7 +435,7 @@ export class ContactoService {
       where: { 
         id: leadId, 
         usuarioId,
-        tipo: TipoContacto.LEAD 
+        tipo: 'LEAD'
       }
     });
 
@@ -448,7 +448,7 @@ export class ContactoService {
       where: { 
         id: clienteId, 
         usuarioId,
-        tipo: TipoContacto.CLIENTE 
+        tipo: 'CLIENTE'
       }
     });
 
