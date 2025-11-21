@@ -91,20 +91,9 @@ export class OportunidadService {
             correo: true,
             telefono: true,
             empresa: true,
-            etiquetas: {
+            etiquetasRel: {
               include: {
                 etiqueta: true
-              }
-            },
-            proyectos: {
-              select: {
-                proyecto: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    estado: true
-                  }
-                }
               }
             }
           }
@@ -173,20 +162,9 @@ export class OportunidadService {
               correo: true,
               telefono: true,
               empresa: true,
-              etiquetas: {
+              etiquetasRel: {
                 include: {
                   etiqueta: true
-                }
-              },
-              proyectos: {
-                select: {
-                  proyecto: {
-                    select: {
-                      id: true,
-                      nombre: true,
-                      estado: true
-                    }
-                  }
                 }
               }
             }
@@ -216,20 +194,9 @@ export class OportunidadService {
       include: {
         cliente: {
           include: {
-            etiquetas: {
+            etiquetasRel: {
               include: {
                 etiqueta: true
-              }
-            },
-            proyectos: {
-              select: {
-                proyecto: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    estado: true
-                  }
-                }
               }
             }
           }
@@ -277,20 +244,9 @@ export class OportunidadService {
             correo: true,
             telefono: true,
             empresa: true,
-            etiquetas: {
+            etiquetasRel: {
               include: {
                 etiqueta: true
-              }
-            },
-            proyectos: {
-              select: {
-                proyecto: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    estado: true
-                  }
-                }
               }
             }
           }
@@ -351,20 +307,9 @@ export class OportunidadService {
             correo: true,
             telefono: true,
             empresa: true,
-            etiquetas: {
+            etiquetasRel: {
               include: {
                 etiqueta: true
-              }
-            },
-            proyectos: {
-              select: {
-                proyecto: {
-                  select: {
-                    id: true,
-                    nombre: true,
-                    estado: true
-                  }
-                }
               }
             }
           }
