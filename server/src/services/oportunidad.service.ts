@@ -295,6 +295,15 @@ export class OportunidadService {
       }
     });
 
+    // Sincronizar estado del lead con la nueva etapa
+    try {
+      const leadPipelineService = require('./lead-pipeline.service').default;
+      await leadPipelineService.sincronizarEstadoLead(oportunidadExistente.clienteId);
+    } catch (error) {
+      console.warn('⚠️ No se pudo sincronizar el estado del lead:', error);
+      // No fallar si la sincronización falla
+    }
+
     return oportunidad;
   }
 
