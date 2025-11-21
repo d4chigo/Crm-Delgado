@@ -46,7 +46,7 @@ export default function PaginaPipeline() {
   const { oportunidades, estadisticas, cargando, error, moverOportunidad, eliminarOportunidad, refrescar } = useOportunidades()
   
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
-  const [selectedYear, setSelectedYear] = useState<string>("2025")
+  const [selectedYears, setSelectedYears] = useState<string[]>(["2025"])
   const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
   const [busqueda, setBusqueda] = useState<string>("")
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
@@ -88,27 +88,31 @@ export default function PaginaPipeline() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Filtrar oportunidades por mes, año, búsqueda y etiqueta
+  // Filtrar oportunidades por mes, años, búsqueda y etiqueta
   const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
-    // Filtro por mes y año
-    if (selectedMonth !== "all") {
+    // Filtro por mes y años
+    if (selectedMonth !== "all" && selectedYears.length > 0) {
       const opDate = new Date(op.creadoEn)
       const opMonth = opDate.getMonth() + 1
       const opYear = opDate.getFullYear()
-      if (opMonth !== Number.parseInt(selectedMonth) || opYear !== Number.parseInt(selectedYear)) {
+      if (opMonth !== Number.parseInt(selectedMonth) || !selectedYears.includes(opYear.toString())) {
         return false
       }
     }
 
-    // Filtro por búsqueda (nombre, apellido, correo, empresa)
+    // Filtro por búsqueda (nombre, DNI, teléfono, empresa)
     if (busqueda.trim()) {
       const searchLower = busqueda.toLowerCase()
       const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
+      const dni = op.cliente?.dni?.toLowerCase() || ''
+      const telefono = op.cliente?.telefono?.replace(/\D/g, '') || ''
       const correo = op.cliente?.correo?.toLowerCase() || ''
       const empresa = op.cliente?.empresa?.toLowerCase() || ''
       const titulo = op.titulo?.toLowerCase() || ''
       
       if (!nombreCompleto.includes(searchLower) && 
+          !dni.includes(searchLower) &&
+          !telefono.includes(searchLower.replace(/\D/g, '')) &&
           !correo.includes(searchLower) && 
           !empresa.includes(searchLower) &&
           !titulo.includes(searchLower)) {
@@ -335,18 +339,25 @@ export default function PaginaPipeline() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Año" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2 items-center flex-wrap">
+              {years.map((year) => (
+                <Button
+                  key={year}
+                  onClick={() => {
+                    if (selectedYears.includes(year)) {
+                      setSelectedYears(selectedYears.filter(y => y !== year))
+                    } else {
+                      setSelectedYears([...selectedYears, year])
+                    }
+                  }}
+                  variant={selectedYears.includes(year) ? "default" : "outline"}
+                  size="sm"
+                  className={selectedYears.includes(year) ? "bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-semibold" : ""}
+                >
+                  {year}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -355,10 +366,10 @@ export default function PaginaPipeline() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, correo, empresa, título o DNI..."
+              placeholder="Buscar por nombre, DNI, teléfono, empresa, correo o título..."
               value={busqueda}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
-              className="pl-9"
+              className="pl-9 border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
             />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
@@ -526,16 +537,29 @@ export default function PaginaPipeline() {
                             </div>
 
                             {/* Property */}
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Building2 className="w-3 h-3 flex-shrink-0" />
-                                <span className="line-clamp-1">
-                                  {oportunidad.cliente?.proyectos && oportunidad.cliente.proyectos.length > 0
-                                    ? oportunidad.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
-                                    : oportunidad.proyecto || 'Sin proyecto'}
-                                </span>
-                              </div>
-                              <p className="text-sm font-medium text-[#303030] line-clamp-1">{oportunidad.propiedad || 'Sin propiedad'}</p>
+                            <div className="space-y-2">
+                              {/* Tags */}
+                              {oportunidad.cliente?.etiquetas && oportunidad.cliente.etiquetas.length > 0 && (
+                                <div className="flex gap-1 flex-wrap">
+                                  {oportunidad.cliente.etiquetas.slice(0, 3).map((et: any) => (
+                                    <Badge
+                                      key={et.etiqueta.id}
+                                      className="text-xs font-semibold"
+                                      style={{
+                                        backgroundColor: et.etiqueta.color || '#E5E7EB',
+                                        color: 'white'
+                                      }}
+                                    >
+                                      {et.etiqueta.nombre}
+                                    </Badge>
+                                  ))}
+                                  {oportunidad.cliente.etiquetas.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{oportunidad.cliente.etiquetas.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             {/* Value */}
