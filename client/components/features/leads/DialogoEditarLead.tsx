@@ -35,12 +35,10 @@ import {
   MapPin,
   Calendar,
   DollarSign,
-  Share2,
-  Receipt
+  Share2
 } from 'lucide-react';
 import { SelectorEtiquetas } from './SelectorEtiquetas';
 import { ProyectosAsociados } from './ProyectosAsociados';
-import { CotizacionesAsociadas } from './CotizacionesAsociadas';
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from '@/lib/validaciones';
 import { dniService } from '@/services/api/dni.service';
@@ -81,7 +79,6 @@ export function DialogoEditarLead({
         presupuesto: lead.presupuesto || undefined,
         estadoLead: lead.estadoLead,
         fuente: lead.fuente || '',
-        fechaSeguimiento: lead.fechaSeguimiento || '',
         notas: lead.notas || '',
         departamento: lead.departamento || '',
         provincia: lead.provincia || '',
@@ -185,16 +182,6 @@ export function DialogoEditarLead({
             // Si es solo fecha (YYYY-MM-DD), agregar hora 00:00:00
             if (typeof value === 'string' && !value.includes('T')) {
               datosLimpios[key] = `${value}T00:00:00.000Z`;
-            } else {
-              datosLimpios[key] = value;
-            }
-          } else if (key === 'fechaSeguimiento' && value) {
-            // Si es datetime-local, convertir a ISO
-            if (typeof value === 'string' && value.length === 16) {
-              // datetime-local format: YYYY-MM-DDTHH:mm
-              datosLimpios[key] = `${value}:00.000Z`;
-            } else if (typeof value === 'string' && !value.endsWith('Z')) {
-              datosLimpios[key] = `${value}.000Z`;
             } else {
               datosLimpios[key] = value;
             }
@@ -324,7 +311,7 @@ export function DialogoEditarLead({
         </DialogHeader>
 
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-gradient-to-r from-[#FCBA00]/5 to-transparent border-b border-[#FCBA00]/20 rounded-none p-0">
+          <TabsList className="grid w-full grid-cols-5 bg-gradient-to-r from-[#FCBA00]/5 to-transparent border-b border-[#FCBA00]/20 rounded-none p-0">
             <TabsTrigger 
               value="personal" 
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#FCBA00] data-[state=active]:bg-[#FCBA00]/5 transition-all"
@@ -352,13 +339,6 @@ export function DialogoEditarLead({
             >
               <FolderOpen className="w-4 h-4 mr-2" />
               Proyectos
-            </TabsTrigger>
-            <TabsTrigger 
-              value="cotizaciones" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#FCBA00] data-[state=active]:bg-[#FCBA00]/5 transition-all"
-            >
-              <Receipt className="w-4 h-4 mr-2" />
-              Cotizaciones
             </TabsTrigger>
             <TabsTrigger 
               value="adicional" 
@@ -653,20 +633,6 @@ export function DialogoEditarLead({
                 </Select>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fechaSeguimiento" className="flex items-center gap-2 text-sm font-semibold text-[#303030]">
-                <Calendar className="w-4 h-4 text-[#FCBA00]" />
-                Fecha de próximo seguimiento
-              </Label>
-              <Input
-                id="fechaSeguimiento"
-                type="datetime-local"
-                value={datos.fechaSeguimiento?.substring(0, 16) || ''}
-                onChange={(e) => setDatos({ ...datos, fechaSeguimiento: e.target.value })}
-                className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
-              />
-            </div>
           </TabsContent>
 
           {/* Tab: Proyectos */}
@@ -680,30 +646,6 @@ export function DialogoEditarLead({
                 Gestiona los proyectos o propiedades asociados a este cliente
               </p>
               <ProyectosAsociados clienteId={lead.id} onActualizado={onActualizado} />
-            </div>
-          </TabsContent>
-
-          {/* Tab: Cotizaciones */}
-          <TabsContent value="cotizaciones" className="space-y-4 pt-4">
-            <div className="space-y-4 bg-gradient-to-br from-[#FCBA00]/5 to-[#FCBA00]/0 border border-[#FCBA00]/20 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-[#FCBA00]" />
-                <Label className="text-sm font-bold text-[#303030]">Cotizaciones asociadas</Label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Gestiona las cotizaciones y propuestas económicas para este cliente
-              </p>
-              <CotizacionesAsociadas 
-                clienteId={lead.id} 
-                onActualizado={onActualizado}
-                onAgregar={() => {
-                  // Nota: La funcionalidad de agregar cotización se maneja en la página principal
-                  toast({
-                    title: 'Ir a cotizaciones',
-                    description: 'Por favor, dirígete a la sección de cotizaciones para crear una nueva',
-                  });
-                }}
-              />
             </div>
           </TabsContent>
 
