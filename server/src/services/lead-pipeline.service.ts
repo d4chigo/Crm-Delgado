@@ -3,10 +3,26 @@ import prisma from '@/config/database';
 /**
  * Servicio para integrar Leads con el Pipeline de Oportunidades
  * 
- * Lógica de conversión:
- * NUEVO (Lead) → CONTACTADO (Lead) → CONTACTO (Oportunidad) → VISITA → NEGOCIACIÓN → CIERRE → GANADO/PERDIDO
+ * Pipeline propuesto:
+ * CONTACTO_INICIAL (25%) → AGENDAMIENTO (40%) → SEPARACION (60%) → CIERRE_GANADO (100%) / CIERRE_PERDIDO (0%)
+ * FIDELIZACION (100%) → Conversión a Cliente
  */
 export class LeadPipelineService {
+
+  /**
+   * Obtener el porcentaje de probabilidad según la etapa
+   */
+  private getProcentajePorEtapa(etapa: string): number {
+    const mapeoProcentajes: Record<string, number> = {
+      'CONTACTO_INICIAL': 25,
+      'AGENDAMIENTO': 40,
+      'SEPARACION': 60,
+      'CIERRE_GANADO': 100,
+      'CIERRE_PERDIDO': 0,
+      'FIDELIZACION': 100
+    };
+    return mapeoProcentajes[etapa] || 25;
+  }
   
   /**
    * Cuando un lead se marca como CONTACTADO, crear una oportunidad automáticamente
@@ -40,7 +56,7 @@ export class LeadPipelineService {
           clienteId: leadId,
           usuarioId,
           etapa: {
-            notIn: ['GANADO', 'PERDIDO']
+            notIn: ['CIERRE_GANADO', 'CIERRE_PERDIDO']
           }
         }
       });
@@ -50,7 +66,10 @@ export class LeadPipelineService {
         return oportunidadExistente;
       }
 
-      // Crear oportunidad en etapa CONTACTO (siguiente a LEAD)
+      // Crear oportunidad en etapa CONTACTO_INICIAL
+      const etapaInicial = 'CONTACTO_INICIAL';
+      const probab = datosOportunidad?.probabilidad || this.getProcentajePorEtapa(etapaInicial);
+      
       const oportunidad = await prisma.oportunidadCliente.create({
         data: {
           clienteId: leadId,
@@ -58,15 +77,15 @@ export class LeadPipelineService {
           titulo: datosOportunidad?.titulo || `Oportunidad - ${lead.nombre} ${lead.apellido || ''}`,
           proyecto: datosOportunidad?.proyecto,
           propiedad: datosOportunidad?.propiedad,
-          etapa: 'CONTACTO',
+          etapa: etapaInicial,
           valor: datosOportunidad?.valor,
-          probabilidad: datosOportunidad?.probabilidad || 25,
+          probabilidad: probab,
           proximaAccion: 'Completar información de contacto',
           notas: `Convertido automáticamente desde lead`
         }
       });
 
-      console.log(`✅ Oportunidad creada: ${oportunidad.id}`);
+      console.log(`✅ Oportunidad creada: ${oportunidad.id} en etapa ${etapaInicial} con ${probab}% de probabilidad`);
       return oportunidad;
     } catch (error: any) {
       console.error(`❌ Error al convertir lead a oportunidad:`, error.message);

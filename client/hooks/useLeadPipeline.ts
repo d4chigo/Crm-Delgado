@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { fetchAPI } from '@/services/api/config';
+import { getStageLabelMx, getStageProbability } from '@/lib/pipeline-stages';
 
 interface EstadisticasConversion {
   totalLeads: number;

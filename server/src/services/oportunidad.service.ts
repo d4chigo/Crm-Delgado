@@ -1,12 +1,12 @@
 import prisma from '@/config/database';
-import { TipoContacto, EtapaPipeline } from '@prisma/client';
+import { TipoContacto } from '@prisma/client';
 
 export interface CrearOportunidadDTO {
   clienteId: string;
   titulo: string;
   proyecto?: string;
   propiedad?: string;
-  etapa?: EtapaPipeline;
+  etapa?: string;
   valor?: number;
   probabilidad?: number;
   proximaAccion?: string;
@@ -17,7 +17,7 @@ export interface ActualizarOportunidadDTO {
   titulo?: string;
   proyecto?: string;
   propiedad?: string;
-  etapa?: EtapaPipeline;
+  etapa?: string;
   valor?: number;
   probabilidad?: number;
   proximaAccion?: string;
@@ -26,13 +26,28 @@ export interface ActualizarOportunidadDTO {
 
 export interface FiltrosOportunidad {
   clienteId?: string;
-  etapa?: EtapaPipeline;
+  etapa?: string;
   busqueda?: string;
   pagina?: number;
   limite?: number;
 }
 
 export class OportunidadService {
+  /**
+   * Obtener el porcentaje de probabilidad según la etapa
+   */
+  private getProcentajePorEtapa(etapa: string): number {
+    const mapeoProcentajes: Record<string, number> = {
+      'CONTACTO_INICIAL': 25,
+      'AGENDAMIENTO': 40,
+      'SEPARACION': 60,
+      'CIERRE_GANADO': 100,
+      'CIERRE_PERDIDO': 0,
+      'FIDELIZACION': 100
+    };
+    return mapeoProcentajes[etapa] || 25;
+  }
+
   /**
    * Crear nueva oportunidad para un cliente
    */
@@ -50,6 +65,10 @@ export class OportunidadService {
       throw new Error('Cliente no encontrado o no es un cliente válido');
     }
 
+    // Usar CONTACTO_INICIAL como etapa por defecto si no se especifica
+    const etapa = datos.etapa || 'CONTACTO_INICIAL';
+    const probabilidad = datos.probabilidad || this.getProcentajePorEtapa(etapa);
+
     // Crear la oportunidad
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
@@ -57,9 +76,9 @@ export class OportunidadService {
         titulo: datos.titulo,
         proyecto: datos.proyecto,
         propiedad: datos.propiedad,
-        etapa: datos.etapa || EtapaPipeline.LEAD,
+        etapa: etapa,
         valor: datos.valor,
-        probabilidad: datos.probabilidad || 25,
+        probabilidad: probabilidad,
         proximaAccion: datos.proximaAccion,
         notas: datos.notas,
         usuarioId,
@@ -248,28 +267,39 @@ export class OportunidadService {
   }
 
   /**
-   * Cambiar etapa de la oportunidad
+   * Cambiar etapa de la oportunidad con auto-cálculo de probabilidad
    */
   async cambiarEtapa(
     id: string,
     usuarioId: string,
-    etapa: EtapaPipeline,
+    etapa: string,
     notas?: string
   ) {
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { id, usuarioId }
+      where: { id, usuarioId },
+      include: {
+        cliente: true
+      }
     });
 
     if (!oportunidadExistente) {
       throw new Error('Oportunidad no encontrada');
     }
 
-    // Ajustar probabilidad según la etapa
-    let probabilidad = oportunidadExistente.probabilidad;
-    if (etapa === EtapaPipeline.GANADO) {
-      probabilidad = 100;
-    } else if (etapa === EtapaPipeline.PERDIDO) {
-      probabilidad = 0;
+    // Auto-calcular probabilidad según la nueva etapa
+    const probabilidad = this.getProcentajePorEtapa(etapa);
+
+    // Si la etapa es FIDELIZACION, convertir lead a cliente
+    let clienteActualizado = null;
+    if (etapa === 'FIDELIZACION' && oportunidadExistente.cliente.tipo === 'LEAD') {
+      clienteActualizado = await prisma.contacto.update({
+        where: { id: oportunidadExistente.clienteId },
+        data: {
+          tipo: 'CLIENTE',
+          actualizadoEn: new Date()
+        }
+      });
+      console.log(`✅ Lead ${oportunidadExistente.clienteId} convertido a CLIENTE automáticamente`);
     }
 
     // Actualizar etapa
@@ -287,6 +317,7 @@ export class OportunidadService {
             id: true,
             nombre: true,
             apellido: true,
+            tipo: true,
             correo: true,
             telefono: true,
             empresa: true
@@ -358,7 +389,7 @@ export class OportunidadService {
       where: { usuarioId }
     });
 
-    type OportunidadValor = { valor: any; etapa: EtapaPipeline };
+    type OportunidadValor = { valor: any; etapa: string };
 
     const estadisticasPorEtapa = await prisma.oportunidadCliente.groupBy({
       by: ['etapa'],
@@ -372,10 +403,10 @@ export class OportunidadService {
     }, 0);
 
     const valorGanado = oportunidades
-      .filter((op: OportunidadValor) => op.etapa === EtapaPipeline.GANADO)
+      .filter((op: OportunidadValor) => op.etapa === 'CIERRE_GANADO')
       .reduce((acc: number, op: OportunidadValor) => acc + (op.valor ? Number(op.valor) : 0), 0);
 
-    const etapasExcluidas: EtapaPipeline[] = [EtapaPipeline.GANADO, EtapaPipeline.PERDIDO];
+    const etapasExcluidas: string[] = ['CIERRE_GANADO', 'CIERRE_PERDIDO'];
     const valorPipeline = oportunidades
       .filter((op: OportunidadValor) => !etapasExcluidas.includes(op.etapa))
       .reduce((acc: number, op: OportunidadValor) => acc + (op.valor ? Number(op.valor) : 0), 0);
@@ -434,7 +465,7 @@ export class OportunidadService {
   /**
    * Actualizar oportunidad por leadId (sincronización con estado del lead)
    */
-  async actualizarOportunidadPorLead(leadId: string, etapa: EtapaPipeline, usuarioId: string) {
+  async actualizarOportunidadPorLead(leadId: string, etapa: string, usuarioId: string) {
     // Buscar la oportunidad asociada a este lead
     const oportunidad = await prisma.oportunidadCliente.findFirst({
       where: {
