@@ -323,7 +323,7 @@ export default function PaginaPipeline() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-start justify-between">
@@ -411,65 +411,6 @@ export default function PaginaPipeline() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Oportunidades Activas</p>
-                <p className="text-3xl font-bold text-[#303030] mt-1">
-                  {oportunidadesFiltradas.filter((op: OportunidadCliente) => !["CIERRE_GANADO", "CIERRE_PERDIDO"].includes(op.etapa)).length}
-                </p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Valor del Pipeline</p>
-                <p className="text-2xl font-bold text-[#303030] mt-1">
-                  S/ {(valorPipeline / 1000000).toFixed(1)}M
-                </p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-xl">
-                <DollarSign className="w-6 h-6 text-[#FCBA00]" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Ventas Ganadas</p>
-                <p className="text-3xl font-bold text-green-600 mt-1">{oportunidadesGanadas.length}</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Valor Ganado</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">S/ {(valorGanado / 1000000).toFixed(1)}M</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-xl">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Kanban Board con Drag and Drop */}
       <div 
