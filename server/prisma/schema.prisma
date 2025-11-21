@@ -127,7 +127,7 @@ model OportunidadCliente {
   titulo          String
   proyecto        String?
   propiedad       String?
-  etapa           EtapaPipeline @default(CONTACTO_INICIAL)
+  etapa           String        @default("CONTACTO_INICIAL")
   valor           Float?
   probabilidad    Int?          @default(25)
   proximaAccion   String?
@@ -150,8 +150,8 @@ model HistorialPipelineLead {
   id                    String        @id @default(uuid())
   oportunidadId         String
   leadId                String
-  etapaAnterior         EtapaPipeline
-  etapaNueva            EtapaPipeline
+  etapaAnterior         String
+  etapaNueva            String
   probabilidadAnterior  Int?
   probabilidadNueva     Int?
   valorAnterior         Float?
@@ -353,15 +353,6 @@ enum Prioridad {
   MEDIA
   ALTA
   URGENTE
-}
-
-enum EtapaPipeline {
-  CONTACTO_INICIAL
-  AGENDAMIENTO
-  SEPARACION
-  CIERRE_GANADO
-  CIERRE_PERDIDO
-  FIDELIZACION
 }
 
 enum TipoCuota {
