@@ -18,10 +18,11 @@ export class EtiquetaService {
    * Obtener etiquetas de un contacto específico
    */
   async obtenerEtiquetasDeContacto(contactoId: string) {
-    const contactoConEtiquetas = await prisma.contacto.findUnique({
+    // Intentar obtener del modelo Lead
+    const leadConEtiquetas = await prisma.lead.findUnique({
       where: { id: contactoId },
       include: {
-        etiquetas: {
+        etiquetasRel: {
           include: {
             etiqueta: true
           }
@@ -29,7 +30,28 @@ export class EtiquetaService {
       }
     });
 
-    return contactoConEtiquetas?.etiquetas.map((ce: any) => ce.etiqueta) || [];
+    if (leadConEtiquetas) {
+      return leadConEtiquetas.etiquetasRel.map((ce: any) => ce.etiqueta) || [];
+    }
+
+    // Si no es un lead, intentar con Cliente
+    const clienteConEtiquetas = await prisma.cliente.findUnique({
+      where: { id: contactoId },
+      include: {
+        etiquetasRel: {
+          include: {
+            etiqueta: true
+          }
+        }
+      }
+    });
+
+    if (clienteConEtiquetas) {
+      return clienteConEtiquetas.etiquetasRel.map((ce: any) => ce.etiqueta) || [];
+    }
+
+    // Si no encuentra en ninguna tabla, retornar array vacío
+    return [];
   }
 
   /**
@@ -37,28 +59,48 @@ export class EtiquetaService {
    * Reemplaza todas las etiquetas existentes con las nuevas
    */
   async asignarEtiquetas(contactoId: string, etiquetaIds: string[], usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario
-    const contacto = await prisma.contacto.findFirst({
+    // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
+    const lead = await prisma.lead.findFirst({
       where: { id: contactoId, usuarioId }
     });
 
-    if (!contacto) {
+    const cliente = !lead ? await prisma.cliente.findFirst({
+      where: { id: contactoId, usuarioId }
+    }) : null;
+
+    if (!lead && !cliente) {
       throw new Error('Contacto no encontrado');
     }
 
     // Eliminar todas las etiquetas actuales
-    await prisma.contactoEtiqueta.deleteMany({
-      where: { contactoId }
-    });
-
-    // Asignar las nuevas etiquetas
-    if (etiquetaIds.length > 0) {
-      await prisma.contactoEtiqueta.createMany({
-        data: etiquetaIds.map(etiquetaId => ({
-          contactoId,
-          etiquetaId
-        }))
+    if (lead) {
+      await prisma.leadEtiqueta.deleteMany({
+        where: { leadId: contactoId }
       });
+
+      // Asignar las nuevas etiquetas
+      if (etiquetaIds.length > 0) {
+        await prisma.leadEtiqueta.createMany({
+          data: etiquetaIds.map(etiquetaId => ({
+            leadId: contactoId,
+            etiquetaId
+          }))
+        });
+      }
+    } else {
+      await prisma.clienteEtiqueta.deleteMany({
+        where: { clienteId: contactoId }
+      });
+
+      // Asignar las nuevas etiquetas
+      if (etiquetaIds.length > 0) {
+        await prisma.clienteEtiqueta.createMany({
+          data: etiquetaIds.map(etiquetaId => ({
+            clienteId: contactoId,
+            etiquetaId
+          }))
+        });
+      }
     }
 
     // Retornar las etiquetas actualizadas
@@ -69,36 +111,64 @@ export class EtiquetaService {
    * Agregar una etiqueta a un contacto (sin remover las existentes)
    */
   async agregarEtiqueta(contactoId: string, etiquetaId: string, usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario
-    const contacto = await prisma.contacto.findFirst({
+    // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
+    const lead = await prisma.lead.findFirst({
       where: { id: contactoId, usuarioId }
     });
 
-    if (!contacto) {
+    const cliente = !lead ? await prisma.cliente.findFirst({
+      where: { id: contactoId, usuarioId }
+    }) : null;
+
+    if (!lead && !cliente) {
       throw new Error('Contacto no encontrado');
     }
 
-    // Verificar si la relación ya existe
-    const existente = await prisma.contactoEtiqueta.findUnique({
-      where: {
-        contactoId_etiquetaId: {
-          contactoId,
+    if (lead) {
+      // Verificar si la relación ya existe
+      const existente = await prisma.leadEtiqueta.findUnique({
+        where: {
+          leadId_etiquetaId: {
+            leadId: contactoId,
+            etiquetaId
+          }
+        }
+      });
+
+      if (existente) {
+        return await this.obtenerEtiquetasDeContacto(contactoId);
+      }
+
+      // Crear la relación
+      await prisma.leadEtiqueta.create({
+        data: {
+          leadId: contactoId,
           etiquetaId
         }
-      }
-    });
+      });
+    } else {
+      // Verificar si la relación ya existe
+      const existente = await prisma.clienteEtiqueta.findUnique({
+        where: {
+          clienteId_etiquetaId: {
+            clienteId: contactoId,
+            etiquetaId
+          }
+        }
+      });
 
-    if (existente) {
-      return await this.obtenerEtiquetasDeContacto(contactoId);
+      if (existente) {
+        return await this.obtenerEtiquetasDeContacto(contactoId);
+      }
+
+      // Crear la relación
+      await prisma.clienteEtiqueta.create({
+        data: {
+          clienteId: contactoId,
+          etiquetaId
+        }
+      });
     }
-
-    // Crear la relación
-    await prisma.contactoEtiqueta.create({
-      data: {
-        contactoId,
-        etiquetaId
-      }
-    });
 
     return await this.obtenerEtiquetasDeContacto(contactoId);
   }
@@ -107,23 +177,38 @@ export class EtiquetaService {
    * Remover una etiqueta de un contacto
    */
   async removerEtiqueta(contactoId: string, etiquetaId: string, usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario
-    const contacto = await prisma.contacto.findFirst({
+    // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
+    const lead = await prisma.lead.findFirst({
       where: { id: contactoId, usuarioId }
     });
 
-    if (!contacto) {
+    const cliente = !lead ? await prisma.cliente.findFirst({
+      where: { id: contactoId, usuarioId }
+    }) : null;
+
+    if (!lead && !cliente) {
       throw new Error('Contacto no encontrado');
     }
 
-    await prisma.contactoEtiqueta.delete({
-      where: {
-        contactoId_etiquetaId: {
-          contactoId,
-          etiquetaId
+    if (lead) {
+      await prisma.leadEtiqueta.delete({
+        where: {
+          leadId_etiquetaId: {
+            leadId: contactoId,
+            etiquetaId
+          }
         }
-      }
-    });
+      });
+    } else {
+      await prisma.clienteEtiqueta.delete({
+        where: {
+          clienteId_etiquetaId: {
+            clienteId: contactoId,
+            etiquetaId
+          }
+        }
+      });
+    }
 
     return await this.obtenerEtiquetasDeContacto(contactoId);
   }
