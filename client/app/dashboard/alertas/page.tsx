@@ -1,18 +1,29 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, RefreshCw, Clock } from 'lucide-react';
 import { AlertasLead } from '@/components/features/alerts';
-import { useAuth } from '@/hooks/useAuth';
+import { obtenerUsuario } from '@/lib/autenticacion';
 import { useToast } from '@/components/ui/use-toast';
 
 /**
  * Página de alertas de leads para el dashboard
  */
 export default function AlertasPage() {
-  const { usuario } = useAuth();
+  const enrutador = useRouter();
+  const [usuario, setUsuario] = useState<any>(null);
   const { toast } = useToast();
   const [cargandoAlertas, setCargandoAlertas] = useState(false);
+
+  useEffect(() => {
+    const usuarioActual = obtenerUsuario();
+    if (!usuarioActual) {
+      enrutador.push('/login');
+    } else {
+      setUsuario(usuarioActual);
+    }
+  }, [enrutador]);
 
   // Generar alertas manualmente
   const generarAlertas = async () => {
@@ -53,7 +64,7 @@ export default function AlertasPage() {
   if (!usuario) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-500">Cargando...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FCBA00]"></div>
       </div>
     );
   }

@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, ChevronRight } from 'lucide-react';
+import { AlertCircle, ChevronRight, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { fetchAPI } from '@/services/api/config';
 
 interface EstadisticasAlertas {
   total: number;
@@ -21,56 +22,134 @@ interface WidgetAlertasProps {
 export const WidgetAlertas: React.FC<WidgetAlertasProps> = ({ usuarioId }) => {
   const [estadisticas, setEstadisticas] = useState<EstadisticasAlertas | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [generando, setGenerando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Obtener estadísticas de alertas
   const obtenerEstadisticas = async () => {
     try {
+      console.log('🔍 WidgetAlertas: Obteniendo estadísticas para usuarioId:', usuarioId);
       setCargando(true);
-      const response = await fetch(`/api/alertas/estadisticas/${usuarioId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al obtener estadísticas');
+      setError(null);
+      
+      // Usar fetchAPI que está configurado correctamente para hacer requests al backend
+      const response = await fetchAPI<any>(`/alertas/estadisticas/${usuarioId}`);
+      
+      console.log('✅ Respuesta obtenida:', response);
+      
+      // La respuesta debería tener estructura: { exito: true, estadisticas: {...} }
+      if (response && response.estadisticas) {
+        setEstadisticas(response.estadisticas);
+      } else {
+        console.warn('⚠️ Respuesta no tiene estadisticas:', response);
+        setEstadisticas(null);
       }
-
-      const data = await response.json();
-      setEstadisticas(data.estadisticas);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('❌ Error obteniendo estadísticas:', error.message);
+      setError(error.message);
       setEstadisticas(null);
     } finally {
       setCargando(false);
     }
   };
 
+  // Generar alertas automáticamente
+  const generarAlertas = async () => {
+    try {
+      console.log('⚡ Generando alertas manualmente...');
+      setGenerando(true);
+      setError(null);
+      
+      const data = await fetchAPI(
+        `/alertas/generar`,
+        { method: 'POST' }
+      );
+      
+      console.log('✅ Alertas generadas:', data);
+      
+      // Recargar estadísticas después de generar
+      await obtenerEstadisticas();
+    } catch (error: any) {
+      console.error('❌ Error generando alertas:', error.message);
+      setError(error.message);
+    } finally {
+      setGenerando(false);
+    }
+  };
+
   useEffect(() => {
-    if (usuarioId) {
+    // Validar que el usuarioId es válido (no es placeholder o temporal)
+    // Los UUIDs tienen 36 caracteres (incluyendo guiones)
+    // Los placeholders como "temp-id" son mucho más cortos
+    console.log('📋 WidgetAlertas useEffect:', { usuarioId, length: usuarioId?.length });
+    
+    const esUuidValido = usuarioId && usuarioId.length >= 20 && !usuarioId.includes('temp');
+    console.log('🔐 Es UUID válido:', esUuidValido);
+    
+    if (esUuidValido) {
+      console.log('✨ Iniciando fetch de estadísticas');
       obtenerEstadisticas();
       // Recargar cada 5 minutos
       const intervalo = setInterval(obtenerEstadisticas, 5 * 60 * 1000);
       return () => clearInterval(intervalo);
+    } else {
+      console.log('⏸️ UUID no válido, esperando...');
+      // Si no es válido, mostrar cargando hasta que sea válido
+      setCargando(true);
     }
   }, [usuarioId]);
 
   if (cargando) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="h-20 bg-gray-100 rounded animate-pulse" />
+      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#FCBA00]"></div>
+          <h3 className="font-semibold text-gray-700">Alertas de Leads</h3>
+        </div>
+        <div className="h-16 bg-gray-100 rounded animate-pulse" />
+      </div>
+    );
+  }
+
+  // Mostrar error si existe
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg border-2 border-red-300 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            Alertas de Leads
+          </h3>
+        </div>
+        <div className="space-y-3">
+          <p className="text-sm text-red-600">⚠️ Error: {error}</p>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              obtenerEstadisticas();
+            }}
+            className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-sm font-medium text-white rounded-lg transition-all duration-200"
+          >
+            Reintentar
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!estadisticas || estadisticas.activas === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-700">Alertas de Leads</h3>
-          <AlertCircle className="w-5 h-5 text-green-500" />
+      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-green-500" />
+            Alertas de Leads
+          </h3>
         </div>
-        <p className="text-sm text-gray-600 mt-2">Todas las alertas completadas ✅</p>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">✅ Todas las alertas completadas</p>
+          <p className="text-xs text-gray-500">Las alertas se generan automáticamente cada hora para leads sin contactar en 24+ horas</p>
+        </div>
       </div>
     );
   }

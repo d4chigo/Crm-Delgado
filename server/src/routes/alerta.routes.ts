@@ -11,80 +11,15 @@ import {
 const router = Router();
 
 /**
- * GET /api/alertas
- * Obtener alertas activas del usuario autenticado
- */
-router.get('/', autenticar, async (req: Request, res: Response) => {
-  try {
-    const usuarioId = (req as any).usuarioId;
-
-    if (!usuarioId) {
-      return res.status(401).json({
-        exito: false,
-        mensaje: 'No autorizado',
-      });
-    }
-
-    const alertas = await obtenerAlertasActivas(usuarioId);
-
-    res.json({
-      exito: true,
-      alertas,
-      total: alertas.length,
-    });
-  } catch (error: any) {
-    console.error('Error al obtener alertas:', error);
-    res.status(500).json({
-      exito: false,
-      mensaje: 'Error al obtener alertas',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * GET /api/alertas/estadisticas
- * Obtener estadísticas de alertas del usuario
- */
-router.get('/estadisticas/:usuarioId', autenticar, async (req: Request, res: Response) => {
-  try {
-    const { usuarioId } = req.params;
-    const usuarioAutenticado = (req as any).usuarioId;
-
-    // Solo puede ver las estadísticas propias o ser admin
-    if (usuarioId !== usuarioAutenticado && (req as any).rol !== 'ADMIN') {
-      return res.status(403).json({
-        exito: false,
-        mensaje: 'No tienes permiso para ver estas estadísticas',
-      });
-    }
-
-    const estadisticas = await obtenerEstadisticasAlertas(usuarioId);
-
-    res.json({
-      exito: true,
-      estadisticas,
-    });
-  } catch (error: any) {
-    console.error('Error al obtener estadísticas:', error);
-    res.status(500).json({
-      exito: false,
-      mensaje: 'Error al obtener estadísticas',
-      error: error.message,
-    });
-  }
-});
-
-/**
  * POST /api/alertas/generar
  * Generar alertas automáticamente para leads no contactados
- * (Endpoint para ser llamado por cron job o manualmente)
+ * DEBE ESTAR ANTES que GET /:id para evitar conflictos con parámetros
  */
 router.post('/generar', autenticar, async (req: Request, res: Response) => {
   try {
     // Verificar permisos (solo admin o supervisor)
-    const rol = (req as any).rol;
-    if (!['ADMIN', 'SUPERVISOR'].includes(rol)) {
+    const rolUsuario = (req as any).usuario?.rol;
+    if (!['ADMIN', 'SUPERVISOR'].includes(rolUsuario)) {
       return res.status(403).json({
         exito: false,
         mensaje: 'No tienes permiso para generar alertas',
@@ -110,6 +45,83 @@ router.post('/generar', autenticar, async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/alertas/todas
+ * Obtener todas las alertas (solo admin)
+ * DEBE ESTAR ANTES que GET /estadisticas/:usuarioId
+ */
+router.get('/todas', autenticar, async (req: Request, res: Response) => {
+  try {
+    const rolUsuario = (req as any).usuario?.rol;
+
+    if (rolUsuario !== 'ADMIN') {
+      return res.status(403).json({
+        exito: false,
+        mensaje: 'Solo administradores pueden ver todas las alertas',
+      });
+    }
+
+    const { completada, usuarioId, contactoId } = req.query;
+
+    const filtro = {
+      ...(completada !== undefined && { completada: completada === 'true' }),
+      ...(usuarioId && { usuarioId: String(usuarioId) }),
+      ...(contactoId && { contactoId: String(contactoId) }),
+    };
+
+    const alertas = await obtenerTodasAlertas(filtro);
+
+    res.json({
+      exito: true,
+      alertas,
+      total: alertas.length,
+    });
+  } catch (error: any) {
+    console.error('Error al obtener todas las alertas:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener alertas',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/alertas/estadisticas/:usuarioId
+ * Obtener estadísticas de alertas del usuario
+ */
+router.get('/estadisticas/:usuarioId', autenticar, async (req: Request, res: Response) => {
+  try {
+    const { usuarioId } = req.params;
+    const usuarioAutenticado = (req as any).usuario?.id;
+    const rolUsuario = (req as any).usuario?.rol;
+
+    console.log('📊 Estadísticas:', { usuarioId, usuarioAutenticado, rolUsuario });
+
+    // Solo puede ver las estadísticas propias o ser admin
+    if (usuarioId !== usuarioAutenticado && rolUsuario !== 'ADMIN') {
+      return res.status(403).json({
+        exito: false,
+        mensaje: 'No tienes permiso para ver estas estadísticas',
+      });
+    }
+
+    const estadisticas = await obtenerEstadisticasAlertas(usuarioId);
+
+    res.json({
+      exito: true,
+      estadisticas,
+    });
+  } catch (error: any) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener estadísticas',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * PUT /api/alertas/:id/completar
  * Marcar alerta como completada cuando se contacte al lead
  */
@@ -117,7 +129,8 @@ router.put('/:id/completar', autenticar, async (req: Request, res: Response) => 
   try {
     const { id } = req.params;
     const { notas } = req.body;
-    const usuarioId = (req as any).usuarioId;
+    const usuarioId = (req as any).usuario?.id;
+    const rolUsuario = (req as any).usuario?.rol;
 
     // Verificar que la alerta pertenece al usuario
     const prisma = require('@/config/database').default;
@@ -133,7 +146,7 @@ router.put('/:id/completar', autenticar, async (req: Request, res: Response) => 
       });
     }
 
-    if (alerta.usuarioId !== usuarioId && (req as any).rol !== 'ADMIN') {
+    if (alerta.usuarioId !== usuarioId && rolUsuario !== 'ADMIN') {
       return res.status(403).json({
         exito: false,
         mensaje: 'No tienes permiso para completar esta alerta',
@@ -168,29 +181,21 @@ router.put('/:id/completar', autenticar, async (req: Request, res: Response) => 
 });
 
 /**
- * GET /api/alertas/todas
- * Obtener todas las alertas (solo admin)
+ * GET /api/alertas
+ * Obtener alertas activas del usuario autenticado
  */
-router.get('/todas', autenticar, async (req: Request, res: Response) => {
+router.get('/', autenticar, async (req: Request, res: Response) => {
   try {
-    const rol = (req as any).rol;
+    const usuarioId = (req as any).usuario?.id;
 
-    if (rol !== 'ADMIN') {
-      return res.status(403).json({
+    if (!usuarioId) {
+      return res.status(401).json({
         exito: false,
-        mensaje: 'Solo administradores pueden ver todas las alertas',
+        mensaje: 'No autorizado',
       });
     }
 
-    const { completada, usuarioId, contactoId } = req.query;
-
-    const filtro = {
-      ...(completada !== undefined && { completada: completada === 'true' }),
-      ...(usuarioId && { usuarioId: String(usuarioId) }),
-      ...(contactoId && { contactoId: String(contactoId) }),
-    };
-
-    const alertas = await obtenerTodasAlertas(filtro);
+    const alertas = await obtenerAlertasActivas(usuarioId);
 
     res.json({
       exito: true,
@@ -198,7 +203,7 @@ router.get('/todas', autenticar, async (req: Request, res: Response) => {
       total: alertas.length,
     });
   } catch (error: any) {
-    console.error('Error al obtener todas las alertas:', error);
+    console.error('Error al obtener alertas:', error);
     res.status(500).json({
       exito: false,
       mensaje: 'Error al obtener alertas',

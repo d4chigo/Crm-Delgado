@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '@/config/database';
 
 /**
  * Servicio para gestionar alertas de leads no contactados en las últimas 24 horas
@@ -147,7 +145,7 @@ export const obtenerAlertasActivas = async (usuarioId: string): Promise<any[]> =
     });
 
     // Agregar información calculada
-    const alertasConInfo = alertas.map((alerta) => ({
+    const alertasConInfo = alertas.map((alerta: any) => ({
       ...alerta,
       tiempoRestante: {
         ms: alerta.fechaLimite.getTime() - ahora.getTime(),
@@ -184,11 +182,11 @@ export const obtenerEstadisticasAlertas = async (
       where: { usuarioId },
     });
 
-    const activas = alertas.filter((a) => !a.completada);
+    const activas = alertas.filter((a: any) => !a.completada);
     const urgentes = activas.filter(
-      (a) => a.fechaLimite.getTime() - ahora.getTime() < 6 * 60 * 60 * 1000
+      (a: any) => a.fechaLimite.getTime() - ahora.getTime() < 6 * 60 * 60 * 1000
     );
-    const completadas = alertas.filter((a) => a.completada);
+    const completadas = alertas.filter((a: any) => a.completada);
 
     return {
       total: alertas.length,

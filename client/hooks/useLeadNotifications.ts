@@ -75,7 +75,7 @@ export const useLeadNotifications = (
 
       wsRef.current.onopen = () => {
         console.log('✅ Conectado a WebSocket de notificaciones');
-        attemptCountRef.current = 0; // Reset counter on success
+        attemptCountRef.current = 0; 
         
         // Limpiar timer de reconexión si existe
         if (reconnectTimerRef.current) {
