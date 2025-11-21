@@ -563,13 +563,13 @@ export default function PaginaPipeline() {
               overTrash ? 'scale-110' : 'scale-100'
             }`}
           >
-            <Card className={`border-2 border-dashed h-full flex items-center justify-center ${
+            <Card className={`border-2 border-dashed min-h-[500px] flex flex-col items-center justify-center ${
               overTrash
                 ? 'border-red-500 bg-red-50'
                 : 'border-gray-300 bg-gray-50'
             }`}>
-              <div className="text-center space-y-3">
-                <Trash2 className={`w-12 h-12 mx-auto ${
+              <div className="text-center space-y-3 p-4">
+                <Trash2 className={`w-16 h-16 mx-auto ${
                   overTrash ? 'text-red-600' : 'text-gray-400'
                 }`} />
                 <div>
