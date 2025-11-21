@@ -609,32 +609,30 @@ export default function PaginaPipeline() {
       </div>
 
       {/* Floating Trash Icon */}
-      {draggedItem && (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            setOverTrash(true)
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault()
-            setOverTrash(false)
-          }}
-          onDrop={handleDropTrash}
-          className={`fixed bottom-8 right-8 z-50 transition-all duration-200 ${
-            overTrash ? 'scale-150' : 'scale-100'
-          }`}
-        >
-          <div className={`p-4 rounded-full shadow-lg cursor-move ${
-            overTrash
-              ? 'bg-red-600 text-white scale-125'
-              : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-          } transition-all`}
-          title="Arrastra oportunidades aquí para eliminar">
-            <Trash2 className="w-6 h-6" />
-          </div>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setOverTrash(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          setOverTrash(false)
+        }}
+        onDrop={handleDropTrash}
+        className={`fixed bottom-8 right-8 z-50 transition-all duration-200 ${
+          overTrash ? 'scale-150' : 'scale-100'
+        }`}
+      >
+        <div className={`p-4 rounded-full shadow-lg cursor-move ${
+          overTrash
+            ? 'bg-red-600 text-white scale-125'
+            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+        } transition-all`}
+        title="Arrastra oportunidades aquí para eliminar">
+          <Trash2 className="w-6 h-6" />
         </div>
-      )}
+      </div>
 
       {/* Deal Details Dialog */}
       {selectedDeal && (
