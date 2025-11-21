@@ -78,7 +78,7 @@ export function useLeadPipeline() {
             method: 'POST',
             body: JSON.stringify(datosOportunidad || {})
           }
-        );
+        ) as any;
 
         if (response?.oportunidad) {
           // Actualizar lista de leads no convertidos
@@ -130,7 +130,7 @@ export function useLeadPipeline() {
 
       const response = await fetchAPI(
         `/leads/${leadId}/oportunidades`
-      );
+      ) as any;
 
       if (response?.oportunidades) {
         return response.oportunidades;
@@ -158,7 +158,7 @@ export function useLeadPipeline() {
             method: 'POST',
             body: JSON.stringify({ alertaId, notas })
           }
-        );
+        ) as any;
 
         if (response?.exito) {
           // Actualizar lista de leads

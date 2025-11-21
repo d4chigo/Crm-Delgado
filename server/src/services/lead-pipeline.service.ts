@@ -1,5 +1,4 @@
 import prisma from '@/config/database';
-import { EtapaPipeline, EstadoLead } from '@prisma/client';
 
 /**
  * Servicio para integrar Leads con el Pipeline de Oportunidades
@@ -100,7 +99,7 @@ export class LeadPipelineService {
       }
 
       // Mapear etapa de oportunidad a estado de lead
-      const mapeoEstados: Record<EtapaPipeline, EstadoLead> = {
+      const mapeoEstados: Record<string, string> = {
         'LEAD': 'NUEVO',
         'CONTACTO': 'CONTACTADO',
         'VISITA': 'CONTACTADO',
@@ -135,8 +134,8 @@ export class LeadPipelineService {
   async registrarCambioEtapa(
     oportunidadId: string,
     leadId: string,
-    etapaAnterior: EtapaPipeline,
-    etapaNueva: EtapaPipeline,
+    etapaAnterior: string,
+    etapaNueva: string,
     cambiadoPor: string,
     datosAnteriores: { probabilidad?: number; valor?: number },
     datosNuevos: { probabilidad?: number; valor?: number },
@@ -175,7 +174,7 @@ export class LeadPipelineService {
    */
   async actualizarEtapaOportunidad(
     oportunidadId: string,
-    nuevaEtapa: EtapaPipeline,
+    nuevaEtapa: string,
     usuarioId?: string,
     razon?: string,
     notas?: string
