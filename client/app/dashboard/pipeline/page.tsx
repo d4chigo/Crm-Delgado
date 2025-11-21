@@ -360,25 +360,18 @@ export default function PaginaPipeline() {
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2 items-center flex-wrap">
-              {years.map((year) => (
-                <Button
-                  key={year}
-                  onClick={() => {
-                    if (selectedYears.includes(year)) {
-                      setSelectedYears(selectedYears.filter(y => y !== year))
-                    } else {
-                      setSelectedYears([...selectedYears, year])
-                    }
-                  }}
-                  variant={selectedYears.includes(year) ? "default" : "outline"}
-                  size="sm"
-                  className={selectedYears.includes(year) ? "bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-semibold" : ""}
-                >
-                  {year}
-                </Button>
-              ))}
-            </div>
+            <Select value={selectedYears[0] || "2025"} onValueChange={(year) => setSelectedYears([year])}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Seleccionar año" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -616,30 +609,32 @@ export default function PaginaPipeline() {
       </div>
 
       {/* Floating Trash Icon */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setOverTrash(true)
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault()
-          setOverTrash(false)
-        }}
-        onDrop={handleDropTrash}
-        className={`fixed bottom-8 right-8 transition-all duration-200 ${
-          overTrash ? 'scale-150' : 'scale-100'
-        }`}
-      >
-        <div className={`p-4 rounded-full shadow-lg cursor-move ${
-          overTrash
-            ? 'bg-red-600 text-white scale-125'
-            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-        } transition-all`}
-        title="Arrastra oportunidades aquí para eliminar">
-          <Trash2 className="w-6 h-6" />
+      {draggedItem && (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setOverTrash(true)
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault()
+            setOverTrash(false)
+          }}
+          onDrop={handleDropTrash}
+          className={`fixed bottom-8 right-8 z-50 transition-all duration-200 ${
+            overTrash ? 'scale-150' : 'scale-100'
+          }`}
+        >
+          <div className={`p-4 rounded-full shadow-lg cursor-move ${
+            overTrash
+              ? 'bg-red-600 text-white scale-125'
+              : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+          } transition-all`}
+          title="Arrastra oportunidades aquí para eliminar">
+            <Trash2 className="w-6 h-6" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Deal Details Dialog */}
       {selectedDeal && (
