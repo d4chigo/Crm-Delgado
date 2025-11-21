@@ -9,9 +9,9 @@ import { Loader2 } from 'lucide-react';
 
 interface SelectorEtiquetasProps {
   contactoId: string;
-  etiquetasSeleccionadas?: string[]; // IDs de etiquetas ya asignadas (solo una)
+  etiquetasSeleccionadas?: string[]; // IDs de etiquetas ya asignadas
   onCambio?: (etiquetasIds: string[]) => void;
-  modo?: 'radio' | 'badge-only'; // radio: permite editar una sola, badge-only: solo muestra
+  modo?: 'radio' | 'checkbox' | 'badge-only'; // radio: una sola, checkbox: múltiples, badge-only: solo muestra
 }
 
 export function SelectorEtiquetas({
@@ -22,6 +22,7 @@ export function SelectorEtiquetas({
 }: SelectorEtiquetasProps) {
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
   const [etiquetaSeleccionada, setEtiquetaSeleccionada] = useState<string>(etiquetasSeleccionadas[0] || '');
+  const [etiquetasMultiples, setEtiquetasMultiples] = useState<string[]>(etiquetasSeleccionadas || []);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
@@ -31,6 +32,7 @@ export function SelectorEtiquetas({
 
   useEffect(() => {
     setEtiquetaSeleccionada(etiquetasSeleccionadas[0] || '');
+    setEtiquetasMultiples(etiquetasSeleccionadas || []);
   }, [etiquetasSeleccionadas]);
 
   const cargarEtiquetas = async () => {
@@ -95,17 +97,34 @@ export function SelectorEtiquetas({
   };
 
   const toggleEtiqueta = async (etiquetaId: string) => {
-    // Si la etiqueta ya está seleccionada, deseleccionar (permitir sin etiqueta)
-    const nuevaEtiqueta = etiquetaSeleccionada === etiquetaId ? '' : etiquetaId;
-    setEtiquetaSeleccionada(nuevaEtiqueta);
+    if (modo === 'checkbox') {
+      // Modo múltiple: agregar o remover de la lista
+      const nuevasEtiquetas = etiquetasMultiples.includes(etiquetaId)
+        ? etiquetasMultiples.filter(id => id !== etiquetaId)
+        : [...etiquetasMultiples, etiquetaId];
+      
+      setEtiquetasMultiples(nuevasEtiquetas);
 
-    // Si hay callback, notificar el cambio
-    if (onCambio) {
-      onCambio(nuevaEtiqueta ? [nuevaEtiqueta] : []);
+      // Si hay callback, notificar el cambio
+      if (onCambio) {
+        onCambio(nuevasEtiquetas);
+      }
+
+      // Guardar automáticamente en el servidor
+      await guardarEtiquetas(nuevasEtiquetas);
+    } else {
+      // Modo radio (una sola): Si la etiqueta ya está seleccionada, deseleccionar
+      const nuevaEtiqueta = etiquetaSeleccionada === etiquetaId ? '' : etiquetaId;
+      setEtiquetaSeleccionada(nuevaEtiqueta);
+
+      // Si hay callback, notificar el cambio
+      if (onCambio) {
+        onCambio(nuevaEtiqueta ? [nuevaEtiqueta] : []);
+      }
+
+      // Guardar automáticamente en el servidor
+      await guardarEtiquetas(nuevaEtiqueta ? [nuevaEtiqueta] : []);
     }
-
-    // Guardar automáticamente en el servidor
-    await guardarEtiquetas(nuevaEtiqueta ? [nuevaEtiqueta] : []);
   };
 
   const guardarEtiquetas = async (etiquetaIds: string[]) => {
@@ -201,6 +220,71 @@ export function SelectorEtiquetas({
           {etiquetaMostrar.icono && <span className="mr-1">{etiquetaMostrar.icono}</span>}
           {etiquetaMostrar.nombre}
         </Badge>
+      </div>
+    );
+  }
+
+  // Modo checkbox (múltiples etiquetas)
+  if (modo === 'checkbox') {
+    return (
+      <div className="space-y-3">
+        {guardando && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Guardando...</span>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {etiquetasDisponibles.map(etiqueta => {
+            const estaSeleccionada = etiquetasMultiples.includes(etiqueta.id);
+
+            return (
+              <div
+                key={etiqueta.id}
+                className="flex items-start space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  id={`etiqueta-${etiqueta.id}`}
+                  checked={estaSeleccionada}
+                  onChange={() => toggleEtiqueta(etiqueta.id)}
+                  disabled={guardando}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor={`etiqueta-${etiqueta.id}`}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Badge
+                      style={{
+                        backgroundColor: etiqueta.color + '20',
+                        color: etiqueta.color,
+                        borderColor: etiqueta.color,
+                      }}
+                      className="border"
+                    >
+                      {etiqueta.icono && <span className="mr-1">{etiqueta.icono}</span>}
+                      {etiqueta.nombre}
+                    </Badge>
+                  </Label>
+                  {etiqueta.descripcion && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {etiqueta.descripcion}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {etiquetasDisponibles.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No hay etiquetas disponibles
+          </p>
+        )}
       </div>
     );
   }
