@@ -795,8 +795,8 @@ export class ContactoService {
           // Si no tiene correo, usar un correo temporal basado en el nombre
           let correoFinal = correo;
           if (!correo) {
-            // Primero verificar si ya existe un contacto con el mismo nombre y apellido
-            const contactoPorNombre = await prisma.contacto.findFirst({
+            // Primero verificar si ya existe un lead con el mismo nombre y apellido
+            const leadPorNombre = await prisma.lead.findFirst({
               where: {
                 nombre: nombre.trim(),
                 apellido: apellido.trim(),
@@ -804,8 +804,23 @@ export class ContactoService {
               }
             });
 
-            if (contactoPorNombre) {
-              console.log(`🔄 Contacto duplicado (por nombre): ${nombre} ${apellido}`);
+            if (leadPorNombre) {
+              console.log(`🔄 Lead duplicado (por nombre): ${nombre} ${apellido}`);
+              duplicados++;
+              continue;
+            }
+
+            // También verificar en clientes
+            const clientePorNombre = await prisma.cliente.findFirst({
+              where: {
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
+                usuarioId
+              }
+            });
+
+            if (clientePorNombre) {
+              console.log(`🔄 Cliente duplicado (por nombre): ${nombre} ${apellido}`);
               duplicados++;
               continue;
             }
@@ -816,41 +831,51 @@ export class ContactoService {
             console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
           }
 
-          // Verificar si ya existe un contacto con ese correo (independiente del tipo)
-          const contactoExistente = await prisma.contacto.findFirst({
+          // Verificar si ya existe un lead con ese correo
+          const leadExistente = await prisma.lead.findFirst({
             where: {
               correo: correoFinal!.toLowerCase().trim(),
               usuarioId
             }
           });
 
-          if (contactoExistente) {
-            console.log(`🔄 Contacto duplicado: ${nombre} ${apellido} (${correoFinal}) - Tipo: ${contactoExistente.tipo}`);
+          if (leadExistente) {
+            console.log(`🔄 Lead duplicado: ${nombre} ${apellido} (${correoFinal})`);
             duplicados++;
             continue;
           }
 
-          // Crear el nuevo contacto como LEAD
-          const datosContacto: any = {
-            nombre: nombre.trim() || 'Sin nombre',
-            apellido: apellido?.trim() || '',
-            correo: correoFinal!.toLowerCase().trim(),
-            tipo: 'LEAD',
-            estadoLead: 'NUEVO',
-            fuente: 'Google Contacts'
-          };
+          // También verificar en clientes
+          const clienteExistente = await prisma.cliente.findFirst({
+            where: {
+              correo: correoFinal!.toLowerCase().trim(),
+              usuarioId
+            }
+          });
 
-          // Solo agregar teléfono si existe
-          if (telefono?.trim()) {
-            datosContacto.telefono = telefono.trim();
+          if (clienteExistente) {
+            console.log(`🔄 Cliente duplicado: ${nombre} ${apellido} (${correoFinal})`);
+            duplicados++;
+            continue;
           }
 
-          const nuevoContacto = await this.crearContacto(datosContacto, usuarioId);
+          // Crear el nuevo lead
+          const nuevoLead = await prisma.lead.create({
+            data: {
+              nombre: nombre.trim() || 'Sin nombre',
+              apellido: apellido?.trim() || '',
+              correo: correoFinal!.toLowerCase().trim(),
+              estado: 'NUEVO',
+              fuente: 'Google Contacts',
+              usuarioId,
+              ...(telefono?.trim() ? { telefono: telefono.trim() } : {})
+            }
+          });
 
           // Asignar la etiqueta "Fuente: Google Contacts"
-          await prisma.contactoEtiqueta.create({
+          await prisma.leadEtiqueta.create({
             data: {
-              contactoId: nuevoContacto.id,
+              leadId: nuevoLead.id,
               etiquetaId: etiquetaGoogle.id
             }
           });
