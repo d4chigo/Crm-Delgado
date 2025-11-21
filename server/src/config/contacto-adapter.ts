@@ -28,6 +28,20 @@ export class ContactoAdapter {
   }
 
   /**
+   * Transformar response: cambiar etiquetasRel de vuelta a etiquetas para compatibilidad
+   */
+  private static transformResponse(data: any): any {
+    if (!data) return data;
+
+    // Si etiquetasRel existe, copiarlo a etiquetas para backwards compatibility
+    if (data.etiquetasRel) {
+      data.etiquetas = data.etiquetasRel;
+    }
+
+    return data;
+  }
+
+  /**
    * Crear un lead (tratado como contacto de tipo LEAD)
    */
   static async create(data: any) {
@@ -42,14 +56,29 @@ export class ContactoAdapter {
   /**
    * Buscar primero un lead, luego un cliente
    */
-  static async findFirst(where: any) {
+  static async findFirst(options: any) {
+    const { where, include, select, orderBy } = options;
+
+    // Transformar includes si existen
+    const { leadInclude, clienteInclude } = this.transformInclude(include || {});
+
     // Intentar buscar en leads primero
-    const lead = await prisma.lead.findFirst({ where });
-    if (lead) return { ...lead, tipo: 'LEAD' };
+    const lead = await prisma.lead.findFirst({
+      where,
+      include: Object.keys(leadInclude).length > 0 ? leadInclude : undefined,
+      select,
+      orderBy
+    });
+    if (lead) return this.transformResponse({ ...lead, tipo: 'LEAD' });
 
     // Si no encuentra, buscar en clientes
-    const cliente = await prisma.cliente.findFirst({ where });
-    if (cliente) return { ...cliente, tipo: 'CLIENTE' };
+    const cliente = await prisma.cliente.findFirst({
+      where,
+      include: Object.keys(clienteInclude).length > 0 ? clienteInclude : undefined,
+      select,
+      orderBy
+    });
+    if (cliente) return this.transformResponse({ ...cliente, tipo: 'CLIENTE' });
 
     return null;
   }
@@ -57,14 +86,28 @@ export class ContactoAdapter {
   /**
    * Encontrar por ID (en ambas tablas)
    */
-  static async findUnique(where: any) {
-    const { id } = where;
-    
-    const lead = await prisma.lead.findUnique({ where: { id } });
-    if (lead) return { ...lead, tipo: 'LEAD' };
+  static async findUnique(options: any) {
+    const { id } = options?.where || options;
+    const { include, select, orderBy } = options || {};
 
-    const cliente = await prisma.cliente.findUnique({ where: { id } });
-    if (cliente) return { ...cliente, tipo: 'CLIENTE' };
+    // Transformar includes si existen
+    const { leadInclude, clienteInclude } = this.transformInclude(include || {});
+    
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+      include: Object.keys(leadInclude).length > 0 ? leadInclude : undefined,
+      select,
+      orderBy
+    });
+    if (lead) return this.transformResponse({ ...lead, tipo: 'LEAD' });
+
+    const cliente = await prisma.cliente.findUnique({
+      where: { id },
+      include: Object.keys(clienteInclude).length > 0 ? clienteInclude : undefined,
+      select,
+      orderBy
+    });
+    if (cliente) return this.transformResponse({ ...cliente, tipo: 'CLIENTE' });
 
     return null;
   }
@@ -90,7 +133,7 @@ export class ContactoAdapter {
         skip, 
         take 
       });
-      return leads.map((lead: any) => ({ ...lead, tipo: 'LEAD' }));
+      return leads.map((lead: any) => this.transformResponse({ ...lead, tipo: 'LEAD' }));
     }
 
     if (where.tipo === 'CLIENTE') {
@@ -104,7 +147,7 @@ export class ContactoAdapter {
         skip, 
         take 
       });
-      return clientes.map((cliente: any) => ({ ...cliente, tipo: 'CLIENTE' }));
+      return clientes.map((cliente: any) => this.transformResponse({ ...cliente, tipo: 'CLIENTE' }));
     }
 
     // Si no especifica tipo, obtener de ambas tablas
@@ -132,8 +175,8 @@ export class ContactoAdapter {
 
     // Añadir tipo y mezclar
     const resultado: any = [
-      ...leads.map((lead: any) => ({ ...lead, tipo: 'LEAD' })),
-      ...clientes.map((cliente: any) => ({ ...cliente, tipo: 'CLIENTE' }))
+      ...leads.map((lead: any) => this.transformResponse({ ...lead, tipo: 'LEAD' })),
+      ...clientes.map((cliente: any) => this.transformResponse({ ...cliente, tipo: 'CLIENTE' }))
     ];
 
     return resultado;

@@ -594,7 +594,7 @@ export function DialogoEditarLead({
               <SelectorEtiquetas
                 contactoId={lead.id}
                 etiquetasSeleccionadas={lead.etiquetas?.map(e => e.etiqueta.id) || []}
-                modo="checkbox"
+                modo="radio"
               />
             </div>
           </TabsContent>
