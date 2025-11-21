@@ -78,8 +78,7 @@ export const proyectoService = {
                 nombre: true,
                 apellido: true,
                 correo: true,
-                telefono: true,
-                tipo: true
+                telefono: true
               }
             }
           }
@@ -119,7 +118,6 @@ export const proyectoService = {
                 apellido: true,
                 correo: true,
                 telefono: true,
-                tipo: true,
                 dni: true
               }
             }
@@ -246,13 +244,19 @@ export const proyectoService = {
    */
   async asociarCliente(proyectoId: string, datos: AsociarClienteDto) {
     // Verificar que el contacto exista (puede ser CLIENTE o LEAD)
-    const cliente = await prisma.contacto.findFirst({
+    const cliente = await prisma.cliente.findUnique({
       where: {
         id: datos.clienteId
       }
     })
 
-    if (!cliente) {
+    const lead = !cliente ? await prisma.lead.findUnique({
+      where: {
+        id: datos.clienteId
+      }
+    }) : null
+
+    if (!cliente && !lead) {
       throw new Error('El contacto no existe')
     }
 
