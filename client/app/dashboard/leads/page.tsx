@@ -48,7 +48,6 @@ export default function PaginaLeads() {
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
   const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false)
   const [leadParaCotizar, setLeadParaCotizar] = useState<Lead | null>(null)
-  const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
   const [dialogoCrearAbierto, setDialogoCrearAbierto] = useState(false)
   const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false)
   const [leadAEliminar, setLeadAEliminar] = useState<Lead | null>(null)
@@ -131,34 +130,6 @@ export default function PaginaLeads() {
     }
     return leads
   }, [leads, etiquetaFiltro])
-
-  const handleConvertirCliente = async (leadId: string) => {
-    setConvirtiendoCliente(leadId)
-    try {
-      const token = localStorage.getItem("crm_token")
-      if (!token) {
-        toast({ title: "Sesión expirada", description: "Por favor inicia sesión nuevamente", variant: "destructive" })
-        if (typeof window !== "undefined") window.location.href = "/login"
-        return
-      }
-      const respuesta = await fetch(`$${process.env.NEXT_PUBLIC_API_URL}/contactos/$${leadId}/convertir-cliente`, { method: "POST", headers: { Authorization: `Bearer $${token}` } })
-      if (respuesta.status === 401) {
-        localStorage.removeItem("crm_token")
-        localStorage.removeItem("crm_user")
-        toast({ title: "Sesión expirada", description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.", variant: "destructive" })
-        if (typeof window !== "undefined") window.location.href = "/login"
-        return
-      }
-      const resultado = await respuesta.json()
-      if (!respuesta.ok) throw new Error(resultado.mensaje || "Error al convertir lead")
-      toast({ title: "Lead convertido a Cliente", description: "El lead ahora es un cliente y aparece en la pestaña Clientes" })
-      cargarLeads()
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "No se pudo convertir el lead", variant: "destructive" })
-    } finally {
-      setConvirtiendoCliente(null)
-    }
-  }
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
@@ -459,12 +430,10 @@ export default function PaginaLeads() {
                   key={lead.id}
                   lead={lead}
                   enPipeline={leadsEnPipeline.has(lead.id)}
-                  isConverting={convirtiendoCliente === lead.id}
                   onVerDetalles={(l) => {
                     setLeadSeleccionado(l)
                     setDialogoDetallesAbierto(true)
                   }}
-                  onConvertir={handleConvertirCliente}
                   onEditar={(l) => {
                     setLeadSeleccionado(l)
                     setDialogoEditarAbierto(true)

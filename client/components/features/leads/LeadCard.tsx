@@ -9,10 +9,8 @@ import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
 interface LeadCardProps {
   lead: Contacto
-  isConverting: boolean
   onVerDetalles: (lead: Contacto) => void
   onCotizar: (lead: Contacto) => void
-  onConvertir: (id: string) => void
   onEditar: (lead: Contacto) => void
   onWhatsApp: (telefono: string) => void
   onScheduleMeeting: (nombre: string, correo: string, telefono?: string) => void
@@ -46,7 +44,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConvertir, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, enPipeline }: LeadCardProps) {
+export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, enPipeline }: LeadCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
       {/* Header con nombre y acciones rápidas */}
@@ -240,23 +238,6 @@ export function LeadCard({ lead, isConverting, onVerDetalles, onCotizar, onConve
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Cotizar</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  onClick={() => onConvertir(lead.id)}
-                  disabled={isConverting}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 text-xs"
-                >
-                  {isConverting ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-3 w-3" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Convertir</TooltipContent>
             </Tooltip>
             {onPipeline && (
               <Tooltip>
