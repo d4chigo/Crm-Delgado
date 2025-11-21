@@ -40,11 +40,11 @@ const prisma = new PrismaClient({
 (prisma as any).contacto = {
   count: (options?: any) => ContactoAdapter.count(options),
   findMany: (options?: any) => ContactoAdapter.findMany(options),
-  findFirst: (where?: any) => ContactoAdapter.findFirst(where),
-  findUnique: (where?: any) => ContactoAdapter.findUnique(where),
-  create: (data?: any) => ContactoAdapter.create(data),
+  findFirst: (options?: any) => ContactoAdapter.findFirst(options?.where || options),
+  findUnique: (options?: any) => ContactoAdapter.findUnique(options?.where || options),
+  create: (options?: any) => ContactoAdapter.create(options?.data || options),
   update: (options?: any) => ContactoAdapter.update(options),
-  delete: (where?: any) => ContactoAdapter.delete(where),
+  delete: (options?: any) => ContactoAdapter.delete(options?.where || options),
   groupBy: (options?: any) => ContactoAdapter.groupBy(options),
 };
 

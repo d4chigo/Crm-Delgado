@@ -194,10 +194,16 @@ export class ContactoService {
    * Actualizar un contacto
    */
   async actualizarContacto(id: string, datos: ActualizarContactoDTO, usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario
-    const contactoExistente = await prisma.contacto.findFirst({
+    // Verificar que el contacto existe (puede ser lead o cliente) y pertenece al usuario
+    const lead = await prisma.lead.findFirst({
       where: { id, usuarioId }
     });
+
+    const cliente = !lead ? await prisma.cliente.findFirst({
+      where: { id, usuarioId }
+    }) : null;
+
+    const contactoExistente = lead || cliente;
 
     if (!contactoExistente) {
       throw new Error('Contacto no encontrado');
@@ -205,35 +211,55 @@ export class ContactoService {
 
     // Verificar correo único (solo si se proporciona y es diferente)
     if (datos.correo && datos.correo !== contactoExistente.correo) {
-      const correoExistente = await prisma.contacto.findFirst({
+      const correoEnLead = await prisma.lead.findFirst({
         where: { correo: datos.correo }
       });
 
-      if (correoExistente) {
+      const correoEnCliente = await prisma.cliente.findFirst({
+        where: { correo: datos.correo }
+      });
+
+      if (correoEnLead || correoEnCliente) {
         throw new Error('Ya existe un contacto con este correo electrónico');
       }
     }
 
     // Verificar DNI único (solo si se proporciona y es diferente)
     if (datos.dni && datos.dni !== contactoExistente.dni) {
-      const dniExistente = await prisma.contacto.findFirst({
+      const dniEnLead = await prisma.lead.findFirst({
         where: { dni: datos.dni }
       });
 
-      if (dniExistente) {
+      const dniEnCliente = await prisma.cliente.findFirst({
+        where: { dni: datos.dni }
+      });
+
+      if (dniEnLead || dniEnCliente) {
         throw new Error('Ya existe un contacto con este DNI');
       }
     }
 
     const { fechaNacimiento, ...restoDatos } = datos;
 
-    const contactoActualizado = await prisma.contacto.update({
-      where: { id },
-      data: {
-        ...restoDatos,
-        fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
-      }
-    });
+    // Actualizar en la tabla correspondiente
+    let contactoActualizado;
+    if (lead) {
+      contactoActualizado = await prisma.lead.update({
+        where: { id },
+        data: {
+          ...restoDatos,
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
+        }
+      });
+    } else {
+      contactoActualizado = await prisma.cliente.update({
+        where: { id },
+        data: {
+          ...restoDatos,
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
+        }
+      });
+    }
 
     return this.agregarEdad(contactoActualizado);
   }
