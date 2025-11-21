@@ -324,20 +324,7 @@ export class OportunidadService {
     }
 
     // Auto-calcular probabilidad según la nueva etapa
-    const probabilidad = this.getProcentajePorEtapa(etapa);
-
-    // Si la etapa es FIDELIZACION, convertir lead a cliente
-    let clienteActualizado = null;
-    if (etapa === 'FIDELIZACION' && oportunidadExistente.cliente.tipo === 'LEAD') {
-      clienteActualizado = await prisma.contacto.update({
-        where: { id: oportunidadExistente.clienteId },
-        data: {
-          tipo: 'CLIENTE',
-          actualizadoEn: new Date()
-        }
-      });
-      console.log(`✅ Lead ${oportunidadExistente.clienteId} convertido a CLIENTE automáticamente`);
-    }
+    const probabilidad = this.getProcentajePorEtapa(etapa)
 
     // Actualizar etapa
     const oportunidad = await prisma.oportunidadCliente.update({
