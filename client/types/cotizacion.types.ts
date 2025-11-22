@@ -120,8 +120,8 @@ export interface RespuestaPaginadaCotizaciones {
 export const TIPOS_CUOTA_LABELS: Record<TipoCuota, string> = {
   FIJA: 'Cuota Fija',
   FLEXIBLE: 'Cuota Flexible',
-  FLEXIBLE_ESPECIAL_AMORTIZACION: 'Flexible Especial (Amortización Fija)',
-  FLEXIBLE_ESPECIAL: 'Flexible Especial (Recalculable)'
+  FLEXIBLE_ESPECIAL_AMORTIZACION: 'Flexible Especial (Amortización)',
+  FLEXIBLE_ESPECIAL: 'Flexible Especial'
 };
 
 export const ESTADOS_COTIZACION_LABELS: Record<EstadoCotizacion, string> = {

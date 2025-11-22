@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2 as IconoEdificio, Lock as IconoCandado, Mail as IconoCorreo } from "lucide-react"
+import { Lock as IconoCandado, Mail as IconoCorreo, Check as IconoCheck } from "lucide-react"
 import authService from "@/services/api/auth.service"
+import Image from "next/image"
 
 export default function PaginaLogin() {
   const enrutador = useRouter()
@@ -49,102 +49,231 @@ export default function PaginaLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#303030] via-[#404040] to-[#303030] p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0">
-        <CardHeader className="space-y-4 text-center pb-8">
-          <div className="mx-auto w-16 h-16 bg-[#FCBA00] rounded-2xl flex items-center justify-center shadow-lg">
-            <IconoEdificio className="w-9 h-9 text-[#303030]" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 relative overflow-hidden">
+      {/* Elementos decorativos de fondo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#FCBA00] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#FCBA00] rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-2000"></div>
+      </div>
+
+      {/* Contenedor principal */}
+      <div className="relative z-10 w-full max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Lado izquierdo - Información */}
+          <div className="hidden lg:block text-white space-y-8">
+            <div>
+              <h1 className="text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+                <span className="text-white">Bienvenido a</span>
+                <br />
+                <span className="bg-gradient-to-r from-[#FCBA00] to-[#FFD700] bg-clip-text text-transparent">CRM Delgado Propiedades</span>
+              </h1>
+              <p className="text-lg text-slate-300">Gestiona tu cartera de propiedades y clientes de manera profesional</p>
+            </div>
+
+            {/* Características */}
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-[#FCBA00] to-[#E0A800]">
+                    <IconoCheck className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Gestión Integral</h3>
+                  <p className="text-slate-400">Administra leads, clientes y proyectos en un solo lugar</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-[#FCBA00] to-[#E0A800]">
+                    <IconoCheck className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Análisis Avanzado</h3>
+                  <p className="text-slate-400">Reportes y dashboards para tomar decisiones informadas</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-[#FCBA00] to-[#E0A800]">
+                    <IconoCheck className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Seguridad Premium</h3>
+                  <p className="text-slate-400">Tus datos protegidos con encriptación de nivel empresarial</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-3xl font-bold text-[#303030]">CRM Inmobiliario</CardTitle>
-            <CardDescription className="text-base mt-2">Ingresa tus credenciales para acceder</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={manejarLogin} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-[#303030]">
-                Correo Electrónico
-              </Label>
-              <div className="relative">
-                <IconoCorreo className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
-                  className="pl-10 h-11 border-border focus:border-[#FCBA00] focus:ring-[#FCBA00]"
-                  required
-                />
+
+          {/* Lado derecho - Formulario */}
+          <div className="w-full">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 lg:p-10 backdrop-blur-sm">
+              {/* Header del formulario */}
+              <div className="text-center mb-10">
+                <div className="flex justify-center mb-6">
+                  <div className="relative w-32 h-20">
+                    <Image
+                      src="/logodelgado.png"
+                      alt="Delgado Propiedades"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-2">Iniciar Sesión</h2>
+                <p className="text-slate-500">Accede a tu cuenta de CRM</p>
+              </div>
+
+              {/* Formulario */}
+              <form onSubmit={manejarLogin} className="space-y-6">
+                {/* Campo Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
+                    Correo Electrónico
+                  </Label>
+                  <div className="relative group">
+                    <IconoCorreo className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#FCBA00] transition-colors" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={correo}
+                      onChange={(e) => setCorreo(e.target.value)}
+                      className="pl-12 h-12 border-2 border-slate-200 rounded-lg focus:border-[#FCBA00] focus:ring-0 focus:ring-[#FCBA00]/10 transition-all placeholder:text-slate-400"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Campo Contraseña */}
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
+                    Contraseña
+                  </Label>
+                  <div className="relative group">
+                    <IconoCandado className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#FCBA00] transition-colors" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={contrasena}
+                      onChange={(e) => setContrasena(e.target.value)}
+                      className="pl-12 h-12 border-2 border-slate-200 rounded-lg focus:border-[#FCBA00] focus:ring-0 focus:ring-[#FCBA00]/10 transition-all placeholder:text-slate-400"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Mensaje de éxito */}
+                {exito && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-shrink-0">
+                      <IconoCheck className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-emerald-900">¡Login exitoso!</h3>
+                      <p className="text-sm text-emerald-700">Redirigiendo al dashboard...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mensaje de error */}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-red-900">Error de autenticación</h3>
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botón de login */}
+                <Button
+                  type="submit"
+                  disabled={estaCargando}
+                  className="w-full h-12 bg-gradient-to-r from-[#FCBA00] to-[#E0A800] hover:from-[#E0A800] hover:to-[#C98F00] text-slate-900 font-bold text-base shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg"
+                >
+                  {estaCargando ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Ingresando...</span>
+                    </div>
+                  ) : (
+                    "Iniciar Sesión"
+                  )}
+                </Button>
+              </form>
+
+              {/* Footer */}
+              <div className="mt-8 pt-8 border-t border-slate-200">
+                <p className="text-center text-sm text-slate-500">
+                  <span>¿Problemas para iniciar sesión? Contacta con </span>
+                  <span className="font-semibold text-slate-700">Soporte Técnico</span>
+                </p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-[#303030]">
-                Contraseña
-              </Label>
-              <div className="relative">
-                <IconoCandado className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  className="pl-10 h-11 border-border focus:border-[#FCBA00] focus:ring-[#FCBA00]"
-                  required
-                />
-              </div>
-            </div>
+            {/* Texto de copyright */}
+            <p className="text-center text-slate-400 text-sm mt-6">
+              © 2025 Delgado Propiedades. Todos los derechos reservados.
+            </p>
+          </div>
+        </div>
+      </div>
 
-            {exito && (
-              <div className="text-sm text-green-700 bg-green-50 border border-green-300 rounded-lg p-3.5 flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>¡Login exitoso! Redirigiendo...</span>
-              </div>
-            )}
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 0.1;
+          }
+          50% {
+            opacity: 0.2;
+          }
+        }
+        
+        @keyframes slideInFromTop {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-            {error && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-300 rounded-lg p-3.5 flex items-start gap-2">
-                <svg
-                  className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
+        .animate-pulse {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
 
-            <Button
-              type="submit"
-              disabled={estaCargando}
-              className="w-full h-11 bg-[#FCBA00] hover:bg-[#E0A800] text-[#303030] font-semibold text-base shadow-md transition-all"
-            >
-              {estaCargando ? "Ingresando..." : "Iniciar Sesión"}
-            </Button>
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
 
-          </form>
-        </CardContent>
-      </Card>
+        .animate-in {
+          animation: slideInFromTop 0.3s ease-out;
+        }
+
+        .fade-in {
+          animation: slideInFromTop 0.3s ease-out;
+        }
+
+        .slide-in-from-top-2 {
+          animation-delay: 0s;
+        }
+      `}</style>
     </div>
   )
 }
