@@ -55,7 +55,8 @@ export class CotizacionService {
     const tasaInteresAnual = datos.tasaInteresAnual || 0;
     
     const montoFinanciar = precioInmueble - cuotaInicial;
-    const porcentajeCuotaInicial = (cuotaInicial / precioInmueble) * 100;
+    // Evitar NaN cuando precioInmueble es 0
+    const porcentajeCuotaInicial = precioInmueble > 0 ? (cuotaInicial / precioInmueble) * 100 : 0;
     
     let cuotaMensual = this.calcularCuotaMensual(montoFinanciar, tasaInteresAnual, plazoMeses);
     if (datos.montoCuotaManual && datos.montoCuotaManual > 0) {
@@ -98,35 +99,40 @@ export class CotizacionService {
     const calculos = this.calcularValores(datos);
 
     // Crear cotización para lead o cliente
+    // Construir objeto de datos sin campos undefined
+    const dataCotizacion: any = {
+      numeroReferencia,
+      nombreProyecto: datos.nombreProyecto,
+      precioInmueble: datos.precioInmueble,
+      cuotaInicial: datos.cuotaInicial,
+      porcentajeCuotaInicial: calculos.porcentajeCuotaInicial,
+      montoFinanciar: calculos.montoFinanciar,
+      plazoMeses: datos.plazoMeses,
+      tipoCuota: datos.tipoCuota,
+      tasaInteresAnual: datos.tasaInteresAnual,
+      permitePostergar: datos.permitePostergar || false,
+      permiteDoble: datos.permiteDoble || false,
+      permiteCambioFecha: datos.permiteCambioFecha || false,
+      cuotaMensualEstimada: calculos.cuotaMensual,
+      totalIntereses: calculos.totalIntereses,
+      totalPagar: calculos.totalPagar,
+      estado: EstadoCotizacion.BORRADOR
+    };
+
+    // Agregar campos opcionales solo si existen
+    if (lead) dataCotizacion.leadId = datos.contactoId;
+    if (cliente) dataCotizacion.clienteId = datos.contactoId;
+    if (datos.tipoInmueble !== undefined && datos.tipoInmueble !== null) dataCotizacion.tipoInmueble = datos.tipoInmueble;
+    if (datos.descripcion !== undefined && datos.descripcion !== null) dataCotizacion.descripcion = datos.descripcion;
+    if (datos.cuotasPostergables !== undefined && datos.cuotasPostergables !== null) dataCotizacion.cuotasPostergables = datos.cuotasPostergables;
+    if (datos.cuotasDoblesAnuales !== undefined && datos.cuotasDoblesAnuales !== null) dataCotizacion.cuotasDoblesAnuales = datos.cuotasDoblesAnuales;
+    if (datos.montoCuotaManual !== undefined && datos.montoCuotaManual !== null) dataCotizacion.montoCuotaManual = datos.montoCuotaManual;
+    if (datos.notas !== undefined && datos.notas !== null) dataCotizacion.notas = datos.notas;
+    if (datos.observaciones !== undefined && datos.observaciones !== null) dataCotizacion.observaciones = datos.observaciones;
+    if (datos.fechaValidez !== undefined && datos.fechaValidez !== null) dataCotizacion.fechaValidez = new Date(datos.fechaValidez);
+
     const cotizacion = await prisma.cotizacion.create({
-      data: {
-        leadId: lead ? datos.contactoId : undefined,
-        clienteId: cliente ? datos.contactoId : undefined,
-        numeroReferencia,
-        nombreProyecto: datos.nombreProyecto,
-        tipoInmueble: datos.tipoInmueble,
-        descripcion: datos.descripcion,
-        precioInmueble: datos.precioInmueble,
-        cuotaInicial: datos.cuotaInicial,
-        porcentajeCuotaInicial: calculos.porcentajeCuotaInicial,
-        montoFinanciar: calculos.montoFinanciar,
-        plazoMeses: datos.plazoMeses,
-        tipoCuota: datos.tipoCuota,
-        tasaInteresAnual: datos.tasaInteresAnual,
-        permitePostergar: datos.permitePostergar || false,
-        cuotasPostergables: datos.cuotasPostergables,
-        permiteDoble: datos.permiteDoble || false,
-        cuotasDoblesAnuales: datos.cuotasDoblesAnuales,
-        permiteCambioFecha: datos.permiteCambioFecha || false,
-        montoCuotaManual: datos.montoCuotaManual,
-        cuotaMensualEstimada: calculos.cuotaMensual,
-        totalIntereses: calculos.totalIntereses,
-        totalPagar: calculos.totalPagar,
-        notas: datos.notas,
-        observaciones: datos.observaciones,
-        fechaValidez: datos.fechaValidez ? new Date(datos.fechaValidez) : undefined,
-        estado: EstadoCotizacion.BORRADOR
-      },
+      data: dataCotizacion,
       include: {
         lead: {
           select: {
@@ -289,10 +295,11 @@ export class CotizacionService {
       throw new Error('Solo se pueden editar cotizaciones en estado BORRADOR');
     }
 
-    // Si se actualizan valores financieros, recalcular
-    let datosActualizados: any = { ...datos };
+    // Construir objeto de datos sin campos undefined
+    const datosActualizados: any = {};
     
-    if (datos.precioInmueble || datos.cuotaInicial || datos.plazoMeses || datos.tasaInteresAnual) {
+    // Si se actualizan valores financieros, recalcular
+    if (datos.precioInmueble || datos.cuotaInicial || datos.plazoMeses || datos.tasaInteresAnual || datos.montoCuotaManual) {
       const datosParaCalculo = {
         precioInmueble: datos.precioInmueble || cotizacionExistente.precioInmueble.toNumber(),
         cuotaInicial: datos.cuotaInicial || cotizacionExistente.cuotaInicial.toNumber(),
@@ -303,19 +310,32 @@ export class CotizacionService {
 
       const calculos = this.calcularValores(datosParaCalculo);
       
-      datosActualizados = {
-        ...datosActualizados,
-        porcentajeCuotaInicial: calculos.porcentajeCuotaInicial,
-        montoFinanciar: calculos.montoFinanciar,
-        cuotaMensualEstimada: calculos.cuotaMensual,
-        totalIntereses: calculos.totalIntereses,
-        totalPagar: calculos.totalPagar
-      };
+      datosActualizados.porcentajeCuotaInicial = calculos.porcentajeCuotaInicial;
+      datosActualizados.montoFinanciar = calculos.montoFinanciar;
+      datosActualizados.cuotaMensualEstimada = calculos.cuotaMensual;
+      datosActualizados.totalIntereses = calculos.totalIntereses;
+      datosActualizados.totalPagar = calculos.totalPagar;
     }
 
-    if (datos.fechaValidez) {
-      datosActualizados.fechaValidez = new Date(datos.fechaValidez);
-    }
+    // Agregar campos opcionales solo si existen
+    if (datos.nombreProyecto !== undefined && datos.nombreProyecto !== null) datosActualizados.nombreProyecto = datos.nombreProyecto;
+    if (datos.tipoInmueble !== undefined && datos.tipoInmueble !== null) datosActualizados.tipoInmueble = datos.tipoInmueble;
+    if (datos.descripcion !== undefined && datos.descripcion !== null) datosActualizados.descripcion = datos.descripcion;
+    if (datos.precioInmueble !== undefined && datos.precioInmueble !== null) datosActualizados.precioInmueble = datos.precioInmueble;
+    if (datos.cuotaInicial !== undefined && datos.cuotaInicial !== null) datosActualizados.cuotaInicial = datos.cuotaInicial;
+    if (datos.plazoMeses !== undefined && datos.plazoMeses !== null) datosActualizados.plazoMeses = datos.plazoMeses;
+    if (datos.tipoCuota !== undefined && datos.tipoCuota !== null) datosActualizados.tipoCuota = datos.tipoCuota;
+    if (datos.tasaInteresAnual !== undefined && datos.tasaInteresAnual !== null) datosActualizados.tasaInteresAnual = datos.tasaInteresAnual;
+    if (datos.permitePostergar !== undefined && datos.permitePostergar !== null) datosActualizados.permitePostergar = datos.permitePostergar;
+    if (datos.cuotasPostergables !== undefined && datos.cuotasPostergables !== null) datosActualizados.cuotasPostergables = datos.cuotasPostergables;
+    if (datos.permiteDoble !== undefined && datos.permiteDoble !== null) datosActualizados.permiteDoble = datos.permiteDoble;
+    if (datos.cuotasDoblesAnuales !== undefined && datos.cuotasDoblesAnuales !== null) datosActualizados.cuotasDoblesAnuales = datos.cuotasDoblesAnuales;
+    if (datos.permiteCambioFecha !== undefined && datos.permiteCambioFecha !== null) datosActualizados.permiteCambioFecha = datos.permiteCambioFecha;
+    if (datos.montoCuotaManual !== undefined && datos.montoCuotaManual !== null) datosActualizados.montoCuotaManual = datos.montoCuotaManual;
+    if (datos.notas !== undefined && datos.notas !== null) datosActualizados.notas = datos.notas;
+    if (datos.observaciones !== undefined && datos.observaciones !== null) datosActualizados.observaciones = datos.observaciones;
+    if (datos.fechaValidez !== undefined && datos.fechaValidez !== null) datosActualizados.fechaValidez = new Date(datos.fechaValidez);
+    if (datos.estado !== undefined && datos.estado !== null) datosActualizados.estado = datos.estado;
 
     const cotizacionActualizada = await prisma.cotizacion.update({
       where: { id },
