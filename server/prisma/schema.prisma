@@ -60,6 +60,7 @@ model Lead {
   oportunidades     OportunidadCliente[]
   clientesAsociados LeadClienteAsociacion[] @relation("LeadRelacion")
   alertas           AlertaLead[]
+  cotizaciones      Cotizacion[]
 
   @@index([usuarioId])
   @@index([correo])
@@ -250,7 +251,8 @@ model ProyectoCliente {
 
 model Cotizacion {
   id                     String           @id @default(uuid())
-  clienteId              String
+  leadId                 String?
+  clienteId              String?
   numeroReferencia       String           @unique
   nombreProyecto         String
   tipoInmueble           String?
@@ -277,8 +279,10 @@ model Cotizacion {
   fechaValidez           DateTime?
   creadoEn               DateTime         @default(now())
   actualizadoEn          DateTime         @updatedAt
-  cliente                Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  lead                   Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cliente                Cliente?         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
+  @@index([leadId])
   @@index([clienteId])
   @@index([estado])
   @@index([tipoCuota])

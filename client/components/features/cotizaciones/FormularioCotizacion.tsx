@@ -539,7 +539,14 @@ export const FormularioCotizacion = ({
             </div>
             <div className="flex gap-3">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={guardando}>Cancelar</Button>
-              <Button type="submit" form="quote-form" disabled={guardando} className="font-semibold">{guardando ? 'Guardando...' : 'Crear Cotización'}</Button>
+              <Button 
+                type="submit" 
+                form="quote-form" 
+                disabled={guardando} 
+                className="font-semibold"
+              >
+                {guardando ? 'Guardando...' : 'Crear Cotización'}
+              </Button>
             </div>
           </div>
         </div>

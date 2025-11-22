@@ -77,12 +77,17 @@ export class CotizacionService {
    * Crear una nueva cotización
    */
   async crearCotizacion(datos: CrearCotizacionDTO): Promise<any> {
-    // Verificar que el contacto existe
-    const contacto = await prisma.contacto.findUnique({
+    // Verificar que el contacto existe (lead o cliente)
+    const lead = await prisma.lead.findUnique({
       where: { id: datos.contactoId }
     });
 
-    if (!contacto) {
+    const cliente = !lead ? await prisma.cliente.findUnique({
+      where: { id: datos.contactoId }
+    }) : null;
+
+    // Validar que exista el contacto
+    if (!lead && !cliente) {
       throw new Error('Contacto no encontrado');
     }
 
@@ -92,10 +97,11 @@ export class CotizacionService {
     // Calcular valores
     const calculos = this.calcularValores(datos);
 
-    // Crear cotización
+    // Crear cotización para lead o cliente
     const cotizacion = await prisma.cotizacion.create({
       data: {
-        contactoId: datos.contactoId,
+        leadId: lead ? datos.contactoId : undefined,
+        clienteId: cliente ? datos.contactoId : undefined,
         numeroReferencia,
         nombreProyecto: datos.nombreProyecto,
         tipoInmueble: datos.tipoInmueble,
@@ -122,20 +128,29 @@ export class CotizacionService {
         estado: EstadoCotizacion.BORRADOR
       },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
     });
 
-    console.log(`✅ Cotización creada: ${numeroReferencia} para ${contacto.nombre} ${contacto.apellido || ''}`);
+    const contactoInfo = lead || cliente;
+    console.log(`✅ Cotización creada: ${numeroReferencia} para ${contactoInfo?.nombre} ${contactoInfo?.apellido || ''}`);
     return cotizacion;
   }
 
@@ -157,7 +172,10 @@ export class CotizacionService {
     const where: any = {};
 
     if (contactoId) {
-      where.contactoId = contactoId;
+      where.OR = [
+        { leadId: contactoId },
+        { clienteId: contactoId }
+      ];
     }
 
     if (estado) {
@@ -185,14 +203,22 @@ export class CotizacionService {
         take: limite,
         orderBy: { creadoEn: 'desc' },
         include: {
-          contacto: {
+          lead: {
             select: {
               id: true,
               nombre: true,
               apellido: true,
               correo: true,
-              telefono: true,
-              tipo: true
+              telefono: true
+            }
+          },
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true
             }
           }
         }
@@ -218,14 +244,22 @@ export class CotizacionService {
     const cotizacion = await prisma.cotizacion.findUnique({
       where: { id },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -287,14 +321,22 @@ export class CotizacionService {
       where: { id },
       data: datosActualizados,
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -320,14 +362,22 @@ export class CotizacionService {
       where: { id },
       data: { estado: nuevoEstado },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -369,16 +419,20 @@ export class CotizacionService {
       return [];
     }
 
-    // Si es un lead, no tiene cotizaciones (solo clientes pueden tener)
-    if (lead) {
-      return [];
-    }
-
-    // Si es cliente, obtener sus cotizaciones
+    // Obtener cotizaciones para lead o cliente
     const cotizaciones = await prisma.cotizacion.findMany({
-      where: { clienteId: contactoId },
+      where: lead ? { leadId: contactoId } : { clienteId: contactoId },
       orderBy: { creadoEn: 'desc' },
       include: {
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
+          }
+        },
         cliente: {
           select: {
             id: true,
