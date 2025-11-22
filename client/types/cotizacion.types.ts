@@ -8,7 +8,8 @@ export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA'
 export type ModalidadPago = 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL';
 
 export interface CrearCotizacionDTO {
-  contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   nombreProyecto: string;
   tipoInmueble?: string;
   descripcion?: string;
@@ -62,7 +63,8 @@ export interface ActualizarCotizacionDTO {
 
 export interface Cotizacion {
   id: string;
-  contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   numeroReferencia: string;
   nombreProyecto: string;
   tipoInmueble?: string;
@@ -87,17 +89,26 @@ export interface Cotizacion {
   creadoEn: string;
   actualizadoEn: string;
   porcentajeCuotaInicial?: number;
-  contacto?: {
+  lead?: {
     id: string;
     nombre: string;
     apellido: string;
-    email?: string;
+    correo?: string;
+    telefono?: string;
+  };
+  cliente?: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    correo?: string;
     telefono?: string;
   };
 }
 
 export interface FiltrosCotizacion {
   contactoId?: string;
+  leadId?: string;
+  clienteId?: string;
   estado?: EstadoCotizacion;
   tipoCuota?: TipoCuota;
   fechaDesde?: string;

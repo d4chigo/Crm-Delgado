@@ -513,7 +513,7 @@ export default function PaginaLeads() {
       />
 
       {leadParaCotizar && (
-        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} contactoId={leadParaCotizar.id} nombreContacto={`$${leadParaCotizar.nombre} $${leadParaCotizar.apellido || ""}`} />
+        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} leadId={leadParaCotizar.id} nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ""}`} />
       )}
 
       {leadAEliminar && (

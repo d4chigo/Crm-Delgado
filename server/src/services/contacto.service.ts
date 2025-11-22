@@ -47,21 +47,16 @@ export class ContactoService {
 
     const skip = (pagina - 1) * limite;
 
-    // Construir condiciones de búsqueda
-    const where: any = { usuarioId };
-
-    if (tipo) {
-      where.tipo = tipo;
-      console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
-    }
+    // Construir condiciones de búsqueda base
+    const whereBase: any = { usuarioId };
 
     if (estado) {
-      where.estado = estado;
+      whereBase.estado = estado;
       console.log(`🔍 Filtrando contactos por estado: ${estado}`);
     }
 
     if (ciudad) {
-      where.ciudad = { contains: ciudad };
+      whereBase.ciudad = { contains: ciudad };
     }
 
     if (busqueda) {
@@ -74,7 +69,7 @@ export class ContactoService {
       if (palabras.length > 0) {
         if (palabras.length === 1) {
           // Para una sola palabra, buscar en cualquier campo
-          where.OR = [
+          whereBase.OR = [
             { nombre: { contains: palabras[0] } },
             { apellido: { contains: palabras[0] } },
             { correo: { contains: palabras[0] } },
@@ -82,8 +77,7 @@ export class ContactoService {
           ];
         } else {
           // Para múltiples palabras, buscar un contacto que contenga TODAS las palabras
-          // Concatenamos nombre + apellido y verificamos que contenga todas las palabras
-          where.AND = palabras.map(palabra => ({
+          whereBase.AND = palabras.map(palabra => ({
             OR: [
               { nombre: { contains: palabra } },
               { apellido: { contains: palabra } },
@@ -96,23 +90,109 @@ export class ContactoService {
         console.log(`🔍 Buscando por palabras: ${palabras.join(', ')}`);
       }
     }
-    // Obtener contactos y total
-    const [contactos, total] = await Promise.all([
-      prisma.contacto.findMany({
-        where,
-        skip,
-        take: limite,
-        orderBy: { creadoEn: 'desc' },
-        include: {
-          etiquetas: {
-            include: {
-              etiqueta: true
+
+    // Obtener leads o clientes según el tipo solicitado
+    let contactos: any[] = [];
+    let total = 0;
+    let leadsTotal = 0;
+    let clientesTotal = 0;
+
+    if (!tipo || tipo === 'LEAD') {
+      const [leads, leadCount] = await Promise.all([
+        prisma.lead.findMany({
+          where: whereBase,
+          skip,
+          take: limite,
+          orderBy: { creadoEn: 'desc' },
+          include: {
+            etiquetasRel: {
+              include: {
+                etiqueta: true
+              }
             }
           }
-        }
-      }),
-      prisma.contacto.count({ where })
-    ]);
+        }),
+        prisma.lead.count({ where: whereBase })
+      ]);
+      
+      leadsTotal = leadCount;
+      contactos = leads.map((lead: any) => ({
+        ...lead,
+        tipo: 'LEAD',
+        etiquetas: lead.etiquetasRel
+      }));
+      total = leadsTotal;
+      if (tipo) console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
+    }
+
+    // Solo si no hay tipo específico, agregar clientes también
+    if (!tipo) {
+      // Para búsqueda combinada, obtener más registros y paginarhac manualmente
+      const clientesAdicionales = limite - contactos.length;
+      
+      if (clientesAdicionales > 0) {
+        const [clientes, clientCount] = await Promise.all([
+          prisma.cliente.findMany({
+            where: whereBase,
+            skip: 0,
+            take: clientesAdicionales,
+            orderBy: { creadoEn: 'desc' },
+            include: {
+              etiquetasRel: {
+                include: {
+                  etiqueta: true
+                }
+              }
+            }
+          }),
+          prisma.cliente.count({ where: whereBase })
+        ]);
+        
+        clientesTotal = clientCount;
+        const clientesTransformados = clientes.map((cliente: any) => ({
+          ...cliente,
+          tipo: 'CLIENTE',
+          etiquetas: cliente.etiquetasRel
+        }));
+        
+        contactos = [...contactos, ...clientesTransformados];
+        total = leadsTotal + clientesTotal;
+      }
+    } else if (tipo === 'CLIENTE') {
+      // Solo clientes
+      const [clientes, clientCount] = await Promise.all([
+        prisma.cliente.findMany({
+          where: whereBase,
+          skip,
+          take: limite,
+          orderBy: { creadoEn: 'desc' },
+          include: {
+            etiquetasRel: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        }),
+        prisma.cliente.count({ where: whereBase })
+      ]);
+      
+      clientesTotal = clientCount;
+      const clientesTransformados = clientes.map((cliente: any) => ({
+        ...cliente,
+        tipo: 'CLIENTE',
+        etiquetas: cliente.etiquetasRel
+      }));
+      
+      contactos = clientesTransformados;
+      total = clientesTotal;
+      console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
+    }
+
+    // Aplicar paginación a búsqueda combinada si es necesario
+    if (!tipo && contactos.length > limite) {
+      contactos = contactos.slice(0, limite);
+    }
 
 
     // Agregar edad a cada contacto
@@ -133,10 +213,11 @@ export class ContactoService {
    * Obtener un contacto por ID
    */
   async obtenerContactoPorId(id: string, usuarioId: string) {
-    const contacto = await prisma.contacto.findFirst({
+    // Buscar en leads primero, luego en clientes
+    let contacto = await prisma.lead.findFirst({
       where: { id, usuarioId },
       include: {
-        etiquetas: {
+        etiquetasRel: {
           include: {
             etiqueta: true
           }
@@ -145,41 +226,69 @@ export class ContactoService {
     });
 
     if (!contacto) {
+      contacto = await prisma.cliente.findFirst({
+        where: { id, usuarioId },
+        include: {
+          etiquetasRel: {
+            include: {
+              etiqueta: true
+            }
+          }
+        }
+      });
+    }
+
+    if (!contacto) {
       throw new Error('Contacto no encontrado');
     }
 
-    return this.agregarEdad(contacto);
+    // Transformar para compatibilidad
+    const contactoTransformado = {
+      ...contacto,
+      etiquetas: (contacto as any).etiquetasRel
+    };
+
+    return this.agregarEdad(contactoTransformado);
   }
 
   /**
-   * Crear un nuevo contacto
+   * Crear un nuevo contacto (como LEAD por defecto)
    */
   async crearContacto(datos: CrearContactoDTO, usuarioId: string) {
     const { fechaNacimiento, ...restoDatos } = datos;
 
-    // Verificar si el correo ya existe (solo si se proporciona)
+    // Verificar si el correo ya existe (en leads o clientes)
     if (datos.correo) {
-      const contactoExistente = await prisma.contacto.findFirst({
+      const leadExistente = await prisma.lead.findFirst({
+        where: { correo: datos.correo }
+      });
+      
+      const clienteExistente = await prisma.cliente.findFirst({
         where: { correo: datos.correo }
       });
 
-      if (contactoExistente) {
+      if (leadExistente || clienteExistente) {
         throw new Error('Ya existe un contacto con este correo electrónico');
       }
     }
 
     // Verificar DNI si se proporciona
     if (datos.dni) {
-      const dniExistente = await prisma.contacto.findFirst({
+      const leadDni = await prisma.lead.findFirst({
+        where: { dni: datos.dni }
+      });
+      
+      const clienteDni = await prisma.cliente.findFirst({
         where: { dni: datos.dni }
       });
 
-      if (dniExistente) {
+      if (leadDni || clienteDni) {
         throw new Error('Ya existe un contacto con este DNI');
       }
     }
 
-    const contacto = await prisma.contacto.create({
+    // Crear como LEAD por defecto
+    const lead = await prisma.lead.create({
       data: {
         ...restoDatos,
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined,
@@ -187,7 +296,7 @@ export class ContactoService {
       }
     });
 
-    return this.agregarEdad(contacto);
+    return { ...this.agregarEdad(lead), tipo: 'LEAD' };
   }
 
   /**

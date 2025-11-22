@@ -245,7 +245,7 @@ export default function PaginaClientes() {
       />
 
       {clienteParaCotizar && (
-        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} contactoId={clienteParaCotizar.id} nombreContacto={`${clienteParaCotizar.nombre} ${clienteParaCotizar.apellido || ''}`} />
+        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} clienteId={clienteParaCotizar.id} nombreContacto={`${clienteParaCotizar.nombre} ${clienteParaCotizar.apellido || ''}`} />
       )}
 
       {clienteParaOportunidad && (

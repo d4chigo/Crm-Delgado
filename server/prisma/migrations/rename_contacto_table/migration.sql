@@ -1,3 +1,0 @@
--- Migración antigua: Ya no necesaria
--- Las tablas han sido separadas en leads y clientes
--- Esta migración se mantiene para historial pero no hace nada
