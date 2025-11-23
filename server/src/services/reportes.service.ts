@@ -17,21 +17,17 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
     if (filtros.fechaFin) where.creadoEn.lte = filtros.fechaFin;
   }
 
-  console.log('[REPORTE LEADS] Filtros:', filtros);
-  console.log('[REPORTE LEADS] Where:', where);
-  console.log('[REPORTE LEADS] Where keys:', Object.keys(where));
+  console.log('[REPORTE LEADS] Filtros:', JSON.stringify(filtros));
+  console.log('[REPORTE LEADS] Where:', JSON.stringify(where));
 
-  // Total de leads - usar undefined si where está vacío
-  const whereClause = Object.keys(where).length > 0 ? where : undefined;
-  console.log('[REPORTE LEADS] whereClause:', whereClause);
-  
-  const totalLeads = await prisma.lead.count({ where: whereClause });
+  // Total de leads - siempre pasar where, aunque esté vacío
+  const totalLeads = await prisma.lead.count({ where });
   console.log('[REPORTE LEADS] Total leads encontrados:', totalLeads);
 
   // Leads por fuente
   const leadsPorFuente = await prisma.lead.groupBy({
     by: ['fuente'],
-    where: whereClause,
+    where,
     _count: { id: true },
   });
 

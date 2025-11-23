@@ -27,6 +27,11 @@ export async function reporteLeads(req: Request, res: Response) {
 
     console.log('[CONTROLLER] reporteLeads - Reporte obtenido:', reporte);
 
+    // Desabilitar caché
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     res.json({
       exito: true,
       datos: reporte,
