@@ -105,23 +105,30 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
     try {
       setCargando(true);
       setError(null);
-      await sincronizarEventos();
-      const lista = await listarEventos();
-      const eventosFormateados = lista.map(evento => ({
-        id: evento.id,
-        resumen: evento.title,
-        descripcion: evento.description,
-        inicio: evento.start,
-        fin: evento.end,
-        todoElDia: evento.allDay || false,
-        ubicacion: evento.location,
-        participantes: evento.attendees,
-        enlace: evento.htmlLink,
-      }));
-      setEventos(eventosFormateados);
-      // Programar notificaciones automáticas un día antes
-      if (notificacionesAutomaticas && permisoNotifs === 'granted') {
-        programarNotificacionesUnDiaAntes(eventosFormateados);
+      
+      // Solo sincronizar si está autenticado
+      if (autenticado) {
+        await sincronizarEventos();
+        const lista = await listarEventos();
+        const eventosFormateados = lista.map(evento => ({
+          id: evento.id,
+          resumen: evento.title,
+          descripcion: evento.description,
+          inicio: evento.start,
+          fin: evento.end,
+          todoElDia: evento.allDay || false,
+          ubicacion: evento.location,
+          participantes: evento.attendees,
+          enlace: evento.htmlLink,
+        }));
+        setEventos(eventosFormateados);
+        // Programar notificaciones automáticas un día antes
+        if (notificacionesAutomaticas && permisoNotifs === 'granted') {
+          programarNotificacionesUnDiaAntes(eventosFormateados);
+        }
+      } else {
+        setEventos([]);
+        setError('Por favor, conecta tu Google Calendar para ver los eventos');
       }
     } catch (e: any) {
       console.error('Error al cargar eventos:', e);
@@ -429,11 +436,11 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
           eventoExistente={{
             id: eventoEdicion.id,
             summary: eventoEdicion.resumen,
-            description: eventoEdicion.descripcion,
-            location: eventoEdicion.ubicacion,
+            description: eventoEdicion.descripcion || undefined,
+            location: eventoEdicion.ubicacion || undefined,
             startDateTime: eventoEdicion.inicio,
             endDateTime: eventoEdicion.fin,
-            attendees: eventoEdicion.participantes,
+            attendees: eventoEdicion.participantes || [],
           }}
           onEventoCreado={recargarEventos}
         />
