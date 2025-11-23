@@ -168,6 +168,21 @@ export class OportunidadService {
                 }
               }
             }
+          },
+          lead: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true,
+              empresa: true,
+              etiquetasRel: {
+                include: {
+                  etiqueta: true
+                }
+              }
+            }
           }
         }
       }),
@@ -199,6 +214,16 @@ export class OportunidadService {
                 etiqueta: true
               }
             }
+          }
+        },
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
           }
         }
       }
@@ -250,6 +275,16 @@ export class OportunidadService {
               }
             }
           }
+        },
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
         }
       }
     });
@@ -260,16 +295,37 @@ export class OportunidadService {
   /**
    * Cambiar etapa de la oportunidad con auto-cálculo de probabilidad
    */
+  /**
+   * Cambiar la etapa de una oportunidad
+   * 
+   * Comportamiento:
+   * - CIERRE_GANADO o FIDELIZACIÓN: Actualiza estado del lead a GANADO
+   * - CIERRE_PERDIDO: Actualiza estado del lead a PERDIDO
+   * - FIDELIZACIÓN (especial): CONVIERTE el lead a cliente (crea nuevo cliente, desvincula lead)
+   * - Otros: Sin cambios en estado del lead
+   * 
+   * @param id - ID de la oportunidad
+   * @param usuarioId - ID del usuario que hace el cambio
+   * @param etapa - Nueva etapa del pipeline
+   * @param notas - Notas opcionales sobre el cambio
+   * @returns Oportunidad actualizada
+   */
   async cambiarEtapa(
     id: string,
     usuarioId: string,
     etapa: string,
     notas?: string
   ) {
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`📍 CAMBIAR ETAPA - BEGIN (${new Date().toISOString()})`);
+    console.log(`   ID: ${id}, Etapa Nueva: ${etapa}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
       where: { id, usuarioId },
       include: {
-        cliente: true
+        cliente: true,
+        lead: true
       }
     });
 
@@ -282,10 +338,10 @@ export class OportunidadService {
 
     // Determinar el nuevo estado del lead según la etapa del pipeline
     let estadoLead: string | undefined = undefined;
-    if (etapa === 'CIERRE_GANADO') {
-      estadoLead = 'CALIFICADO';
+    if (etapa === 'CIERRE_GANADO' || etapa === 'FIDELIZACION' || etapa === 'FIDELIZACIÓN') {
+      estadoLead = 'GANADO';
     } else if (etapa === 'CIERRE_PERDIDO') {
-      estadoLead = 'DESCALIFICADO';
+      estadoLead = 'PERDIDO';
     }
 
     // Actualizar etapa
@@ -303,7 +359,196 @@ export class OportunidadService {
             id: true,
             nombre: true,
             apellido: true,
-            tipo: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        },
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        }
+      }
+    });
+
+    // Actualizar estado del lead si es necesario
+    if (estadoLead) {
+      try {
+        console.log(`📝 Actualizando estado del lead. leadId: ${oportunidadExistente.leadId}, clienteId: ${oportunidadExistente.clienteId}, etapa: ${etapa}`);
+        
+        // Determinar si es un lead o cliente
+        if (oportunidadExistente.leadId) {
+          console.log(`🔄 Actualizando estado del lead ${oportunidadExistente.leadId} a ${estadoLead}...`);
+          
+          await prisma.lead.update({
+            where: { id: oportunidadExistente.leadId },
+            data: {
+              estado: estadoLead,
+              actualizadoEn: new Date()
+            }
+          });
+          console.log(`✅ Estado del lead ${oportunidadExistente.leadId} actualizado a ${estadoLead}`);
+
+          // Si llega a FIDELIZACIÓN, convertir lead a cliente
+          if (etapa === 'FIDELIZACION' || etapa === 'FIDELIZACIÓN') {
+            console.log(`⭐ Verificando si hay que convertir a cliente (etapa: ${etapa})`);
+            
+            const leadActual = await prisma.lead.findUnique({
+              where: { id: oportunidadExistente.leadId },
+              include: {
+                etiquetasRel: {
+                  include: {
+                    etiqueta: true
+                  }
+                }
+              }
+            });
+
+            if (leadActual) {
+              console.log(`🔄 Convirtiendo lead ${oportunidadExistente.leadId} a cliente...`);
+              
+              // Crear cliente con TODOS los datos del lead (migración completa)
+              const nuevoCliente = await prisma.cliente.create({
+                data: {
+                  nombre: leadActual.nombre,
+                  apellido: leadActual.apellido,
+                  correo: leadActual.correo,
+                  telefono: leadActual.telefono,
+                  empresa: leadActual.empresa,
+                  prioridad: leadActual.prioridad || 'MEDIA',
+                  usuarioId: leadActual.usuarioId,
+                  // Copiar campos adicionales del lead
+                  cargo: leadActual.cargo,
+                  departamento: leadActual.departamento,
+                  distrito: leadActual.distrito,
+                  ciudad: leadActual.ciudad,
+                  provincia: leadActual.provincia,
+                  dni: leadActual.dni,
+                  sexo: leadActual.sexo as any,
+                  fechaNacimiento: leadActual.fechaNacimiento,
+                  direccion: leadActual.direccion,
+                  presupuesto: leadActual.presupuesto,
+                  probabilidad: leadActual.probabilidad,
+                  notas: leadActual.notas,
+                  fechaConversion: new Date(),
+                  creadoEn: leadActual.creadoEn,
+                  actualizadoEn: new Date()
+                }
+              });
+              
+              console.log(`✅ Cliente creado con ID: ${nuevoCliente.id}`);
+
+              // ⭐ TRANSFERIR ETIQUETAS del lead al cliente
+              if (leadActual.etiquetasRel && leadActual.etiquetasRel.length > 0) {
+                console.log(`📌 Transfiriendo ${leadActual.etiquetasRel.length} etiqueta(s) al cliente...`);
+                
+                const etiquetasTransferidas = await prisma.clienteEtiqueta.createMany({
+                  data: leadActual.etiquetasRel.map(et => ({
+                    clienteId: nuevoCliente.id,
+                    etiquetaId: et.etiquetaId
+                  })),
+                  skipDuplicates: true
+                });
+                
+                console.log(`✅ ${etiquetasTransferidas.count} etiqueta(s) transferida(s)`);
+              }
+
+              // Actualizar la oportunidad para usar clienteId en lugar de leadId
+              await prisma.oportunidadCliente.update({
+                where: { id },
+                data: {
+                  clienteId: nuevoCliente.id,
+                  leadId: null,
+                  notas: (oportunidadExistente.notas || '') + `\n[CONVERSIÓN] Lead convertido a Cliente el ${new Date().toLocaleDateString('es-PE')}`
+                }
+              });
+
+              // ⭐ CRÍTICO: Eliminar el lead original para que NO aparezca en dos lugares
+              console.log(`🗑️ Eliminando lead original ${oportunidadExistente.leadId}...`);
+              await prisma.lead.delete({
+                where: { id: oportunidadExistente.leadId }
+              });
+
+              console.log(`✅ Lead ${oportunidadExistente.leadId} convertido y eliminado`);
+              console.log(`✅ Cliente ${nuevoCliente.id} creado exitosamente con etiquetas`);
+              console.log(`🔄 ACTUALIZADO: clienteId=${nuevoCliente.id}, leadId=null`);
+            } else {
+              console.warn(`⚠️ No se encontró el lead ${oportunidadExistente.leadId} para convertir`);
+            }
+          } else {
+            console.log(`ℹ️ Etapa actual: ${etapa} (no es FIDELIZACION)`);
+          }
+        } else if (oportunidadExistente.clienteId) {
+          // Los clientes no tienen estado, solo leads
+          console.log(`⚠️ No se puede actualizar estado: ${oportunidadExistente.clienteId} es un cliente`);
+        }
+      } catch (error) {
+        console.error('❌ Error al actualizar el estado del lead:', error);
+      }
+    }
+
+    // Sincronizar estado del lead con la nueva etapa
+    try {
+      const leadPipelineService = require('./lead-pipeline.service').default;
+      const contactoId = oportunidadExistente.leadId || oportunidadExistente.clienteId;
+      
+      if (oportunidadExistente.leadId) {
+        await leadPipelineService.sincronizarEstadoLead(contactoId);
+        
+        // Registrar el cambio en el historial
+        await leadPipelineService.registrarCambioEtapa(
+          id,
+          contactoId,
+          oportunidadExistente.etapa,
+          etapa,
+          usuarioId,
+          {
+            probabilidad: oportunidadExistente.probabilidad,
+            valor: oportunidadExistente.valor
+          },
+          {
+            probabilidad,
+            valor: oportunidadExistente.valor
+          },
+          undefined,
+          notas
+        );
+      }
+    } catch (error) {
+      console.warn('⚠️ No se pudo sincronizar el estado del lead:', error);
+      // No fallar si la sincronización falla
+    }
+
+    // Retornar la oportunidad actualizada (especialmente importante después de conversión)
+    const oportunidadFinal = await prisma.oportunidadCliente.findUnique({
+      where: { id },
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true,
+            etiquetasRel: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        },
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
             correo: true,
             telefono: true,
             empresa: true,
@@ -317,51 +562,10 @@ export class OportunidadService {
       }
     });
 
-    // Actualizar estado del lead si es necesario
-    if (estadoLead) {
-      try {
-        await prisma.contacto.update({
-          where: { id: oportunidadExistente.clienteId },
-          data: {
-            estado: estadoLead,
-            actualizadoEn: new Date()
-          }
-        });
-        console.log(`✅ Estado del lead ${oportunidadExistente.clienteId} actualizado a ${estadoLead}`);
-      } catch (error) {
-        console.warn('⚠️ No se pudo actualizar el estado del lead:', error);
-      }
-    }
-
-    // Sincronizar estado del lead con la nueva etapa
-    try {
-      const leadPipelineService = require('./lead-pipeline.service').default;
-      await leadPipelineService.sincronizarEstadoLead(oportunidadExistente.clienteId);
-      
-      // Registrar el cambio en el historial
-      await leadPipelineService.registrarCambioEtapa(
-        id,
-        oportunidadExistente.clienteId,
-        oportunidadExistente.etapa,
-        etapa,
-        usuarioId,
-        {
-          probabilidad: oportunidadExistente.probabilidad,
-          valor: oportunidadExistente.valor
-        },
-        {
-          probabilidad,
-          valor: oportunidadExistente.valor
-        },
-        undefined,
-        notas
-      );
-    } catch (error) {
-      console.warn('⚠️ No se pudo sincronizar el estado del lead:', error);
-      // No fallar si la sincronización falla
-    }
-
-    return oportunidad;
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`✅ Etapa cambiada a ${etapa}. Lead: ${oportunidadFinal?.leadId}, Cliente: ${oportunidadFinal?.clienteId}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    return oportunidadFinal;
   }
 
   /**
@@ -462,6 +666,16 @@ export class OportunidadService {
               }
             }
           }
+        },
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
         }
       }
     });
@@ -476,11 +690,11 @@ export class OportunidadService {
     // Buscar la oportunidad asociada a este lead
     const oportunidad = await prisma.oportunidadCliente.findFirst({
       where: {
-        clienteId: leadId,
+        leadId: leadId,
         usuarioId
       },
       include: {
-        cliente: {
+        lead: {
           select: {
             id: true,
             nombre: true,

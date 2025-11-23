@@ -503,12 +503,12 @@ export default function PaginaPipeline() {
                               <div className="flex items-center gap-2 flex-1">
                                 <Avatar className="w-8 h-8 bg-[#FCBA00]">
                                   <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                    {oportunidad.cliente?.nombre?.charAt(0) || 'C'}
+                                    {(oportunidad.lead?.nombre || oportunidad.cliente?.nombre)?.charAt(0) || 'C'}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                   <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
-                                    {oportunidad.cliente?.nombre || 'Sin nombre'} {oportunidad.cliente?.apellido || ''}
+                                    {(oportunidad.lead?.nombre || oportunidad.cliente?.nombre) || 'Sin nombre'} {(oportunidad.lead?.apellido || oportunidad.cliente?.apellido) || ''}
                                   </h4>
                                   <p className="text-xs text-muted-foreground line-clamp-1">{oportunidad.titulo}</p>
                                 </div>
@@ -518,27 +518,30 @@ export default function PaginaPipeline() {
                             {/* Property */}
                             <div className="space-y-2">
                               {/* Tags */}
-                              {oportunidad.cliente?.etiquetas && oportunidad.cliente.etiquetas.length > 0 && (
-                                <div className="flex gap-1 flex-wrap">
-                                  {oportunidad.cliente.etiquetas.slice(0, 3).map((et: any) => (
-                                    <Badge
-                                      key={et.etiqueta.id}
-                                      className="text-xs font-semibold"
-                                      style={{
-                                        backgroundColor: et.etiqueta.color || '#E5E7EB',
-                                        color: 'white'
-                                      }}
-                                    >
-                                      {et.etiqueta.nombre}
-                                    </Badge>
-                                  ))}
-                                  {oportunidad.cliente.etiquetas.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      +{oportunidad.cliente.etiquetas.length - 3}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
+                              {(() => {
+                                const etiquetas = (oportunidad.cliente?.etiquetasRel || oportunidad.lead?.etiquetasRel || []) as Array<{ etiqueta: { id: string; nombre: string; color: string } }>
+                                return etiquetas && etiquetas.length > 0 && (
+                                  <div className="flex gap-1 flex-wrap">
+                                    {etiquetas.slice(0, 3).map((et: any) => (
+                                      <Badge
+                                        key={et.etiqueta.id}
+                                        className="text-xs font-semibold"
+                                        style={{
+                                          backgroundColor: et.etiqueta.color || '#E5E7EB',
+                                          color: 'white'
+                                        }}
+                                      >
+                                        {et.etiqueta.nombre}
+                                      </Badge>
+                                    ))}
+                                    {etiquetas.length > 3 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        +{etiquetas.length - 3}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )
+                              })()}
                             </div>
 
                             {/* Value */}
@@ -581,7 +584,7 @@ export default function PaginaPipeline() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <DialogTitle className="text-2xl font-bold text-[#303030]">
-                    {selectedDeal.cliente?.nombre || 'Sin nombre'} {selectedDeal.cliente?.apellido || ''}
+                    {(selectedDeal.lead?.nombre || selectedDeal.cliente?.nombre) || 'Sin nombre'} {(selectedDeal.lead?.apellido || selectedDeal.cliente?.apellido) || ''}
                   </DialogTitle>
                   <DialogDescription className="mt-2">{selectedDeal.titulo}</DialogDescription>
                 </div>

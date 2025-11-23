@@ -1061,24 +1061,24 @@ export class ContactoService {
   ) {
     console.log('[ContactoService] agregarAlPipeline called with:', { leadId, usuarioId, datosOportunidad });
     
-    // Verificar que el contacto existe
-    const contacto = await prisma.contacto.findUnique({
+    // Verificar que el lead existe
+    const lead = await prisma.lead.findUnique({
       where: { id: leadId }
     });
 
-    console.log('[ContactoService] contacto encontrado:', contacto?.id);
+    console.log('[ContactoService] lead encontrado:', lead?.id);
 
-    if (!contacto) {
+    if (!lead) {
       throw new Error('El lead no fue encontrado');
     }
 
-    if (contacto.usuarioId !== usuarioId) {
+    if (lead.usuarioId !== usuarioId) {
       throw new Error('No tienes permiso para modificar este lead');
     }
 
     // Verificar si ya existe una oportunidad para este lead
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { clienteId: leadId }
+      where: { leadId: leadId }
     });
 
     if (oportunidadExistente) {
@@ -1086,11 +1086,11 @@ export class ContactoService {
     }
 
     // Crear la oportunidad
-    const titulo = datosOportunidad?.titulo || `${contacto.nombre} ${contacto.apellido || ''}`.trim();
+    const titulo = datosOportunidad?.titulo || `${lead.nombre} ${lead.apellido || ''}`.trim();
     const etapa = datosOportunidad?.etapa || 'CONTACTO_INICIAL';
     
     console.log('[ContactoService] creando oportunidad con datos:', {
-      clienteId: leadId,
+      leadId: leadId,
       titulo,
       etapa,
       usuarioId: usuarioId
@@ -1098,7 +1098,7 @@ export class ContactoService {
 
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
-        clienteId: leadId,
+        leadId: leadId,
         titulo,
         etapa,
         valor: datosOportunidad?.valor,
@@ -1111,7 +1111,7 @@ export class ContactoService {
           : `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
       },
       include: {
-        cliente: {
+        lead: {
           select: {
             id: true,
             nombre: true,

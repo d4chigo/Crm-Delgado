@@ -111,36 +111,23 @@ export const FormularioCotizacion = ({
 
   useEffect(() => {
     if (!open) return; // Solo actuar cuando el diálogo está abierto
-
-    console.log('🔧 FormularioCotizacion useEffect - open=true, leadId:', leadId, 'clienteId:', clienteId, 'cotizacion:', cotizacion);
-
+    
     if (cotizacion) {
-      console.log('📝 Editando cotización existente');
       setDatos(prev => ({ ...prev, ...cotizacion }));
     } else {
       // Para nueva cotización, intentar cargar borrador
       try {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
-          console.log('📦 Borrador encontrado, cargando...');
           const draft = JSON.parse(raw);
-          const merged = { ...draft, ...(leadId && { leadId }), ...(clienteId && { clienteId }) };
-          console.log('📦 Merged data:', merged);
-          setDatos(merged);
+          setDatos({ ...draft, ...(leadId && { leadId }), ...(clienteId && { clienteId }) });
           return;
         }
-      } catch (e) {
-        console.error('❌ Error cargando borrador:', e);
-      }
+      } catch {}
       // Si no hay borrador, resetear al estado inicial
-      console.log('🆕 Sin borrador, usando estado inicial');
-      const initialState = estadoInicial();
-      console.log('🆕 Estado inicial:', initialState);
-      setDatos(initialState);
+      setDatos(estadoInicial());
     }
-  }, [cotizacion, leadId, clienteId, DRAFT_KEY, open]);
-
-  // Auto-guardar borrador en localStorage (debounce simple)
+  }, [cotizacion, leadId, clienteId, DRAFT_KEY, open]);  // Auto-guardar borrador en localStorage (debounce simple)
   useEffect(() => {
     if (cotizacion) return; // si ya existe, no guardar borrador
     const t = setTimeout(() => {

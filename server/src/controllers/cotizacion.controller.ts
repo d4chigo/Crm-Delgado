@@ -9,8 +9,6 @@ export class CotizacionController {
   async crearCotizacion(req: Request, res: Response) {
     try {
       const datos: CrearCotizacionDTO = req.body;
-      console.log('🌐 CotizacionController.crearCotizacion - req.body:', JSON.stringify(req.body, null, 2));
-      console.log('🌐 Content-Type:', req.get('Content-Type'));
       const cotizacion = await cotizacionService.crearCotizacion(datos);
       
       res.status(201).json(cotizacion);

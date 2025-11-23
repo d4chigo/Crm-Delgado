@@ -5,11 +5,43 @@ export type EtapaPipeline =
   | 'NEGOCIACION'
   | 'CIERRE'
   | 'GANADO'
-  | 'PERDIDO';
+  | 'PERDIDO'
+  | 'FIDELIZACION'
+  | 'CIERRE_GANADO'
+  | 'CIERRE_PERDIDO'
+  | 'CONTACTO_INICIAL';
+
+export interface Etiqueta {
+  id: string;
+  nombre: string;
+  color: string;
+  descripcion?: string;
+  icono?: string;
+}
+
+export interface ContactoConEtiquetas {
+  id: string;
+  nombre: string;
+  apellido?: string;
+  correo?: string;
+  telefono?: string;
+  empresa?: string;
+  etiquetasRel?: Array<{
+    etiqueta: Etiqueta;
+  }>;
+  proyectos?: Array<{
+    proyecto: {
+      id: string;
+      nombre: string;
+      estado: string;
+    };
+  }>;
+}
 
 export interface OportunidadCliente {
   id: string;
   clienteId: string;
+  leadId?: string;
   titulo: string;
   proyecto?: string;
   propiedad?: string;
@@ -22,21 +54,8 @@ export interface OportunidadCliente {
   creadoEn: string;
   actualizadoEn: string;
   usuarioId: string;
-  cliente?: {
-    id: string;
-    nombre: string;
-    apellido?: string;
-    correo?: string;
-    telefono?: string;
-    empresa?: string;
-    proyectos?: Array<{
-      proyecto: {
-        id: string;
-        nombre: string;
-        estado: string;
-      };
-    }>;
-  };
+  cliente?: ContactoConEtiquetas;
+  lead?: ContactoConEtiquetas;
 }
 
 export interface CrearOportunidadDTO {
