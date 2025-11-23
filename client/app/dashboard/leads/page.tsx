@@ -14,6 +14,7 @@ import leadService from "@/services/api/lead.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
 import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
 import { ContactImportDialog } from "@/components/features/contacts/ContactImportDialog"
+import { DialogoCrearAccesoWeb } from "@/components/features/contacts"
 import { FormularioCotizacion } from "@/components/features/cotizaciones"
 import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
 import { cotizacionService } from "@/services/api/cotizacion.service"
@@ -60,6 +61,8 @@ export default function PaginaLeads() {
   const [agregandonPipeline, setAgregandoPipeline] = useState<string | null>(null)
   const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
   const [leadParaOportunidad, setLeadParaOportunidad] = useState<Lead | null>(null)
+  const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false)
+  const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Lead | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { oportunidades, removerDelPipeline } = useOportunidades()
 
@@ -353,6 +356,11 @@ export default function PaginaLeads() {
     }
   }
 
+  const handleCrearAccesoWeb = (lead: Lead) => {
+    setLeadParaAccesoWeb(lead)
+    setDialogoAccesoWebAbierto(true)
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Leads" description="Gestiona tus prospectos y oportunidades de negocio" />
@@ -443,6 +451,7 @@ export default function PaginaLeads() {
                   onCotizar={handleCotizar}
                   onPipeline={handleAgregarAlPipeline}
                   onRemoverDelPipeline={handleRemoverDelPipeline}
+                  onCrearAccesoWeb={handleCrearAccesoWeb}
                   onEliminar={(l) => {
                     setLeadAEliminar(l)
                     setDialogoEliminarAbierto(true)
@@ -576,6 +585,18 @@ export default function PaginaLeads() {
         lead={leadParaOportunidad}
         onCrear={handleCrearOportunidad}
         cargando={agregandonPipeline !== null}
+      />
+
+      <DialogoCrearAccesoWeb
+        contacto={leadParaAccesoWeb}
+        abierto={dialogoAccesoWebAbierto}
+        onCancelar={() => {
+          setDialogoAccesoWebAbierto(false)
+          setLeadParaAccesoWeb(null)
+        }}
+        onCreado={() => {
+          cargarLeads()
+        }}
       />
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />

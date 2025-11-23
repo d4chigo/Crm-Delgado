@@ -7,6 +7,12 @@ import {
   actualizarContactoSchema,
   filtrosContactoSchema
 } from '@/validators/contacto.validator';
+import {
+  crearAccesoWeb,
+  resetearPasswordCliente,
+  verificarAccesoWeb,
+  eliminarAccesoWeb,
+} from '@/controllers/clienteWebController';
 
 const router = Router();
 
@@ -105,6 +111,31 @@ router.put(
 router.delete(
   '/:id/clientes/:clienteId',
   contactoController.desasociarCliente.bind(contactoController)
+);
+
+// ==================== RUTAS DE ACCESO WEB ==================
+// Crear acceso web para leads o clientes
+router.post(
+  '/:id/crear-acceso-web',
+  crearAccesoWeb
+);
+
+// Resetear contraseña de acceso web
+router.post(
+  '/:id/resetear-password',
+  resetearPasswordCliente
+);
+
+// Verificar si tiene acceso web
+router.get(
+  '/:id/acceso-web',
+  verificarAccesoWeb
+);
+
+// Eliminar acceso web
+router.delete(
+  '/:id/acceso-web',
+  eliminarAccesoWeb
 );
 
 // ==================== RUTAS GENÉRICAS /:id ==================

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp, Building2, IdCard, Cake } from "lucide-react"
+import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp, Building2, IdCard, Cake, Globe } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
 
@@ -17,6 +17,7 @@ interface LeadCardProps {
   onPipeline?: (lead: Contacto) => void
   onRemoverDelPipeline?: (lead: Contacto) => void
   onEliminar?: (lead: Contacto) => void
+  onCrearAccesoWeb?: (lead: Contacto) => void
   enPipeline?: boolean
 }
 
@@ -44,7 +45,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, enPipeline }: LeadCardProps) {
+export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, onCrearAccesoWeb, enPipeline }: LeadCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
       {/* Header con nombre y acciones rápidas */}
@@ -258,6 +259,21 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">{enPipeline ? "Remover del Pipeline" : "Agregar al Pipeline"}</TooltipContent>
+              </Tooltip>
+            )}
+            {onCrearAccesoWeb && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onCrearAccesoWeb(lead)}
+                    className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8 text-xs"
+                  >
+                    <Globe className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Crear acceso web</TooltipContent>
               </Tooltip>
             )}
             {onEliminar && (

@@ -78,7 +78,7 @@ export function DialogoCrearAccesoWeb({
         return
       }
 
-      const response = await fetch(`http://localhost:5000/api/clientes/${contacto.id}/acceso-web`, {
+      const response = await fetch(`http://localhost:5000/api/contactos/${contacto.id}/acceso-web`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -109,7 +109,7 @@ export function DialogoCrearAccesoWeb({
         throw new Error('No hay sesión activa.')
       }
 
-      const response = await fetch(`http://localhost:5000/api/clientes/${contacto.id}/acceso-web`, {
+      const response = await fetch(`http://localhost:5000/api/contactos/${contacto.id}/acceso-web`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -156,7 +156,7 @@ export function DialogoCrearAccesoWeb({
         throw new Error('No hay sesión activa. Por favor, inicie sesión nuevamente.')
       }
 
-      const response = await fetch(`http://localhost:5000/api/clientes/${contacto.id}/crear-acceso-web`, {
+      const response = await fetch(`http://localhost:5000/api/contactos/${contacto.id}/crear-acceso-web`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
