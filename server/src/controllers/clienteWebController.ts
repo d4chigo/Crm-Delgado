@@ -267,6 +267,7 @@ export const eliminarAccesoWeb = async (req: Request, res: Response) => {
 export const toggleAccesoWeb = async (req: Request, res: Response) => {
   try {
     const { id: contactoId } = req.params;
+    const { activo } = req.body;
 
     // Verificar que existe el acceso
     const accesoExistente = await prisma.clientePassword.findUnique({
@@ -280,13 +281,23 @@ export const toggleAccesoWeb = async (req: Request, res: Response) => {
       });
     }
 
-    // Por ahora, solo retornamos success
-    // TODO: Implementar toggle real cuando agreguemos campo activo a la DB
+    // Actualizar el estado del acceso usando raw SQL para mayor control
+    await prisma.$executeRaw`
+      UPDATE \`cliente_passwords\` 
+      SET \`activo\` = ${activo ? 1 : 0}, \`updated_at\` = NOW()
+      WHERE \`contacto_id\` = ${contactoId}
+    `;
+
+    // Obtener el registro actualizado para confirmación
+    const accesoActualizado = await prisma.clientePassword.findUnique({
+      where: { contactoId },
+    });
+
     res.json({
       exito: true,
-      mensaje: 'Acceso web actualizado exitosamente',
+      mensaje: `Acceso web ${activo ? 'activado' : 'desactivado'} exitosamente`,
       datos: {
-        activo: true,
+        activo: activo,
       },
     });
   } catch (error) {
