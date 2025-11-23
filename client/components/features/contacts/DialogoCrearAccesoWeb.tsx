@@ -346,7 +346,7 @@ export function DialogoCrearAccesoWeb({
 
   return (
     <Dialog open={abierto} onOpenChange={handleCerrar}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Globe className="h-6 w-6 text-[#FCBA00]" />
@@ -362,21 +362,21 @@ export function DialogoCrearAccesoWeb({
         )}
 
         {!verificandoAcceso && (
-          <div className="space-y-4 max-h-[500px] overflow-y-auto">
-            {/* Info del contacto */}
-            <div className="bg-slate-100 rounded-lg p-4 space-y-2">
+          <div className={`space-y-4 ${tieneAcceso && !acceso ? 'max-h-none' : 'max-h-[400px] overflow-y-auto'}`}>
+            {/* Info del contacto - más compacta cuando se gestiona acceso */}
+            <div className={`${tieneAcceso && !acceso ? 'bg-slate-50 rounded-lg p-3 space-y-1' : 'bg-slate-100 rounded-lg p-4 space-y-2'}`}>
               <div className="flex justify-between">
-                <span className="text-sm font-semibold text-slate-600">Nombre:</span>
-                <span className="text-sm text-slate-900">{contacto.nombre} {contacto.apellido}</span>
+                <span className={`font-semibold text-slate-600 ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>Nombre:</span>
+                <span className={`text-slate-900 ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>{contacto.nombre} {contacto.apellido}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm font-semibold text-slate-600">Correo:</span>
-                <span className="text-sm text-[#FCBA00] font-mono">{contacto.correo}</span>
+                <span className={`font-semibold text-slate-600 ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>Correo:</span>
+                <span className={`text-[#FCBA00] font-mono ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>{contacto.correo}</span>
               </div>
               {contacto.telefono && (
                 <div className="flex justify-between">
-                  <span className="text-sm font-semibold text-slate-600">Teléfono:</span>
-                  <span className="text-sm text-slate-900">{contacto.telefono}</span>
+                  <span className={`font-semibold text-slate-600 ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>Teléfono:</span>
+                  <span className={`text-slate-900 ${tieneAcceso && !acceso ? 'text-xs' : 'text-sm'}`}>{contacto.telefono}</span>
                 </div>
               )}
             </div>
@@ -443,13 +443,13 @@ export function DialogoCrearAccesoWeb({
 
             {/* Credenciales mostradas */}
             {acceso && (
-              <div className="bg-green-50 rounded-lg p-4 border-2 border-green-300 space-y-3">
-                <div className="flex items-center gap-2 text-green-700 font-semibold">
-                  <CheckCircle2 className="h-5 w-5" />
+              <div className="bg-green-50 rounded-lg p-3 border-2 border-green-300 space-y-2">
+                <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
                   Credenciales Generadas
                 </div>
 
-                <div className="space-y-3 bg-white rounded p-3 border border-green-200">
+                <div className="space-y-2 bg-white rounded p-2 border border-green-200">
                   <div>
                     <label className="text-xs font-semibold text-slate-600">URL del Portal:</label>
                     <div className="flex justify-between items-center bg-slate-50 p-2 rounded mt-1 border border-slate-200">
@@ -537,10 +537,10 @@ export function DialogoCrearAccesoWeb({
                   )}
                 </Button>
 
-                <Alert className="border-amber-300 bg-amber-50">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-xs text-amber-800">
-                    Envíe estas credenciales al cliente por un medio seguro. El cliente debe cambiar su contraseña en el primer acceso.
+                <Alert className="border-amber-300 bg-amber-50 py-2">
+                  <AlertCircle className="h-3 w-3 text-amber-600" />
+                  <AlertDescription className="text-xs text-amber-800 ml-1">
+                    Envíe estas credenciales por un medio seguro.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -556,7 +556,7 @@ export function DialogoCrearAccesoWeb({
           </div>
         )}
 
-        <DialogFooter className="flex gap-2 mt-4">
+        <DialogFooter className="flex flex-col gap-2 mt-4">
           {acceso ? (
             // Mostrando credenciales después de crear o resetear
             <>
@@ -576,26 +576,27 @@ export function DialogoCrearAccesoWeb({
             </>
           ) : tieneAcceso ? (
             // Gestión de acceso existente
-            <>
-              <Button variant="outline" onClick={onCancelar} disabled={estaCargando} className="flex-1">
-                Cerrar
-              </Button>
-              <Button
-                onClick={handleResetearContraseña}
-                disabled={estaCargando}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                {estaCargando ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Resetear'}
-              </Button>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={onCancelar} disabled={estaCargando} className="flex-1">
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={handleResetearContraseña}
+                  disabled={estaCargando}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  {estaCargando ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Resetear'}
+                </Button>
+              </div>
               <Button
                 onClick={handleEliminarAcceso}
                 disabled={estaCargando}
-                variant="destructive"
-                className="flex-1"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold"
               >
-                {estaCargando ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Trash2 className="h-4 w-4 mr-1" />Eliminar</>}
+                {estaCargando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <><Trash2 className="h-4 w-4 mr-2" />Eliminar Acceso Web</>}
               </Button>
-            </>
+            </div>
           ) : (
             // Sin acceso - opción de crear
             <>
