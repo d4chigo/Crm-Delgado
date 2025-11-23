@@ -22,10 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { 
-  CrearCotizacionDTO, 
+import type {
+  CrearCotizacionDTO,
   Cotizacion,
-  TipoCuota 
+  TipoCuota
 } from '@/types/cotizacion.types';
 import { TIPOS_CUOTA_LABELS } from '@/types/cotizacion.types';
 import { cotizacionService } from '@/services/api/cotizacion.service';
@@ -41,7 +41,7 @@ const FormSection = ({ title, children }: FormSectionProps) => (
   </section>
 );
 
-type IconInputProps = { icon: ComponentType<{ className?: string }>} & InputHTMLAttributes<HTMLInputElement>;
+type IconInputProps = { icon: ComponentType<{ className?: string }> } & InputHTMLAttributes<HTMLInputElement>;
 const IconInput = ({ icon: Icon, ...props }: IconInputProps) => (
   <div className="relative flex items-center">
     <Icon className="absolute left-3 h-4 w-4 text-gray-400" />
@@ -54,7 +54,8 @@ interface FormularioCotizacionProps {
   onOpenChange: (open: boolean) => void;
   onGuardar: (datos: CrearCotizacionDTO) => Promise<void>;
   cotizacion?: Cotizacion | null;
-  contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   nombreContacto?: string;
 }
 
@@ -63,12 +64,15 @@ export const FormularioCotizacion = ({
   onOpenChange,
   onGuardar,
   cotizacion,
-  contactoId,
+  leadId,
+  clienteId,
   nombreContacto
 }: FormularioCotizacionProps) => {
   const [guardando, setGuardando] = useState(false);
-  const [datos, setDatos] = useState<CrearCotizacionDTO>({
-    contactoId,
+
+  const estadoInicial = (): CrearCotizacionDTO => ({
+    ...(leadId && { leadId }),
+    ...(clienteId && { clienteId }),
     nombreProyecto: '',
     tipoInmueble: '',
     descripcion: '',
@@ -90,59 +94,94 @@ export const FormularioCotizacion = ({
     fechaValidez: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
   });
 
-  // Clave de borrador por contacto
+  const [datos, setDatos] = useState<CrearCotizacionDTO>(estadoInicial());
+
+  // Clave de borrador por contacto (lead o cliente)
+  const contactoId = leadId || clienteId || '';
   const DRAFT_KEY = useMemo(() => `cotizacion_draft_${contactoId}`, [contactoId]);
 
+  // Resetear formulario cuando se cierra el diálogo (si no es edición)
   useEffect(() => {
+    if (!open && !cotizacion) {
+      // Limpiar el formulario y el borrador cuando se cierra sin estar editando
+      try { localStorage.removeItem(DRAFT_KEY); } catch { }
+      setDatos(estadoInicial());
+    }
+  }, [open, cotizacion, DRAFT_KEY]);
+
+  useEffect(() => {
+    if (!open) return; // Solo actuar cuando el diálogo está abierto
+    
     if (cotizacion) {
       setDatos(prev => ({ ...prev, ...cotizacion }));
     } else {
-      // Intentar cargar borrador persistido
+      // Para nueva cotización, intentar cargar borrador
       try {
         const raw = localStorage.getItem(DRAFT_KEY);
         if (raw) {
           const draft = JSON.parse(raw);
-          setDatos({ ...draft, contactoId });
+          setDatos({ ...draft, ...(leadId && { leadId }), ...(clienteId && { clienteId }) });
           return;
         }
       } catch {}
-      setDatos(prev => ({ ...prev, contactoId }));
+      // Si no hay borrador, resetear al estado inicial
+      setDatos(estadoInicial());
     }
-  }, [cotizacion, contactoId, DRAFT_KEY]);
-
-  // Auto-guardar borrador en localStorage (debounce simple)
+  }, [cotizacion, leadId, clienteId, DRAFT_KEY, open]);  // Auto-guardar borrador en localStorage (debounce simple)
   useEffect(() => {
     if (cotizacion) return; // si ya existe, no guardar borrador
     const t = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(datos)); } catch {}
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(datos)); } catch { }
     }, 300);
     return () => clearTimeout(t);
   }, [datos, cotizacion, DRAFT_KEY]);
 
-  const calculosEnVivo = useMemo(() => cotizacionService.calcularTotales(datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, { 
+  const calculosEnVivo = useMemo(() => cotizacionService.calcularTotales(datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, {
     modalidadPago: datos.tipoCuota as any,
     frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
     cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
     cuotaEspecialValor: datos.cuotaEspecialValor as any,
     montoCuotaManual: datos.montoCuotaManual
   }), [datos.precioInmueble, datos.cuotaInicial, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
-  
-  const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, { 
+
+  const cronogramaPagos = useMemo(() => cotizacionService.calcularCronogramaPagos(calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, {
+    modalidadPago: datos.tipoCuota as any,
     frecuenciaCuotaEspecial: datos.frecuenciaCuotaEspecial as any,
     cuotaEspecialTipo: datos.cuotaEspecialTipo as any,
     cuotaEspecialValor: datos.cuotaEspecialValor as any,
     montoCuotaManual: datos.montoCuotaManual as any
   }), [calculosEnVivo.montoFinanciar, datos.tasaInteresAnual, datos.plazoMeses, datos.tipoCuota, datos.frecuenciaCuotaEspecial, datos.cuotaEspecialTipo, datos.cuotaEspecialValor, datos.montoCuotaManual]);
 
+  // Si el cronograma generado tiene un número diferente de meses, actualizar plazoMeses automáticamente
+  useEffect(() => {
+    if (cronogramaPagos.length > 0 && cronogramaPagos.length !== datos.plazoMeses) {
+      const mesesReales = cronogramaPagos.length;
+      setDatos(prev => ({
+        ...prev,
+        plazoMeses: mesesReales
+      }));
+    }
+  }, [cronogramaPagos.length]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📋 FormularioCotizacion.handleSubmit - datos a enviar:', JSON.stringify(datos, null, 2));
+    console.log('📋 leadId prop:', leadId, 'clienteId prop:', clienteId);
     setGuardando(true);
     try {
-      await onGuardar(datos);
+      // Crear una copia limpia de los datos para enviar
+      // Excluir contactoId que es solo para uso interno del componente
+      const { ...datosLimpios } = datos;
+
+      // Asegurar que leadId o clienteId estén presentes según las props
+      if (leadId) datosLimpios.leadId = leadId;
+      if (clienteId) datosLimpios.clienteId = clienteId;
+
+      await onGuardar(datosLimpios);
       // Limpiar borrador al guardar con éxito
-      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      try { localStorage.removeItem(DRAFT_KEY); } catch { }
       onOpenChange(false);
-    } catch (error) { console.error('Error al guardar:', error); } 
+    } catch (error) { console.error('Error al guardar:', error); }
     finally { setGuardando(false); }
   };
 
@@ -189,7 +228,7 @@ export const FormularioCotizacion = ({
           try {
             const res = await fetch(u);
             if (res.ok) { blob = await res.blob(); break; }
-          } catch {}
+          } catch { }
         }
         if (!blob) return '';
         return await new Promise<string>((resolve) => {
@@ -286,7 +325,7 @@ export const FormularioCotizacion = ({
 
           <div class="section">
             <h3>Notas</h3>
-            <div>${(datos.notas || '—').replace(/</g,'&lt;')}</div>
+            <div>${(datos.notas || '—').replace(/</g, '&lt;')}</div>
           </div>
 
           <div class="footer">Generado por CRM Delgado • ${new Date().toLocaleString('es-PE')} • ${usuarioNombre || ''}</div>
@@ -302,12 +341,12 @@ export const FormularioCotizacion = ({
         const blob = new Blob([byteArray], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g,'_')}.pdf`;
+        a.href = url; a.download = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g, '_')}.pdf`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1500);
         return;
       }
-    } catch {}
+    } catch { }
     // Fallback: abrir diálogo de impresión si no hay Electron
     const w = window.open('about:blank');
     if (!w) return;
@@ -315,37 +354,37 @@ export const FormularioCotizacion = ({
     w.document.close();
     w.focus();
     w.print();
-    setTimeout(() => { try { w.close(); } catch {} }, 500);
+    setTimeout(() => { try { w.close(); } catch { } }, 500);
   };
-  
+
   const exportarExcel = () => {
     if (!puedeExportar) return;
     const usuarioNombre = obtenerNombreUsuario();
-    const esc = (v: any) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const esc = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const rows: string[] = [];
-    const pushRow = (cells: Array<{v:string|number, style?:string}>) => {
-      rows.push('<Row>' + cells.map(c => `<Cell${c.style?` ss:StyleID=\"${c.style}\"`:''}><Data ss:Type=\"String\">${esc(c.v)}</Data></Cell>`).join('') + '</Row>');
+    const pushRow = (cells: Array<{ v: string | number, style?: string }>) => {
+      rows.push('<Row>' + cells.map(c => `<Cell${c.style ? ` ss:StyleID=\"${c.style}\"` : ''}><Data ss:Type=\"String\">${esc(c.v)}</Data></Cell>`).join('') + '</Row>');
     };
     // Encabezado
-    pushRow([{v:`Cotización - ${datos.nombreProyecto}`, style:'Bold'}]);
-    pushRow([{v:`Asesor: ${usuarioNombre || '—'}`}]);
+    pushRow([{ v: `Cotización - ${datos.nombreProyecto}`, style: 'Bold' }]);
+    pushRow([{ v: `Asesor: ${usuarioNombre || '—'}` }]);
     rows.push('<Row/>');
     // Información del inmueble
-    pushRow([{v:'Información del Inmueble', style:'Bold'}]);
-    pushRow([{v:'Tipo'}, {v: datos.tipoInmueble || 'No especificado'}]);
-    pushRow([{v:'Descripción'}, {v: datos.descripcion || 'No especificado'}]);
+    pushRow([{ v: 'Información del Inmueble', style: 'Bold' }]);
+    pushRow([{ v: 'Tipo' }, { v: datos.tipoInmueble || 'No especificado' }]);
+    pushRow([{ v: 'Descripción' }, { v: datos.descripcion || 'No especificado' }]);
     rows.push('<Row/>');
     // Datos financieros
-    pushRow([{v:'Datos Financieros', style:'Bold'}]);
-    pushRow([{v:'Precio Inmueble'}, {v: formatearMoneda(datos.precioInmueble)}]);
-    pushRow([{v:'Cuota Inicial'}, {v: formatearMoneda(datos.cuotaInicial)}]);
-    pushRow([{v:'Monto a Financiar'}, {v: formatearMoneda(calculosEnVivo.montoFinanciar)}]);
-    pushRow([{v:'Plazo (meses)'}, {v: String(datos.plazoMeses)}]);
-    pushRow([{v:'Tasa Interés Anual'}, {v: `${datos.tasaInteresAnual}%`}]);
-    pushRow([{v:'Cuota Mensual Estimada'}, {v: formatearMoneda(calculosEnVivo.cuotaMensual)}]);
-    pushRow([{v:'Total Intereses Estimado'}, {v: formatearMoneda(calculosEnVivo.totalIntereses)}]);
-    pushRow([{v:'Total a Pagar Estimado'}, {v: formatearMoneda(calculosEnVivo.totalPagar)}]);
-    pushRow([{v:'Válido Hasta'}, {v: datos.fechaValidez || '—'}]);
+    pushRow([{ v: 'Datos Financieros', style: 'Bold' }]);
+    pushRow([{ v: 'Precio Inmueble' }, { v: formatearMoneda(datos.precioInmueble) }]);
+    pushRow([{ v: 'Cuota Inicial' }, { v: formatearMoneda(datos.cuotaInicial) }]);
+    pushRow([{ v: 'Monto a Financiar' }, { v: formatearMoneda(calculosEnVivo.montoFinanciar) }]);
+    pushRow([{ v: 'Plazo (meses)' }, { v: String(datos.plazoMeses) }]);
+    pushRow([{ v: 'Tasa Interés Anual' }, { v: `${datos.tasaInteresAnual}%` }]);
+    pushRow([{ v: 'Cuota Mensual Estimada' }, { v: formatearMoneda(calculosEnVivo.cuotaMensual) }]);
+    pushRow([{ v: 'Total Intereses Estimado' }, { v: formatearMoneda(calculosEnVivo.totalIntereses) }]);
+    pushRow([{ v: 'Total a Pagar Estimado' }, { v: formatearMoneda(calculosEnVivo.totalPagar) }]);
+    pushRow([{ v: 'Válido Hasta' }, { v: datos.fechaValidez || '—' }]);
     rows.push('<Row/>');
     // Cronograma de pagos
     rows.push('<Row><Cell ss:StyleID="Bold"><Data ss:Type="String">Cronograma de Pagos</Data></Cell></Row>');
@@ -373,7 +412,7 @@ export const FormularioCotizacion = ({
     const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g,'_')}.xls`;
+    a.href = url; a.download = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g, '_')}.xls`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -383,7 +422,7 @@ export const FormularioCotizacion = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent style={{ width: '85%', maxWidth: '1000px', height: '700px', display: 'flex', padding: 0, borderRadius: '0.75rem' }}>
-        
+
         {/* === COLUMNA IZQUIERDA: FORMULARIO (60%) === */}
         <div style={{ width: '60%', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
           <DialogHeader className="p-5 border-b">
@@ -395,112 +434,96 @@ export const FormularioCotizacion = ({
 
           <div className="flex-1 p-6 space-y-4 overflow-y-auto">
             <form id="quote-form" onSubmit={handleSubmit} className="space-y-4">
-              
+
               <FormSection title="Datos del Inmueble">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div className="col-span-2">
-                        <Label htmlFor="nombreProyecto" className="text-xs font-medium">Nombre del Proyecto *</Label>
-                        <IconInput id="nombreProyecto" icon={Building} value={datos.nombreProyecto} onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })} required />
-                    </div>
-                    <div>
-                        <Label htmlFor="tipoInmueble" className="text-xs font-medium">Tipo de Inmueble</Label>
-                        <IconInput id="tipoInmueble" icon={Info} value={datos.tipoInmueble} onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })} />
-                    </div>
-                    <div>
-                        <Label htmlFor="descripcion" className="text-xs font-medium">Descripción (Ej: N° 301)</Label>
-                        <IconInput id="descripcion" icon={FileText} value={datos.descripcion} onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })} />
-                    </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="nombreProyecto" className="text-xs font-medium">Nombre del Proyecto *</Label>
+                    <IconInput id="nombreProyecto" icon={Building} value={datos.nombreProyecto} onChange={(e) => setDatos({ ...datos, nombreProyecto: e.target.value })} required />
+                  </div>
+                  <div>
+                    <Label htmlFor="tipoInmueble" className="text-xs font-medium">Tipo de Inmueble</Label>
+                    <IconInput id="tipoInmueble" icon={Info} value={datos.tipoInmueble} onChange={(e) => setDatos({ ...datos, tipoInmueble: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="descripcion" className="text-xs font-medium">Descripción (Ej: N° 301)</Label>
+                    <IconInput id="descripcion" icon={FileText} value={datos.descripcion} onChange={(e) => setDatos({ ...datos, descripcion: e.target.value })} />
+                  </div>
                 </div>
               </FormSection>
 
               <FormSection title="Condiciones Financieras">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                        <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
-                        <IconInput id="precioInmueble" icon={DollarSign} type="text" inputMode="decimal" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
-                    </div>
-                    <div>
-                        <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
-                        <IconInput id="cuotaInicial" icon={DollarSign} type="text" inputMode="decimal" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
-                        <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
-                    </div>
-                    <div>
-                        <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
-                        <IconInput id="plazoMeses" icon={Calendar} type="text" inputMode="decimal" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
-                        <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
-                    </div>
-                    <div>
-                        <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
-                        <IconInput id="tasaInteresAnual" icon={Percent} type="text" inputMode="decimal" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
-                    </div>
+                  <div>
+                    <Label htmlFor="precioInmueble" className="text-xs font-medium">Precio Inmueble *</Label>
+                    <IconInput id="precioInmueble" icon={DollarSign} type="text" inputMode="decimal" value={datos.precioInmueble} onChange={(e) => setDatos({ ...datos, precioInmueble: parseFloat(e.target.value) || 0 })} required />
+                  </div>
+                  <div>
+                    <Label htmlFor="cuotaInicial" className="text-xs font-medium">Cuota Inicial *</Label>
+                    <IconInput id="cuotaInicial" icon={DollarSign} type="text" inputMode="decimal" value={datos.cuotaInicial} onChange={(e) => setDatos({ ...datos, cuotaInicial: parseFloat(e.target.value) || 0 })} required />
+                    <p className="text-xs text-gray-500 mt-1">{calculosEnVivo.porcentajeCuotaInicial.toFixed(2)}% del total</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="plazoMeses" className="text-xs font-medium">Plazo (Meses) *</Label>
+                    <IconInput id="plazoMeses" icon={Calendar} type="text" inputMode="decimal" value={datos.plazoMeses} onChange={(e) => setDatos({ ...datos, plazoMeses: parseInt(e.target.value) || 0 })} required />
+                    <p className="text-xs text-gray-500 mt-1">{(datos.plazoMeses / 12).toFixed(1)} años</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="tasaInteresAnual" className="text-xs font-medium">Tasa de Interés (TEA) *</Label>
+                    <IconInput id="tasaInteresAnual" icon={Percent} type="text" inputMode="decimal" step="0.1" value={datos.tasaInteresAnual} onChange={(e) => setDatos({ ...datos, tasaInteresAnual: parseFloat(e.target.value) || 0 })} required />
+                  </div>
                 </div>
               </FormSection>
 
               <FormSection title="Modalidad y Beneficios">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                        <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
-                        <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
-                    </div>
-                    <div>
-                        <Label htmlFor="fechaValidez" className="text-xs font-medium">Válido Hasta</Label>
-                        <Input id="fechaValidez" type="date" value={datos.fechaValidez} onChange={(e) => setDatos({ ...datos, fechaValidez: e.target.value })} className="text-sm h-9" />
-                    </div>
+                  <div>
+                    <Label htmlFor="tipoCuota" className="text-xs font-medium">Modalidad de Pago</Label>
+                    <Select value={datos.tipoCuota} onValueChange={(value: TipoCuota) => setDatos({ ...datos, tipoCuota: value })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TIPOS_CUOTA_LABELS).map(([v, l]) => <SelectItem key={v} value={v} className="text-sm">{l}</SelectItem>)}</SelectContent></Select>
+                  </div>
                 </div>
-                
-                {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
-                    <div className="pt-4 mt-4 border-t">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Flexible</h4>
-                        <div>
-                            <Label htmlFor="montoCuotaManual" className="text-xs font-medium">Monto de Cuota Manual</Label>
-                            <IconInput 
-                                id="montoCuotaManual" 
-                                icon={DollarSign} 
-                                type="number" 
-                                value={datos.montoCuotaManual || ''} 
-                                onChange={(e) => setDatos({ ...datos, montoCuotaManual: parseFloat(e.target.value) || undefined })}
-                                placeholder="Ej: 1000"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Dejar en blanco para cuota calculada automáticamente.</p>
-                        </div>
-                        <h4 className="text-xs font-semibold text-gray-600 my-3">Beneficios Flexibles</h4>
-                        <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permitePostergar" checked={datos.permitePostergar} onCheckedChange={(c) => setDatos({...datos, permitePostergar: c as boolean})} /><Label htmlFor="permitePostergar" className="text-sm font-normal">Permitir postergar pagos</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permiteDoble" checked={datos.permiteDoble} onCheckedChange={(c) => setDatos({...datos, permiteDoble: c as boolean})} /><Label htmlFor="permiteDoble" className="text-sm font-normal">Permitir cuotas dobles</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="permiteCambioFecha" checked={datos.permiteCambioFecha} onCheckedChange={(c) => setDatos({...datos, permiteCambioFecha: c as boolean})} /><Label htmlFor="permiteCambioFecha" className="text-sm font-normal">Permitir cambio de fecha de pago</Label>
-                            </div>
-                        </div>
+
+                {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL_AMORTIZACION' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
+                  <div className="pt-4 mt-4 border-t">
+                    <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Flexible</h4>
+                    <div>
+                      <Label htmlFor="montoCuotaManual" className="text-xs font-medium">Monto de Cuota Manual</Label>
+                      <IconInput
+                        id="montoCuotaManual"
+                        icon={DollarSign}
+                        type="number"
+                        value={datos.montoCuotaManual || ''}
+                        onChange={(e) => setDatos({ ...datos, montoCuotaManual: parseFloat(e.target.value) || undefined })}
+                        placeholder="Ej: 1000"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Dejar en blanco para cuota calculada automáticamente.</p>
                     </div>
+                  </div>
                 )}
 
-                {datos.tipoCuota === 'FLEXIBLE_ESPECIAL' && (
-                    <div className="pt-4 mt-4 border-t">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Especial</h4>
-                        <div className="grid grid-cols-3 gap-x-4">
-                            <div>
-                                <Label className="text-xs">Frecuencia</Label>
-                                <Select value={datos.frecuenciaCuotaEspecial as any || ''} onValueChange={(v) => setDatos({ ...datos, frecuenciaCuotaEspecial: v as any})}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="TRIMESTRAL">Trimestral</SelectItem><SelectItem value="SEMESTRAL">Semestral</SelectItem><SelectItem value="ANUAL">Anual</SelectItem></SelectContent></Select>
-                            </div>
-                            <div>
-                                <Label className="text-xs">Tipo</Label>
-                                <Select value={datos.cuotaEspecialTipo as any || ''} onValueChange={(v) => setDatos({ ...datos, cuotaEspecialTipo: v as any})}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="FIJO">Monto Fijo</SelectItem><SelectItem value="PORCENTAJE">Porcentaje</SelectItem></SelectContent></Select>
-                            </div>
-                            <div>
-                                <Label className="text-xs">Valor</Label>
-                                <Input type="number" className="h-9 text-sm" value={(datos.cuotaEspecialValor as any) ?? ''} onChange={(e) => setDatos({ ...datos, cuotaEspecialValor: parseFloat(e.target.value) || 0 })} />
-                            </div>
-                        </div>
+                {(datos.tipoCuota === 'FLEXIBLE_ESPECIAL_AMORTIZACION' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
+                  <div className="pt-4 mt-4 border-t">
+                    <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Especial</h4>
+                    <div className="grid grid-cols-3 gap-x-4">
+                      <div>
+                        <Label className="text-xs">Frecuencia</Label>
+                        <Select value={datos.frecuenciaCuotaEspecial as any || ''} onValueChange={(v) => setDatos({ ...datos, frecuenciaCuotaEspecial: v as any })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="TRIMESTRAL">Trimestral</SelectItem><SelectItem value="SEMESTRAL">Semestral</SelectItem><SelectItem value="ANUAL">Anual</SelectItem></SelectContent></Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Tipo</Label>
+                        <Select value={datos.cuotaEspecialTipo as any || ''} onValueChange={(v) => setDatos({ ...datos, cuotaEspecialTipo: v as any })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="FIJO">Monto Fijo</SelectItem><SelectItem value="PORCENTAJE">Porcentaje</SelectItem></SelectContent></Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Valor</Label>
+                        <Input type="number" className="h-9 text-sm" value={(datos.cuotaEspecialValor as any) ?? ''} onChange={(e) => setDatos({ ...datos, cuotaEspecialValor: parseFloat(e.target.value) || 0 })} />
+                      </div>
                     </div>
+                  </div>
                 )}
 
-                 <div className="pt-4 mt-4 border-t">
-                    <Label htmlFor="notas" className="text-xs font-medium">Notas Adicionales</Label>
-                    <Textarea id="notas" value={datos.notas} onChange={(e) => setDatos({ ...datos, notas: e.target.value })} placeholder="Condiciones especiales, acuerdos, etc." rows={2} className="text-sm" />
+                <div className="pt-4 mt-4 border-t">
+                  <Label htmlFor="notas" className="text-xs font-medium">Notas Adicionales</Label>
+                  <Textarea id="notas" value={datos.notas} onChange={(e) => setDatos({ ...datos, notas: e.target.value })} placeholder="Condiciones especiales, acuerdos, etc." rows={2} className="text-sm" />
                 </div>
               </FormSection>
 
@@ -509,7 +532,7 @@ export const FormularioCotizacion = ({
 
           <div className="p-4 border-t mt-auto flex justify-between items-center">
             <div>
-              <Button 
+              <Button
                 variant="outline" size="sm" className="text-xs mr-2"
                 onClick={exportarPDF}
                 disabled={!puedeExportar}
@@ -517,7 +540,7 @@ export const FormularioCotizacion = ({
               >
                 <FileDown className="h-3.5 w-3.5 mr-1.5" />Exportar PDF
               </Button>
-              <Button 
+              <Button
                 variant="outline" size="sm" className="text-xs"
                 onClick={exportarExcel}
                 disabled={!puedeExportar}
@@ -528,7 +551,14 @@ export const FormularioCotizacion = ({
             </div>
             <div className="flex gap-3">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={guardando}>Cancelar</Button>
-              <Button type="submit" form="quote-form" disabled={guardando} className="font-semibold">{guardando ? 'Guardando...' : 'Crear Cotización'}</Button>
+              <Button
+                type="submit"
+                form="quote-form"
+                disabled={guardando}
+                className="font-semibold"
+              >
+                {guardando ? 'Guardando...' : 'Crear Cotización'}
+              </Button>
             </div>
           </div>
         </div>

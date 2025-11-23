@@ -1,6 +1,6 @@
 import prisma from '@/config/database';
 import { CrearContactoDTO, ActualizarContactoDTO, FiltrosContacto, Contacto } from '@/types';
-import { TipoContacto, EstadoLead } from '@prisma/client';
+import { EstadoLead } from '@prisma/client';
 import googleAuthService from './google-auth.service';
 
 export class ContactoService {
@@ -33,6 +33,20 @@ export class ContactoService {
   }
 
   /**
+   * Mapear estado a estadoLead para consistencia con frontend
+   */
+  private mapearEstado(contacto: any): any {
+    if (contacto.estado) {
+      return {
+        ...contacto,
+        estadoLead: contacto.estado,
+        estado: undefined // Remover el campo original para evitar confusión
+      };
+    }
+    return contacto;
+  }
+
+  /**
    * Obtener todos los contactos con filtros
    */
   async obtenerContactos(usuarioId: string, filtros: FiltrosContacto = {}) {
@@ -40,53 +54,163 @@ export class ContactoService {
       tipo,
       ciudad,
       busqueda,
+      estado,
       pagina = 1,
       limite = 6
     } = filtros;
 
     const skip = (pagina - 1) * limite;
 
-    // Construir condiciones de búsqueda
-    const where: any = { usuarioId };
+    // Construir condiciones de búsqueda base
+    const whereBase: any = { usuarioId };
 
-    if (tipo) {
-      where.tipo = tipo;
-      console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
+    if (estado) {
+      whereBase.estado = estado;
+      console.log(`🔍 Filtrando contactos por estado: ${estado}`);
     }
 
     if (ciudad) {
-      where.ciudad = { contains: ciudad };
+      whereBase.ciudad = { contains: ciudad };
     }
 
-        if (busqueda) {
-          where.OR = [
-            { nombre: { contains: busqueda } },
-            { apellido: { contains: busqueda } },
-            { correo: { contains: busqueda } },
-            { dni: { contains: busqueda } }
+    if (busqueda) {
+      // Convertir búsqueda a minúsculas para búsqueda case-insensitive
+      const busquedaLower = busqueda.trim().toLowerCase();
+      
+      // Si contiene espacios, buscar por cualquiera de las palabras
+      const palabras = busquedaLower.split(/\s+/).filter(p => p.length > 0);
+      
+      if (palabras.length > 0) {
+        if (palabras.length === 1) {
+          // Para una sola palabra, buscar en cualquier campo
+          whereBase.OR = [
+            { nombre: { contains: palabras[0] } },
+            { apellido: { contains: palabras[0] } },
+            { correo: { contains: palabras[0] } },
+            { dni: { contains: palabras[0] } }
           ];
+        } else {
+          // Para múltiples palabras, buscar un contacto que contenga TODAS las palabras
+          whereBase.AND = palabras.map(palabra => ({
+            OR: [
+              { nombre: { contains: palabra } },
+              { apellido: { contains: palabra } },
+              { correo: { contains: palabra } },
+              { dni: { contains: palabra } }
+            ]
+          }));
         }
-    // Obtener contactos y total
-    const [contactos, total] = await Promise.all([
-      prisma.contacto.findMany({
-        where,
-        skip,
-        take: limite,
-        orderBy: { creadoEn: 'desc' },
-        include: {
-          etiquetas: {
-            include: {
-              etiqueta: true
+        
+        console.log(`🔍 Buscando por palabras: ${palabras.join(', ')}`);
+      }
+    }
+
+    // Obtener leads o clientes según el tipo solicitado
+    let contactos: any[] = [];
+    let total = 0;
+    let leadsTotal = 0;
+    let clientesTotal = 0;
+
+    if (!tipo || tipo === 'LEAD') {
+      const [leads, leadCount] = await Promise.all([
+        prisma.lead.findMany({
+          where: whereBase,
+          skip,
+          take: limite,
+          orderBy: { creadoEn: 'desc' },
+          include: {
+            etiquetasRel: {
+              include: {
+                etiqueta: true
+              }
             }
           }
-        }
-      }),
-      prisma.contacto.count({ where })
-    ]);
+        }),
+        prisma.lead.count({ where: whereBase })
+      ]);
+      
+      leadsTotal = leadCount;
+      contactos = leads.map((lead: any) => ({
+        ...lead,
+        tipo: 'LEAD',
+        etiquetas: lead.etiquetasRel
+      }));
+      total = leadsTotal;
+      if (tipo) console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
+    }
+
+    // Solo si no hay tipo específico, agregar clientes también
+    if (!tipo) {
+      // Para búsqueda combinada, obtener más registros y paginarhac manualmente
+      const clientesAdicionales = limite - contactos.length;
+      
+      if (clientesAdicionales > 0) {
+        const [clientes, clientCount] = await Promise.all([
+          prisma.cliente.findMany({
+            where: whereBase,
+            skip: 0,
+            take: clientesAdicionales,
+            orderBy: { creadoEn: 'desc' },
+            include: {
+              etiquetasRel: {
+                include: {
+                  etiqueta: true
+                }
+              }
+            }
+          }),
+          prisma.cliente.count({ where: whereBase })
+        ]);
+        
+        clientesTotal = clientCount;
+        const clientesTransformados = clientes.map((cliente: any) => ({
+          ...cliente,
+          tipo: 'CLIENTE',
+          etiquetas: cliente.etiquetasRel
+        }));
+        
+        contactos = [...contactos, ...clientesTransformados];
+        total = leadsTotal + clientesTotal;
+      }
+    } else if (tipo === 'CLIENTE') {
+      // Solo clientes
+      const [clientes, clientCount] = await Promise.all([
+        prisma.cliente.findMany({
+          where: whereBase,
+          skip,
+          take: limite,
+          orderBy: { creadoEn: 'desc' },
+          include: {
+            etiquetasRel: {
+              include: {
+                etiqueta: true
+              }
+            }
+          }
+        }),
+        prisma.cliente.count({ where: whereBase })
+      ]);
+      
+      clientesTotal = clientCount;
+      const clientesTransformados = clientes.map((cliente: any) => ({
+        ...cliente,
+        tipo: 'CLIENTE',
+        etiquetas: cliente.etiquetasRel
+      }));
+      
+      contactos = clientesTransformados;
+      total = clientesTotal;
+      console.log(`🔍 Filtrando contactos por tipo: ${tipo}`);
+    }
+
+    // Aplicar paginación a búsqueda combinada si es necesario
+    if (!tipo && contactos.length > limite) {
+      contactos = contactos.slice(0, limite);
+    }
 
 
-    // Agregar edad a cada contacto
-    const contactosConEdad = contactos.map((c: any) => this.agregarEdad(c));
+    // Agregar edad a cada contacto y mapear estado a estadoLead
+    const contactosConEdad = contactos.map((c: any) => this.mapearEstado(this.agregarEdad(c)));
 
     return {
       contactos: contactosConEdad,
@@ -103,10 +227,11 @@ export class ContactoService {
    * Obtener un contacto por ID
    */
   async obtenerContactoPorId(id: string, usuarioId: string) {
-    const contacto = await prisma.contacto.findFirst({
+    // Buscar en leads primero, luego en clientes
+    let contacto = await prisma.lead.findFirst({
       where: { id, usuarioId },
       include: {
-        etiquetas: {
+        etiquetasRel: {
           include: {
             etiqueta: true
           }
@@ -115,41 +240,68 @@ export class ContactoService {
     });
 
     if (!contacto) {
+      contacto = await prisma.cliente.findFirst({
+        where: { id, usuarioId },
+        include: {
+          etiquetasRel: {
+            include: {
+              etiqueta: true
+            }
+          }
+        }
+      });
+    }
+
+    if (!contacto) {
       throw new Error('Contacto no encontrado');
     }
 
-    return this.agregarEdad(contacto);
+    // Transformar para compatibilidad
+    const contactoTransformado = {
+      ...contacto,
+      etiquetas: (contacto as any).etiquetasRel
+    };
+    return this.mapearEstado(this.agregarEdad(contactoTransformado));
   }
 
   /**
-   * Crear un nuevo contacto
+   * Crear un nuevo contacto (como LEAD por defecto)
    */
   async crearContacto(datos: CrearContactoDTO, usuarioId: string) {
     const { fechaNacimiento, ...restoDatos } = datos;
 
-    // Verificar si el correo ya existe (solo si se proporciona)
+    // Verificar si el correo ya existe (en leads o clientes)
     if (datos.correo) {
-      const contactoExistente = await prisma.contacto.findFirst({
+      const leadExistente = await prisma.lead.findFirst({
+        where: { correo: datos.correo }
+      });
+      
+      const clienteExistente = await prisma.cliente.findFirst({
         where: { correo: datos.correo }
       });
 
-      if (contactoExistente) {
+      if (leadExistente || clienteExistente) {
         throw new Error('Ya existe un contacto con este correo electrónico');
       }
     }
 
     // Verificar DNI si se proporciona
     if (datos.dni) {
-      const dniExistente = await prisma.contacto.findFirst({
+      const leadDni = await prisma.lead.findFirst({
+        where: { dni: datos.dni }
+      });
+      
+      const clienteDni = await prisma.cliente.findFirst({
         where: { dni: datos.dni }
       });
 
-      if (dniExistente) {
+      if (leadDni || clienteDni) {
         throw new Error('Ya existe un contacto con este DNI');
       }
     }
 
-    const contacto = await prisma.contacto.create({
+    // Crear como LEAD por defecto
+    const lead = await prisma.lead.create({
       data: {
         ...restoDatos,
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined,
@@ -157,55 +309,86 @@ export class ContactoService {
       }
     });
 
-    return this.agregarEdad(contacto);
+    return { ...this.agregarEdad(lead), tipo: 'LEAD' };
   }
 
   /**
    * Actualizar un contacto
    */
   async actualizarContacto(id: string, datos: ActualizarContactoDTO, usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario
-    const contactoExistente = await prisma.contacto.findFirst({
+    // Verificar que el contacto existe (puede ser lead o cliente) y pertenece al usuario
+    const lead = await prisma.lead.findFirst({
       where: { id, usuarioId }
     });
+
+    const cliente = !lead ? await prisma.cliente.findFirst({
+      where: { id, usuarioId }
+    }) : null;
+
+    const contactoExistente = lead || cliente;
 
     if (!contactoExistente) {
       throw new Error('Contacto no encontrado');
     }
 
     // Verificar correo único (solo si se proporciona y es diferente)
-    if (datos.correo && datos.correo !== contactoExistente.correo) {
-      const correoExistente = await prisma.contacto.findFirst({
-        where: { correo: datos.correo }
+    if (datos.correo && datos.correo !== (contactoExistente.correo?.trim() || '')) {
+      const correoEnLead = await prisma.lead.findFirst({
+        where: { correo: datos.correo, id: { not: id } }
       });
 
-      if (correoExistente) {
+      const correoEnCliente = await prisma.cliente.findFirst({
+        where: { correo: datos.correo, id: { not: id } }
+      });
+
+      if (correoEnLead || correoEnCliente) {
         throw new Error('Ya existe un contacto con este correo electrónico');
       }
     }
 
     // Verificar DNI único (solo si se proporciona y es diferente)
-    if (datos.dni && datos.dni !== contactoExistente.dni) {
-      const dniExistente = await prisma.contacto.findFirst({
-        where: { dni: datos.dni }
+    if (datos.dni && datos.dni !== (contactoExistente.dni?.trim() || '')) {
+      const dniEnLead = await prisma.lead.findFirst({
+        where: { dni: datos.dni, id: { not: id } }
       });
 
-      if (dniExistente) {
+      const dniEnCliente = await prisma.cliente.findFirst({
+        where: { dni: datos.dni, id: { not: id } }
+      });
+
+      if (dniEnLead || dniEnCliente) {
         throw new Error('Ya existe un contacto con este DNI');
       }
     }
 
-    const { fechaNacimiento, ...restoDatos } = datos;
+    const { fechaNacimiento, estadoLead, estado, ...restoDatos } = datos;
 
-    const contactoActualizado = await prisma.contacto.update({
-      where: { id },
-      data: {
-        ...restoDatos,
-        fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
-      }
-    });
+    // Mapear estadoLead a estado si viene desde el frontend
+    const estadoFinal = estado || estadoLead;
 
-    return this.agregarEdad(contactoActualizado);
+    // Actualizar en la tabla correspondiente
+    let contactoActualizado;
+    if (lead) {
+      contactoActualizado = await prisma.lead.update({
+        where: { id },
+        data: {
+          ...restoDatos,
+          ...(estadoFinal && { estado: estadoFinal }),
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
+        }
+      });
+    } else {
+      contactoActualizado = await prisma.cliente.update({
+        where: { id },
+        data: {
+          ...restoDatos,
+          ...(estadoFinal && { estado: estadoFinal }),
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
+        }
+      });
+    }
+
+    return this.mapearEstado(this.agregarEdad(contactoActualizado));
   }
 
   /**
@@ -221,15 +404,40 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    await prisma.contacto.delete({
-      where: { id }
-    });
+    console.log(`🗑️ Eliminando contacto: ${id}`);
 
-    return { mensaje: 'Contacto eliminado exitosamente' };
+    try {
+      // El cascade delete debería manejar las relaciones
+      // Pero primero eliminamos manualmente lo que sea necesario
+      
+      // Eliminar oportunidades asociadas
+      await prisma.oportunidadCliente.deleteMany({
+        where: { clienteId: id }
+      });
+      console.log(`✅ Oportunidades eliminadas`);
+
+      // Eliminar proyectos asociados
+      await prisma.proyectoCliente.deleteMany({
+        where: { clienteId: id }
+      });
+      console.log(`✅ Asociaciones de proyectos eliminadas`);
+
+      // Eliminar el contacto
+      await prisma.contacto.delete({
+        where: { id }
+      });
+      console.log(`✅ Contacto eliminado exitosamente`);
+
+      return { mensaje: 'Contacto eliminado exitosamente' };
+    } catch (error: any) {
+      console.error(`❌ Error al eliminar contacto: ${error.message}`);
+      throw new Error(`No se pudo eliminar el contacto: ${error.message}`);
+    }
   }
 
   /**
-   * Convertir contacto a lead
+   * Convertir un lead a cliente
+   * Nota: Ya no existe conversión de CONTACTO a LEAD, todos son LEAD desde el inicio
    */
   async convertirALead(id: string, usuarioId: string) {
     const contacto = await prisma.contacto.findFirst({
@@ -240,70 +448,41 @@ export class ContactoService {
       throw new Error('Contacto no encontrado');
     }
 
-    console.log(`🔄 Intentando convertir contacto ${id} - Tipo actual: ${contacto.tipo}`);
+    console.log(`🔄 Verificando contacto ${id} - Tipo actual: ${contacto.tipo}`);
 
-    if (contacto.tipo === TipoContacto.LEAD) {
-      console.log(`⚠️ Contacto ${id} ya es un LEAD, retornando sin cambios`);
+    if (contacto.tipo === 'LEAD') {
+      console.log(`✅ Contacto ${id} ya es un LEAD`);
       return this.agregarEdad(contacto);
     }
 
-    if (contacto.tipo === TipoContacto.CLIENTE) {
+    if (contacto.tipo === 'CLIENTE') {
       console.log(`❌ Error: Contacto ${id} ya es un CLIENTE`);
       throw new Error('Este contacto ya es un cliente y no puede convertirse a lead');
     }
 
-    const contactoActualizado = await prisma.contacto.update({
-      where: { id },
-      data: { 
-        tipo: TipoContacto.LEAD,
-        estadoLead: contacto.estadoLead || EstadoLead.NUEVO
-      }
-    });
-
-    console.log(`✅ Contacto ${id} convertido de ${contacto.tipo} a ${contactoActualizado.tipo}`);
-
-    return this.agregarEdad(contactoActualizado);
+    throw new Error('Tipo de contacto inválido');
   }
 
   /**
-   * Convertir múltiples contactos a leads
+   * Convertir varios contactos a leads (bulk operation)
    */
   async convertirVariosALeads(ids: string[], usuarioId: string) {
-    console.log(`🔄 Intentando convertir ${ids.length} contactos a leads...`);
-    
-    // Verificar que todos los contactos existen y pertenecen al usuario
-    const contactos = await prisma.contacto.findMany({
-      where: {
-        id: { in: ids },
-        usuarioId,
-        tipo: TipoContacto.CONTACTO // Solo contactos que no sean ya leads o clientes
+    let convertidos = 0;
+    let errores = 0;
+    const resultados: Array<{ id: string; exito: boolean; error?: string }> = [];
+
+    for (const id of ids) {
+      try {
+        await this.convertirALead(id, usuarioId);
+        convertidos++;
+        resultados.push({ id, exito: true });
+      } catch (error: any) {
+        errores++;
+        resultados.push({ id, exito: false, error: error.message });
       }
-    });
-
-    console.log(`✅ Encontrados ${contactos.length} contactos válidos para convertir`);
-
-    if (contactos.length === 0) {
-      throw new Error('No se encontraron contactos válidos para convertir. Verifica que los contactos seleccionados no sean ya leads o clientes.');
     }
 
-    // Convertir todos a leads
-    const resultado = await prisma.contacto.updateMany({
-      where: {
-        id: { in: contactos.map((c: any) => c.id) }
-      },
-      data: {
-        tipo: TipoContacto.LEAD,
-        estadoLead: EstadoLead.NUEVO
-      }
-    });
-
-    console.log(`✅ ${resultado.count} contactos convertidos a leads exitosamente`);
-
-    return {
-      convertidos: resultado.count,
-      total: ids.length,
-      noConvertidos: ids.length - resultado.count
-    };
+    return { convertidos, errores, resultados };
   }
 
   /**
@@ -315,7 +494,7 @@ export class ContactoService {
       where: {
         id,
         usuarioId,
-        tipo: TipoContacto.LEAD
+        tipo: 'LEAD'
       }
     });
 
@@ -327,7 +506,7 @@ export class ContactoService {
     const contactoActualizado = await prisma.contacto.update({
       where: { id },
       data: {
-        tipo: TipoContacto.CLIENTE,
+        tipo: 'CLIENTE',
         fechaConversion: new Date()
       }
     });
@@ -339,23 +518,19 @@ export class ContactoService {
    * Obtener estadísticas de contactos
    */
   async obtenerEstadisticas(usuarioId: string) {
-    const [totalContactos, totalLeads, totalClientes] = await Promise.all([
+    const [totalLeads, totalClientes] = await Promise.all([
       prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.CONTACTO }
+        where: { usuarioId, tipo: 'LEAD' }
       }),
       prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.LEAD }
-      }),
-      prisma.contacto.count({
-        where: { usuarioId, tipo: TipoContacto.CLIENTE }
+        where: { usuarioId, tipo: 'CLIENTE' }
       })
     ]);
 
     return {
-      totalContactos,
       totalLeads,
       totalClientes,
-      total: totalContactos + totalLeads + totalClientes
+      total: totalLeads + totalClientes
     };
   }
 
@@ -363,39 +538,125 @@ export class ContactoService {
    * Obtener contactos recientes
    */
   async obtenerContactosRecientes(usuarioId: string, limite: number = 10, tipo?: string) {
-    const where: any = { usuarioId };
-    
-    if (tipo) {
-      where.tipo = tipo;
+    if (tipo === 'LEAD') {
+      // Buscar solo leads
+      const leads = await prisma.lead.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          estado: true,
+          creadoEn: true
+        }
+      });
+
+      return leads.map((lead: any) => ({
+        id: lead.id,
+        nombre: `${lead.nombre} ${lead.apellido}`.trim(),
+        email: lead.correo,
+        telefono: lead.telefono,
+        empresa: lead.empresa,
+        tipo: 'LEAD',
+        estado: lead.estado,
+        fechaCreacion: lead.creadoEn
+      }));
     }
 
-    const contactos = await prisma.contacto.findMany({
-      where,
-      orderBy: { creadoEn: 'desc' },
-      take: limite,
-      select: {
-        id: true,
-        nombre: true,
-        apellido: true,
-        correo: true,
-        telefono: true,
-        empresa: true,
-        tipo: true,
-        estadoLead: true,
-        creadoEn: true
-      }
-    });
+    if (tipo === 'CLIENTE') {
+      // Buscar solo clientes
+      const clientes = await prisma.cliente.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          prioridad: true,
+          creadoEn: true
+        }
+      });
 
-    return contactos.map((contacto: any) => ({
-      id: contacto.id,
-      nombre: `${contacto.nombre} ${contacto.apellido}`.trim(),
-      email: contacto.correo,
-      telefono: contacto.telefono,
-      empresa: contacto.empresa,
-      tipo: contacto.tipo,
-      estado: contacto.estadoLead,
-      fechaCreacion: contacto.creadoEn
-    }));
+      return clientes.map((cliente: any) => ({
+        id: cliente.id,
+        nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
+        email: cliente.correo,
+        telefono: cliente.telefono,
+        empresa: cliente.empresa,
+        tipo: 'CLIENTE',
+        estado: cliente.prioridad,
+        fechaCreacion: cliente.creadoEn
+      }));
+    }
+
+    // Si no especifica tipo, obtener ambos
+    const [leads, clientes] = await Promise.all([
+      prisma.lead.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          estado: true,
+          creadoEn: true
+        }
+      }),
+      prisma.cliente.findMany({
+        where: { usuarioId },
+        orderBy: { creadoEn: 'desc' },
+        take: limite,
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          telefono: true,
+          empresa: true,
+          prioridad: true,
+          creadoEn: true
+        }
+      })
+    ]);
+
+    const contactos = [
+      ...leads.map((lead: any) => ({
+        id: lead.id,
+        nombre: `${lead.nombre} ${lead.apellido}`.trim(),
+        email: lead.correo,
+        telefono: lead.telefono,
+        empresa: lead.empresa,
+        tipo: 'LEAD',
+        estado: lead.estado,
+        fechaCreacion: lead.creadoEn
+      })),
+      ...clientes.map((cliente: any) => ({
+        id: cliente.id,
+        nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
+        email: cliente.correo,
+        telefono: cliente.telefono,
+        empresa: cliente.empresa,
+        tipo: 'CLIENTE',
+        estado: cliente.prioridad,
+        fechaCreacion: cliente.creadoEn
+      }))
+    ];
+
+    // Ordenar por fecha de creación y tomar solo 'limite' elementos
+    return contactos.sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime()).slice(0, limite);
   }
 
   /**
@@ -413,7 +674,7 @@ export class ContactoService {
       where: { 
         id: leadId, 
         usuarioId,
-        tipo: TipoContacto.LEAD 
+        tipo: 'LEAD'
       }
     });
 
@@ -426,7 +687,7 @@ export class ContactoService {
       where: { 
         id: clienteId, 
         usuarioId,
-        tipo: TipoContacto.CLIENTE 
+        tipo: 'CLIENTE'
       }
     });
 
@@ -616,6 +877,34 @@ export class ContactoService {
   }
 
   /**
+   * Obtener o crear la etiqueta "Fuente: Google Contacts"
+   */
+  private async obtenerOCrearEtiquetaGoogle() {
+    let etiqueta = await prisma.etiqueta.findFirst({
+      where: {
+        nombre: 'Fuente: Google Contacts'
+      }
+    });
+
+    if (!etiqueta) {
+      console.log('📝 Creando etiqueta "Fuente: Google Contacts"...');
+      etiqueta = await prisma.etiqueta.create({
+        data: {
+          nombre: 'Fuente: Google Contacts',
+          descripcion: 'Contactos importados desde Google Contacts',
+          color: '#4285F4', // Color azul de Google
+          icono: 'Mail',
+          activa: true,
+          orden: 1
+        }
+      });
+      console.log('✅ Etiqueta creada exitosamente');
+    }
+
+    return etiqueta;
+  }
+
+  /**
    * Importar contactos desde Google
    */
   async importarDesdeGoogle(usuarioId: string, accessToken: string): Promise<{
@@ -626,12 +915,21 @@ export class ContactoService {
     console.log('[Contacto Service] Iniciando importación desde Google');
     console.log('[Contacto Service] Usuario ID:', usuarioId);
     console.log('[Contacto Service] Access token longitud:', accessToken?.length || 0);
+    console.log('[Contacto Service] Access token primeros 30 chars:', accessToken?.substring(0, 30) || 'N/A');
+    
+    if (!accessToken || accessToken.trim() === '') {
+      throw new Error('Token de acceso vacío o inválido. Por favor vuelve a autorizar con Google.');
+    }
     
     let importados = 0;
     let duplicados = 0;
     let errores = 0;
 
     try {
+      // Obtener o crear la etiqueta de Google
+      const etiquetaGoogle = await this.obtenerOCrearEtiquetaGoogle();
+      console.log('🏷️ Etiqueta Google obtenida/creada:', etiquetaGoogle.id);
+
       // Obtener contactos de Google usando el access token
       console.log('[Contacto Service] Llamando a googleAuthService.getContacts...');
       const contactosGoogle = await googleAuthService.getContacts(accessToken);
@@ -655,8 +953,8 @@ export class ContactoService {
           // Si no tiene correo, usar un correo temporal basado en el nombre
           let correoFinal = correo;
           if (!correo) {
-            // Primero verificar si ya existe un contacto con el mismo nombre y apellido
-            const contactoPorNombre = await prisma.contacto.findFirst({
+            // Primero verificar si ya existe un lead con el mismo nombre y apellido
+            const leadPorNombre = await prisma.lead.findFirst({
               where: {
                 nombre: nombre.trim(),
                 apellido: apellido.trim(),
@@ -664,8 +962,23 @@ export class ContactoService {
               }
             });
 
-            if (contactoPorNombre) {
-              console.log(`🔄 Contacto duplicado (por nombre): ${nombre} ${apellido}`);
+            if (leadPorNombre) {
+              console.log(`🔄 Lead duplicado (por nombre): ${nombre} ${apellido}`);
+              duplicados++;
+              continue;
+            }
+
+            // También verificar en clientes
+            const clientePorNombre = await prisma.cliente.findFirst({
+              where: {
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
+                usuarioId
+              }
+            });
+
+            if (clientePorNombre) {
+              console.log(`🔄 Cliente duplicado (por nombre): ${nombre} ${apellido}`);
               duplicados++;
               continue;
             }
@@ -676,29 +989,56 @@ export class ContactoService {
             console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
           }
 
-          // Verificar si ya existe un contacto con ese correo (independiente del tipo)
-          const contactoExistente = await prisma.contacto.findFirst({
+          // Verificar si ya existe un lead con ese correo
+          const leadExistente = await prisma.lead.findFirst({
             where: {
               correo: correoFinal!.toLowerCase().trim(),
               usuarioId
             }
           });
 
-          if (contactoExistente) {
-            console.log(`🔄 Contacto duplicado: ${nombre} ${apellido} (${correoFinal}) - Tipo: ${contactoExistente.tipo}`);
+          if (leadExistente) {
+            console.log(`🔄 Lead duplicado: ${nombre} ${apellido} (${correoFinal})`);
             duplicados++;
             continue;
           }
 
-          // Crear el nuevo contacto
-          await this.crearContacto({
-            nombre: nombre.trim() || 'Sin nombre',
-            apellido: apellido.trim() || '',
-            correo: correoFinal!.toLowerCase().trim(),
-            telefono: telefono?.trim()
-          }, usuarioId);
+          // También verificar en clientes
+          const clienteExistente = await prisma.cliente.findFirst({
+            where: {
+              correo: correoFinal!.toLowerCase().trim(),
+              usuarioId
+            }
+          });
 
-          console.log(`✅ Importado: ${nombre} ${apellido}`);
+          if (clienteExistente) {
+            console.log(`🔄 Cliente duplicado: ${nombre} ${apellido} (${correoFinal})`);
+            duplicados++;
+            continue;
+          }
+
+          // Crear el nuevo lead
+          const nuevoLead = await prisma.lead.create({
+            data: {
+              nombre: nombre.trim() || 'Sin nombre',
+              apellido: apellido?.trim() || '',
+              correo: correoFinal!.toLowerCase().trim(),
+              estado: 'NUEVO',
+              fuente: 'Google Contacts',
+              usuarioId,
+              ...(telefono?.trim() ? { telefono: telefono.trim() } : {})
+            }
+          });
+
+          // Asignar la etiqueta "Fuente: Google Contacts"
+          await prisma.leadEtiqueta.create({
+            data: {
+              leadId: nuevoLead.id,
+              etiquetaId: etiquetaGoogle.id
+            }
+          });
+
+          console.log(`✅ Importado: ${nombre} ${apellido} (con etiqueta Google)`);
           importados++;
         } catch (error: any) {
           console.error('❌ Error al importar contacto individual:', {
@@ -720,6 +1060,90 @@ export class ContactoService {
       console.error('Error al importar contactos desde Google:', error);
       throw new Error(`No se pudieron importar los contactos: ${error.message}`);
     }
+  }
+
+  /**
+   * Agregar un lead al pipeline (crear una oportunidad)
+   */
+  async agregarAlPipeline(
+    leadId: string,
+    usuarioId: string,
+    datosOportunidad?: {
+      titulo?: string;
+      etapa?: string;
+      valor?: number;
+      probabilidad?: number;
+      proximaAccion?: string;
+      notas?: string;
+    }
+  ) {
+    console.log('[ContactoService] agregarAlPipeline called with:', { leadId, usuarioId, datosOportunidad });
+    
+    // Verificar que el lead existe
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId }
+    });
+
+    console.log('[ContactoService] lead encontrado:', lead?.id);
+
+    if (!lead) {
+      throw new Error('El lead no fue encontrado');
+    }
+
+    if (lead.usuarioId !== usuarioId) {
+      throw new Error('No tienes permiso para modificar este lead');
+    }
+
+    // Verificar si ya existe una oportunidad para este lead
+    const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
+      where: { leadId: leadId }
+    });
+
+    if (oportunidadExistente) {
+      throw new Error('Este lead ya está en el pipeline');
+    }
+
+    // Crear la oportunidad
+    const titulo = datosOportunidad?.titulo || `${lead.nombre} ${lead.apellido || ''}`.trim();
+    const etapa = datosOportunidad?.etapa || 'CONTACTO_INICIAL';
+    
+    console.log('[ContactoService] creando oportunidad con datos:', {
+      leadId: leadId,
+      titulo,
+      etapa,
+      usuarioId: usuarioId
+    });
+
+    const oportunidad = await prisma.oportunidadCliente.create({
+      data: {
+        leadId: leadId,
+        titulo,
+        etapa,
+        valor: datosOportunidad?.valor,
+        probabilidad: datosOportunidad?.probabilidad || 25,
+        proximaAccion: datosOportunidad?.proximaAccion,
+        usuarioId: usuarioId,
+        ultimaActividad: new Date(),
+        notas: datosOportunidad?.notas
+          ? `${datosOportunidad.notas}\n\nAgregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
+          : `Agregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`
+      },
+      include: {
+        lead: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            empresa: true
+          }
+        }
+      }
+    });
+
+    console.log('[ContactoService] oportunidad creada:', oportunidad?.id);
+    return oportunidad;
   }
 }
 

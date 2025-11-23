@@ -3,39 +3,45 @@
 import { useState } from "react"
 import {
   LayoutDashboard as IconoDashboard,
-  Users as IconoUsuarios,
-  Building2 as IconoEdificio,
-  Kanban as IconoKanban,
-  FileText as IconoArchivo,
-  BarChart3 as IconoGrafico,
-  UserCircle as IconoContacto,
-  Calendar as IconoCalendario,
-  Home as IconoHome,
-  MessageSquare as IconoMessage,
-  Layers as IconoLayers,
-  CreditCard as IconoCredit,
+  Users2 as IconoLeads,
+  Building2 as IconoClientes,
+  Kanban as IconoPipeline,
+  MessageSquare as IconoTestimonios,
+  Users as IconoEquipo,
+  Briefcase as IconoServicios,
+  Home as IconoProyectos,
+  Calendar as IconoActividades,
+  BarChart3 as IconoReportes,
+  Settings as IconoConfiguracion,
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
+import { LeadNotificationsListener } from "@/components/LeadNotificationsListener"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
 
 const navegacion: ElementoNavegacion[] = [
   { nombre: "Dashboard", href: "/dashboard", icono: IconoDashboard },
-  { nombre: "Contactos", href: "/dashboard/contacts", icono: IconoContacto },
-  { nombre: "Leads", href: "/dashboard/leads", icono: IconoUsuarios },
+  {
+    nombre: "Leads",
+    icono: IconoLeads,
+    children: [
+      { nombre: "Leads", href: "/dashboard/leads", icono: IconoLeads },
+      { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoPipeline },
+    ]
+  },
+  { nombre: "Clientes", href: "/dashboard/clientes", icono: IconoClientes },
   // Grupo: Panel Admin Web
   {
     nombre: 'Panel Admin Web',
-    icono: IconoEdificio,
+    icono: IconoConfiguracion,
     children: [
-      { nombre: 'Testimonios', href: '/dashboard/admin/testimonios', icono: IconoMessage },
-      { nombre: 'Equipo', href: '/dashboard/admin/team', icono: IconoUsuarios },
-      { nombre: 'Otros Servicios', href: '/dashboard/admin/otros-servicios', icono: IconoLayers },
-      { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoLayers },
+      { nombre: 'Testimonios', href: '/dashboard/admin/testimonios', icono: IconoTestimonios },
+      { nombre: 'Equipo', href: '/dashboard/admin/team', icono: IconoEquipo },
+      { nombre: 'Otros Servicios', href: '/dashboard/admin/otros-servicios', icono: IconoServicios },
+      { nombre: 'Proyectos', href: '/dashboard/projects', icono: IconoProyectos },
     ]
   },
-  { nombre: "Pipeline", href: "/dashboard/pipeline", icono: IconoKanban },
-  { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoCalendario },
-  { nombre: "Reportes", href: "/dashboard/reports", icono: IconoGrafico },
+  { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoActividades },
+  { nombre: "Reportes", href: "/dashboard/reportes", icono: IconoReportes },
 ]
 
 export default function LayoutDashboard({ children }: { children: React.ReactNode }) {
@@ -53,6 +59,9 @@ export default function LayoutDashboard({ children }: { children: React.ReactNod
         <Encabezado alClickMenu={() => setBarraLateralAbierta(true)} />
         <main className="px-4 lg:px-8 py-6">{children}</main>
       </div>
+
+      {/* Listener para notificaciones de nuevos leads */}
+      <LeadNotificationsListener />
     </div>
   )
 }

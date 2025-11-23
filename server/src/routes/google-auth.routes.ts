@@ -51,12 +51,12 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       const errorDesc = errorDescRaw 
         ? (Array.isArray(errorDescRaw) ? String(errorDescRaw[0]) : String(errorDescRaw))
         : '';
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/contacts?google_error=${errorCode}&description=${encodeURIComponent(errorDesc)}`);
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/leads?google_error=${errorCode}&description=${encodeURIComponent(errorDesc)}`);
     }
 
     if (!code) {
       console.log('❌ No se recibió código de autorización');
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/contacts?google_error=no_code`);
+      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}/dashboard/leads?google_error=no_code`);
     }
 
     // Obtener tokens de Google
@@ -64,16 +64,30 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const tokens = await googleAuthService.getTokens(code);
     console.log('✅ Tokens obtenidos exitosamente');
 
+    // Validar que tenemos access token
+    if (!tokens.access_token) {
+      console.error('❌ CRÍTICO: Access token no recibido de Google');
+      console.error('Tokens recibidos:', {
+        access_token: 'AUSENTE ❌',
+        refresh_token: tokens.refresh_token ? 'PRESENTE' : 'AUSENTE',
+        token_type: tokens.token_type,
+        scope: tokens.scope
+      });
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      return res.redirect(`${clientUrl}/dashboard/leads?google_error=no_access_token&message=${encodeURIComponent('Google no devolvió un access_token válido. Intenta autenticarte nuevamente.')}`);
+    }
+
     // Redirigir al frontend con el access token
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    const redirectUrl = `${clientUrl}/dashboard/contacts?google_token=${encodeURIComponent(tokens.access_token || '')}`;
+    const redirectUrl = `${clientUrl}/dashboard/leads?google_token=${encodeURIComponent(tokens.access_token)}`;
     console.log('🔀 Redirigiendo al frontend...');
+    console.log('Token a enviar, longitud:', tokens.access_token.length);
     res.redirect(redirectUrl);
   } catch (error: any) {
     console.error('❌ Error en callback de Google:', error.message);
     console.error('Stack:', error.stack);
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    res.redirect(`${clientUrl}/dashboard/contacts?google_error=auth_failed&message=${encodeURIComponent(error.message)}`);
+    res.redirect(`${clientUrl}/dashboard/leads?google_error=auth_failed&message=${encodeURIComponent(error.message)}`);
   }
 });
 

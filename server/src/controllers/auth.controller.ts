@@ -73,6 +73,10 @@ export class AuthController {
         respuestaError(res, error.message, 401, null, 'CREDENCIALES_INVALIDAS');
         return;
       }
+      if (error.message === 'Acceso desactivado. Por favor contacta al administrador.') {
+        respuestaError(res, error.message, 403, null, 'ACCESO_DESACTIVADO');
+        return;
+      }
       respuestaError(res, error.message || 'Error al iniciar sesión', 500);
     }
   }

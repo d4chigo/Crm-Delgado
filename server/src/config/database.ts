@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { ContactoAdapter } from './contacto-adapter';
+import { ContactoEtiquetaAdapter } from './contacto-etiqueta-adapter';
 
 // Asegurar que si el .env está en la raíz, se cargue antes de inicializar prisma
 const rootEnv = path.resolve(process.cwd(), '.env');
@@ -32,5 +34,26 @@ try {
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
 });
+
+// Agregar adaptadores para compatibilidad backwards-compatible
+// Proporciona acceso a leads y clientes como "contacto"
+(prisma as any).contacto = {
+  count: (options?: any) => ContactoAdapter.count(options),
+  findMany: (options?: any) => ContactoAdapter.findMany(options),
+  findFirst: (options?: any) => ContactoAdapter.findFirst(options || {}),
+  findUnique: (options?: any) => ContactoAdapter.findUnique(options || {}),
+  create: (options?: any) => ContactoAdapter.create(options?.data || options),
+  update: (options?: any) => ContactoAdapter.update(options),
+  delete: (options?: any) => ContactoAdapter.delete(options?.where || options),
+  groupBy: (options?: any) => ContactoAdapter.groupBy(options),
+};
+
+(prisma as any).contactoEtiqueta = {
+  create: (data?: any) => ContactoEtiquetaAdapter.create(data),
+  findMany: (options?: any) => ContactoEtiquetaAdapter.findMany(options),
+  findUnique: (options?: any) => ContactoEtiquetaAdapter.findUnique(options),
+  createMany: (options?: any) => ContactoEtiquetaAdapter.createMany(options),
+  deleteMany: (options?: any) => ContactoEtiquetaAdapter.deleteMany(options),
+};
 
 export default prisma;

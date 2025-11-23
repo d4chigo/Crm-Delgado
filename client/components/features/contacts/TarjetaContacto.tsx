@@ -58,17 +58,17 @@ export function TarjetaContacto({ contacto, estaSeleccionado, alAlternarSeleccio
 
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Mail className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate min-w-0 flex-1" title={contacto.email}>{contacto.email}</span>
+            <Mail className="w-4 h-4" />
+            <span className="truncate">{contacto.email}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Phone className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate min-w-0 flex-1">{contacto.telefono}</span>
+            <Phone className="w-4 h-4" />
+            <span>{contacto.telefono}</span>
           </div>
           {contacto.ubicacion && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate min-w-0 flex-1">{contacto.ubicacion}</span>
+              <MapPin className="w-4 h-4" />
+              <span>{contacto.ubicacion}</span>
             </div>
           )}
         </div>

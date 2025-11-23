@@ -9,36 +9,51 @@ export class CotizacionService {
   private async generarNumeroReferencia(): Promise<string> {
     const año = new Date().getFullYear();
     const mes = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    
-    // Contar cotizaciones del mes actual
-    const inicioMes = new Date(año, new Date().getMonth(), 1);
-    const finMes = new Date(año, new Date().getMonth() + 1, 0, 23, 59, 59);
-    
-    const count = await prisma.cotizacion.count({
+    const prefijo = `COT-${año}${mes}-`;
+
+    // Buscar la última cotización del mes actual
+    const ultimaCotizacion = await prisma.cotizacion.findFirst({
       where: {
-        creadoEn: {
-          gte: inicioMes,
-          lte: finMes
+        numeroReferencia: {
+          startsWith: prefijo
         }
+      },
+      orderBy: {
+        numeroReferencia: 'desc'
       }
     });
-    
-    const numero = (count + 1).toString().padStart(4, '0');
-    return `COT-${año}${mes}-${numero}`;
+
+    let numero = 1;
+
+    if (ultimaCotizacion) {
+      // Extraer el número secuencial (últimos 4 dígitos)
+      const partes = ultimaCotizacion.numeroReferencia.split('-');
+      if (partes.length === 3) {
+        const ultimoNumero = parseInt(partes[2]);
+        if (!isNaN(ultimoNumero)) {
+          numero = ultimoNumero + 1;
+        }
+      }
+    }
+
+    return `${prefijo}${numero.toString().padStart(4, '0')}`;
   }
 
   /**
    * Calcular cuota mensual usando fórmula de amortización francesa
+   * Convierte TEA (Tasa Efectiva Anual) a TEM (Tasa Efectiva Mensual)
+   * usando la fórmula: TEM = (1 + TEA)^(1/12) - 1
    */
   private calcularCuotaMensual(monto: number, tasaAnual: number, plazoMeses: number): number {
     if (tasaAnual === 0) {
       return monto / plazoMeses;
     }
-    
-    const tasaMensual = tasaAnual / 100 / 12;
-    const cuota = monto * (tasaMensual * Math.pow(1 + tasaMensual, plazoMeses)) / 
-                  (Math.pow(1 + tasaMensual, plazoMeses) - 1);
-    
+
+    // Convertir TEA a TEM usando capitalización compuesta
+    const tasaMensual = Math.pow(1 + tasaAnual / 100, 1 / 12) - 1;
+    const cuota = monto * (tasaMensual * Math.pow(1 + tasaMensual, plazoMeses)) /
+      (Math.pow(1 + tasaMensual, plazoMeses) - 1);
+
     return Math.round(cuota * 100) / 100;
   }
 
@@ -50,17 +65,18 @@ export class CotizacionService {
     const cuotaInicial = datos.cuotaInicial || 0;
     const plazoMeses = datos.plazoMeses || 1;
     const tasaInteresAnual = datos.tasaInteresAnual || 0;
-    
+
     const montoFinanciar = precioInmueble - cuotaInicial;
-    const porcentajeCuotaInicial = (cuotaInicial / precioInmueble) * 100;
-    
+    // Evitar NaN cuando precioInmueble es 0
+    const porcentajeCuotaInicial = precioInmueble > 0 ? (cuotaInicial / precioInmueble) * 100 : 0;
+
     let cuotaMensual = this.calcularCuotaMensual(montoFinanciar, tasaInteresAnual, plazoMeses);
     if (datos.montoCuotaManual && datos.montoCuotaManual > 0) {
       cuotaMensual = datos.montoCuotaManual;
     }
     const totalPagar = cuotaMensual * plazoMeses;
     const totalIntereses = totalPagar - montoFinanciar;
-    
+
     return {
       cuotaMensual: Math.round(cuotaMensual * 100) / 100,
       totalIntereses: Math.round(totalIntereses * 100) / 100,
@@ -74,29 +90,45 @@ export class CotizacionService {
    * Crear una nueva cotización
    */
   async crearCotizacion(datos: CrearCotizacionDTO): Promise<any> {
-    // Verificar que el contacto existe
-    const contacto = await prisma.contacto.findUnique({
-      where: { id: datos.contactoId }
-    });
+    try {
+      // Validar que al menos leadId o clienteId esté presente
+      if (!datos.leadId && !datos.clienteId) {
+        throw new Error('Se requiere al menos un leadId o clienteId');
+      }
 
-    if (!contacto) {
-      throw new Error('Contacto no encontrado');
-    }
+      // Verificar que el lead o cliente existe
+      const lead = datos.leadId ? await prisma.lead.findUnique({
+        where: { id: datos.leadId }
+      }) : null;
 
-    // Generar número de referencia
-    const numeroReferencia = await this.generarNumeroReferencia();
+      const cliente = datos.clienteId ? await prisma.cliente.findUnique({
+        where: { id: datos.clienteId }
+      }) : null;
 
-    // Calcular valores
-    const calculos = this.calcularValores(datos);
+      if (datos.leadId && !lead) {
+        console.error('❌ Lead no encontrado:', datos.leadId);
+        throw new Error('Lead no encontrado');
+      }
+      if (datos.clienteId && !cliente) {
+        console.error('❌ Cliente no encontrado:', datos.clienteId);
+        throw new Error('Cliente no encontrado');
+      }
+      console.log('✅ Lead/Cliente verificado');
 
-    // Crear cotización
-    const cotizacion = await prisma.cotizacion.create({
-      data: {
-        contactoId: datos.contactoId,
+      // Generar número de referencia
+      console.log('🔧 Generando número de referencia...');
+      const numeroReferencia = await this.generarNumeroReferencia();
+      console.log('✅ Número generado:', numeroReferencia);
+
+      // Calcular valores
+      console.log('🔧 Calculando valores...');
+      const calculos = this.calcularValores(datos);
+      console.log('✅ Valores calculados:', JSON.stringify(calculos));
+
+      // Crear cotización
+      const dataCotizacion: any = {
         numeroReferencia,
         nombreProyecto: datos.nombreProyecto,
-        tipoInmueble: datos.tipoInmueble,
-        descripcion: datos.descripcion,
         precioInmueble: datos.precioInmueble,
         cuotaInicial: datos.cuotaInicial,
         porcentajeCuotaInicial: calculos.porcentajeCuotaInicial,
@@ -105,35 +137,64 @@ export class CotizacionService {
         tipoCuota: datos.tipoCuota,
         tasaInteresAnual: datos.tasaInteresAnual,
         permitePostergar: datos.permitePostergar || false,
-        cuotasPostergables: datos.cuotasPostergables,
         permiteDoble: datos.permiteDoble || false,
-        cuotasDoblesAnuales: datos.cuotasDoblesAnuales,
         permiteCambioFecha: datos.permiteCambioFecha || false,
-        montoCuotaManual: datos.montoCuotaManual,
         cuotaMensualEstimada: calculos.cuotaMensual,
         totalIntereses: calculos.totalIntereses,
         totalPagar: calculos.totalPagar,
-        notas: datos.notas,
-        observaciones: datos.observaciones,
-        fechaValidez: datos.fechaValidez ? new Date(datos.fechaValidez) : undefined,
         estado: EstadoCotizacion.BORRADOR
-      },
-      include: {
-        contacto: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            correo: true,
-            telefono: true,
-            tipo: true
+      };
+
+      // Agregar IDs de lead/cliente
+      if (datos.leadId) dataCotizacion.leadId = datos.leadId;
+      if (datos.clienteId) dataCotizacion.clienteId = datos.clienteId;
+
+      // Agregar campos opcionales solo si existen
+      if (datos.tipoInmueble !== undefined && datos.tipoInmueble !== null) dataCotizacion.tipoInmueble = datos.tipoInmueble;
+      if (datos.descripcion !== undefined && datos.descripcion !== null) dataCotizacion.descripcion = datos.descripcion;
+      if (datos.cuotasPostergables !== undefined && datos.cuotasPostergables !== null) dataCotizacion.cuotasPostergables = datos.cuotasPostergables;
+      if (datos.cuotasDoblesAnuales !== undefined && datos.cuotasDoblesAnuales !== null) dataCotizacion.cuotasDoblesAnuales = datos.cuotasDoblesAnuales;
+      if (datos.montoCuotaManual !== undefined && datos.montoCuotaManual !== null) dataCotizacion.montoCuotaManual = datos.montoCuotaManual;
+      if (datos.notas !== undefined && datos.notas !== null) dataCotizacion.notas = datos.notas;
+      if (datos.observaciones !== undefined && datos.observaciones !== null) dataCotizacion.observaciones = datos.observaciones;
+      if (datos.fechaValidez !== undefined && datos.fechaValidez !== null) {
+        console.log('🔧 Procesando fechaValidez:', datos.fechaValidez);
+        dataCotizacion.fechaValidez = new Date(datos.fechaValidez);
+      }
+
+      console.log('🔧 Intentando crear en BD con data:', JSON.stringify(dataCotizacion, null, 2));
+
+      const cotizacion = await prisma.cotizacion.create({
+        data: dataCotizacion,
+        include: {
+          lead: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true
+            }
+          },
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true
+            }
           }
         }
-      }
-    });
+      });
 
-    console.log(`✅ Cotización creada: ${numeroReferencia} para ${contacto.nombre} ${contacto.apellido || ''}`);
-    return cotizacion;
+      const contactoInfo = lead || cliente;
+      console.log(`✅ Cotización creada: ${numeroReferencia} para ${contactoInfo?.nombre} ${contactoInfo?.apellido || ''}`);
+      return cotizacion;
+    } catch (error: any) {
+      console.error('❌ Error CRÍTICO en CotizacionService.crearCotizacion:', error);
+      throw error;
+    }
   }
 
   /**
@@ -153,8 +214,12 @@ export class CotizacionService {
     const skip = (pagina - 1) * limite;
     const where: any = {};
 
+    // Soporte para búsqueda por contactoId (lead o cliente)
     if (contactoId) {
-      where.contactoId = contactoId;
+      where.OR = [
+        { leadId: contactoId },
+        { clienteId: contactoId }
+      ];
     }
 
     if (estado) {
@@ -182,14 +247,22 @@ export class CotizacionService {
         take: limite,
         orderBy: { creadoEn: 'desc' },
         include: {
-          contacto: {
+          lead: {
             select: {
               id: true,
               nombre: true,
               apellido: true,
               correo: true,
-              telefono: true,
-              tipo: true
+              telefono: true
+            }
+          },
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true
             }
           }
         }
@@ -215,14 +288,22 @@ export class CotizacionService {
     const cotizacion = await prisma.cotizacion.findUnique({
       where: { id },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -252,10 +333,11 @@ export class CotizacionService {
       throw new Error('Solo se pueden editar cotizaciones en estado BORRADOR');
     }
 
+    // Construir objeto de datos sin campos undefined
+    const datosActualizados: any = {};
+
     // Si se actualizan valores financieros, recalcular
-    let datosActualizados: any = { ...datos };
-    
-    if (datos.precioInmueble || datos.cuotaInicial || datos.plazoMeses || datos.tasaInteresAnual) {
+    if (datos.precioInmueble || datos.cuotaInicial || datos.plazoMeses || datos.tasaInteresAnual || datos.montoCuotaManual) {
       const datosParaCalculo = {
         precioInmueble: datos.precioInmueble || cotizacionExistente.precioInmueble.toNumber(),
         cuotaInicial: datos.cuotaInicial || cotizacionExistente.cuotaInicial.toNumber(),
@@ -265,33 +347,54 @@ export class CotizacionService {
       };
 
       const calculos = this.calcularValores(datosParaCalculo);
-      
-      datosActualizados = {
-        ...datosActualizados,
-        porcentajeCuotaInicial: calculos.porcentajeCuotaInicial,
-        montoFinanciar: calculos.montoFinanciar,
-        cuotaMensualEstimada: calculos.cuotaMensual,
-        totalIntereses: calculos.totalIntereses,
-        totalPagar: calculos.totalPagar
-      };
+
+      datosActualizados.porcentajeCuotaInicial = calculos.porcentajeCuotaInicial;
+      datosActualizados.montoFinanciar = calculos.montoFinanciar;
+      datosActualizados.cuotaMensualEstimada = calculos.cuotaMensual;
+      datosActualizados.totalIntereses = calculos.totalIntereses;
+      datosActualizados.totalPagar = calculos.totalPagar;
     }
 
-    if (datos.fechaValidez) {
-      datosActualizados.fechaValidez = new Date(datos.fechaValidez);
-    }
+    // Agregar campos opcionales solo si existen
+    if (datos.nombreProyecto !== undefined && datos.nombreProyecto !== null) datosActualizados.nombreProyecto = datos.nombreProyecto;
+    if (datos.tipoInmueble !== undefined && datos.tipoInmueble !== null) datosActualizados.tipoInmueble = datos.tipoInmueble;
+    if (datos.descripcion !== undefined && datos.descripcion !== null) datosActualizados.descripcion = datos.descripcion;
+    if (datos.precioInmueble !== undefined && datos.precioInmueble !== null) datosActualizados.precioInmueble = datos.precioInmueble;
+    if (datos.cuotaInicial !== undefined && datos.cuotaInicial !== null) datosActualizados.cuotaInicial = datos.cuotaInicial;
+    if (datos.plazoMeses !== undefined && datos.plazoMeses !== null) datosActualizados.plazoMeses = datos.plazoMeses;
+    if (datos.tipoCuota !== undefined && datos.tipoCuota !== null) datosActualizados.tipoCuota = datos.tipoCuota;
+    if (datos.tasaInteresAnual !== undefined && datos.tasaInteresAnual !== null) datosActualizados.tasaInteresAnual = datos.tasaInteresAnual;
+    if (datos.permitePostergar !== undefined && datos.permitePostergar !== null) datosActualizados.permitePostergar = datos.permitePostergar;
+    if (datos.cuotasPostergables !== undefined && datos.cuotasPostergables !== null) datosActualizados.cuotasPostergables = datos.cuotasPostergables;
+    if (datos.permiteDoble !== undefined && datos.permiteDoble !== null) datosActualizados.permiteDoble = datos.permiteDoble;
+    if (datos.cuotasDoblesAnuales !== undefined && datos.cuotasDoblesAnuales !== null) datosActualizados.cuotasDoblesAnuales = datos.cuotasDoblesAnuales;
+    if (datos.permiteCambioFecha !== undefined && datos.permiteCambioFecha !== null) datosActualizados.permiteCambioFecha = datos.permiteCambioFecha;
+    if (datos.montoCuotaManual !== undefined && datos.montoCuotaManual !== null) datosActualizados.montoCuotaManual = datos.montoCuotaManual;
+    if (datos.notas !== undefined && datos.notas !== null) datosActualizados.notas = datos.notas;
+    if (datos.observaciones !== undefined && datos.observaciones !== null) datosActualizados.observaciones = datos.observaciones;
+    if (datos.fechaValidez !== undefined && datos.fechaValidez !== null) datosActualizados.fechaValidez = new Date(datos.fechaValidez);
+    if (datos.estado !== undefined && datos.estado !== null) datosActualizados.estado = datos.estado;
 
     const cotizacionActualizada = await prisma.cotizacion.update({
       where: { id },
       data: datosActualizados,
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -317,14 +420,22 @@ export class CotizacionService {
       where: { id },
       data: { estado: nuevoEstado },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }
@@ -355,21 +466,38 @@ export class CotizacionService {
   }
 
   /**
-   * Obtener cotizaciones de un contacto específico
+   * Obtener cotizaciones de un contacto específico (lead o cliente)
    */
   async obtenerCotizacionesPorContacto(contactoId: string) {
+    // Verificar si el contacto es un lead o cliente
+    const lead = await prisma.lead.findUnique({ where: { id: contactoId } });
+    const cliente = !lead ? await prisma.cliente.findUnique({ where: { id: contactoId } }) : null;
+
+    if (!lead && !cliente) {
+      return [];
+    }
+
+    // Obtener cotizaciones para lead o cliente
     const cotizaciones = await prisma.cotizacion.findMany({
-      where: { contactoId },
+      where: lead ? { leadId: contactoId } : { clienteId: contactoId },
       orderBy: { creadoEn: 'desc' },
       include: {
-        contacto: {
+        lead: {
           select: {
             id: true,
             nombre: true,
             apellido: true,
             correo: true,
-            telefono: true,
-            tipo: true
+            telefono: true
+          }
+        },
+        cliente: {
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true
           }
         }
       }

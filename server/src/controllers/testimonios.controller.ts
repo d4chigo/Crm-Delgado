@@ -5,13 +5,34 @@ import prisma from '@/config/database'
 const createSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   email: z.string().email('Email inválido'),
-  calificacion: z.number().int().min(1).max(5),
+  calificacion: z.preprocess(
+    (val) => (typeof val === 'string' ? parseInt(val) : val),
+    z.number().int().min(1, 'La calificación debe ser al menos 1').max(5, 'La calificación no puede exceder 5')
+  ),
   testimonio: z.string().min(10, 'El testimonio debe tener al menos 10 caracteres'),
-  foto: z.union([z.string().url(), z.null()]).optional().default(null),
+  // Foto: aceptar URL válida, null, o string vacío (que se convierte a null)
+  foto: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.union([z.string().url(), z.null()]).optional().default(null)
+  ),
   estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional().default('PENDIENTE'),
 })
 
-const updateSchema = createSchema.partial()
+// Schema específico para actualización - más flexible
+const updateSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es requerido').optional(),
+  email: z.string().email('Email inválido').optional(),
+  calificacion: z.preprocess(
+    (val) => (typeof val === 'string' ? parseInt(val) : val),
+    z.number().int().min(1, 'La calificación debe ser al menos 1').max(5, 'La calificación no puede exceder 5').optional()
+  ),
+  testimonio: z.string().min(10, 'El testimonio debe tener al menos 10 caracteres').optional(),
+  foto: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.union([z.string().url(), z.null()]).optional()
+  ),
+  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional(),
+})
 
 export const testimoniosController = {
   // Obtener todos los testimonios (admin)
@@ -94,9 +115,16 @@ export const testimoniosController = {
   // Crear testimonio (admin)
   async create(req: Request, res: Response) {
     try {
+      console.log('Creating testimonio with data:', JSON.stringify(req.body, null, 2))
       const parsed = createSchema.safeParse(req.body)
       if (!parsed.success) {
-        return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues })
+        console.log('Validation errors:', parsed.error.issues)
+        const errorMessages = parsed.error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        return res.status(400).json({ 
+          error: 'Datos inválidos',
+          message: `Errores de validación: ${errorMessages}`,
+          details: parsed.error.issues 
+        })
       }
 
       const testimonio = await prisma.testimonio.create({
@@ -112,9 +140,13 @@ export const testimoniosController = {
       })
 
       res.status(201).json(testimonio)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al crear testimonio:', error)
-      res.status(500).json({ error: 'Error al crear testimonio' })
+      res.status(500).json({ 
+        error: 'Error al crear testimonio',
+        message: error?.message || 'Error desconocido',
+        details: error?.toString() || 'Sin detalles'
+      })
     }
   },
 
@@ -126,22 +158,42 @@ export const testimoniosController = {
         return res.status(400).json({ error: 'ID inválido' })
       }
 
+      console.log('Body recibido para actualizar:', JSON.stringify(req.body, null, 2))
+
       const parsed = updateSchema.safeParse(req.body)
       if (!parsed.success) {
-        return res.status(400).json({ error: 'Datos inválidos', details: parsed.error.issues })
+        console.log('Errores de validación:', parsed.error.issues)
+        const errorMessages = parsed.error.issues.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        return res.status(400).json({ 
+          error: 'Datos inválidos',
+          message: `Errores de validación: ${errorMessages}`,
+          details: parsed.error.issues 
+        })
       }
 
       const updateData: any = {}
-      if (parsed.data.nombre) updateData.nombre = parsed.data.nombre
-      if (parsed.data.email) updateData.correo = parsed.data.email
-      if (parsed.data.calificacion) updateData.calificacion = parsed.data.calificacion
-      if (parsed.data.testimonio) updateData.testimonio = parsed.data.testimonio
+      
+      // Solo actualizar campos que fueron enviados y validados
+      if (parsed.data.nombre !== undefined) updateData.nombre = parsed.data.nombre
+      if (parsed.data.email !== undefined) updateData.correo = parsed.data.email
+      if (parsed.data.calificacion !== undefined) updateData.calificacion = parsed.data.calificacion
+      if (parsed.data.testimonio !== undefined) updateData.testimonio = parsed.data.testimonio
       if (parsed.data.foto !== undefined) updateData.foto = parsed.data.foto
-      if (parsed.data.estado) {
+      if (parsed.data.estado !== undefined) {
         updateData.estado = parsed.data.estado
         if (parsed.data.estado === 'APROBADO') {
           updateData.aprobadoEn = new Date()
         }
+      }
+
+      console.log('Datos a actualizar en BD:', JSON.stringify(updateData, null, 2))
+
+      // Verificar que existe el testimonio
+      const existingTestimonio = await prisma.testimonio.findUnique({
+        where: { id }
+      })
+      if (!existingTestimonio) {
+        return res.status(404).json({ error: 'Testimonio no encontrado' })
       }
 
       const testimonio = await prisma.testimonio.update({
@@ -150,9 +202,14 @@ export const testimoniosController = {
       })
 
       res.json(testimonio)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar testimonio:', error)
-      res.status(500).json({ error: 'Error al actualizar testimonio' })
+      const errorMessage = error?.message || 'Error al actualizar testimonio'
+      res.status(500).json({ 
+        error: 'Error al actualizar testimonio',
+        message: errorMessage,
+        details: error?.toString() || 'Error desconocido'
+      })
     }
   },
 

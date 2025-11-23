@@ -7,6 +7,14 @@ import {
   actualizarContactoSchema,
   filtrosContactoSchema
 } from '@/validators/contacto.validator';
+import {
+  crearAccesoWeb,
+  resetearPasswordCliente,
+  verificarAccesoWeb,
+  eliminarAccesoWeb,
+  toggleAccesoWeb,
+  obtenerInfoAccesoWeb,
+} from '@/controllers/clienteWebController';
 
 const router = Router();
 
@@ -32,12 +40,6 @@ router.get(
   contactoController.obtenerContactosRecientes.bind(contactoController)
 );
 
-// GET /api/contactos/:id - Obtener un contacto
-router.get(
-  '/:id',
-  contactoController.obtenerContactoPorId.bind(contactoController)
-);
-
 // POST /api/contactos - Crear contacto
 router.post(
   '/',
@@ -51,29 +53,36 @@ router.post(
   contactoController.importarDesdeGoogle.bind(contactoController)
 );
 
-// PUT /api/contactos/:id - Actualizar contacto
-router.put(
-  '/:id',
-  validar(actualizarContactoSchema),
-  contactoController.actualizarContacto.bind(contactoController)
+// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
+router.post(
+  '/convertir-leads/masivo',
+  contactoController.convertirVariosALeads.bind(contactoController)
 );
 
-// DELETE /api/contactos/:id - Eliminar contacto
-router.delete(
-  '/:id',
-  contactoController.eliminarContacto.bind(contactoController)
+// ==================== RUTAS ESPECÍFICAS CON :id ==================
+// DEBEN IR ANTES DE LAS RUTAS GENÉRICAS /:id
+
+// DEBUG: Endpoint de prueba
+router.get(
+  '/debug/test',
+  (req: any, res: any) => {
+    res.json({
+      usuario: req.usuario,
+      headers: req.headers
+    });
+  }
+);
+
+// POST /api/contactos/:id/agregar-pipeline - Agregar lead al pipeline
+router.post(
+  '/:id/agregar-pipeline',
+  contactoController.agregarAlPipeline.bind(contactoController)
 );
 
 // POST /api/contactos/:id/convertir-lead - Convertir a lead
 router.post(
   '/:id/convertir-lead',
   contactoController.convertirALead.bind(contactoController)
-);
-
-// POST /api/contactos/convertir-leads/masivo - Convertir varios a leads
-router.post(
-  '/convertir-leads/masivo',
-  contactoController.convertirVariosALeads.bind(contactoController)
 );
 
 // POST /api/contactos/:id/convertir-cliente - Convertir lead a cliente
@@ -104,6 +113,65 @@ router.put(
 router.delete(
   '/:id/clientes/:clienteId',
   contactoController.desasociarCliente.bind(contactoController)
+);
+
+// ==================== RUTAS DE ACCESO WEB ==================
+// Crear acceso web para leads o clientes
+router.post(
+  '/:id/crear-acceso-web',
+  crearAccesoWeb
+);
+
+// Resetear contraseña de acceso web
+router.post(
+  '/:id/resetear-password',
+  resetearPasswordCliente
+);
+
+// Obtener información del acceso web
+router.get(
+  '/:id/acceso-web/info',
+  obtenerInfoAccesoWeb
+);
+
+// Activar/desactivar acceso web
+router.patch(
+  '/:id/acceso-web/estado',
+  toggleAccesoWeb
+);
+
+// Verificar si tiene acceso web
+router.get(
+  '/:id/acceso-web',
+  verificarAccesoWeb
+);
+
+// Eliminar acceso web
+router.delete(
+  '/:id/acceso-web',
+  eliminarAccesoWeb
+);
+
+// ==================== RUTAS GENÉRICAS /:id ==================
+// Ir al final para no interferir con rutas específicas
+
+// GET /api/contactos/:id - Obtener un contacto
+router.get(
+  '/:id',
+  contactoController.obtenerContactoPorId.bind(contactoController)
+);
+
+// PUT /api/contactos/:id - Actualizar contacto
+router.put(
+  '/:id',
+  validar(actualizarContactoSchema),
+  contactoController.actualizarContacto.bind(contactoController)
+);
+
+// DELETE /api/contactos/:id - Eliminar contacto
+router.delete(
+  '/:id',
+  contactoController.eliminarContacto.bind(contactoController)
 );
 
 export default router;

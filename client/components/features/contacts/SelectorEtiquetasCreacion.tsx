@@ -3,17 +3,16 @@
 import { useState, useEffect } from 'react';
 import { Etiqueta } from '@/types/etiqueta.types';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Loader2, Tag } from 'lucide-react';
 
 interface SelectorEtiquetasCreacionProps {
-  etiquetasSeleccionadas: string[]; // IDs de etiquetas seleccionadas
+  etiquetasSeleccionadas: string[]; // IDs de etiquetas seleccionadas (solo una)
   onCambio: (etiquetasIds: string[]) => void; // Callback cuando cambian las selecciones
 }
 
 /**
- * Componente para seleccionar etiquetas al crear un contacto
+ * Componente para seleccionar una única etiqueta al crear un contacto
  * No guarda automáticamente, solo notifica los cambios al componente padre
  */
 export function SelectorEtiquetasCreacion({
@@ -22,10 +21,15 @@ export function SelectorEtiquetasCreacion({
 }: SelectorEtiquetasCreacionProps) {
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [etiquetaSeleccionada, setEtiquetaSeleccionada] = useState<string>(etiquetasSeleccionadas[0] || '');
 
   useEffect(() => {
     cargarEtiquetas();
   }, []);
+
+  useEffect(() => {
+    setEtiquetaSeleccionada(etiquetasSeleccionadas[0] || '');
+  }, [etiquetasSeleccionadas]);
 
   const cargarEtiquetas = async () => {
     try {
@@ -52,11 +56,10 @@ export function SelectorEtiquetasCreacion({
   };
 
   const toggleEtiqueta = (etiquetaId: string) => {
-    const nuevasEtiquetas = etiquetasSeleccionadas.includes(etiquetaId)
-      ? etiquetasSeleccionadas.filter(id => id !== etiquetaId)
-      : [...etiquetasSeleccionadas, etiquetaId];
-    
-    onCambio(nuevasEtiquetas);
+    // Si la etiqueta ya está seleccionada, deseleccionar
+    const nuevaEtiqueta = etiquetaSeleccionada === etiquetaId ? '' : etiquetaId;
+    setEtiquetaSeleccionada(nuevaEtiqueta);
+    onCambio(nuevaEtiqueta ? [nuevaEtiqueta] : []);
   };
 
   if (cargando) {
@@ -83,15 +86,15 @@ export function SelectorEtiquetasCreacion({
       <div className="flex items-center gap-2">
         <Tag className="h-3.5 w-3.5 text-[#FCBA00]" />
         <Label className="text-sm font-medium text-gray-700">
-          Etiquetas (Opcional)
+          Etiqueta (Opcional)
         </Label>
       </div>
 
-      {/* Etiquetas seleccionadas (badges compactos) */}
-      {etiquetasSeleccionadas.length > 0 && (
+      {/* Etiqueta seleccionada (badge compacto) */}
+      {etiquetaSeleccionada && (
         <div className="flex flex-wrap gap-1.5">
-          {etiquetasSeleccionadas.map(etiquetaId => {
-            const etiqueta = etiquetasDisponibles.find(e => e.id === etiquetaId);
+          {(() => {
+            const etiqueta = etiquetasDisponibles.find(e => e.id === etiquetaSeleccionada);
             if (!etiqueta) return null;
             
             return (
@@ -105,21 +108,44 @@ export function SelectorEtiquetasCreacion({
                 {etiqueta.nombre}
               </Badge>
             );
-          })}
+          })()}
         </div>
       )}
 
-      {/* Lista de checkboxes compacta */}
-      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+      {/* Lista de radio buttons compacta */}
+      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+        {/* Opción para sin etiqueta */}
+        <div className="flex items-center space-x-2 text-sm">
+          <input
+            type="radio"
+            id="etiqueta-ninguna"
+            name="etiqueta"
+            value=""
+            checked={etiquetaSeleccionada === ''}
+            onChange={() => toggleEtiqueta('')}
+            className="h-4 w-4"
+          />
+          <Label
+            htmlFor="etiqueta-ninguna"
+            className="cursor-pointer text-sm leading-none text-muted-foreground"
+          >
+            Sin etiqueta
+          </Label>
+        </div>
+
+        {/* Opciones de etiquetas */}
         {etiquetasDisponibles.map((etiqueta) => (
           <div
             key={etiqueta.id}
             className="flex items-center space-x-2 text-sm"
           >
-            <Checkbox
+            <input
+              type="radio"
               id={`etiqueta-${etiqueta.id}`}
-              checked={etiquetasSeleccionadas.includes(etiqueta.id)}
-              onCheckedChange={() => toggleEtiqueta(etiqueta.id)}
+              name="etiqueta"
+              value={etiqueta.id}
+              checked={etiquetaSeleccionada === etiqueta.id}
+              onChange={() => toggleEtiqueta(etiqueta.id)}
               className="h-4 w-4"
             />
             <Label

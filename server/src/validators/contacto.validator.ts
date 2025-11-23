@@ -4,6 +4,48 @@ const baseSexoEnum = z.enum(['MASCULINO', 'FEMENINO']);
 const soloLetrasRegexp = new RegExp("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$");
 const soloDigitosRegexp = new RegExp("^\\d+$");
 
+// Validar email de forma más robusta - acepta caracteres Unicode
+const emailRegexp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Email opcional que acepta strings vacíos
+const emailOpcional = z
+  .union([
+    z.string().trim().min(1).refine(
+      (val) => emailRegexp.test(val),
+      'Correo electrónico inválido'
+    ),
+    z.string().trim().length(0) // string vacío
+  ])
+  .optional()
+  .nullable()
+  .transform((val) => val === null || val === '' ? '' : val);
+
+// Teléfono opcional que acepta strings vacíos
+const telefonoOpcional = z
+  .union([
+    z.string().trim().min(1).refine(
+      (val) => soloDigitosRegexp.test(val),
+      'El teléfono solo debe contener dígitos'
+    ),
+    z.string().trim().length(0) // string vacío
+  ])
+  .optional()
+  .nullable()
+  .transform((val) => val === null || val === '' ? '' : val);
+
+// DNI opcional que acepta strings vacíos
+const dniOpcional = z
+  .union([
+    z.string().trim().min(1).refine(
+      (val) => soloDigitosRegexp.test(val),
+      'El DNI solo debe contener dígitos'
+    ),
+    z.string().trim().length(0) // string vacío
+  ])
+  .optional()
+  .nullable()
+  .transform((val) => val === null || val === '' ? '' : val);
+
 export const crearContactoSchema = z.object({
   body: z.object({
     nombre: z
@@ -17,66 +59,49 @@ export const crearContactoSchema = z.object({
       .max(100, 'El apellido no puede exceder 100 caracteres')
       .regex(soloLetrasRegexp, 'El apellido solo debe contener letras y espacios')
       .optional(),
-    correo: z
-      .string()
-      .email('Correo electrónico inválido')
-      .toLowerCase()
-      .optional(),
-    telefono: z
-      .string()
-      .regex(soloDigitosRegexp, 'El teléfono solo debe contener dígitos')
-      .optional(),
+    correo: emailOpcional,
+    telefono: telefonoOpcional,
     direccion: z
       .string()
+      .trim()
       .max(200, 'La dirección no puede exceder 200 caracteres')
       .optional(),
     ciudad: z
       .string()
+      .trim()
       .max(100, 'La ciudad no puede exceder 100 caracteres')
       .optional(),
-    dni: z
-      .string()
-      .max(20, 'El DNI no puede exceder 20 caracteres')
-      .regex(soloDigitosRegexp, 'El DNI solo debe contener dígitos')
-      .optional(),
+    dni: dniOpcional,
     sexo: baseSexoEnum.optional(),
     fechaNacimiento: z
       .string()
       .datetime('Fecha de nacimiento inválida')
       .optional()
-      .nullable()
-      .or(z.literal(''))
-      .transform((val: any) => val === '' ? undefined : val),
+      .or(z.literal('')),
     tipo: z.enum(['CONTACTO', 'LEAD', 'CLIENTE']).optional(),
     
     // Información profesional
-    empresa: z.string().max(200).optional(),
-    cargo: z.string().max(100).optional(),
+    empresa: z.string().trim().max(200).optional(),
+    cargo: z.string().trim().max(100).optional(),
     
     // Información comercial
     presupuesto: z.number().positive().optional(),
     estadoLead: z.enum(['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA']).optional(),
     prioridad: z.enum(['BAJA', 'MEDIA', 'ALTA', 'URGENTE']).optional(),
-    fuente: z.string().max(100).optional(),
+    fuente: z.string().trim().max(100).optional(),
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z
-      .string()
-      .datetime()
-      .optional()
-      .nullable()
-      .or(z.literal(''))
-      .transform((val: any) => val === '' ? undefined : val),
+    fechaSeguimiento: z.string().datetime().optional().or(z.literal('')),
     
     // Notas
-    notas: z.string().optional(),
-    intereses: z.string().optional(),
+    notas: z.string().trim().optional(),
+    intereses: z.string().trim().optional(),
     
     // Ubicación
-    departamento: z.string().max(100).optional(),
-    provincia: z.string().max(100).optional(),
-    distrito: z.string().max(100).optional(),
+    departamento: z.string().trim().max(100).optional(),
+    provincia: z.string().trim().max(100).optional(),
+    distrito: z.string().trim().max(100).optional(),
   })
 });
 
@@ -94,68 +119,51 @@ export const actualizarContactoSchema = z.object({
       .max(100)
       .regex(soloLetrasRegexp, 'El apellido solo debe contener letras y espacios')
       .optional(),
-    correo: z
-      .string()
-      .email('Correo electrónico inválido')
-      .toLowerCase()
-      .optional(),
-    telefono: z
-      .string()
-      .regex(soloDigitosRegexp, 'El teléfono solo debe contener dígitos')
-      .optional(),
+    correo: emailOpcional,
+    telefono: telefonoOpcional,
     direccion: z
       .string()
+      .trim()
       .max(200)
       .optional(),
     ciudad: z
       .string()
+      .trim()
       .max(100)
       .optional(),
-    dni: z
-      .string()
-      .max(20)
-      .regex(soloDigitosRegexp, 'El DNI solo debe contener dígitos')
-      .optional(),
+    dni: dniOpcional,
     sexo: baseSexoEnum.optional(),
     fechaNacimiento: z
       .string()
       .datetime()
       .optional()
-      .nullable()
-      .or(z.literal(''))
-      .transform((val: any) => val === '' ? undefined : val),
+      .or(z.literal('')),
     tipo: z
       .enum(['CONTACTO', 'LEAD', 'CLIENTE'])
       .optional(),
     
     // Información profesional
-    empresa: z.string().max(200).optional(),
-    cargo: z.string().max(100).optional(),
+    empresa: z.string().trim().max(200).optional(),
+    cargo: z.string().trim().max(100).optional(),
     
     // Información comercial
     presupuesto: z.number().positive().optional(),
     estadoLead: z.enum(['NUEVO', 'CONTACTADO', 'CALIFICADO', 'NEGOCIACION', 'PROPUESTA', 'GANADO', 'PERDIDO', 'EN_ESPERA']).optional(),
     prioridad: z.enum(['BAJA', 'MEDIA', 'ALTA', 'URGENTE']).optional(),
-    fuente: z.string().max(100).optional(),
+    fuente: z.string().trim().max(100).optional(),
     probabilidad: z.number().int().min(0).max(100).optional(),
     
     // Fechas
-    fechaSeguimiento: z
-      .string()
-      .datetime()
-      .optional()
-      .nullable()
-      .or(z.literal(''))
-      .transform((val: any) => val === '' ? undefined : val),
+    fechaSeguimiento: z.string().datetime().optional().or(z.literal('')),
     
     // Notas
-    notas: z.string().optional(),
-    intereses: z.string().optional(),
+    notas: z.string().trim().optional(),
+    intereses: z.string().trim().optional(),
     
     // Ubicación
-    departamento: z.string().max(100).optional(),
-    provincia: z.string().max(100).optional(),
-    distrito: z.string().max(100).optional(),
+    departamento: z.string().trim().max(100).optional(),
+    provincia: z.string().trim().max(100).optional(),
+    distrito: z.string().trim().max(100).optional(),
   })
 });
 

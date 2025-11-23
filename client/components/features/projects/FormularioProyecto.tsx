@@ -53,8 +53,8 @@ export function FormularioProyecto({
   valorInicial,
   estaCargando = false
 }: FormularioProyectoProps) {
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>(
-    valorInicial?.etiquetaIds || []
+  const [etiquetaSeleccionada, setEtiquetaSeleccionada] = useState<string>(
+    valorInicial?.etiquetaIds?.[0] || ''
   )
 
   const form = useForm<DatosFormularioProyecto>({
@@ -74,20 +74,15 @@ export function FormularioProyecto({
   const handleSubmit = async (datos: DatosFormularioProyecto) => {
     const datosCompletos = {
       ...datos,
-      etiquetaIds: etiquetasSeleccionadas,
+      etiquetaIds: etiquetaSeleccionada ? [etiquetaSeleccionada] : [],
       precio: datos.precio ? Number(datos.precio) : undefined
     }
     await onSubmit(datosCompletos)
   }
 
   const toggleEtiqueta = (etiquetaId: string) => {
-    setEtiquetasSeleccionadas(prev => {
-      if (prev.includes(etiquetaId)) {
-        return prev.filter(id => id !== etiquetaId)
-      } else {
-        return [...prev, etiquetaId]
-      }
-    })
+    // Si la etiqueta ya está seleccionada, deseleccionar
+    setEtiquetaSeleccionada(etiquetaSeleccionada === etiquetaId ? '' : etiquetaId)
   }
 
   return (
@@ -248,14 +243,38 @@ export function FormularioProyecto({
 
         {/* Etiquetas */}
         <div className="space-y-3">
-          <Label>Etiquetas</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Label>Etiqueta (Opcional)</Label>
+          <div className="space-y-2">
+            {/* Opción sin etiqueta */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="etiqueta-ninguna"
+                name="etiqueta"
+                value=""
+                checked={etiquetaSeleccionada === ''}
+                onChange={() => setEtiquetaSeleccionada('')}
+                className="h-4 w-4"
+              />
+              <label
+                htmlFor="etiqueta-ninguna"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-muted-foreground"
+              >
+                Sin etiqueta
+              </label>
+            </div>
+
+            {/* Opciones de etiquetas */}
             {etiquetas.map((etiqueta) => (
               <div key={etiqueta.id} className="flex items-center space-x-2">
-                <Checkbox
+                <input
+                  type="radio"
                   id={`etiqueta-${etiqueta.id}`}
-                  checked={etiquetasSeleccionadas.includes(etiqueta.id)}
-                  onCheckedChange={() => toggleEtiqueta(etiqueta.id)}
+                  name="etiqueta"
+                  value={etiqueta.id}
+                  checked={etiquetaSeleccionada === etiqueta.id}
+                  onChange={() => setEtiquetaSeleccionada(etiqueta.id)}
+                  className="h-4 w-4"
                 />
                 <label
                   htmlFor={`etiqueta-${etiqueta.id}`}

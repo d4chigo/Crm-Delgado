@@ -78,8 +78,7 @@ export const proyectoService = {
                 nombre: true,
                 apellido: true,
                 correo: true,
-                telefono: true,
-                tipo: true
+                telefono: true
               }
             }
           }
@@ -119,7 +118,6 @@ export const proyectoService = {
                 apellido: true,
                 correo: true,
                 telefono: true,
-                tipo: true,
                 dni: true
               }
             }
@@ -245,16 +243,21 @@ export const proyectoService = {
    * Asociar un cliente a un proyecto
    */
   async asociarCliente(proyectoId: string, datos: AsociarClienteDto) {
-    // Verificar que el contacto sea de tipo CLIENTE
-    const cliente = await prisma.contacto.findFirst({
+    // Verificar que el contacto exista (puede ser CLIENTE o LEAD)
+    const cliente = await prisma.cliente.findUnique({
       where: {
-        id: datos.clienteId,
-        tipo: 'CLIENTE'
+        id: datos.clienteId
       }
     })
 
-    if (!cliente) {
-      throw new Error('El contacto debe ser de tipo CLIENTE')
+    const lead = !cliente ? await prisma.lead.findUnique({
+      where: {
+        id: datos.clienteId
+      }
+    }) : null
+
+    if (!cliente && !lead) {
+      throw new Error('El contacto no existe')
     }
 
     // Verificar si ya está asociado

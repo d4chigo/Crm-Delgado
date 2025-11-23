@@ -98,11 +98,11 @@ const TestimoniosPage: React.FC = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
+    const { name, value } = e.target;
     
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value) : value
+      [name]: name === 'calificacion' ? parseInt(value) : value
     }));
   };
 
@@ -117,23 +117,58 @@ const TestimoniosPage: React.FC = () => {
       const token = getToken();
       if (!token) return;
 
+      // Preparar datos: convertir foto vacía a null
+      const dataToSend = {
+        ...formData,
+        foto: formData.foto?.trim() ? formData.foto : null,
+      };
+
+      console.log('Enviando datos:', dataToSend);
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
-      if (!res.ok) throw new Error('Error al guardar el testimonio');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Error response:', errorData);
+        
+        // Intentar obtener el mensaje de error más descriptivo
+        let errorMessage = errorData.message || errorData.error || 'Error al guardar el testimonio';
+        
+        // Si hay detalles de validación, agregarlos
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const details = errorData.details.map((d: any) => `${d.path?.join('.') || 'campo'}: ${d.message}`).join(', ');
+          errorMessage = `${errorMessage}: ${details}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      const responseData = await res.json();
+      console.log('Respuesta exitosa:', responseData);
       
       toast.success(`Testimonio ${currentTestimonio ? 'actualizado' : 'creado'} correctamente`);
       setShowModal(false);
       cargarTestimonios();
     } catch (error) {
       console.error('Error al guardar testimonio:', error);
-      toast.error('Error al guardar el testimonio');
+      let errorMessage = 'Error al guardar el testimonio';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const err = error as any;
+        errorMessage = err.error || err.message || JSON.stringify(error);
+      }
+      
+      console.log('Error message final:', errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -298,33 +333,46 @@ const TestimoniosPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-1 items-center">
                         <button
                           onClick={() => handleEdit(testimonio)}
-                          className="text-[#303030] hover:text-[#FCBA00] transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-[#FCBA00] hover:bg-yellow-50 rounded transition-colors"
+                          title="Editar testimonio"
                         >
-                          Editar
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
                         </button>
                         <button
                           onClick={() => handleDelete(testimonio.id)}
-                          className="text-red-600 hover:text-red-800 transition-colors"
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Eliminar testimonio"
                         >
-                          Eliminar
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
                         </button>
+                        <div className="w-px h-5 bg-gray-200"></div>
                         {testimonio.estado !== 'APROBADO' && (
                           <button
                             onClick={() => cambiarEstado(testimonio.id, 'APROBADO')}
-                            className="text-green-600 hover:text-green-800 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                            title="Aprobar testimonio"
                           >
-                            Aprobar
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           </button>
                         )}
                         {testimonio.estado !== 'RECHAZADO' && (
                           <button
                             onClick={() => cambiarEstado(testimonio.id, 'RECHAZADO')}
-                            className="text-red-600 hover:text-red-800 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Rechazar testimonio"
                           >
-                            Rechazar
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
                           </button>
                         )}
                       </div>
@@ -430,12 +478,12 @@ const TestimoniosPage: React.FC = () => {
                   </label>
                   <select
                     name="calificacion"
-                    value={formData.calificacion}
+                    value={String(formData.calificacion)}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {[1, 2, 3, 4, 5].map((num) => (
-                      <option key={num} value={num}>
+                      <option key={num} value={String(num)}>
                         {num} {num === 1 ? 'estrella' : 'estrellas'}
                       </option>
                     ))}
@@ -444,16 +492,49 @@ const TestimoniosPage: React.FC = () => {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Testimonio *
+                    Testimonio * 
+                    <span className="text-xs text-gray-500 font-normal ml-2">
+                      (Mínimo 10 caracteres)
+                    </span>
                   </label>
                   <textarea
                     name="testimonio"
                     value={formData.testimonio}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 ${
+                      formData.testimonio.length < 10 && formData.testimonio.length > 0
+                        ? 'border-orange-300 focus:ring-orange-500'
+                        : formData.testimonio.length >= 10
+                        ? 'border-green-300 focus:ring-green-500'
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                     required
                   />
+                  <div className="flex justify-between items-start mt-2">
+                    <p className={`text-xs font-medium ${
+                      formData.testimonio.length < 10 && formData.testimonio.length > 0
+                        ? 'text-orange-600'
+                        : formData.testimonio.length >= 10
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }`}>
+                      {formData.testimonio.length < 10 && formData.testimonio.length > 0 ? (
+                        <>
+                          ⚠️ Faltan {10 - formData.testimonio.length} caracteres
+                        </>
+                      ) : formData.testimonio.length >= 10 ? (
+                        <>
+                          ✓ Cumple el mínimo de caracteres
+                        </>
+                      ) : (
+                        'Escribe al menos 10 caracteres'
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formData.testimonio.length}/10 caracteres
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -497,7 +578,13 @@ const TestimoniosPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#303030] bg-[#FCBA00] hover:bg-[#e6a800] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FCBA00] transition-colors"
+                  disabled={formData.testimonio.length < 10}
+                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium transition-colors ${
+                    formData.testimonio.length < 10
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'text-[#303030] bg-[#FCBA00] hover:bg-[#e6a800] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FCBA00]'
+                  }`}
+                  title={formData.testimonio.length < 10 ? `Faltan ${10 - formData.testimonio.length} caracteres` : ''}
                 >
                   {currentTestimonio ? 'Actualizar' : 'Crear'}
                 </button>

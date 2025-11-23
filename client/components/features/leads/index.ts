@@ -5,4 +5,7 @@ export { DialogoAsociarCliente } from './DialogoAsociarCliente';
 export { ClientesAsociados } from './ClientesAsociados';
 export { LeadCard } from './LeadCard';
 export { ClientCard } from './ClientCard';
+export { DialogoCrearLead } from './DialogoCrearLead';
+export { DialogoConfirmarEliminar } from './DialogoConfirmarEliminar';
+export { DialogoCambiarEstado } from './DialogoCambiarEstado';
 

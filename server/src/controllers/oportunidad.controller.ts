@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import oportunidadService from '@/services/oportunidad.service';
 import { respuestaExito, respuestaError } from '@/utils/respuesta.util';
 import { CrearOportunidadDTO, ActualizarOportunidadDTO, FiltrosOportunidad } from '@/services/oportunidad.service';
-import { EtapaPipeline } from '@prisma/client';
 
 export class OportunidadController {
   /**
@@ -49,7 +48,7 @@ export class OportunidadController {
 
       const filtros: FiltrosOportunidad = {
         clienteId: req.query.clienteId as string,
-        etapa: req.query.etapa as EtapaPipeline,
+        etapa: req.query.etapa as string,
         busqueda: req.query.busqueda as string,
         pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
         limite: req.query.limite ? Number(req.query.limite) : undefined
@@ -168,14 +167,18 @@ export class OportunidadController {
       const usuarioId = req.usuario?.usuarioId;
       const { id } = req.params;
 
+      console.log('🗑️ DELETE /oportunidades/:id', { id, usuarioId });
+
       if (!usuarioId) {
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       await oportunidadService.eliminarOportunidad(id, usuarioId);
+      console.log('✅ Oportunidad eliminada:', id);
       respuestaExito(res, null, 'Oportunidad eliminada exitosamente');
     } catch (error: any) {
+      console.error('❌ Error al eliminar oportunidad:', error.message);
       if (error.message.includes('no encontrada')) {
         respuestaError(res, error.message, 404);
         return;
@@ -205,6 +208,43 @@ export class OportunidadController {
         return;
       }
       respuestaError(res, error.message || 'Error al obtener oportunidades del cliente', 500);
+    }
+  }
+
+  /**
+   * PATCH /api/oportunidades/por-lead/:leadId
+   * Actualizar oportunidad por leadId (sincronización con estado del lead)
+   */
+  async actualizarOportunidadPorLead(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { leadId } = req.params;
+      const { etapa } = req.body;
+
+      if (!usuarioId) {
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!leadId) {
+        respuestaError(res, 'ID del lead requerido', 400);
+        return;
+      }
+
+      if (!etapa) {
+        respuestaError(res, 'Etapa es requerida', 400);
+        return;
+      }
+
+      const oportunidad = await oportunidadService.actualizarOportunidadPorLead(leadId, etapa, usuarioId);
+      if (!oportunidad) {
+        respuestaError(res, 'Oportunidad no encontrada para este lead', 404);
+        return;
+      }
+
+      respuestaExito(res, oportunidad, 'Oportunidad actualizada correctamente');
+    } catch (error: any) {
+      respuestaError(res, error.message || 'Error al actualizar oportunidad', 500);
     }
   }
 }

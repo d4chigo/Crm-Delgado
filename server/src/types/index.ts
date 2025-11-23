@@ -1,4 +1,4 @@
-import { Rol, Sexo, TipoContacto } from '@prisma/client';
+import { Rol, Sexo, EstadoLead, Prioridad } from '@prisma/client';
 
 // ==================== USUARIO ====================
 export interface Usuario {
@@ -72,8 +72,8 @@ declare global {
 export interface Contacto {
   id: string;
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;
@@ -81,7 +81,7 @@ export interface Contacto {
   sexo?: Sexo;
   fechaNacimiento?: Date;
   edad?: number; // Campo calculado
-  tipo: TipoContacto;
+  tipo?: 'LEAD' | 'CLIENTE'; // Para compatibilidad
   creadoEn: Date;
   actualizadoEn: Date;
   usuarioId: string;
@@ -89,14 +89,28 @@ export interface Contacto {
 
 export interface CrearContactoDTO {
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;
   dni?: string;
   sexo?: Sexo;
   fechaNacimiento?: string; // ISO string
+  tipo?: 'LEAD' | 'CLIENTE';
+  estado?: EstadoLead;
+  fuente?: string;
+  empresa?: string;
+  cargo?: string;
+  presupuesto?: number;
+  prioridad?: Prioridad;
+  probabilidad?: number;
+  fechaSeguimiento?: string;
+  notas?: string;
+  etiquetas?: string;
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
 }
 
 export interface ActualizarContactoDTO {
@@ -109,13 +123,16 @@ export interface ActualizarContactoDTO {
   dni?: string;
   sexo?: Sexo;
   fechaNacimiento?: string; // ISO string
-  tipo?: TipoContacto;
+  tipo?: 'LEAD' | 'CLIENTE';
+  estado?: EstadoLead; // Para actualizar el estado del lead
+  estadoLead?: EstadoLead; // Alias para compatibilidad con frontend
 }
 
 export interface FiltrosContacto {
-  tipo?: TipoContacto;
+  tipo?: 'LEAD' | 'CLIENTE';
   ciudad?: string;
   busqueda?: string; // Para buscar en nombre, apellido, correo
+  estado?: EstadoLead; // NUEVO, CONTACTADO, CALIFICADO, NEGOCIACION, PROPUESTA, GANADO, PERDIDO, EN_ESPERA
   pagina?: number;
   limite?: number;
 }

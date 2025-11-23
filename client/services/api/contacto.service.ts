@@ -31,6 +31,7 @@ class ContactoService {
     if (filtros.busqueda) params.append('busqueda', filtros.busqueda);
     if (filtros.pagina) params.append('pagina', filtros.pagina.toString());
     if (filtros.limite) params.append('limite', filtros.limite.toString());
+    if (filtros.estadoLead) params.append('estadoLead', filtros.estadoLead);
 
     const queryString = params.toString();
     const url = `/contactos${queryString ? `?${queryString}` : ''}`;
@@ -210,8 +211,8 @@ class ContactoService {
    * Actualizar la asociación entre lead y cliente (notas/estado)
    */
   async actualizarAsociacion(
-    leadId: string, 
-    clienteId: string, 
+    leadId: string,
+    clienteId: string,
     datos: ActualizarAsociacionDTO
   ): Promise<LeadCliente> {
     const token = authService.obtenerToken();
@@ -254,17 +255,25 @@ class ContactoService {
     const token = authService.obtenerToken();
     
     if (!token) {
-      throw new Error('No hay token de autenticación');
+      throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente para importar contactos.');
     }
 
-    return fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accessToken }),
-    });
+    try {
+      return await fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessToken }),
+      });
+    } catch (error: any) {
+      // Si el token expiró durante la petición
+      if (error.message.includes('sesión ha expirado')) {
+        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente para importar contactos.');
+      }
+      throw error;
+    }
   }
 }
 

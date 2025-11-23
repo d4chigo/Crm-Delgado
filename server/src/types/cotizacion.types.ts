@@ -1,7 +1,8 @@
 import { TipoCuota, EstadoCotizacion } from '@prisma/client';
 
 export interface CrearCotizacionDTO {
-  contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   nombreProyecto: string;
   tipoInmueble?: string;
   descripcion?: string;
@@ -52,6 +53,8 @@ export interface CalculoCuota {
 
 export interface FiltrosCotizacion {
   contactoId?: string;
+  leadId?: string;
+  clienteId?: string;
   estado?: EstadoCotizacion;
   tipoCuota?: TipoCuota;
   fechaDesde?: Date | string;
@@ -62,7 +65,8 @@ export interface FiltrosCotizacion {
 
 export interface Cotizacion {
   id: string;
-  contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   numeroReferencia: string;
   nombreProyecto: string;
   tipoInmueble?: string;

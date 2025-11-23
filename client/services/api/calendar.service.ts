@@ -128,3 +128,89 @@ export function getTokenFromCallback(): string | null {
   
   return null;
 }
+
+export async function crearEventoEnCalendar(evento: {
+  summary: string;
+  description?: string;
+  location?: string;
+  startDateTime: string;
+  endDateTime: string;
+  attendees?: string[];
+}, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
+}): Promise<{ id: string; htmlLink: string }> {
+  const tokens = obtenerTokensGuardados();
+  if (!tokens) {
+    throw new Error('No autenticado - por favor conecta tu Google Calendar');
+  }
+
+  const response = await fetchAPI<{
+    id: string;
+    htmlLink: string;
+  }>('/calendar/create-event', {
+    method: 'POST',
+    body: JSON.stringify({ tokens, evento, contacto }),
+  });
+
+  if (!response) {
+    throw new Error('Error al crear evento en Google Calendar');
+  }
+
+  return response;
+}
+
+export async function actualizarEventoEnCalendar(eventId: string, evento: {
+  summary: string;
+  description?: string;
+  location?: string;
+  startDateTime: string;
+  endDateTime: string;
+  attendees?: string[];
+}, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
+}): Promise<{ id: string; htmlLink: string }> {
+  const tokens = obtenerTokensGuardados();
+  if (!tokens) {
+    throw new Error('No autenticado - por favor conecta tu Google Calendar');
+  }
+
+  const response = await fetchAPI<{
+    id: string;
+    htmlLink: string;
+  }>('/calendar/update-event', {
+    method: 'PUT',
+    body: JSON.stringify({ tokens, eventId, evento, contacto }),
+  });
+
+  if (!response) {
+    throw new Error('Error al actualizar evento en Google Calendar');
+  }
+
+  return response;
+}
+
+export async function eliminarEventoEnCalendar(eventId: string, contacto?: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
+}, evento?: {
+  summary?: string;
+  description?: string;
+  location?: string;
+  startDateTime?: string;
+  endDateTime?: string;
+}): Promise<void> {
+  const tokens = obtenerTokensGuardados();
+  if (!tokens) {
+    throw new Error('No autenticado - por favor conecta tu Google Calendar');
+  }
+
+  await fetchAPI<void>('/calendar/delete-event', {
+    method: 'DELETE',
+    body: JSON.stringify({ tokens, eventId, contacto, evento }),
+  });
+}

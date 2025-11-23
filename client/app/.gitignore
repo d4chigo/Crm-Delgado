@@ -1,0 +1,2 @@
+# Evitar API routes en el frontend (solo deben estar en backend)
+api/

@@ -13,17 +13,29 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
     const { id: contactoId } = req.params;
     const { passwordTemporal, enviarEmail = true } = req.body;
 
-    // Verificar que el contacto existe y es tipo CLIENTE o LEAD
-    const contacto = await prisma.contacto.findUnique({
+    // Verificar que el contacto existe (puede ser LEAD o CLIENTE)
+    let contacto = await prisma.lead.findUnique({
       where: { id: contactoId },
       select: {
         id: true,
         nombre: true,
         apellido: true,
         correo: true,
-        tipo: true,
       },
     });
+
+    // Si no es lead, buscar en clientes
+    if (!contacto) {
+      contacto = await prisma.cliente.findUnique({
+        where: { id: contactoId },
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+        },
+      });
+    }
 
     if (!contacto) {
       return res.status(404).json({
@@ -36,13 +48,6 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: 'El contacto debe tener un correo electrónico',
-      });
-    }
-
-    if (contacto.tipo === 'CONTACTO') {
-      return res.status(400).json({
-        success: false,
-        message: 'Solo se puede crear acceso web para LEADS o CLIENTES',
       });
     }
 
@@ -121,10 +126,18 @@ export const resetearPasswordCliente = async (req: Request, res: Response) => {
     const { id: contactoId } = req.params;
     const { nuevaPassword, enviarEmail = true } = req.body;
 
-    const contacto = await prisma.contacto.findUnique({
+    // Buscar el contacto (puede ser LEAD o CLIENTE)
+    let contacto = await prisma.lead.findUnique({
       where: { id: contactoId },
       select: { correo: true, nombre: true, apellido: true },
     });
+
+    if (!contacto) {
+      contacto = await prisma.cliente.findUnique({
+        where: { id: contactoId },
+        select: { correo: true, nombre: true, apellido: true },
+      });
+    }
 
     if (!contacto || !contacto.correo) {
       return res.status(404).json({
@@ -141,14 +154,6 @@ export const resetearPasswordCliente = async (req: Request, res: Response) => {
       data: { passwordWeb: passwordHash },
     });
 
-    await prisma.clienteActividad.create({
-      data: {
-        contactoId,
-        tipo: 'PASSWORD_RESETEADO',
-        descripcion: 'Contraseña reseteada por el agente',
-      },
-    });
-
     if (enviarEmail) {
       await enviarCorreoCredenciales({
         nombreCompleto: `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
@@ -160,15 +165,19 @@ export const resetearPasswordCliente = async (req: Request, res: Response) => {
     }
 
     res.json({
-      success: true,
-      message: 'Contraseña reseteada exitosamente',
-      data: { passwordTemporal: password },
+      exito: true,
+      mensaje: 'Contraseña reseteada exitosamente',
+      datos: {
+        passwordTemporal: password,
+        correo: contacto.correo,
+        urlPortal: process.env.WEB_PHP_URL || 'http://localhost:8081/portal',
+      },
     });
   } catch (error) {
     console.error('Error al resetear password:', error);
     res.status(500).json({
-      success: false,
-      message: 'Error al resetear contraseña',
+      exito: false,
+      mensaje: 'Error al resetear contraseña',
     });
   }
 };
@@ -181,27 +190,36 @@ export const verificarAccesoWeb = async (req: Request, res: Response) => {
   try {
     const { id: contactoId } = req.params;
 
+    console.log(`🔍 Verificando acceso web para contacto: ${contactoId}`);
+
     const acceso = await prisma.clientePassword.findUnique({
       where: { contactoId },
       select: {
+        contactoId: true,
+        activo: true,
         creadoEn: true,
         actualizadoEn: true,
       },
     });
 
+    console.log(`✅ Resultado de búsqueda:`, acceso);
+
     res.json({
       exito: true,
       tieneAcceso: !!acceso,
       datos: acceso ? {
+        contactoId: acceso.contactoId,
+        activo: acceso.activo ?? true,
         creadoEn: acceso.creadoEn,
         actualizadoEn: acceso.actualizadoEn,
-      } : undefined,
+      } : null,
     });
   } catch (error) {
-    console.error('Error al verificar acceso web:', error);
+    console.error('❌ Error al verificar acceso web:', error);
     res.status(500).json({
       exito: false,
       mensaje: 'Error al verificar acceso',
+      error: error instanceof Error ? error.message : 'Error desconocido',
     });
   }
 };
@@ -243,3 +261,96 @@ export const eliminarAccesoWeb = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Activar o desactivar acceso web de un cliente
+ * PATCH /api/contactos/:id/acceso-web/estado
+ */
+export const toggleAccesoWeb = async (req: Request, res: Response) => {
+  try {
+    const { id: contactoId } = req.params;
+    const { activo } = req.body;
+
+    // Verificar que existe el acceso
+    const accesoExistente = await prisma.clientePassword.findUnique({
+      where: { contactoId },
+    });
+
+    if (!accesoExistente) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'El cliente no tiene acceso web',
+      });
+    }
+
+    // Actualizar el estado del acceso usando raw SQL para mayor control
+    await prisma.$executeRaw`
+      UPDATE \`cliente_passwords\` 
+      SET \`activo\` = ${activo ? 1 : 0}, \`updated_at\` = NOW()
+      WHERE \`contacto_id\` = ${contactoId}
+    `;
+
+    // Obtener el registro actualizado para confirmación
+    const accesoActualizado = await prisma.clientePassword.findUnique({
+      where: { contactoId },
+    });
+
+    res.json({
+      exito: true,
+      mensaje: `Acceso web ${activo ? 'activado' : 'desactivado'} exitosamente`,
+      datos: {
+        activo: accesoActualizado?.activo ?? activo,
+      },
+    });
+  } catch (error) {
+    console.error('Error al cambiar estado de acceso:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al cambiar estado del acceso',
+    });
+  }
+};
+
+/**
+ * Obtener información del acceso web (incluyendo la contraseña en algunos casos)
+ * GET /api/contactos/:id/acceso-web/info
+ */
+export const obtenerInfoAccesoWeb = async (req: Request, res: Response) => {
+  try {
+    const { id: contactoId } = req.params;
+
+    const acceso = await prisma.clientePassword.findUnique({
+      where: { contactoId },
+      select: {
+        passwordWeb: true,
+        activo: true,
+        creadoEn: true,
+        actualizadoEn: true,
+      },
+    });
+
+    if (!acceso) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'El cliente no tiene acceso web',
+      });
+    }
+
+    res.json({
+      exito: true,
+      datos: {
+        activo: acceso.activo ?? true,
+        creadoEn: acceso.creadoEn,
+        actualizadoEn: acceso.actualizadoEn,
+        // No devolver la contraseña en plain text en producción
+      },
+    });
+  } catch (error) {
+    console.error('Error al obtener info de acceso:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: 'Error al obtener información del acceso',
+    });
+  }
+};
+

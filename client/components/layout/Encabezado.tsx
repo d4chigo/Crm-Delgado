@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { NotificationBadge } from "@/components/NotificationBadge"
 
 interface PropiedadesEncabezado {
   alClickMenu: () => void
@@ -25,7 +26,8 @@ export function Encabezado({ alClickMenu }: PropiedadesEncabezado) {
         {/* Espacio flexible */}
         <div className="flex-1" />
 
-        {/* Aquí se pueden agregar más elementos del header como notificaciones, búsqueda, etc. */}
+        {/* Solo notificaciones */}
+        <NotificationBadge />
       </div>
     </header>
   )

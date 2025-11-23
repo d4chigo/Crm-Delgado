@@ -22,8 +22,6 @@ import {
 import { Loader2, Search } from "lucide-react"
 import { Sexo, type ActualizarContactoDTO, type Contacto } from "@/types/contacto.types"
 import { dniService } from "@/services/api/dni.service"
-import { etiquetaService } from "@/services/api/etiqueta.service"
-import { SelectorEtiquetasCreacion } from "./SelectorEtiquetasCreacion"
 import { validarTexto, validarDNI, validarTelefono, calcularEdad, obtenerFechaMaxima, esMayorDeEdad } from "@/lib/validaciones"
 
 interface DialogoEditarContactoProps {
@@ -31,7 +29,6 @@ interface DialogoEditarContactoProps {
   abierto: boolean
   onActualizar: (id: string, datos: ActualizarContactoDTO) => Promise<Contacto>
   onCancelar: () => void
-  onRecargar?: () => Promise<void>
 }
 
 export function DialogoEditarContacto({
@@ -39,13 +36,11 @@ export function DialogoEditarContacto({
   abierto,
   onActualizar,
   onCancelar,
-  onRecargar,
 }: DialogoEditarContactoProps) {
   const [estaCargando, setEstaCargando] = useState(false)
   const [buscandoDNI, setBuscandoDNI] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [edad, setEdad] = useState<number | null>(null)
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([])
   const [formulario, setFormulario] = useState<ActualizarContactoDTO>({
     nombre: "",
     apellido: "",
@@ -56,7 +51,6 @@ export function DialogoEditarContacto({
     dni: "",
     sexo: undefined,
     fechaNacimiento: "",
-    departamento: "",
   })
 
   // Cargar datos del contacto cuando se abre el diálogo
@@ -76,7 +70,6 @@ export function DialogoEditarContacto({
         dni: contacto.dni || "",
         sexo: contacto.sexo,
         fechaNacimiento,
-        departamento: contacto.departamento || "",
       })
       
       // Calcular edad al cargar
@@ -84,20 +77,6 @@ export function DialogoEditarContacto({
         setEdad(calcularEdad(fechaNacimiento))
       } else {
         setEdad(null)
-      }
-
-      // Cargar etiquetas del contacto
-      if (contacto.etiquetas) {
-        const etiquetasIds = contacto.etiquetas.map(e => e.etiqueta.id)
-        console.log('Cargando etiquetas del contacto:', {
-          contacto: contacto.nombre,
-          etiquetas: contacto.etiquetas,
-          etiquetasIds
-        })
-        setEtiquetasSeleccionadas(etiquetasIds)
-      } else {
-        console.log('Contacto sin etiquetas:', contacto.nombre)
-        setEtiquetasSeleccionadas([])
       }
       
       setError(null)
@@ -168,33 +147,8 @@ export function DialogoEditarContacto({
         const fecha = new Date(formulario.fechaNacimiento)
         datos.fechaNacimiento = fecha.toISOString()
       }
-      if (formulario.departamento?.trim()) datos.departamento = formulario.departamento.trim()
 
       await onActualizar(contacto.id, datos)
-
-      // Actualizar etiquetas después de actualizar el contacto
-      if (etiquetasSeleccionadas.length >= 0) {
-        try {
-          console.log('Actualizando etiquetas:', {
-            contactoId: contacto.id,
-            etiquetas: etiquetasSeleccionadas
-          })
-          await etiquetaService.asignarAContacto(contacto.id, etiquetasSeleccionadas)
-          console.log('Etiquetas actualizadas correctamente')
-          
-          // Recargar los contactos para obtener las etiquetas actualizadas
-          if (onRecargar) {
-            console.log('Recargando lista de contactos...')
-            await onRecargar()
-          }
-        } catch (errorEtiquetas: any) {
-          console.error('Error al actualizar etiquetas:', errorEtiquetas)
-          // Mostrar advertencia pero no bloquear el guardado
-          setError(`Contacto actualizado, pero error con etiquetas: ${errorEtiquetas.message}`)
-          setTimeout(() => setError(null), 3000)
-        }
-      }
-
       onCancelar()
     } catch (err: any) {
       setError(err.message || "Error al actualizar contacto")
@@ -207,7 +161,7 @@ export function DialogoEditarContacto({
 
   return (
     <Dialog open={abierto} onOpenChange={onCancelar}>
-      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Contacto</DialogTitle>
           <DialogDescription>
@@ -287,14 +241,6 @@ export function DialogoEditarContacto({
             />
           </div>
 
-          {/* Selector de Etiquetas */}
-          <div className="space-y-2">
-            <SelectorEtiquetasCreacion
-              etiquetasSeleccionadas={etiquetasSeleccionadas}
-              onCambio={setEtiquetasSeleccionadas}
-            />
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             {/* Teléfono */}
             <div className="space-y-2">
@@ -310,7 +256,7 @@ export function DialogoEditarContacto({
 
             {/* Sexo */}
             <div className="space-y-2">
-              <Label htmlFor="edit-sexo">Sexo <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
+              <Label htmlFor="edit-sexo">Sexo</Label>
               <Select
                 value={formulario.sexo || ""}
                 onValueChange={(value) => handleChange("sexo", value as Sexo)}
@@ -330,7 +276,7 @@ export function DialogoEditarContacto({
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
               <Label htmlFor="edit-fechaNacimiento">
-                Fecha de Nacimiento <span className="text-xs text-muted-foreground">(Recomendado)</span> {edad !== null && <span className="text-muted-foreground">({edad} años)</span>}
+                Fecha de Nacimiento {edad !== null && <span className="text-muted-foreground">({edad} años)</span>}
               </Label>
               <Input
                 id="edit-fechaNacimiento"
@@ -344,16 +290,6 @@ export function DialogoEditarContacto({
                   El contacto debe ser mayor de 18 años
                 </p>
               )}
-            </div>
-            {/* Departamento */}
-            <div className="space-y-2">
-              <Label htmlFor="edit-departamento">Departamento <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
-              <Input
-                id="edit-departamento"
-                value={formulario.departamento || ""}
-                onChange={(e) => handleChange("departamento", e.target.value)}
-                placeholder="Ej: Lima"
-              />
             </div>
           </div>
 

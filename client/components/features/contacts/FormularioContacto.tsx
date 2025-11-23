@@ -53,7 +53,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
     dni: "",
     sexo: undefined,
     fechaNacimiento: "",
-    departamento: "",
   })
 
   const handleChange = (campo: keyof CrearContactoDTO, valor: any) => {
@@ -116,7 +115,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
       if (formulario.telefono?.trim()) datos.telefono = formulario.telefono.trim()
       if (formulario.direccion?.trim()) datos.direccion = formulario.direccion.trim()
       if (formulario.ciudad?.trim()) datos.ciudad = formulario.ciudad.trim()
-      if (formulario.departamento?.trim()) datos.departamento = formulario.departamento.trim()
       if (formulario.dni?.trim()) datos.dni = formulario.dni.trim()
       if (formulario.sexo) datos.sexo = formulario.sexo
       if (formulario.fechaNacimiento?.trim()) {
@@ -125,10 +123,13 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
         datos.fechaNacimiento = fecha.toISOString()
       }
 
-      // Crear el contacto
-      const contactoCreado = await onCrear(datos)
+      await onCrear(datos)
 
-      // Si hay etiquetas seleccionadas, asignarlas al contacto recién creado
+      // Si hay etiquetas seleccionadas, asignarlas al contacto
+      // Nota: El contacto recién creado debe retornar su ID
+      // Si onCrear retorna el contacto, podemos asignar las etiquetas
+      const contactoCreado = await onCrear(datos)
+      
       if (etiquetasSeleccionadas.length > 0 && contactoCreado?.id) {
         try {
           await etiquetaService.asignarAContacto(contactoCreado.id, etiquetasSeleccionadas)
@@ -149,7 +150,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
         dni: "",
         sexo: undefined,
         fechaNacimiento: "",
-        departamento: "",
       })
       setEtiquetasSeleccionadas([])
       setEdad(null)
@@ -171,7 +171,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
           Nuevo Contacto
         </Button>
       </DialogTrigger>
-      <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Agregar Nuevo Contacto</DialogTitle>
           <DialogDescription>
@@ -278,7 +278,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
 
             {/* Sexo */}
             <div className="space-y-2">
-              <Label htmlFor="sexo">Sexo <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
+              <Label htmlFor="sexo">Sexo</Label>
               <Select
                 value={formulario.sexo || ""}
                 onValueChange={(value) => handleChange("sexo", value as Sexo)}
@@ -298,7 +298,7 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
             {/* Fecha de Nacimiento */}
             <div className="space-y-2">
               <Label htmlFor="fechaNacimiento">
-                Fecha de Nacimiento <span className="text-xs text-muted-foreground">(Recomendado)</span>
+                Fecha de Nacimiento
                 {edad !== null && <span className="text-muted-foreground ml-2">({edad} años)</span>}
               </Label>
               <Input
@@ -311,42 +311,6 @@ export function FormularioContacto({ onCrear }: FormularioContactoProps) {
               {edad !== null && edad < 18 && (
                 <p className="text-sm text-destructive">El contacto debe ser mayor de 18 años</p>
               )}
-            </div>
-            {/* Departamento */}
-            <div className="space-y-2">
-              <Label htmlFor="departamento">Departamento <span className="text-xs text-muted-foreground">(Recomendado)</span></Label>
-              <Select value={formulario.departamento} onValueChange={(v) => handleChange("departamento", v)}>
-                <SelectTrigger id="departamento">
-                  <SelectValue placeholder="Selecciona..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Amazonas">Amazonas</SelectItem>
-                  <SelectItem value="Áncash">Áncash</SelectItem>
-                  <SelectItem value="Apurímac">Apurímac</SelectItem>
-                  <SelectItem value="Arequipa">Arequipa</SelectItem>
-                  <SelectItem value="Ayacucho">Ayacucho</SelectItem>
-                  <SelectItem value="Cajamarca">Cajamarca</SelectItem>
-                  <SelectItem value="Callao">Callao</SelectItem>
-                  <SelectItem value="Cusco">Cusco</SelectItem>
-                  <SelectItem value="Huancavelica">Huancavelica</SelectItem>
-                  <SelectItem value="Huánuco">Huánuco</SelectItem>
-                  <SelectItem value="Ica">Ica</SelectItem>
-                  <SelectItem value="Junín">Junín</SelectItem>
-                  <SelectItem value="La Libertad">La Libertad</SelectItem>
-                  <SelectItem value="Lambayeque">Lambayeque</SelectItem>
-                  <SelectItem value="Lima">Lima</SelectItem>
-                  <SelectItem value="Loreto">Loreto</SelectItem>
-                  <SelectItem value="Madre de Dios">Madre de Dios</SelectItem>
-                  <SelectItem value="Moquegua">Moquegua</SelectItem>
-                  <SelectItem value="Pasco">Pasco</SelectItem>
-                  <SelectItem value="Piura">Piura</SelectItem>
-                  <SelectItem value="Puno">Puno</SelectItem>
-                  <SelectItem value="San Martín">San Martín</SelectItem>
-                  <SelectItem value="Tacna">Tacna</SelectItem>
-                  <SelectItem value="Tumbes">Tumbes</SelectItem>
-                  <SelectItem value="Ucayali">Ucayali</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 

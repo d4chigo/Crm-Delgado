@@ -50,6 +50,9 @@ docker compose -f docker-compose.dev.yml up -d --build
 | [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) | Configuración de Google OAuth |
 | [GOOGLE_CALENDAR_SETUP.md](./GOOGLE_CALENDAR_SETUP.md) | Integración con Google Calendar |
 | [VOICE_SETUP.md](./VOICE_SETUP.md) | Configuración de llamadas por voz |
+| [NOTIFICACIONES_REALTIME.md](./NOTIFICACIONES_REALTIME.md) | 🔔 **Notificaciones en tiempo real** (WebSocket, arquitectura) |
+| [GUIA_NOTIFICACIONES_ASESORES.md](./GUIA_NOTIFICACIONES_ASESORES.md) | 🔔 Guía de uso para asesores |
+| [IMPLEMENTACION_COMPLETA.md](./IMPLEMENTACION_COMPLETA.md) | ✅ Resumen de implementación completada |
 
 > **👉 Para desarrollo, lee primero: [GUIA-DESARROLLO.md](./GUIA-DESARROLLO.md)**
 
@@ -160,6 +163,7 @@ Crm-Delgado/
 - ✅ **Autenticación JWT** (Login seguro)
 - ✅ **Asistente Virtual** (Gemini AI)
 - ✅ **Llamadas por Voz** (WebRTC)
+- ✅ **Notificaciones en Tiempo Real** (WebSocket de nuevos leads)
 
 ### Web Pública (PGDP)
 - ✅ **Catálogo de Propiedades** (Consume API del CRM)

@@ -24,8 +24,8 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import authRoutes from '@/routes/auth.routes';
 import googleAuthRoutes from '@/routes/google-auth.routes';
-import contactoRoutes from '@/routes/contacto.routes';
 import dniRoutes from '@/routes/dni.routes';
+import contactoRoutes from '@/routes/contacto.routes';
 import etiquetaRoutes from '@/routes/etiqueta.routes';
 import proyectoRoutes from '@/routes/proyecto.routes';
 import oportunidadRoutes from '@/routes/oportunidad.routes';
@@ -51,8 +51,13 @@ import testRoutes from '@/routes/test.routes';
 import testPasswordRoutes from '@/routes/test-password.routes';
 import testJwtRoutes from '@/routes/test-jwt.routes';
 import devRoutes from '@/routes/dev.routes';
+import notificacionRoutes from '@/routes/notificacion.routes';
+import alertaRoutes from '@/routes/alerta.routes';
+import leadPipelineRoutes from '@/routes/lead-pipeline.routes';
+import reportesRoutes from '@/routes/reportes.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
+import { iniciarJobGenerarAlertas } from '@/jobs/generarAlertasAutomaticamente';
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -91,7 +96,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires']
 }));
 
 // Rate limiting - más permisivo en desarrollo
@@ -125,8 +130,8 @@ app.use('/api/public', (req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', googleAuthRoutes);
-app.use('/api/contactos', contactoRoutes);
 app.use('/api/dni', dniRoutes);
+app.use('/api/contactos', contactoRoutes);
 app.use('/api/etiquetas', etiquetaRoutes);
 app.use('/api/proyectos', proyectoRoutes);
 app.use('/api/oportunidades', oportunidadRoutes);
@@ -134,6 +139,10 @@ app.use('/api/cotizaciones', cotizacionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/alertas', alertaRoutes);
+app.use('/api/leads', leadPipelineRoutes);
+app.use('/api/reportes', reportesRoutes);
 app.use('/api/admin/proyectos', adminProyectosRoutes);
 app.use('/api/admin/testimonials', adminTestimoniosRoutes);
 app.use('/api/admin/team', adminTeamRoutes);
@@ -178,7 +187,10 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(`🎙️  WebSocket voice en ws://localhost:${PORT}/api/voice`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar`);
+  console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar, /api/alertas`);
+  
+  // 🤖 Iniciar job de generación automática de alertas
+  iniciarJobGenerarAlertas();
 });
 
 export default app;

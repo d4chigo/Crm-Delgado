@@ -1,82 +1,93 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { useContactos } from "@/hooks/useContactos";
-import { PageHeader } from "@/components/layout";
-import { Button } from "@/components/ui/button";
-import { StatCard } from "@/components/ui/stat-card";
-import { SearchInput } from "@/components/ui/search-input";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { PageHeader } from "@/components/layout"
+import { Button } from "@/components/ui/button"
+import { StatCard } from "@/components/ui/stat-card"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "@/hooks/use-toast"
 import { etiquetaService } from "@/services/api/etiqueta.service"
+import leadService from "@/services/api/lead.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
-import { LeadCard, ClientCard, DialogoDetallesLead, DialogoEditarLead } from "@/components/features/leads"
-import { DialogoCrearOportunidad } from "@/components/features/contacts/DialogoCrearOportunidad";
-import { DialogoCrearAccesoWeb } from "@/components/features/contacts/DialogoCrearAccesoWeb";
-import { FormularioCotizacion } from "@/components/features/cotizaciones";
-import { cotizacionService } from "@/services/api/cotizacion.service";
-import { CrearCotizacionDTO } from "@/types/cotizacion.types";
-import { Loader2, Search, Users, TrendingUp, Phone, Mail, MapPin, Calendar, User, Eye, Edit, ArrowRight, DollarSign, Tag, ChevronLeft, ChevronRight, FileText, MessageSquare } from "lucide-react"
-import { TipoContacto, Contacto } from "@/types/contacto.types"
+import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
+import { ContactImportDialog } from "@/components/features/contacts/ContactImportDialog"
+import { DialogoCrearAccesoWeb } from "@/components/features/contacts"
+import { FormularioCotizacion } from "@/components/features/cotizaciones"
+import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
+import { cotizacionService } from "@/services/api/cotizacion.service"
+import { CrearCotizacionDTO } from "@/types/cotizacion.types"
+import { Loader2, Search, Users, TrendingUp, Tag, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react"
+import { FILTROS_LEADS } from "@/types/estadoLead.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
+import googleAuthService from "@/services/api/google-auth.service"
+import contactoService from "@/services/api/contacto.service"
+import { useOportunidades } from "@/hooks/useOportunidades"
 import dynamic from "next/dynamic"
+import type { Contacto } from "@/types/contacto.types"
+import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
+import { DialogoCrearOportunidad, type DatosOportunidad } from "@/components/features/opportunities/DialogoCrearOportunidad"
+
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
+
+type Lead = Contacto
 
 export default function PaginaLeads() {
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
-  const {
-    contactos,
-    estadisticas,
-    estaCargando,
-    error,
-    paginacion,
-    buscarContactos,
-    filtrarPorTipo,
-    cargarContactos,
-    cambiarPagina,
-    filtros,
-  } = useContactos()
-
-  const [leadSeleccionado, setLeadSeleccionado] = useState<Contacto | null>(null)
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [estaCargando, setEstaCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [paginacion, setPaginacion] = useState({ pagina: 1, total: 0, totalPaginas: 0 })
+  const [busqueda, setBusqueda] = useState("")
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
+  const [estadoFiltro, setEstadoFiltro] = useState<string>("")
+  const [leadSeleccionado, setLeadSeleccionado] = useState<Lead | null>(null)
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
-  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
-  const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false);
-  const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false);
-  const [leadParaCotizar, setLeadParaCotizar] = useState<Contacto | null>(null);
-  const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Contacto | null>(null);
-  const [clienteParaOportunidad, setClienteParaOportunidad] = useState<Contacto | null>(null)
-  const [convirtiendoCliente, setConvirtiendoCliente] = useState<string | null>(null)
-  const [tabActivo, setTabActivo] = useState<'leads' | 'clientes'>('leads')
-  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
-  const [etiquetaFiltroLeads, setEtiquetaFiltroLeads] = useState<string>("todas")
-  const [etiquetaFiltroClientes, setEtiquetaFiltroClientes] = useState<string>("todas")
-  const [totalLeads, setTotalLeads] = useState(0)
-  const [totalClientes, setTotalClientes] = useState(0)
-
-  // WhatsApp Post-Agendado
+  const [dialogoCotizacionAbierto, setDialogoCotizacionAbierto] = useState(false)
+  const [leadParaCotizar, setLeadParaCotizar] = useState<Lead | null>(null)
+  const [dialogoCrearAbierto, setDialogoCrearAbierto] = useState(false)
+  const [dialogoEliminarAbierto, setDialogoEliminarAbierto] = useState(false)
+  const [leadAEliminar, setLeadAEliminar] = useState<Lead | null>(null)
+  const [eliminando, setEliminando] = useState(false)
   const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
-  const [whatsappMensaje, setWhatsappMensaje] = useState("")
   const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
+  const [importando, setImportando] = useState(false)
+  const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
+  const [leadParaAgendar, setLeadParaAgendar] = useState<Lead | null>(null)
+  const [agregandonPipeline, setAgregandoPipeline] = useState<string | null>(null)
+  const [dialogoOportunidadAbierto, setDialogoOportunidadAbierto] = useState(false)
+  const [leadParaOportunidad, setLeadParaOportunidad] = useState<Lead | null>(null)
+  const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false)
+  const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Lead | null>(null)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { oportunidades, removerDelPipeline } = useOportunidades()
 
-  useEffect(() => {
-    const tipo = tabActivo === 'leads' ? TipoContacto.LEAD : TipoContacto.CLIENTE
-    cargarContactos({ tipo, pagina: 1, limite: 6 })
-  }, [tabActivo])
+  const cargarLeads = useCallback(async (filtros?: any) => {
+    setEstaCargando(true)
+    setError(null)
+    try {
+      const resultado: any = await leadService.obtenerLeads({
+        tipo: "LEAD",
+        pagina: filtros?.pagina || 1,
+        limite: 6,
+        busqueda: filtros?.busqueda || "",
+        estadoLead: "" // No filtrar por estado en backend, lo haremos en frontend
+      })
+      setLeads(resultado.contactos || [])
+      setPaginacion(resultado.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
+    } catch (err: any) {
+      setError(err.message || "Error al cargar leads")
+      setLeads([])
+    } finally {
+      setEstaCargando(false)
+    }
+  }, [])
 
-  useEffect(() => { cargarEtiquetas() }, [])
-
-  useEffect(() => {
-    if (tabActivo === 'leads') setTotalLeads(paginacion.total)
-    else setTotalClientes(paginacion.total)
-  }, [paginacion.total, tabActivo])
-
-  const cargarEtiquetas = async () => {
+  const cargarEtiquetas = useCallback(async () => {
     try {
       const etiquetasObtenidas = await etiquetaService.obtenerTodas()
       if (Array.isArray(etiquetasObtenidas)) setEtiquetas(etiquetasObtenidas)
@@ -84,275 +95,551 @@ export default function PaginaLeads() {
     } catch {
       setEtiquetas([])
     }
-  }
+  }, [])
 
-  const [busqueda, setBusqueda] = useState("")
-  const handleBusqueda = (query: string) => { setBusqueda(query) }
   useEffect(() => {
-    const t = setTimeout(() => { buscarContactos(busqueda) }, 300)
-    return () => clearTimeout(t)
-  }, [busqueda])
+    cargarLeads({ pagina: 1 })
+    cargarEtiquetas()
+  }, [cargarEtiquetas, cargarLeads])
 
-  const contactosFiltrados = useMemo(() => {
-    if (tabActivo === 'leads') {
-      return etiquetaFiltroLeads === "todas"
-        ? contactos
-        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroLeads))
-    } else {
-      return etiquetaFiltroClientes === "todas"
-        ? contactos
-        : contactos.filter(c => c.etiquetas?.some(e => e.etiqueta.id === etiquetaFiltroClientes))
+  useEffect(() => {
+    // Limpiar timeout anterior si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
     }
-  }, [tabActivo, etiquetaFiltroLeads, etiquetaFiltroClientes, contactos])
 
-  const leads = useMemo(() => (tabActivo === 'leads' ? contactosFiltrados : []), [tabActivo, contactosFiltrados])
-  const clientes = useMemo(() => (tabActivo === 'clientes' ? contactosFiltrados : []), [tabActivo, contactosFiltrados])
+    // Configurar nuevo timeout con debounce
+    searchTimeoutRef.current = setTimeout(() => {
+      cargarLeads({ busqueda, pagina: 1 })
+    }, 500)
 
-  const handleVerDetalles = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoDetallesAbierto(true) }
-  const handleEditar = (lead: Contacto) => { setLeadSeleccionado(lead); setDialogoEditarAbierto(true) }
-
-  const handleConvertirCliente = async (leadId: string) => {
-    setConvirtiendoCliente(leadId)
-    try {
-      const token = localStorage.getItem('crm_token')
-      if (!token) {
-        toast({ title: 'Sesión expirada', description: 'Por favor inicia sesión nuevamente', variant: 'destructive' })
-        if (typeof window !== 'undefined') window.location.href = '/login';
-        return
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
       }
-      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadId}/convertir-cliente`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (respuesta.status === 401) {
-        localStorage.removeItem('crm_token'); localStorage.removeItem('crm_user');
-        toast({ title: 'Sesión expirada', description: 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.', variant: 'destructive' });
-        if (typeof window !== 'undefined') window.location.href = '/login';
-        return;
+    }
+  }, [busqueda, cargarLeads])
+
+  const leadsEnPipeline = useMemo(() => {
+    return new Set(oportunidades?.map(o => o.leadId || o.clienteId) || [])
+  }, [oportunidades])
+
+  // Función para determinar el estado lógico del lead basado en oportunidades
+  const determinarEstadoLogico = useCallback((lead: Lead): string => {
+    // Buscar oportunidad del lead
+    const oportunidadLead = oportunidades?.find(o => o.leadId === lead.id)
+    
+    if (oportunidadLead) {
+      if (oportunidadLead.etapa === 'CIERRE_GANADO') {
+        return 'GANADO' // En pipeline como CIERRE_GANADO
       }
-      const resultado = await respuesta.json()
-      if (!respuesta.ok) throw new Error(resultado.mensaje || 'Error al convertir lead')
-      toast({ title: 'Lead convertido a Cliente', description: 'El lead ahora es un cliente y aparece en la pestaña "Clientes"' })
-      setTabActivo('clientes')
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'No se pudo convertir el lead', variant: 'destructive' })
-    } finally { setConvirtiendoCliente(null) }
-  }
+      if (oportunidadLead.etapa === 'CIERRE_PERDIDO') {
+        return 'PERDIDO' // En pipeline como CIERRE_PERDIDO
+      }
+    }
+    
+    // Si no está en esos estados, usar el estadoLead del lead
+    return lead.estadoLead || 'NUEVO'
+  }, [oportunidades])
+
+  const leadsFiltrados = useMemo(() => {
+    let filtrados = leads
+    
+    // Filtrar por etiqueta
+    if (etiquetaFiltro !== "todas") {
+      filtrados = filtrados.filter((lead: Lead) => 
+        lead.etiquetas?.some((e: any) => e.etiqueta.id === etiquetaFiltro)
+      )
+    }
+    
+    // Filtrar por estado lógico si hay filtro de estado
+    if (estadoFiltro) {
+      filtrados = filtrados.filter((lead: Lead) => {
+        const estadoLogico = determinarEstadoLogico(lead)
+        return estadoLogico === estadoFiltro
+      })
+    }
+    
+    return filtrados
+  }, [leads, etiquetaFiltro, estadoFiltro, determinarEstadoLogico])
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
-      await cotizacionService.crear(datos);
-      toast({ title: "Cotización guardada", description: "La cotización ha sido creada exitosamente." });
-      setDialogoCotizacionAbierto(false);
+      await cotizacionService.crear(datos)
+      toast({ title: "Cotización guardada", description: "La cotización ha sido creada exitosamente." })
+      setDialogoCotizacionAbierto(false)
     } catch {
-      toast({ title: "Error", description: "No se pudo guardar la cotización.", variant: "destructive" });
+      toast({ title: "Error", description: "No se pudo guardar la cotización.", variant: "destructive" })
     }
-  };
+  }
 
-  const handleCotizar = (lead: Contacto) => { setLeadParaCotizar(lead); setDialogoCotizacionAbierto(true) };
+  const handleImportarGoogle = async () => {
+    if (importando) return
+    
+    setImportando(true)
+    try {
+      // Iniciar flujo de autenticación OAuth
+      await googleAuthService.startAuthFlow()
+      
+      toast({
+        title: "Importación iniciada",
+        description: "Redirigiendo a Google para autorizar el acceso..."
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error al iniciar importación",
+        description: error.message || "No se pudo iniciar el proceso de importación",
+        variant: "destructive"
+      })
+      setImportando(false)
+    }
+  }
+
+  // Procesar callback de Google OAuth
+  useEffect(() => {
+    const procesarCallback = async () => {
+      const params = new URLSearchParams(window.location.search)
+      const googleToken = params.get('google_token')
+      const googleError = params.get('google_error')
+      const errorMessage = params.get('message') || params.get('description')
+      
+      // Manejar error de Google
+      if (googleError) {
+        const errorMessages: { [key: string]: string } = {
+          'access_denied': 'Acceso denegado. Necesitas autorizar el acceso a tus contactos.',
+          'no_code': 'No se recibió código de autorización de Google',
+          'auth_failed': 'Error al autenticar con Google',
+        }
+        
+        toast({
+          title: "Error en la importación",
+          description: errorMessages[googleError] || errorMessage || "No se pudo completar la autenticación",
+          variant: "destructive"
+        })
+        
+        // Limpiar URL
+        window.history.replaceState({}, '', window.location.pathname)
+        return
+      }
+      
+      // Procesar token e importar contactos
+      if (googleToken) {
+        setImportando(true)
+        try {
+          // Validar que tengamos sesión activa antes de importar
+          const token = localStorage.getItem('crm_token')
+          if (!token) {
+            throw new Error('Tu sesión ha expirado. Por favor recarga la página e inicia sesión nuevamente.')
+          }
+
+          // Importar contactos usando el token
+          const resultado = await contactoService.importarDesdeGoogle(googleToken)
+          
+          toast({
+            title: "✅ Importación completada",
+            description: `Se importaron ${resultado.importados} contactos como leads. ${resultado.duplicados > 0 ? `${resultado.duplicados} duplicados omitidos.` : ''}`
+          })
+          
+          // Recargar leads
+          await cargarLeads({ estadoLead: estadoFiltro })
+        } catch (error: any) {
+          const errorMsg = error.message || "No se pudieron importar los contactos"
+          
+          // Si es error de sesión expirada, mostrar mensaje más claro
+          if (errorMsg.includes('sesión ha expirado') || errorMsg.includes('401')) {
+            toast({
+              title: "⚠️ Sesión expirada",
+              description: "Tu sesión ha expirado. Por favor recarga la página e inicia sesión nuevamente.",
+              variant: "destructive"
+            })
+            // Limpiar token y redirigir después de 2 segundos
+            setTimeout(() => {
+              localStorage.removeItem('crm_token')
+              localStorage.removeItem('crm_user')
+              window.location.href = '/login'
+            }, 2000)
+          } else {
+            toast({
+              title: "Error en la importación",
+              description: errorMsg,
+              variant: "destructive"
+            })
+          }
+        } finally {
+          setImportando(false)
+          // Limpiar URL
+          window.history.replaceState({}, '', window.location.pathname)
+        }
+      }
+    }
+    
+    procesarCallback()
+  }, [])
+
+  const handleCotizar = (lead: Lead) => {
+    setLeadParaCotizar(lead)
+    setDialogoCotizacionAbierto(true)
+  }
 
   const handleWhatsApp = (telefono: string) => {
-    if (!telefono) { toast({ title: 'Sin teléfono', description: 'No hay número disponible.', variant: 'destructive' }); return; }
-    let tel = telefono.replace(/\D/g, ''); if (tel.length === 9) tel = '51' + tel;
-    const url = `https://wa.me/${tel}`; try { window.open(url, '_blank'); } catch {}
+    if (!telefono) {
+      toast({ title: "Sin teléfono", description: "No hay número disponible.", variant: "destructive" })
+      return
+    }
+    setWhatsappTelefono(telefono)
+    setDialogoWhatsappAbierto(true)
   }
-  const handleWhatsAppCliente = (telefono: string) => handleWhatsApp(telefono)
 
-  // Agendar + abrir modal WhatsApp de confirmación
+  const handleEnviarWhatsApp = useCallback(async (mensajeLocal: string) => {
+    let raw = (whatsappTelefono || "").replace(/\D/g, "")
+    if (raw.length === 9) raw = `51${raw}`
+    if (!raw) {
+      toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
+      return
+    }
+    
+    // Actualizar estado a CONTACTADO si es NUEVO
+    const leadActual = leads.find(l => l.telefono === whatsappTelefono)
+    if (leadActual && (leadActual.estadoLead === 'NUEVO' || leadActual.estado === 'NUEVO')) {
+      try {
+        await leadService.actualizarLead(leadActual.id, { estado: 'CONTACTADO' })
+        
+        // Actualizar el estado del lead en el state local inmediatamente
+        setLeads(leads.map(l => 
+          l.id === leadActual.id 
+            ? { ...l, estadoLead: 'CONTACTADO', estado: 'CONTACTADO' }
+            : l
+        ))
+        
+        toast({ title: "✓ Estado actualizado", description: "Lead marcado como En Contacto" })
+      } catch (error) {
+        console.error('Error al actualizar estado:', error)
+        toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" })
+      }
+    }
+    
+    const url = `https://wa.me/${raw}?text=${encodeURIComponent(mensajeLocal)}`
+    try {
+      window.open(url, "_blank")
+    } catch {}
+    
+    // Cerrar diálogo
+    setDialogoWhatsappAbierto(false)
+  }, [whatsappTelefono, leads, toast])
+
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
-    // Solo preparar el mensaje y abrir el modal de WhatsApp.
-    const fechaInicio = new Date();
-    fechaInicio.setHours(9, 0, 0, 0);
-    const fecha = fechaInicio.toLocaleDateString('es-PE', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-    const hora = fechaInicio.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    const lineas = [
-      `Hola${nombre ? ` ${nombre}` : ''}, ¿qué tal?`,
-      `Te confirmo nuestra reunión agendada desde CRM Delgado.`,
-      `Fecha: ${fecha}`,
-      `Hora: ${hora}`,
-      correo ? `Te envié la invitación al correo: ${correo}` : undefined,
-      `Si necesitas reprogramar, avísame por este medio. ¡Gracias!`
-    ].filter(Boolean) as string[];
-    setWhatsappMensaje(lineas.join('\n'));
-    setWhatsappTelefono(telefono || null);
-    setDialogoWhatsappAbierto(true);
+    // Encontrar el lead actual para obtener más información
+    const leadActual = leads.find(l => l.nombre === nombre && l.correo === correo)
+    if (leadActual) {
+      setLeadParaAgendar(leadActual)
+    }
+    setDialogoAgendarAbierto(true)
+  }
+
+  const handleAgregarAlPipeline = async (lead: Lead) => {
+    setLeadParaOportunidad(lead)
+    setDialogoOportunidadAbierto(true)
+  }
+
+  const handleCrearOportunidad = async (datos: DatosOportunidad) => {
+    if (!leadParaOportunidad) return
+    
+    setAgregandoPipeline(leadParaOportunidad.id)
+    try {
+      const token = localStorage.getItem("crm_token")
+      if (!token) {
+        toast({ title: "Sesión expirada", description: "Por favor inicia sesión nuevamente", variant: "destructive" })
+        if (typeof window !== "undefined") window.location.href = "/login"
+        return
+      }
+      
+      const respuesta = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/contactos/${leadParaOportunidad.id}/agregar-pipeline`, { 
+        method: "POST", 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(datos)
+      })
+      
+      if (respuesta.status === 401) {
+        localStorage.removeItem("crm_token")
+        localStorage.removeItem("crm_user")
+        toast({ title: "Sesión expirada", description: "Tu sesión ha expirado. Por favor inicia sesión nuevamente.", variant: "destructive" })
+        if (typeof window !== "undefined") window.location.href = "/login"
+        return
+      }
+      
+      const resultado = await respuesta.json()
+      if (!respuesta.ok) throw new Error(resultado.mensaje || "Error al agregar al pipeline")
+      
+      toast({ title: "Éxito", description: "Oportunidad creada en el pipeline correctamente" })
+      setDialogoOportunidadAbierto(false)
+      cargarLeads()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo agregar al pipeline", variant: "destructive" })
+    } finally {
+      setAgregandoPipeline(null)
+    }
+  }
+
+  const handleRemoverDelPipeline = async (lead: Lead) => {
+    setAgregandoPipeline(lead.id)
+    try {
+      await removerDelPipeline(lead.id)
+      toast({ title: "Éxito", description: "Lead removido del pipeline" })
+      cargarLeads()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "No se pudo remover del pipeline", variant: "destructive" })
+    } finally {
+      setAgregandoPipeline(null)
+    }
+  }
+
+  const handleCrearAccesoWeb = (lead: Lead) => {
+    setLeadParaAccesoWeb(lead)
+    setDialogoAccesoWebAbierto(true)
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Leads & Clientes" description="Gestiona tus leads y clientes en un solo lugar" />
+      <PageHeader title="Leads" description="Gestiona tus prospectos y oportunidades de negocio" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Leads Activos" value={totalLeads} description="En proceso de conversión" icon={TrendingUp} iconColor="text-yellow-500" valueColor="text-yellow-600" />
-        <StatCard title="Clientes" value={totalClientes} description="Leads convertidos" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
-        <StatCard title="Tasa de Conversión" value={`${(totalLeads + totalClientes) > 0 ? Math.round((totalClientes / (totalLeads + totalClientes)) * 100) : 0}%`} description="Leads → Clientes" icon={TrendingUp} iconColor="text-blue-500" valueColor="text-blue-600" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StatCard title="Leads Activos" value={paginacion.total} description="En proceso de conversión" icon={TrendingUp} iconColor="text-yellow-500" valueColor="text-yellow-600" />
+        <StatCard title="Conversión" value="0%" description="Leads convertidos a clientes" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
       </div>
 
-      <Tabs value={tabActivo} onValueChange={(v) => setTabActivo(v as 'leads' | 'clientes')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="leads" className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Leads</TabsTrigger>
-          <TabsTrigger value="clientes" className="flex items-center gap-2"><Users className="h-4 w-4" />Clientes</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {FILTROS_LEADS.map((filtro) => (
+            <Button
+              key={filtro.value}
+              onClick={() => setEstadoFiltro(filtro.value)}
+              variant={estadoFiltro === filtro.value ? "default" : "outline"}
+              className={estadoFiltro === filtro.value ? "bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]" : ""}
+            >
+              {filtro.label}
+            </Button>
+          ))}
+        </div>
 
-        <TabsContent value="leads" className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nombre, apellido, correo o DNI..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
-            </div>
-            <Select value={etiquetaFiltroLeads} onValueChange={setEtiquetaFiltroLeads}>
-              <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las etiquetas</SelectItem>
-                {Array.isArray(etiquetas) && etiquetas.map((et) => (
-                  <SelectItem key={et.id} value={et.id}>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />{et.nombre}</div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex gap-4 items-end flex-wrap">
+          <div className="flex-1 relative min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar leads" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
           </div>
+          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
+            <SelectTrigger className="w-[220px]">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                <SelectValue placeholder="Todas las etiquetas" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas las etiquetas</SelectItem>
+              {Array.isArray(etiquetas) && etiquetas.map((et) => (
+                <SelectItem key={et.id} value={et.id}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />
+                    {et.nombre}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ContactImportDialog onImport={handleImportarGoogle} />
+          <Button 
+            onClick={() => setDialogoCrearAbierto(true)}
+            className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+          >
+            + Nuevo Lead
+          </Button>
+        </div>
 
-          {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
-          {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
+        {estaCargando && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" />
+          </div>
+        )}
+        {error && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <p className="text-red-600">{error}</p>
+            </CardContent>
+          </Card>
+        )}
 
-          {!estaCargando && leads.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {leads.map((lead) => (
+        {!estaCargando && leadsFiltrados.length > 0 && (
+          <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+              {leadsFiltrados.map((lead) => (
                 <LeadCard
                   key={lead.id}
                   lead={lead}
-                  isConverting={convirtiendoCliente === lead.id}
-                  onVerDetalles={handleVerDetalles}
-                  onConvertir={handleConvertirCliente}
-                  onEditar={handleEditar}
-                  onWhatsApp={handleWhatsAppCliente}
+                  enPipeline={leadsEnPipeline.has(lead.id)}
+                  estadoLogico={determinarEstadoLogico(lead)}
+                  onVerDetalles={(l) => {
+                    setLeadSeleccionado(l)
+                    setDialogoDetallesAbierto(true)
+                  }}
+                  onEditar={(l) => {
+                    setLeadSeleccionado(l)
+                    setDialogoEditarAbierto(true)
+                  }}
+                  onWhatsApp={(tel) => handleWhatsApp(tel)}
                   onScheduleMeeting={(nombre, correo) => handleScheduleMeeting(nombre, correo, lead.telefono || undefined)}
                   onCotizar={handleCotizar}
-                  onCrearAccesoWeb={(lead) => {
-                    setLeadParaAccesoWeb(lead);
-                    setDialogoAccesoWebAbierto(true);
+                  onPipeline={handleAgregarAlPipeline}
+                  onRemoverDelPipeline={handleRemoverDelPipeline}
+                  onCrearAccesoWeb={handleCrearAccesoWeb}
+                  onEliminar={(l) => {
+                    setLeadAEliminar(l)
+                    setDialogoEliminarAbierto(true)
                   }}
                 />
               ))}
             </div>
-          )}
-
-          {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">Mostrando {leads.length} de {paginacion.total} leads</p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina - 1)} disabled={paginacion.pagina === 1 || estaCargando}><ChevronLeft className="h-4 w-4 mr-1" />Anterior</Button>
-                <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
-                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina + 1)} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>Siguiente<ChevronRight className="h-4 w-4 ml-1" /></Button>
-              </div>
-            </div>
-          )}
-
-          {!estaCargando && leads.length === 0 && !error && (
-            <Card><CardContent className="flex flex-col items-center justify-center py-12"><TrendingUp className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay leads</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Convierte tus contactos en leads para comenzar a gestionarlos"}</p><Button onClick={() => window.location.href = '/dashboard/contacts'} className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]">Ir a Contactos</Button></CardContent></Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="clientes" className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar clientes por nombre, apellido o correo..." value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" /></div></div>
-            <Select value={etiquetaFiltroClientes} onValueChange={setEtiquetaFiltroClientes}>
-              <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las etiquetas</SelectItem>
-                {Array.isArray(etiquetas) && etiquetas.map((et) => (
-                  <SelectItem key={et.id} value={et.id}><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />{et.nombre}</div></SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
+        )}
 
-          {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
-          {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
-
-          {!estaCargando && clientes.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clientes.map((cliente) => (
-                <ClientCard
-                  key={cliente.id}
-                  cliente={cliente}
-                  onVerDetalles={handleVerDetalles}
-                  onCotizar={handleCotizar}
-                  onEditar={handleEditar}
-                  onWhatsApp={handleWhatsAppCliente}
-                  onAgregarOportunidad={() => { setClienteParaOportunidad(cliente); setDialogoOportunidadAbierto(true) }}
-                  onCrearAccesoWeb={(cliente) => {
-                    setLeadParaAccesoWeb(cliente);
-                    setDialogoAccesoWebAbierto(true);
-                  }}
-                />
-              ))}
+        {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
+          <div className="flex items-center justify-between mt-8 pt-6 border-t">
+            <p className="text-sm text-muted-foreground">
+              Mostrando <span className="font-semibold">{leadsFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
+            </p>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cargarLeads({ pagina: paginacion.pagina - 1 })} 
+                disabled={paginacion.pagina === 1 || estaCargando}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
+                {paginacion.pagina} / {paginacion.totalPaginas}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cargarLeads({ pagina: paginacion.pagina + 1 })} 
+                disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                className="gap-1"
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          )}
+          </div>
+        )}
 
-          {!estaCargando && clientes.length > 0 && paginacion.totalPaginas > 1 && (
-            <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-muted-foreground">Mostrando {clientes.length} de {paginacion.total} clientes</p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina - 1)} disabled={paginacion.pagina === 1 || estaCargando}><ChevronLeft className="h-4 w-4 mr-1" />Anterior</Button>
-                <span className="text-sm text-muted-foreground px-4">Página {paginacion.pagina} de {paginacion.totalPaginas}</span>
-                <Button variant="outline" size="sm" onClick={() => cambiarPagina(paginacion.pagina + 1)} disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}>Siguiente<ChevronRight className="h-4 w-4 ml-1" /></Button>
-              </div>
-            </div>
-          )}
+        {!estaCargando && leadsFiltrados.length === 0 && !error && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                {busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Importa contactos de Google o crea nuevos leads para comenzar a gestionarlos"}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-          {!estaCargando && clientes.length === 0 && !error && (
-            <Card><CardContent className="flex flex-col items-center justify-center py-12"><Users className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay clientes</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron clientes con ese criterio de búsqueda" : "Convierte tus leads en clientes para comenzar"}</p></CardContent></Card>
-          )}
-        </TabsContent>
-      </Tabs>
+      <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} onActualizado={() => cargarLeads()} />
+      <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => {
+        cargarLeads()
+        setDialogoEditarAbierto(false)
+      }} />
 
-      <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} />
-      <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => { cargarContactos({}); setDialogoEditarAbierto(false) }} />
+      <DialogoCrearLead 
+        abierto={dialogoCrearAbierto} 
+        onCerrar={() => setDialogoCrearAbierto(false)} 
+        onCreado={() => cargarLeads()}
+        tipo="lead"
+      />
+
+      {leadParaCotizar && (
+        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} leadId={leadParaCotizar.id} nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ""}`} />
+      )}
+
+      {leadAEliminar && (
+        <DialogoConfirmarEliminar
+          abierto={dialogoEliminarAbierto}
+          onCerrar={() => {
+            setDialogoEliminarAbierto(false)
+            setLeadAEliminar(null)
+          }}
+          onConfirmar={async () => {
+            setEliminando(true)
+            try {
+              await leadService.eliminarLead(leadAEliminar.id)
+              toast({ title: "Éxito", description: "Lead eliminado correctamente" })
+              cargarLeads()
+              setDialogoEliminarAbierto(false)
+              setLeadAEliminar(null)
+            } catch (error: any) {
+              toast({ title: "Error", description: error.message || "No se pudo eliminar el lead", variant: "destructive" })
+            } finally {
+              setEliminando(false)
+            }
+          }}
+          nombre={`$${leadAEliminar.nombre} $${leadAEliminar.apellido || ""}`}
+          cargando={eliminando}
+        />
+      )}
+
+      <DialogoWhatsApp
+        abierto={dialogoWhatsappAbierto}
+        onCerrar={() => setDialogoWhatsappAbierto(false)}
+        mensajeInicial="Hola, te contacto para hacer seguimiento."
+        telefono={whatsappTelefono}
+        titulo="Enviar confirmación por WhatsApp"
+        onEnviar={handleEnviarWhatsApp}
+      />
+
+      {leadParaAgendar && (
+        <DialogoAgendarReunion
+          abierto={dialogoAgendarAbierto}
+          onCerrar={() => {
+            setDialogoAgendarAbierto(false)
+            setLeadParaAgendar(null)
+          }}
+          contactoNombre={leadParaAgendar.nombre}
+          contactoEmail={leadParaAgendar.correo}
+          contactoTelefono={leadParaAgendar.telefono}
+          onEventoCreado={() => {
+            cargarLeads()
+          }}
+        />
+      )}
+
+      <DialogoCrearOportunidad
+        abierto={dialogoOportunidadAbierto}
+        onCerrar={() => {
+          setDialogoOportunidadAbierto(false)
+          setLeadParaOportunidad(null)
+        }}
+        lead={leadParaOportunidad}
+        onCrear={handleCrearOportunidad}
+        cargando={agregandonPipeline !== null}
+      />
 
       <DialogoCrearAccesoWeb
         contacto={leadParaAccesoWeb}
         abierto={dialogoAccesoWebAbierto}
         onCancelar={() => {
-          setDialogoAccesoWebAbierto(false);
-          setLeadParaAccesoWeb(null);
+          setDialogoAccesoWebAbierto(false)
+          setLeadParaAccesoWeb(null)
         }}
         onCreado={() => {
-          cargarContactos({});
+          cargarLeads()
         }}
       />
-
-      {clienteParaOportunidad && (
-        <DialogoCrearOportunidad
-          clienteId={clienteParaOportunidad.id}
-          clienteNombre={`${clienteParaOportunidad.nombre} ${clienteParaOportunidad.apellido || ''}`}
-          open={dialogoOportunidadAbierto}
-          onOpenChange={setDialogoOportunidadAbierto}
-          onSuccess={() => { toast({ title: "¡Oportunidad creada!", description: "El cliente ha sido agregado al pipeline exitosamente" }); setDialogoOportunidadAbierto(false); setClienteParaOportunidad(null) }}
-        />
-      )}
-
-      {leadParaCotizar && (
-        <FormularioCotizacion open={dialogoCotizacionAbierto} onOpenChange={setDialogoCotizacionAbierto} onGuardar={handleGuardarCotizacion} contactoId={leadParaCotizar.id} nombreContacto={`${leadParaCotizar.nombre} ${leadParaCotizar.apellido || ''}`} />
-      )}
-
-      {/* Modal: Enviar WhatsApp de confirmación */}
-      <Dialog open={dialogoWhatsappAbierto} onOpenChange={setDialogoWhatsappAbierto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" />Enviar confirmación por WhatsApp</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="block text-sm text-muted-foreground">Mensaje</label>
-            <textarea className="w-full border rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#FCBA00]" rows={6} value={whatsappMensaje} onChange={(e) => setWhatsappMensaje(e.target.value)} />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => { navigator.clipboard.writeText(whatsappMensaje); toast({ title: 'Copiado', description: 'Mensaje copiado al portapapeles.' }) }}>Copiar</Button>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => {
-                let raw = (whatsappTelefono || '').replace(/\D/g, ''); if (raw.length === 9) raw = `51${raw}`; if (!raw) { toast({ title: 'Sin teléfono', description: 'Este contacto no tiene teléfono. Copia y envía manualmente.', variant: 'destructive' }); return; }
-                const url = `https://wa.me/${raw}?text=${encodeURIComponent(whatsappMensaje)}`; try { window.open(url, '_blank') } catch {}; setDialogoWhatsappAbierto(false);
-              }}>Abrir WhatsApp</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <AssistantFab onClick={() => setAbiertoAsistente(true)} />
       <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />

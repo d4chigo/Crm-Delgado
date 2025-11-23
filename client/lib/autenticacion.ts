@@ -7,13 +7,6 @@ import type { Usuario } from "@/types/autenticacion.types"
 // Re-exportar Usuario para compatibilidad
 export type { Usuario } from "@/types/autenticacion.types"
 
-// Interfaz simplificada para el localStorage (temporal)
-interface UsuarioSimple {
-  email: string
-  name: string
-  role: string
-}
-
 export function obtenerUsuario(): Usuario | null {
   if (typeof window === "undefined") return null
 
@@ -21,16 +14,19 @@ export function obtenerUsuario(): Usuario | null {
   if (!usuarioStr) return null
 
   try {
-    const usuarioSimple: UsuarioSimple = JSON.parse(usuarioStr)
-    // Convertir de formato simple a Usuario completo
-    return {
-      id: "temp-id",
-      email: usuarioSimple.email,
-      nombre: usuarioSimple.name,
-      rol: usuarioSimple.role as any,
-      creadoEn: new Date(),
+    // Obtener el usuario completo guardado desde auth.service.ts
+    // que ya contiene el id real
+    const usuario = JSON.parse(usuarioStr)
+    
+    // Si tiene id, es del usuario real
+    if (usuario.id) {
+      return usuario
     }
-  } catch {
+    
+    // Fallback por si acaso
+    return null
+  } catch (error) {
+    console.error('Error al parsear usuario:', error)
     return null
   }
 }

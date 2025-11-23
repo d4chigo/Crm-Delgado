@@ -20,6 +20,7 @@ export class ContactoController {
         tipo: req.query.tipo as any,
         ciudad: req.query.ciudad as string,
         busqueda: req.query.busqueda as string,
+        estado: req.query.estado as any,
         pagina: req.query.pagina ? Number(req.query.pagina) : undefined,
         limite: req.query.limite ? Number(req.query.limite) : undefined
       };
@@ -156,14 +157,18 @@ export class ContactoController {
       const usuarioId = req.usuario?.usuarioId;
       const { id } = req.params;
 
+      console.log(`🗑️ DELETE /contactos/:id - ID: ${id}, Usuario: ${usuarioId}`);
+
       if (!usuarioId) {
         respuestaError(res, 'Usuario no autenticado', 401);
         return;
       }
 
       const resultado = await contactoService.eliminarContacto(id, usuarioId);
+      console.log(`✅ Contacto eliminado: ${id}`);
       respuestaExito(res, resultado);
     } catch (error: any) {
+      console.error(`❌ Error al eliminar contacto: ${error.message}`);
       if (error.message === 'Contacto no encontrado') {
         respuestaError(res, error.message, 404);
         return;
@@ -374,10 +379,11 @@ export class ContactoController {
   async importarDesdeGoogle(req: Request, res: Response): Promise<void> {
     try {
       console.log('[Contacto Controller] Importar desde Google iniciado');
+      console.log('[Contacto Controller] req.usuario completo:', JSON.stringify(req.usuario, null, 2));
       const usuarioId = req.usuario?.usuarioId;
       const { accessToken } = req.body;
 
-      console.log('[Contacto Controller] Usuario ID:', usuarioId);
+      console.log('[Contacto Controller] Usuario ID extraído:', usuarioId);
       console.log('[Contacto Controller] Access token recibido:', accessToken ? `Sí (${accessToken.length} chars)` : 'No');
 
       if (!usuarioId) {
@@ -400,6 +406,46 @@ export class ContactoController {
       console.error('[Contacto Controller] Error en importación:', error.message);
       console.error('[Contacto Controller] Stack:', error.stack);
       respuestaError(res, error.message || 'Error al importar contactos desde Google', 500);
+    }
+  }
+
+  /**
+   * POST /api/contactos/:id/agregar-pipeline
+   * Agregar un lead al pipeline creando una oportunidad
+   */
+  async agregarAlPipeline(req: Request, res: Response): Promise<void> {
+    try {
+      const usuarioId = req.usuario?.usuarioId;
+      const { id: leadId } = req.params;
+      const datosOportunidad = req.body;
+
+      console.log('[ContactoController] agregarAlPipeline called:', { usuarioId, leadId, datosOportunidad });
+
+      if (!usuarioId) {
+        console.log('[ContactoController] usuarioId no encontrado');
+        respuestaError(res, 'Usuario no autenticado', 401);
+        return;
+      }
+
+      if (!leadId) {
+        console.log('[ContactoController] leadId no encontrado');
+        respuestaError(res, 'ID del lead requerido', 400);
+        return;
+      }
+
+      // Crear la oportunidad
+      console.log('[ContactoController] llamando a contactoService.agregarAlPipeline');
+      const oportunidad = await contactoService.agregarAlPipeline(leadId, usuarioId, datosOportunidad);
+      console.log('[ContactoController] oportunidad creada exitosamente');
+      respuestaExito(res, oportunidad, 'Lead agregado al pipeline correctamente');
+    } catch (error: any) {
+      console.error('[ContactoController] Error en agregarAlPipeline:', error.message);
+      console.error('[ContactoController] Stack:', error.stack);
+      if (error.message.includes('no encontrado')) {
+        respuestaError(res, error.message, 404);
+        return;
+      }
+      respuestaError(res, error.message || 'Error al agregar al pipeline', 500);
     }
   }
 }

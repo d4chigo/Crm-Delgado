@@ -6,6 +6,9 @@ import {
   getAuthStatus,
   logout,
   syncEvents,
+  crearEvento,
+  actualizarEvento,
+  eliminarEvento,
 } from '@/controllers/calendar.controller';
 
 const router = Router();
@@ -27,5 +30,14 @@ router.post('/logout', logout);
 
 // Sincronizar eventos
 router.post('/sync', syncEvents);
+
+// Crear evento en Google Calendar
+router.post('/create-event', crearEvento);
+
+// Actualizar evento en Google Calendar
+router.put('/update-event', actualizarEvento);
+
+// Eliminar evento en Google Calendar
+router.delete('/delete-event', eliminarEvento);
 
 export default router;

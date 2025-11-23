@@ -46,8 +46,8 @@ export interface LeadCliente {
 export interface Contacto {
   id: string;
   nombre: string;
-  apellido: string;
-  correo: string;
+  apellido?: string;
+  correo?: string;
   telefono?: string;
   direccion?: string;
   ciudad?: string;
@@ -179,6 +179,7 @@ export interface FiltrosContacto {
   busqueda?: string;
   pagina?: number;
   limite?: number;
+  estadoLead?: EstadoLead;
 }
 
 // Respuesta paginada

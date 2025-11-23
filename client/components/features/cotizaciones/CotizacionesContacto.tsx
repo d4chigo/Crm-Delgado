@@ -15,6 +15,8 @@ import type { Cotizacion, EstadoCotizacion } from '@/types/cotizacion.types';
 
 interface CotizacionesContactoProps {
   contactoId: string;
+  leadId?: string;
+  clienteId?: string;
   nombreContacto: string;
   tipoContacto?: 'LEAD' | 'CLIENTE';
   abrirFormularioPorDefecto?: boolean;
@@ -22,6 +24,8 @@ interface CotizacionesContactoProps {
 
 export const CotizacionesContacto = ({
   contactoId,
+  leadId,
+  clienteId,
   nombreContacto,
   tipoContacto,
   abrirFormularioPorDefecto = false
@@ -179,7 +183,8 @@ export const CotizacionesContacto = ({
           }}
           onGuardar={handleGuardar}
           cotizacion={cotizacionEditando}
-          contactoId={contactoId}
+          leadId={leadId}
+          clienteId={clienteId}
           nombreContacto={nombreContacto}
         />
 
