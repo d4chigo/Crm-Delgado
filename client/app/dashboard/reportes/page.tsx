@@ -236,7 +236,7 @@ export default function PaginaReportes() {
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold text-green-600">
-                ${(reporteConversion?.valorGanado || 0).toLocaleString()}
+                S/ {(reporteConversion?.valorGanado || 0).toLocaleString()}
               </div>
             </CardContent>
           </Card>
@@ -337,7 +337,7 @@ export default function PaginaReportes() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ${(reporteVentas?.montoTotal || 0).toLocaleString()}
+                  S/ {(reporteVentas?.montoTotal || 0).toLocaleString()}
                 </div>
               </CardContent>
             </Card>
@@ -373,7 +373,7 @@ export default function PaginaReportes() {
                         <TableCell className="font-medium">{venta.titulo}</TableCell>
                         <TableCell>{venta.cliente?.nombre || '-'}</TableCell>
                         <TableCell>{venta.proyecto || '-'}</TableCell>
-                        <TableCell>${(venta.valor || 0).toLocaleString()}</TableCell>
+                        <TableCell>S/ {(venta.valor || 0).toLocaleString()}</TableCell>
                         <TableCell>{venta.diasParaCierre}</TableCell>
                       </TableRow>
                     ))}
@@ -419,7 +419,7 @@ export default function PaginaReportes() {
                           <Badge>{cliente.oportunidadesActivas}</Badge>
                         </TableCell>
                         <TableCell className="font-semibold">
-                          ${cliente.montoEnJuego.toLocaleString()}
+                          S/ {cliente.montoEnJuego.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -513,7 +513,7 @@ export default function PaginaReportes() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Valor Generado</p>
-                      <p className="text-xl font-semibold">${reporteFuente.mejorFuente.valorGanado.toLocaleString()}</p>
+                      <p className="text-xl font-semibold">S/ {reporteFuente.mejorFuente.valorGanado.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -566,7 +566,7 @@ export default function PaginaReportes() {
                       <TableCell>{item.totalLeads}</TableCell>
                       <TableCell>{item.leadsConOportunidades}</TableCell>
                       <TableCell>{item.oportunidadesGanadas}</TableCell>
-                      <TableCell>${item.valorGanado.toLocaleString()}</TableCell>
+                      <TableCell>S/ {item.valorGanado.toLocaleString()}</TableCell>
                       <TableCell>{item.tasaConversion}%</TableCell>
                       <TableCell>
                         <Badge
