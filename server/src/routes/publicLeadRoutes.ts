@@ -65,7 +65,7 @@ router.post('/lead', async (req: Request, res: Response) => {
   try {
     const { nombre, apellido, email, telefono, interes, origen, mensaje } = req.body;
 
-    console.log('[Lead] Iniciando creación de lead:', { nombre, email, telefono });
+    console.log('[Lead] Iniciando creación de lead:', { nombre, email, telefono, origen });
 
     // Validaciones básicas
     if (!nombre || !email || !telefono) {
@@ -75,9 +75,9 @@ router.post('/lead', async (req: Request, res: Response) => {
       });
     }
 
-    // Verificar si ya existe un contacto con ese email o teléfono
-    console.log('[Lead] Buscando contacto existente...');
-    const contactoExistente = await prisma.contacto.findFirst({
+    // Verificar si ya existe un lead con ese email o teléfono
+    console.log('[Lead] Buscando lead existente...');
+    const leadExistente = await prisma.lead.findFirst({
       where: {
         OR: [
           { correo: email },
@@ -85,33 +85,29 @@ router.post('/lead', async (req: Request, res: Response) => {
         ]
       }
     });
-    console.log('[Lead] Búsqueda completada. Existente:', !!contactoExistente);
+    console.log('[Lead] Búsqueda completada. Existente:', !!leadExistente);
 
-    let contacto;
+    let lead;
 
-    if (contactoExistente) {
-      // Si existe, actualizar datos y cambiar a LEAD si no lo era
-      contacto = await prisma.contacto.update({
-        where: { id: contactoExistente.id },
+    if (leadExistente) {
+      // Si existe, actualizar datos
+      lead = await prisma.lead.update({
+        where: { id: leadExistente.id },
         data: {
           nombre: nombre,
-          apellido: apellido || contactoExistente.apellido,
+          apellido: apellido || leadExistente.apellido,
           correo: email,
           telefono: telefono,
-          tipo: 'LEAD' as any,
-          estadoLead: 'NUEVO' as any,
-          notas: mensaje || contactoExistente.notas
+          estado: 'NUEVO',
+          fuente: origen || 'Web',
+          notas: mensaje || leadExistente.notas
         }
       });
     } else {
       // Crear nuevo lead
-      // Obtener el primer usuario admin/supervisor para asignarle el lead
+      // Obtener el primer usuario admin para asignarle el lead
       const usuarioAsignado = await prisma.usuario.findFirst({
         where: {
-          OR: [
-            { rol: 'ADMIN' },
-            { rol: 'SUPERVISOR' }
-          ],
           activo: true
         },
         orderBy: { creadoEn: 'asc' }
@@ -124,15 +120,15 @@ router.post('/lead', async (req: Request, res: Response) => {
         });
       }
 
-      contacto = await prisma.contacto.create({
+      lead = await prisma.lead.create({
         data: {
           nombre: nombre,
           apellido: apellido || '',
           correo: email,
           telefono: telefono,
-          tipo: 'LEAD' as any,
-          estadoLead: 'NUEVO' as any,
-          notas: mensaje || `Interés: ${interes || 'No especificado'}. Origen: ${origen || 'Web'}`,
+          estado: 'NUEVO',
+          fuente: origen || 'Web',
+          notas: mensaje || `Interés: ${interes || 'No especificado'}`,
           usuarioId: usuarioAsignado.id
         }
       });
@@ -168,17 +164,17 @@ router.post('/lead', async (req: Request, res: Response) => {
 
         if (etiqueta) {
           // Verificar si ya tiene esta etiqueta
-          const tieneEtiqueta = await prisma.contactoEtiqueta.findFirst({
+          const tieneEtiqueta = await prisma.leadEtiqueta.findFirst({
             where: {
-              contactoId: contacto.id,
+              leadId: lead.id,
               etiquetaId: etiqueta.id
             }
           });
 
           if (!tieneEtiqueta) {
-            await prisma.contactoEtiqueta.create({
+            await prisma.leadEtiqueta.create({
               data: {
-                contactoId: contacto.id,
+                leadId: lead.id,
                 etiquetaId: etiqueta.id
               }
             });
@@ -190,7 +186,7 @@ router.post('/lead', async (req: Request, res: Response) => {
     // Crear notificación en el CRM
     try {
       await crearNotificacionNuevoLead({
-        leadId: contacto.id,
+        leadId: lead.id,
         nombre,
         apellido,
         email,
@@ -205,7 +201,7 @@ router.post('/lead', async (req: Request, res: Response) => {
     // Enviar notificación en tiempo real (WebSocket)
     try {
       await notificarNuevoLeadEnTiempoReal({
-        leadId: contacto.id,
+        leadId: lead.id,
         nombre,
         apellido,
         email,
@@ -235,16 +231,16 @@ router.post('/lead', async (req: Request, res: Response) => {
       // No interrumpir el flujo si falla WhatsApp
     }
 
-    console.log('✅ Lead creado exitosamente:', contacto.id);
+    console.log('✅ Lead creado exitosamente:', lead.id);
     res.status(201).json({
       exito: true,
       mensaje: 'Lead creado exitosamente',
-      contacto: {
-        id: contacto.id,
-        nombre: contacto.nombre,
-        apellido: contacto.apellido,
-        email: contacto.correo,
-        tipo: contacto.tipo
+      lead: {
+        id: lead.id,
+        nombre: lead.nombre,
+        apellido: lead.apellido,
+        email: lead.correo,
+        fuente: lead.fuente
       }
     });
 
