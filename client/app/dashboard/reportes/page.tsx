@@ -52,6 +52,7 @@ export default function PaginaReportes() {
   async function cargarTodosLosReportes() {
     setCargando(true)
     try {
+      console.log('[FRONTEND] Cargando reportes...')
       const [lead, conversion, actividad, ventas, clientes, tiempo, fuente] = await Promise.all([
         obtenerReporteLead(),
         obtenerReporteConversion(),
@@ -62,6 +63,8 @@ export default function PaginaReportes() {
         obtenerReporteFuenteLeads(),
       ])
 
+      console.log('[FRONTEND] Reportes cargados:', { lead, conversion, actividad, ventas, clientes, tiempo, fuente })
+
       setReporteLead(lead)
       setReporteConversion(conversion)
       setReporteActividad(actividad)
@@ -70,6 +73,7 @@ export default function PaginaReportes() {
       setReporteTiempo(tiempo)
       setReporteFuente(fuente)
     } catch (error: any) {
+      console.error('[FRONTEND] Error cargando reportes:', error)
       toast({
         title: "Error",
         description: "No se pudieron cargar los reportes",
