@@ -278,23 +278,6 @@ export default function PaginaReportes() {
         <TabsContent value="actividad" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Oportunidades por Agente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={reporteActividad?.oportunidadesPorAgente || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="usuario" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="oportunidadesTotal" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Oportunidades por Etapa</CardTitle>
             </CardHeader>
             <CardContent>
