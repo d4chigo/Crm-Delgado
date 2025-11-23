@@ -14,10 +14,9 @@ class ClientPortalController {
         return res.status(401).json({ error: 'No autenticado' });
       }
 
-      const cliente = await prisma.contacto.findFirst({
-        where: {
-          id: usuarioId
-        },
+      // Buscar en Cliente primero, luego en Lead
+      let cliente = await prisma.cliente.findUnique({
+        where: { id: usuarioId },
         select: {
           id: true,
           nombre: true,
@@ -28,7 +27,6 @@ class ClientPortalController {
           ciudad: true,
           provincia: true,
           dni: true,
-          tipo: true,
           creadoEn: true,
           usuario: {
             select: {
@@ -43,7 +41,39 @@ class ClientPortalController {
       });
 
       if (!cliente) {
-        return res.status(404).json({ error: 'Cliente no encontrado' });
+        const lead = await prisma.lead.findUnique({
+          where: { id: usuarioId },
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            direccion: true,
+            ciudad: true,
+            provincia: true,
+            dni: true,
+            creadoEn: true,
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                email: true,
+                telefono: true,
+                avatar: true
+              }
+            }
+          }
+        });
+
+        if (!lead) {
+          return res.status(404).json({ error: 'Cliente no encontrado' });
+        }
+
+        return res.json({
+          success: true,
+          data: lead
+        });
       }
 
       res.json({
@@ -70,18 +100,39 @@ class ClientPortalController {
 
       const { nombre, apellido, telefono, dni, direccion, ciudad, provincia } = req.body;
 
-      const clienteActualizado = await prisma.contacto.update({
-        where: { id: usuarioId },
-        data: {
-          nombre,
-          apellido,
-          telefono,
-          dni,
-          direccion,
-          ciudad,
-          provincia
-        }
+      // Intentar actualizar en Cliente
+      let clienteActualizado = await prisma.cliente.findUnique({
+        where: { id: usuarioId }
       });
+
+      if (clienteActualizado) {
+        clienteActualizado = await prisma.cliente.update({
+          where: { id: usuarioId },
+          data: {
+            nombre,
+            apellido,
+            telefono,
+            dni,
+            direccion,
+            ciudad,
+            provincia
+          }
+        });
+      } else {
+        // Si no está en Cliente, actualizar en Lead
+        clienteActualizado = await prisma.lead.update({
+          where: { id: usuarioId },
+          data: {
+            nombre,
+            apellido,
+            telefono,
+            dni,
+            direccion,
+            ciudad,
+            provincia
+          }
+        });
+      }
 
       res.json({
         success: true,
@@ -192,7 +243,12 @@ class ClientPortalController {
       }
 
       const cotizaciones = await prisma.cotizacion.findMany({
-        where: { contactoId: usuarioId },
+        where: {
+          OR: [
+            { leadId: usuarioId },
+            { clienteId: usuarioId }
+          ]
+        },
         orderBy: { creadoEn: 'desc' }
       });
 
@@ -406,7 +462,8 @@ class ClientPortalController {
         return res.status(401).json({ error: 'No autenticado' });
       }
 
-      const cliente = await prisma.contacto.findFirst({
+      // Buscar cliente primero, luego lead
+      let cliente = await prisma.cliente.findUnique({
         where: { id: usuarioId },
         select: {
           id: true,
@@ -426,8 +483,39 @@ class ClientPortalController {
         }
       });
 
+      if (!cliente) {
+        cliente = await prisma.lead.findUnique({
+          where: { id: usuarioId },
+          select: {
+            id: true,
+            nombre: true,
+            apellido: true,
+            correo: true,
+            telefono: true,
+            creadoEn: true,
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                telefono: true,
+                avatar: true
+              }
+            }
+          }
+        });
+      }
+
+      if (!cliente) {
+        return res.status(404).json({ error: 'Cliente no encontrado' });
+      }
+
       const oportunidades = await prisma.oportunidadCliente.findMany({
-        where: { clienteId: usuarioId },
+        where: {
+          OR: [
+            { clienteId: usuarioId },
+            { leadId: usuarioId }
+          ]
+        },
         orderBy: { ultimaActividad: 'desc' },
         take: 5
       });
@@ -437,7 +525,12 @@ class ClientPortalController {
       });
 
       const cotizaciones = await prisma.cotizacion.findMany({
-        where: { contactoId: usuarioId },
+        where: {
+          OR: [
+            { leadId: usuarioId },
+            { clienteId: usuarioId }
+          ]
+        },
         orderBy: { creadoEn: 'desc' },
         take: 3
       });

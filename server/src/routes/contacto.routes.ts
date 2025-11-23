@@ -12,6 +12,8 @@ import {
   resetearPasswordCliente,
   verificarAccesoWeb,
   eliminarAccesoWeb,
+  toggleAccesoWeb,
+  obtenerInfoAccesoWeb,
 } from '@/controllers/clienteWebController';
 
 const router = Router();
@@ -124,6 +126,18 @@ router.post(
 router.post(
   '/:id/resetear-password',
   resetearPasswordCliente
+);
+
+// Obtener información del acceso web
+router.get(
+  '/:id/acceso-web/info',
+  obtenerInfoAccesoWeb
+);
+
+// Activar/desactivar acceso web
+router.patch(
+  '/:id/acceso-web/estado',
+  toggleAccesoWeb
 );
 
 // Verificar si tiene acceso web

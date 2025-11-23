@@ -545,6 +545,7 @@ model PaginaServicio {
 model ClientePassword {
   contactoId    String   @id @map("contacto_id")
   passwordWeb   String   @map("password_web")
+  activo        Boolean  @default(true) @map("activo")
   creadoEn      DateTime @default(now()) @map("created_at")
   actualizadoEn DateTime @updatedAt @map("updated_at")
 

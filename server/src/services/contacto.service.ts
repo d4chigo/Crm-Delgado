@@ -332,13 +332,13 @@ export class ContactoService {
     }
 
     // Verificar correo único (solo si se proporciona y es diferente)
-    if (datos.correo && datos.correo !== contactoExistente.correo) {
+    if (datos.correo && datos.correo !== (contactoExistente.correo?.trim() || '')) {
       const correoEnLead = await prisma.lead.findFirst({
-        where: { correo: datos.correo }
+        where: { correo: datos.correo, id: { not: id } }
       });
 
       const correoEnCliente = await prisma.cliente.findFirst({
-        where: { correo: datos.correo }
+        where: { correo: datos.correo, id: { not: id } }
       });
 
       if (correoEnLead || correoEnCliente) {
@@ -347,13 +347,13 @@ export class ContactoService {
     }
 
     // Verificar DNI único (solo si se proporciona y es diferente)
-    if (datos.dni && datos.dni !== contactoExistente.dni) {
+    if (datos.dni && datos.dni !== (contactoExistente.dni?.trim() || '')) {
       const dniEnLead = await prisma.lead.findFirst({
-        where: { dni: datos.dni }
+        where: { dni: datos.dni, id: { not: id } }
       });
 
       const dniEnCliente = await prisma.cliente.findFirst({
-        where: { dni: datos.dni }
+        where: { dni: datos.dni, id: { not: id } }
       });
 
       if (dniEnLead || dniEnCliente) {
