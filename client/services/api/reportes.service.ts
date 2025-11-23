@@ -114,10 +114,10 @@ export async function obtenerReporteLead(filtros?: {
   if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
   if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
 
-  const response = await fetchAPI<{ datos: ReporteLead }>(
+  const response = await fetchAPI<ReporteLead>(
     `/reportes/leads?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
 
 /**
@@ -131,10 +131,10 @@ export async function obtenerReporteConversion(filtros?: {
   if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
   if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
 
-  const response = await fetchAPI<{ datos: ReporteConversion }>(
+  const response = await fetchAPI<ReporteConversion>(
     `/reportes/conversion?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
 
 /**
@@ -150,10 +150,10 @@ export async function obtenerReporteActividad(filtros?: {
   if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
   if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
 
-  const response = await fetchAPI<{ datos: ReporteActividad }>(
+  const response = await fetchAPI<ReporteActividad>(
     `/reportes/actividad?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
 
 /**
@@ -167,20 +167,20 @@ export async function obtenerReporteVentasCerradas(filtros?: {
   if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
   if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
 
-  const response = await fetchAPI<{ datos: ReporteVentasCerradas }>(
+  const response = await fetchAPI<ReporteVentasCerradas>(
     `/reportes/ventas-cerradas?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
 
 /**
  * Obtener Reporte de Clientes Activos
  */
 export async function obtenerReporteClientesActivos(): Promise<ReporteClientesActivos> {
-  const response = await fetchAPI<{ datos: ReporteClientesActivos }>(
+  const response = await fetchAPI<ReporteClientesActivos>(
     '/reportes/clientes-activos'
   );
-  return response.datos;
+  return response;
 }
 
 /**
@@ -192,10 +192,10 @@ export async function obtenerAnalisisTiempoEficiencia(filtros?: {
   const params = new URLSearchParams();
   if (filtros?.usuarioId) params.append('usuarioId', filtros.usuarioId);
 
-  const response = await fetchAPI<{ datos: AnalisisTiempoEficiencia }>(
+  const response = await fetchAPI<AnalisisTiempoEficiencia>(
     `/reportes/tiempo-eficiencia?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
 
 /**
@@ -209,8 +209,8 @@ export async function obtenerReporteFuenteLeads(filtros?: {
   if (filtros?.fechaInicio) params.append('fechaInicio', filtros.fechaInicio);
   if (filtros?.fechaFin) params.append('fechaFin', filtros.fechaFin);
 
-  const response = await fetchAPI<{ datos: ReporteFuenteLeads }>(
+  const response = await fetchAPI<ReporteFuenteLeads>(
     `/reportes/fuente-leads?${params.toString()}`
   );
-  return response.datos;
+  return response;
 }
