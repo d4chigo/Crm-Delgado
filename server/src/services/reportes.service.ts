@@ -17,36 +17,48 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
     if (filtros.fechaFin) where.creadoEn.lte = filtros.fechaFin;
   }
 
-  // Total de leads
-  const totalLeads = await prisma.lead.count({ where });
+  console.log('[REPORTE LEADS] Filtros:', filtros);
+  console.log('[REPORTE LEADS] Where:', where);
+  console.log('[REPORTE LEADS] Where keys:', Object.keys(where));
+
+  // Total de leads - usar undefined si where está vacío
+  const whereClause = Object.keys(where).length > 0 ? where : undefined;
+  console.log('[REPORTE LEADS] whereClause:', whereClause);
+  
+  const totalLeads = await prisma.lead.count({ where: whereClause });
+  console.log('[REPORTE LEADS] Total leads encontrados:', totalLeads);
 
   // Leads por fuente
   const leadsPorFuente = await prisma.lead.groupBy({
     by: ['fuente'],
-    where,
+    where: whereClause,
     _count: { id: true },
   });
 
   // Leads por etapa de oportunidad (más relevante que estado del lead)
+  const oppWhere: any = {
+    leadId: { not: null }
+  };
+  if (filtros?.usuarioId) {
+    oppWhere.usuarioId = filtros.usuarioId;
+  }
+  if (filtros?.fechaInicio || filtros?.fechaFin) {
+    oppWhere.creadoEn = {};
+    if (filtros.fechaInicio) oppWhere.creadoEn.gte = filtros.fechaInicio;
+    if (filtros.fechaFin) oppWhere.creadoEn.lte = filtros.fechaFin;
+  }
+  
+  const oppWhereClause = Object.keys(oppWhere).length > 1 ? oppWhere : { leadId: { not: null } };
+
   const oportunidadesPorEtapa = await prisma.oportunidadCliente.groupBy({
     by: ['etapa'],
-    where: {
-      ...where,
-      lead: {
-        isNot: null
-      }
-    },
+    where: oppWhereClause,
     _count: { id: true },
   });
 
   // Obtener oportunidades con sus fechas para calcular tiempo promedio
   const oportunidadesConFechas = await prisma.oportunidadCliente.findMany({
-    where: {
-      ...where,
-      lead: {
-        isNot: null
-      }
-    },
+    where: oppWhereClause,
     select: {
       id: true,
       etapa: true,

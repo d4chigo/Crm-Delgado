@@ -17,11 +17,15 @@ export async function reporteLeads(req: Request, res: Response) {
   try {
     const { usuarioId, fechaInicio, fechaFin } = req.query;
 
+    console.log('[CONTROLLER] reporteLeads - Query params:', { usuarioId, fechaInicio, fechaFin });
+
     const reporte = await obtenerReporteLead({
       usuarioId: usuarioId as string,
       fechaInicio: fechaInicio ? new Date(fechaInicio as string) : undefined,
       fechaFin: fechaFin ? new Date(fechaFin as string) : undefined,
     });
+
+    console.log('[CONTROLLER] reporteLeads - Reporte obtenido:', reporte);
 
     res.json({
       exito: true,
