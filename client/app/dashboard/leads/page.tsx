@@ -75,7 +75,7 @@ export default function PaginaLeads() {
         pagina: filtros?.pagina || 1,
         limite: 6,
         busqueda: filtros?.busqueda || "",
-        estadoLead: filtros?.estadoLead || ""
+        estadoLead: "" // No filtrar por estado en backend, lo haremos en frontend
       })
       setLeads(resultado.contactos || [])
       setPaginacion(resultado.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
@@ -98,9 +98,9 @@ export default function PaginaLeads() {
   }, [])
 
   useEffect(() => {
-    cargarLeads({ estadoLead: estadoFiltro, pagina: 1 })
+    cargarLeads({ pagina: 1 })
     cargarEtiquetas()
-  }, [estadoFiltro, cargarEtiquetas, cargarLeads])
+  }, [cargarEtiquetas, cargarLeads])
 
   useEffect(() => {
     // Limpiar timeout anterior si existe
@@ -110,7 +110,7 @@ export default function PaginaLeads() {
 
     // Configurar nuevo timeout con debounce
     searchTimeoutRef.current = setTimeout(() => {
-      cargarLeads({ busqueda, estadoLead: estadoFiltro, pagina: 1 })
+      cargarLeads({ busqueda, pagina: 1 })
     }, 500)
 
     // Cleanup
@@ -119,20 +119,50 @@ export default function PaginaLeads() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [busqueda, estadoFiltro, cargarLeads])
+  }, [busqueda, cargarLeads])
 
   const leadsEnPipeline = useMemo(() => {
-    return new Set(oportunidades?.map(o => o.clienteId) || [])
+    return new Set(oportunidades?.map(o => o.leadId || o.clienteId) || [])
+  }, [oportunidades])
+
+  // Función para determinar el estado lógico del lead basado en oportunidades
+  const determinarEstadoLogico = useCallback((lead: Lead): string => {
+    // Buscar oportunidad del lead
+    const oportunidadLead = oportunidades?.find(o => o.leadId === lead.id)
+    
+    if (oportunidadLead) {
+      if (oportunidadLead.etapa === 'CIERRE_GANADO') {
+        return 'GANADO' // En pipeline como CIERRE_GANADO
+      }
+      if (oportunidadLead.etapa === 'CIERRE_PERDIDO') {
+        return 'PERDIDO' // En pipeline como CIERRE_PERDIDO
+      }
+    }
+    
+    // Si no está en esos estados, usar el estadoLead del lead
+    return lead.estadoLead || 'NUEVO'
   }, [oportunidades])
 
   const leadsFiltrados = useMemo(() => {
+    let filtrados = leads
+    
+    // Filtrar por etiqueta
     if (etiquetaFiltro !== "todas") {
-      return leads.filter((lead: Lead) => 
+      filtrados = filtrados.filter((lead: Lead) => 
         lead.etiquetas?.some((e: any) => e.etiqueta.id === etiquetaFiltro)
       )
     }
-    return leads
-  }, [leads, etiquetaFiltro])
+    
+    // Filtrar por estado lógico si hay filtro de estado
+    if (estadoFiltro) {
+      filtrados = filtrados.filter((lead: Lead) => {
+        const estadoLogico = determinarEstadoLogico(lead)
+        return estadoLogico === estadoFiltro
+      })
+    }
+    
+    return filtrados
+  }, [leads, etiquetaFiltro, estadoFiltro, determinarEstadoLogico])
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
@@ -261,7 +291,7 @@ export default function PaginaLeads() {
     setDialogoWhatsappAbierto(true)
   }
 
-  const handleEnviarWhatsApp = useCallback((mensajeLocal: string) => {
+  const handleEnviarWhatsApp = useCallback(async (mensajeLocal: string) => {
     let raw = (whatsappTelefono || "").replace(/\D/g, "")
     if (raw.length === 9) raw = `51${raw}`
     if (!raw) {
@@ -271,10 +301,22 @@ export default function PaginaLeads() {
     
     // Actualizar estado a CONTACTADO si es NUEVO
     const leadActual = leads.find(l => l.telefono === whatsappTelefono)
-    if (leadActual && leadActual.estadoLead === 'NUEVO') {
-      leadService.actualizarLead(leadActual.id, { estadoLead: 'CONTACTADO' }).catch(error => {
+    if (leadActual && (leadActual.estadoLead === 'NUEVO' || leadActual.estado === 'NUEVO')) {
+      try {
+        await leadService.actualizarLead(leadActual.id, { estado: 'CONTACTADO' })
+        
+        // Actualizar el estado del lead en el state local inmediatamente
+        setLeads(leads.map(l => 
+          l.id === leadActual.id 
+            ? { ...l, estadoLead: 'CONTACTADO', estado: 'CONTACTADO' }
+            : l
+        ))
+        
+        toast({ title: "✓ Estado actualizado", description: "Lead marcado como En Contacto" })
+      } catch (error) {
         console.error('Error al actualizar estado:', error)
-      })
+        toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" })
+      }
     }
     
     const url = `https://wa.me/${raw}?text=${encodeURIComponent(mensajeLocal)}`
@@ -282,10 +324,9 @@ export default function PaginaLeads() {
       window.open(url, "_blank")
     } catch {}
     
-    // Recargar después de actualizar
-    setTimeout(() => cargarLeads(), 500)
+    // Cerrar diálogo
     setDialogoWhatsappAbierto(false)
-  }, [whatsappTelefono, leads, cargarLeads, toast])
+  }, [whatsappTelefono, leads, toast])
 
   const handleScheduleMeeting = (nombre: string, correo: string, telefono?: string) => {
     // Encontrar el lead actual para obtener más información
@@ -438,6 +479,7 @@ export default function PaginaLeads() {
                   key={lead.id}
                   lead={lead}
                   enPipeline={leadsEnPipeline.has(lead.id)}
+                  estadoLogico={determinarEstadoLogico(lead)}
                   onVerDetalles={(l) => {
                     setLeadSeleccionado(l)
                     setDialogoDetallesAbierto(true)

@@ -19,6 +19,7 @@ interface LeadCardProps {
   onEliminar?: (lead: Contacto) => void
   onCrearAccesoWeb?: (lead: Contacto) => void
   enPipeline?: boolean
+  estadoLogico?: string // Estado calculado basado en oportunidades
 }
 
 const obtenerColorEstado = (estado?: string): string => {
@@ -45,7 +46,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
     return prioridad ? colores[prioridad] : 'bg-gray-100 text-gray-700 border-gray-200'
 }
 
-export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, onCrearAccesoWeb, enPipeline }: LeadCardProps) {
+export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, onCrearAccesoWeb, enPipeline, estadoLogico }: LeadCardProps) {
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
       {/* Header con nombre y acciones rápidas */}
@@ -64,9 +65,9 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
             <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2 py-0.5">
               LEAD
             </Badge>
-            {lead.estadoLead && (
-              <Badge className={`${obtenerColorEstado(lead.estadoLead)} text-xs px-2 py-0.5`}>
-                {lead.estadoLead.replace('_', ' ')}
+            {(estadoLogico || lead.estadoLead) && (
+              <Badge className={`${obtenerColorEstado(estadoLogico || lead.estadoLead)} text-xs px-2 py-0.5`}>
+                {(estadoLogico || lead.estadoLead)?.replace('_', ' ')}
               </Badge>
             )}
             {lead.prioridad && (

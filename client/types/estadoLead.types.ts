@@ -72,6 +72,6 @@ export const FILTROS_LEADS = [
   { value: '', label: '👥 Todos los leads' },
   { value: EstadoLead.NUEVO, label: '📋 Sin Contactar' },
   { value: EstadoLead.CONTACTADO, label: '📞 En Contacto' },
-  { value: EstadoLead.CALIFICADO, label: '✅ Calificados' },
+  { value: EstadoLead.GANADO, label: '✅ Calificados' },
   { value: EstadoLead.PERDIDO, label: '❌ Descalificados' }
 ];

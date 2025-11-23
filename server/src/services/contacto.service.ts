@@ -33,6 +33,20 @@ export class ContactoService {
   }
 
   /**
+   * Mapear estado a estadoLead para consistencia con frontend
+   */
+  private mapearEstado(contacto: any): any {
+    if (contacto.estado) {
+      return {
+        ...contacto,
+        estadoLead: contacto.estado,
+        estado: undefined // Remover el campo original para evitar confusión
+      };
+    }
+    return contacto;
+  }
+
+  /**
    * Obtener todos los contactos con filtros
    */
   async obtenerContactos(usuarioId: string, filtros: FiltrosContacto = {}) {
@@ -195,8 +209,8 @@ export class ContactoService {
     }
 
 
-    // Agregar edad a cada contacto
-    const contactosConEdad = contactos.map((c: any) => this.agregarEdad(c));
+    // Agregar edad a cada contacto y mapear estado a estadoLead
+    const contactosConEdad = contactos.map((c: any) => this.mapearEstado(this.agregarEdad(c)));
 
     return {
       contactos: contactosConEdad,
@@ -247,8 +261,7 @@ export class ContactoService {
       ...contacto,
       etiquetas: (contacto as any).etiquetasRel
     };
-
-    return this.agregarEdad(contactoTransformado);
+    return this.mapearEstado(this.agregarEdad(contactoTransformado));
   }
 
   /**
@@ -348,7 +361,10 @@ export class ContactoService {
       }
     }
 
-    const { fechaNacimiento, ...restoDatos } = datos;
+    const { fechaNacimiento, estadoLead, estado, ...restoDatos } = datos;
+
+    // Mapear estadoLead a estado si viene desde el frontend
+    const estadoFinal = estado || estadoLead;
 
     // Actualizar en la tabla correspondiente
     let contactoActualizado;
@@ -357,6 +373,7 @@ export class ContactoService {
         where: { id },
         data: {
           ...restoDatos,
+          ...(estadoFinal && { estado: estadoFinal }),
           fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
         }
       });
@@ -365,12 +382,13 @@ export class ContactoService {
         where: { id },
         data: {
           ...restoDatos,
+          ...(estadoFinal && { estado: estadoFinal }),
           fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined
         }
       });
     }
 
-    return this.agregarEdad(contactoActualizado);
+    return this.mapearEstado(this.agregarEdad(contactoActualizado));
   }
 
   /**

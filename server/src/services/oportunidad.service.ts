@@ -449,7 +449,7 @@ export class OportunidadService {
                 console.log(`📌 Transfiriendo ${leadActual.etiquetasRel.length} etiqueta(s) al cliente...`);
                 
                 const etiquetasTransferidas = await prisma.clienteEtiqueta.createMany({
-                  data: leadActual.etiquetasRel.map(et => ({
+                  data: leadActual.etiquetasRel.map((et: any) => ({
                     clienteId: nuevoCliente.id,
                     etiquetaId: et.etiquetaId
                   })),

@@ -124,6 +124,8 @@ export interface ActualizarContactoDTO {
   sexo?: Sexo;
   fechaNacimiento?: string; // ISO string
   tipo?: 'LEAD' | 'CLIENTE';
+  estado?: EstadoLead; // Para actualizar el estado del lead
+  estadoLead?: EstadoLead; // Alias para compatibilidad con frontend
 }
 
 export interface FiltrosContacto {
