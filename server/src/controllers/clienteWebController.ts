@@ -196,6 +196,7 @@ export const verificarAccesoWeb = async (req: Request, res: Response) => {
       where: { contactoId },
       select: {
         contactoId: true,
+        activo: true,
         creadoEn: true,
         actualizadoEn: true,
       },
@@ -208,6 +209,7 @@ export const verificarAccesoWeb = async (req: Request, res: Response) => {
       tieneAcceso: !!acceso,
       datos: acceso ? {
         contactoId: acceso.contactoId,
+        activo: acceso.activo ?? true,
         creadoEn: acceso.creadoEn,
         actualizadoEn: acceso.actualizadoEn,
       } : null,
@@ -297,7 +299,7 @@ export const toggleAccesoWeb = async (req: Request, res: Response) => {
       exito: true,
       mensaje: `Acceso web ${activo ? 'activado' : 'desactivado'} exitosamente`,
       datos: {
-        activo: activo,
+        activo: accesoActualizado?.activo ?? activo,
       },
     });
   } catch (error) {
