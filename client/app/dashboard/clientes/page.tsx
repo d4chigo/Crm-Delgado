@@ -171,7 +171,7 @@ export default function PaginaClientes() {
 
                 {!estaCargando && clientesFiltrados.length > 0 && (
           <div className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ gridAutoRows: 'max-content', alignItems: 'start' }}>
               {clientesFiltrados.map((cliente) => (
                 <ClientCard
                   key={cliente.id}

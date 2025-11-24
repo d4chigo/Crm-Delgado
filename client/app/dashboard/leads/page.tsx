@@ -482,7 +482,7 @@ export default function PaginaLeads() {
 
         {!estaCargando && leadsFiltrados.length > 0 && (
           <div className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ gridAutoRows: 'max-content', alignItems: 'start' }}>
               {leadsFiltrados.map((lead) => (
                 <LeadCard
                   key={lead.id}
