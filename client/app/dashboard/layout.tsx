@@ -12,6 +12,7 @@ import {
   Home as IconoProyectos,
   Calendar as IconoActividades,
   BarChart3 as IconoReportes,
+  Mail as IconoEmail,
   Settings as IconoConfiguracion,
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
@@ -42,6 +43,7 @@ const navegacion: ElementoNavegacion[] = [
   },
   { nombre: "Actividades", href: "/dashboard/actividades", icono: IconoActividades },
   { nombre: "Reportes", href: "/dashboard/reportes", icono: IconoReportes },
+  { nombre: "Email Marketing", href: "/dashboard/email-marketing", icono: IconoEmail },
 ]
 
 export default function LayoutDashboard({ children }: { children: React.ReactNode }) {

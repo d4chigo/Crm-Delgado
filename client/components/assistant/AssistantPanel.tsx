@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { preguntarAsistente } from '@/services/api/assistant.service';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import MicrophoneButton from '@/components/assistant/MicrophoneButton';
+import ChatbotWidget from '@/components/assistant/ChatbotWidget';
 import type { Message as VoiceMsg } from '@/types/assistant.types';
 import { CallStatus } from '@/types/assistant.types';
 import { MessageCircle, Phone, X, Mic, Activity, Loader2 } from 'lucide-react';
@@ -100,8 +101,6 @@ export default function AssistantPanel({ open, onClose }: { open: boolean; onClo
     }
   }
 
-  const src = process.env.NEXT_PUBLIC_BOTCRM_URL || '/botcrm/index.html';
-
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-end pointer-events-none">
       <div className="m-4 w-full max-w-md pointer-events-auto">
@@ -117,13 +116,7 @@ export default function AssistantPanel({ open, onClose }: { open: boolean; onClo
             ×
           </button>
           <div className="rounded-2xl overflow-hidden bg-white dark:bg-neutral-900 max-h-[80vh]">
-            <iframe
-              title="Asistente Delgado"
-              src={src}
-              className="w-full h-[70vh]"
-              style={{ border: 0 }}
-              allow="microphone; autoplay; clipboard-read; clipboard-write"
-            />
+            <ChatbotWidget />
           </div>
         </div>
       </div>

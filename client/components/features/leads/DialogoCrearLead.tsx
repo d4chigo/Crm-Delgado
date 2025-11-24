@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -55,14 +55,14 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
     departamento: '',
   })
 
-  const handleChange = (campo: keyof CrearContactoDTO, valor: any) => {
+  const handleChange = useCallback((campo: keyof CrearContactoDTO, valor: any) => {
     setFormulario(prev => ({ ...prev, [campo]: valor }))
     
     // Calcular edad cuando cambia la fecha de nacimiento
     if (campo === 'fechaNacimiento') {
       setEdad(calcularEdad(valor))
     }
-  }
+  }, [])
 
   const handleBuscarDNI = async () => {
     if (!formulario.dni || !dniService.validarFormato(formulario.dni)) {
@@ -273,12 +273,15 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
             </Label>
             <Input
               id="correo"
-              type="text"
+              type="email"
               value={formulario.correo}
-              onChange={(e) => handleChange('correo', e.target.value)}
+              onChange={(e) => handleChange('correo', e.target.value.trim())}
               placeholder="juan@example.com"
               className="border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
             />
+            {formulario.correo && !formulario.correo.includes('@') && (
+              <p className="text-xs text-amber-600">⚠️ El email debe contener @</p>
+            )}
           </div>
 
           {/* Selector de Etiquetas */}

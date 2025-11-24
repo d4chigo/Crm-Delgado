@@ -46,7 +46,6 @@
         [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
     </style>
 
-<link rel="stylesheet" href="./index.css">
 <script type="importmap">
 {
   "imports": {
@@ -58,7 +57,28 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="./assets/index-BuHYAKbs.js"></script>
+<script>
+  // Inyectar variables de entorno para que import.meta.env las encuentre
+  const apiKey = localStorage.getItem('GOOGLE_API_KEY') || 'AIzaSyCCGIfq3uEYZh5kXY5g7LPTIRw5y_DI5yc';
+  const apiUrl = localStorage.getItem('VITE_API_URL') || 'http://localhost:5000/api';
+  
+  // Crear objeto import.meta.env global
+  if (!window.importMeta) {
+    window.importMeta = { env: {} };
+  }
+  window.importMeta.env.VITE_GOOGLE_API_KEY = apiKey;
+  window.importMeta.env.VITE_API_URL = apiUrl;
+  
+  // También en __ENV__ por compatibilidad
+  window.__ENV__ = {
+    VITE_GOOGLE_API_KEY: apiKey,
+    VITE_API_URL: apiUrl
+  };
+  
+  console.log('✅ Variables de entorno inyectadas:', { apiKey: apiKey ? '✓' : '✗', apiUrl });
+</script>
+<script src="./env-config.js"></script>
+<script type="module" crossorigin src="./assets/index-BuHYAKbs.js"></script>
 </head>
 <body class="antialiased" data-theme="dark">
     <div id="root"></div>
