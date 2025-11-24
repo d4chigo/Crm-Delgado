@@ -21,8 +21,8 @@ export const LeadNotificationsListener: React.FC = () => {
     toast.success(
       `🔔 ¡Nuevo Lead! ${lead.datos.nombre} - ${lead.datos.interes}`,
       {
-        position: 'top-right',
-        autoClose: 8000,
+        position: 'bottom-right',
+        autoClose: 5000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
