@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Contacto, Cotizacion } from '@/types';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Phone, MapPin, Building2, Briefcase, DollarSign, Calendar, IdCard, Cake, FileText, Tag, TrendingUp, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building2, Briefcase, DollarSign, Calendar, IdCard, Cake, FileText, Tag, TrendingUp, X, Loader2, ArrowRight } from 'lucide-react';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCotizaciones } from '@/hooks/useCotizaciones';
 import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones/ListaCotizacionesSoloLectura';
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
+import { toast } from '@/hooks/use-toast';
+import leadService from '@/services/api/lead.service';
 
 // Componente para mostrar un campo de información
 const InfoField = ({ icon: Icon, label, value, color = 'text-gray-600' }: { icon: any; label: string; value?: string | number; color?: string }) => (
@@ -33,12 +35,40 @@ interface DialogoDetallesLeadProps {
 
 export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: DialogoDetallesLeadProps) {
   const { cotizaciones, loading: loadingCotizaciones, cargarPorContacto } = useCotizaciones();
+  const [convirtiendo, setConvirtiendo] = useState(false);
 
   useEffect(() => {
     if (abierto && lead) {
       cargarPorContacto(lead.id);
     }
   }, [abierto, lead, cargarPorContacto]);
+
+  const handleConvertirACliente = async () => {
+    if (!lead) return;
+    
+    setConvirtiendo(true);
+    try {
+      await leadService.convertirACliente(lead.id);
+      toast({
+        title: '✅ Lead convertido',
+        description: `${lead.nombre} ha sido convertido a cliente exitosamente`,
+      });
+      // Cerrar primero para que se elimine del DOM inmediatamente
+      onCerrar();
+      // Luego recargar los leads
+      setTimeout(() => {
+        onActualizado?.();
+      }, 300);
+    } catch (error: any) {
+      toast({
+        title: '❌ Error al convertir',
+        description: error.message || 'No se pudo convertir el lead a cliente',
+        variant: 'destructive',
+      });
+    } finally {
+      setConvirtiendo(false);
+    }
+  };
 
   if (!lead) return null;
 
@@ -73,6 +103,21 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
             </div>
           </div>
           <div className="flex gap-2 flex-shrink-0">
+            {lead.tipo === 'LEAD' && (
+              <Button
+                onClick={handleConvertirACliente}
+                disabled={convirtiendo}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              >
+                {convirtiendo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
+                {convirtiendo ? 'Convirtiendo...' : 'Convertir a Cliente'}
+              </Button>
+            )}
             <Button
               onClick={onCerrar}
               variant="ghost"
