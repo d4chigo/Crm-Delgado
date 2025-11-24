@@ -45,7 +45,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
 
 export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportunidad, onEditar, onWhatsApp, onScheduleMeeting, onCrearAccesoWeb, onEliminar }: ClientCardProps) {
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-br from-white to-blue-50/20">
+    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-br from-white to-blue-50/20 min-h-[380px] flex flex-col">
       {/* Header con nombre y acciones rápidas */}
       <CardHeader className="pb-3 overflow-hidden">
         <div className="flex items-start justify-between gap-2 min-w-0">
@@ -95,9 +95,8 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
           </TooltipProvider>
         </div>
       </CardHeader>
-
       {/* Contenido principal */}
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-1">
         {/* Info de contacto con iconos */}
         <div className="space-y-2">
           {cliente.empresa && (
@@ -183,8 +182,9 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
         </p>
 
         {/* Botones de acción - ICONOS */}
-        <TooltipProvider>
-          <div className="flex gap-2 pt-3">
+        <div className="mt-auto">
+          <TooltipProvider>
+            <div className="flex gap-2 pt-3">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -270,7 +270,8 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
               </Tooltip>
             )}
           </div>
-        </TooltipProvider>
+          </TooltipProvider>
+        </div>
       </CardContent>
     </Card>
   )

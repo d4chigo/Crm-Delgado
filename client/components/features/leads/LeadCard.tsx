@@ -48,7 +48,7 @@ const obtenerColorPrioridad = (prioridad?: string): string => {
 
 export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp, onScheduleMeeting, onPipeline, onRemoverDelPipeline, onEliminar, onCrearAccesoWeb, enPipeline, estadoLogico }: LeadCardProps) {
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden">
+    <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500 bg-gradient-to-br from-white to-yellow-50/20 overflow-hidden min-h-[380px] flex flex-col">
       {/* Header con nombre y acciones rápidas */}
       <CardHeader className="pb-3 px-4 pt-3">
         {/* Primera fila: Nombre */}
@@ -110,9 +110,8 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
           </TooltipProvider>
         </div>
       </CardHeader>
-
       {/* Contenido principal */}
-      <CardContent className="space-y-2 px-4 py-3">
+      <CardContent className="space-y-2 px-4 py-3 flex-1">
         {/* Info de contacto con iconos */}
         <div className="space-y-1">
           {lead.empresa && (
@@ -198,8 +197,9 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
         </p>
 
         {/* Botones de acción - ICONOS */}
-        <TooltipProvider>
-          <div className="flex gap-1 pt-2 flex-wrap">
+        <div className="mt-auto">
+          <TooltipProvider>
+            <div className="flex gap-1 pt-2 flex-wrap">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -293,7 +293,8 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
               </Tooltip>
             )}
           </div>
-        </TooltipProvider>
+          </TooltipProvider>
+        </div>
       </CardContent>
     </Card>
   )

@@ -154,8 +154,12 @@ export function useContactos() {
       // Recarga inteligente para evitar páginas vacías y llenar espacios automáticamente
       const paginaActual = paginacion.pagina;
       const elementosEnPagina = contactos.length;
+      const limite = filtros.limite || 6;
       
-      if (elementosEnPagina === 1 && paginaActual > 1) {
+      // Si había 6 elementos y ahora habrá menos de 6 después de eliminar,
+      // recargar para traer de la siguiente página
+      // O si era el único elemento, retroceder a página anterior
+      if (elementosEnPagina <= 1 && paginaActual > 1) {
         // Si era el último elemento y no es la primera página, ir a página anterior
         setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
       } else {
@@ -168,7 +172,7 @@ export function useContactos() {
     } finally {
       setEstaCargando(false)
     }
-  }, [paginacion, contactos, refrescarContactos])
+  }, [paginacion, contactos, filtros, refrescarContactos])
 
   /**
    * Convertir contacto a lead
@@ -190,7 +194,7 @@ export function useContactos() {
       // Esperar un momento para asegurar que la DB se actualizó
       await new Promise(resolve => setTimeout(resolve, 200))
       
-      if (elementosEnPagina === 1 && paginaActual > 1) {
+      if (elementosEnPagina <= 1 && paginaActual > 1) {
         // Si era el último elemento y no es la primera página, ir a página anterior
         setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
       } else {
@@ -225,12 +229,15 @@ export function useContactos() {
       const elementosEnPagina = contactos.length;
       const convertidosEnEstaPagina = ids.filter(id => contactos.some((c: Contacto) => c.id === id)).length;
       
-      if (convertidosEnEstaPagina === elementosEnPagina && paginaActual > 1) {
-        // Si se convirtieron todos los elementos de esta página, ir a la anterior
-        setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
-      } else {
-        // Recargar la página actual para llenar con más elementos
-        refrescarContactos();
+      // Si se convirtieron elementos de esta página, recargar para llenar espacios
+      if (convertidosEnEstaPagina > 0) {
+        if (convertidosEnEstaPagina === elementosEnPagina && paginaActual > 1) {
+          // Si se convirtieron todos los elementos de esta página, ir a la anterior
+          setFiltros((prevFiltros: FiltrosContacto) => ({ ...prevFiltros, pagina: paginaActual - 1 }));
+        } else {
+          // Recargar la página actual para llenar con más elementos
+          refrescarContactos();
+        }
       }
       
       return resultado

@@ -385,7 +385,7 @@ export default function PaginaLeads() {
       
       toast({ title: "Éxito", description: "Oportunidad creada en el pipeline correctamente" })
       setDialogoOportunidadAbierto(false)
-      cargarLeads()
+      cargarLeadsConInteligencia()
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "No se pudo agregar al pipeline", variant: "destructive" })
     } finally {
@@ -398,7 +398,7 @@ export default function PaginaLeads() {
     try {
       await removerDelPipeline(lead.id)
       toast({ title: "Éxito", description: "Lead removido del pipeline" })
-      cargarLeads()
+      cargarLeadsConInteligencia()
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "No se pudo remover del pipeline", variant: "destructive" })
     } finally {
@@ -410,6 +410,62 @@ export default function PaginaLeads() {
     setLeadParaAccesoWeb(lead)
     setDialogoAccesoWebAbierto(true)
   }
+
+  // Función mejorada para recargar leads después de eliminación o conversión
+  const cargarLeadsConInteligencia = useCallback(async (filtrosPassed?: any) => {
+    setEstaCargando(true)
+    setError(null)
+    try {
+      const paginaActual = filtrosPassed?.pagina || paginacion.pagina
+      const limite = 6
+      
+      const resultado: any = await leadService.obtenerLeads({
+        tipo: "LEAD",
+        pagina: paginaActual,
+        limite: limite,
+        busqueda: filtrosPassed?.busqueda || busqueda,
+        estadoLead: ""
+      })
+      
+      // Si la página actual tiene menos items de lo esperado (significa que se eliminaron)
+      // y no es la última página, traer de la siguiente página para completar
+      if (resultado.contactos.length < limite && paginaActual < resultado.paginacion.totalPaginas) {
+        const resultadoSiguiente: any = await leadService.obtenerLeads({
+          tipo: "LEAD",
+          pagina: paginaActual + 1,
+          limite: limite - resultado.contactos.length,
+          busqueda: filtrosPassed?.busqueda || busqueda,
+          estadoLead: ""
+        })
+        
+        // Combinar los contactos de ambas páginas
+        const contactosCombinados = [...resultado.contactos, ...(resultadoSiguiente.contactos || [])]
+        setLeads(contactosCombinados)
+        setPaginacion(resultado.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
+      } 
+      // Si la página actual está completamente vacía pero hay páginas anteriores, retroceder
+      else if (resultado.contactos.length === 0 && paginaActual > 1) {
+        const resultadoPaginaAnterior: any = await leadService.obtenerLeads({
+          tipo: "LEAD",
+          pagina: paginaActual - 1,
+          limite: limite,
+          busqueda: filtrosPassed?.busqueda || busqueda,
+          estadoLead: ""
+        })
+        setLeads(resultadoPaginaAnterior.contactos || [])
+        setPaginacion(resultadoPaginaAnterior.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
+      } 
+      else {
+        setLeads(resultado.contactos || [])
+        setPaginacion(resultado.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
+      }
+    } catch (err: any) {
+      setError(err.message || "Error al cargar leads")
+      setLeads([])
+    } finally {
+      setEstaCargando(false)
+    }
+  }, [paginacion.pagina, busqueda])
 
   return (
     <div className="space-y-6">
@@ -588,7 +644,7 @@ export default function PaginaLeads() {
             try {
               await leadService.eliminarLead(leadAEliminar.id)
               toast({ title: "Éxito", description: "Lead eliminado correctamente" })
-              cargarLeads()
+              cargarLeadsConInteligencia()
               setDialogoEliminarAbierto(false)
               setLeadAEliminar(null)
             } catch (error: any) {

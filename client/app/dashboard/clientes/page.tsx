@@ -36,6 +36,7 @@ export default function PaginaClientes() {
     cargarContactos,
     cambiarPagina,
     filtros,
+    eliminarContacto,
   } = useContactos()
 
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Contacto | null>(null)
@@ -268,9 +269,8 @@ export default function PaginaClientes() {
           onConfirmar={async () => {
             setEliminando(true)
             try {
-              await contactoService.eliminarContacto(contactoAEliminar.id)
+              await eliminarContacto(contactoAEliminar.id)
               toast({ title: 'Éxito', description: 'Cliente eliminado correctamente' })
-              cargarContactos({})
               setDialogoEliminarAbierto(false)
               setContactoAEliminar(null)
             } catch (error: any) {
