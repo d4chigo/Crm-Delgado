@@ -22,7 +22,7 @@ export const LeadNotificationsListener: React.FC = () => {
       `🔔 ¡Nuevo Lead! ${lead.datos.nombre} - ${lead.datos.interes}`,
       {
         position: 'bottom-right',
-        autoClose: 5000,
+        autoClose: false,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -32,6 +32,11 @@ export const LeadNotificationsListener: React.FC = () => {
 
     // Reproducir sonido de notificación
     reproducirSonido();
+
+    // Limpiar el panel flotante después de 5 segundos
+    setTimeout(() => {
+      setNotificacionesRecibidas([]);
+    }, 5000);
   };
 
   const reproducirSonido = () => {

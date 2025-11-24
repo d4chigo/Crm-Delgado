@@ -84,6 +84,12 @@ export const NotificationBadge: React.FC = () => {
         requireInteraction: true
       });
     }
+
+    // Limpiar notificación de la campanita después de 20 minutos (1200000 ms)
+    setTimeout(() => {
+      setNotificaciones(prev => prev.filter(n => n !== lead));
+      setNoLeidas(prev => Math.max(0, prev - 1));
+    }, 1200000);
   };
 
   useLeadNotifications(userData?.id, handleNewLead);
