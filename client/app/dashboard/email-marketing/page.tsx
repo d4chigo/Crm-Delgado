@@ -292,11 +292,19 @@ export default function EmailMarketingPage() {
                   <textarea
                     value={contenido}
                     onChange={e => setContenido(e.target.value)}
-                    placeholder="Escribe el contenido del email. Usa {nombre} para personalizar con el nombre del contacto."
+                    placeholder="Escribe el contenido del email. Usa placeholders como {nombre} para personalizar automáticamente cada email."
                     rows={8}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm"
                   />
-                  <p className="text-xs text-gray-500 mt-2">💡 Tip: Usa {'{nombre}'} para personalizar el email</p>
+                  <div className="text-xs text-gray-600 mt-2 bg-blue-50 p-3 rounded border border-blue-200">
+                    <p className="font-semibold mb-1">💡 Placeholders disponibles para personalización:</p>
+                    <ul className="space-y-1 ml-4">
+                      <li>• <code className="bg-white px-1 rounded">{'{nombre}'}</code> - Nombre del contacto</li>
+                      <li>• <code className="bg-white px-1 rounded">{'{apellido}'}</code> - Apellido del contacto</li>
+                      <li>• <code className="bg-white px-1 rounded">{'{nombre_completo}'}</code> - Nombre y apellido</li>
+                    </ul>
+                    <p className="text-gray-600 mt-2">Ejemplo: "Hola {'{nombre}'}, te presentamos nuestras nuevas propiedades..."</p>
+                  </div>
                 </div>
 
                 {/* URL de Imagen */}

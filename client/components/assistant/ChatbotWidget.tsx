@@ -56,9 +56,9 @@ export default function ChatbotWidget() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-white to-gray-50">
+    <div className="flex flex-col h-screen max-h-[80vh] bg-gradient-to-b from-white to-gray-50">
       {/* Header Premium */}
-      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-4 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-4 text-white shadow-lg flex-shrink-0">
         <div className="flex items-center gap-3 mb-2">
           <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 backdrop-blur">
             <Image 
@@ -78,12 +78,12 @@ export default function ChatbotWidget() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Messages - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-xs px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+              className={`max-w-xs px-4 py-3 rounded-2xl text-sm leading-relaxed break-words ${
                 msg.role === 'user'
                   ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-br-none shadow-md'
                   : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
@@ -107,7 +107,7 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 p-4 bg-white">
+      <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
@@ -120,7 +120,7 @@ export default function ChatbotWidget() {
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-md hover:shadow-lg disabled:shadow-none"
+            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-md hover:shadow-lg disabled:shadow-none flex-shrink-0"
             title="Enviar mensaje"
           >
             <Send className="w-4 h-4" />

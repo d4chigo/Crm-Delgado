@@ -132,15 +132,29 @@ export async function enviarCampanaEmail(
         continue; // Continuar sin error
       }
 
-      // Preparar contenido del email
-      const contenidoPersonalizado = campana.contenido.replace(/{nombre}/g, contacto.nombre);
+      // Preparar contenido del email con placeholders personalizados
+      const placeholders = {
+        '{nombre}': contacto.nombre,
+        '{apellido}': contacto.apellido || '',
+        '{nombre_completo}': `${contacto.nombre} ${contacto.apellido || ''}`.trim(),
+      };
+      
+      let contenidoPersonalizado = campana.contenido;
+      Object.entries(placeholders).forEach(([placeholder, valor]) => {
+        contenidoPersonalizado = contenidoPersonalizado.replace(new RegExp(placeholder, 'g'), valor);
+      });
       
       // Construir HTML con imagen si existe
-      let htmlContent = campana.contenidoHtml
-        ? campana.contenidoHtml.replace(/{nombre}/g, contacto.nombre)
-        : `<pre style="font-family: Arial, sans-serif; font-size: 14px; white-space: pre-wrap; word-wrap: break-word;">${contenidoPersonalizado
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')}</pre>`;
+      let htmlContent = campana.contenidoHtml || '';
+      if (htmlContent) {
+        Object.entries(placeholders).forEach(([placeholder, valor]) => {
+          htmlContent = htmlContent.replace(new RegExp(placeholder, 'g'), valor);
+        });
+      } else {
+        htmlContent = `<pre style="font-family: Arial, sans-serif; font-size: 14px; white-space: pre-wrap; word-wrap: break-word;">${contenidoPersonalizado
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')}</pre>`;
+      }
 
       // Agregar imagen si existe URL válida
       if (campana.urlImagen && campana.urlImagen.trim()) {
