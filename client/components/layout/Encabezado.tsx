@@ -26,7 +26,7 @@ export function Encabezado({ alClickMenu }: PropiedadesEncabezado) {
         {/* Espacio flexible */}
         <div className="flex-1" />
 
-        {/* Solo notificaciones */}
+        {/* Notificaciones */}
         <NotificationBadge />
       </div>
     </header>
