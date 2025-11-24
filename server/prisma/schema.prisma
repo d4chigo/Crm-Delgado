@@ -249,6 +249,20 @@ model ProyectoCliente {
   @@map("proyecto_clientes")
 }
 
+model ProyectoContacto {
+  proyectoId String
+  contactoId String
+  tipoContacto String // 'CLIENTE' o 'LEAD'
+  asociadoEn DateTime  @default(now())
+  notas      String?
+  proyecto   Proyecto @relation("ProyectoContactos", fields: [proyectoId], references: [id], onDelete: Cascade)
+
+  @@id([proyectoId, contactoId])
+  @@index([proyectoId])
+  @@index([contactoId])
+  @@map("proyecto_contactos")
+}
+
 model Cotizacion {
   id                     String           @id @default(uuid())
   leadId                 String?
@@ -344,6 +358,7 @@ model Proyecto {
   actualizadoEn DateTime           @updatedAt
   usuarioId     String
   clientes      ProyectoCliente[]
+  contactos     ProyectoContacto[] @relation("ProyectoContactos")
   etiquetas     ProyectoEtiqueta[]
   usuario       Usuario            @relation(fields: [usuarioId], references: [id])
 

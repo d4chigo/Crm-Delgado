@@ -260,24 +260,50 @@ export const proyectoService = {
       throw new Error('El contacto no existe')
     }
 
-    // Verificar si ya está asociado
-    const existente = await prisma.proyectoCliente.findUnique({
+    const tipoContacto = cliente ? 'CLIENTE' : 'LEAD'
+
+    // Verificar si ya está asociado en ProyectoContacto
+    const existente = await prisma.proyectoContacto.findUnique({
       where: {
-        proyectoId_clienteId: {
+        proyectoId_contactoId: {
           proyectoId,
-          clienteId: datos.clienteId
+          contactoId: datos.clienteId
         }
       }
     })
 
     if (existente) {
-      throw new Error('El cliente ya está asociado a este proyecto')
+      throw new Error('El contacto ya está asociado a este proyecto')
     }
 
-    await prisma.proyectoCliente.create({
+    // Si es un cliente, también asociar en ProyectoCliente para compatibilidad
+    if (cliente) {
+      const existenteCliente = await prisma.proyectoCliente.findUnique({
+        where: {
+          proyectoId_clienteId: {
+            proyectoId,
+            clienteId: datos.clienteId
+          }
+        }
+      })
+
+      if (!existenteCliente) {
+        await prisma.proyectoCliente.create({
+          data: {
+            proyectoId,
+            clienteId: datos.clienteId,
+            notas: datos.notas
+          }
+        })
+      }
+    }
+
+    // Crear registro en ProyectoContacto
+    await prisma.proyectoContacto.create({
       data: {
         proyectoId,
-        clienteId: datos.clienteId,
+        contactoId: datos.clienteId,
+        tipoContacto,
         notas: datos.notas
       }
     })
@@ -306,6 +332,19 @@ export const proyectoService = {
    * Desasociar un cliente de un proyecto
    */
   async desasociarCliente(proyectoId: string, clienteId: string) {
+    // Eliminar de ProyectoContacto
+    await prisma.proyectoContacto.delete({
+      where: {
+        proyectoId_contactoId: {
+          proyectoId,
+          contactoId: clienteId
+        }
+      }
+    }).catch(() => {
+      // Si no existe en ProyectoContacto, continuar
+    })
+
+    // Eliminar de ProyectoCliente si existe (para compatibilidad)
     await prisma.proyectoCliente.delete({
       where: {
         proyectoId_clienteId: {
@@ -313,6 +352,8 @@ export const proyectoService = {
           clienteId
         }
       }
+    }).catch(() => {
+      // Si no existe en ProyectoCliente, continuar
     })
 
     return await this.obtenerPorId(proyectoId)
@@ -324,11 +365,22 @@ export const proyectoService = {
   async obtenerPorCliente(clienteId: string) {
     return await prisma.proyecto.findMany({
       where: {
-        clientes: {
-          some: {
-            clienteId
+        OR: [
+          {
+            clientes: {
+              some: {
+                clienteId
+              }
+            }
+          },
+          {
+            contactos: {
+              some: {
+                contactoId: clienteId
+              }
+            }
           }
-        }
+        ]
       },
       include: {
         etiquetas: {
