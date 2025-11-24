@@ -142,13 +142,13 @@ export default function PaginaClientes() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex gap-4 items-end">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar clientes" value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9" />
+            <Input placeholder="Buscar clientes" value={filtros?.busqueda || ''} onChange={(e) => handleBusqueda(e.target.value)} className="pl-9 w-full" />
           </div>
           <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
-            <SelectTrigger className="w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[220px]"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /><SelectValue placeholder="Todas las etiquetas" /></div></SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas las etiquetas</SelectItem>
               {Array.isArray(etiquetas) && etiquetas.map((et) => (
@@ -160,7 +160,7 @@ export default function PaginaClientes() {
           </Select>
           <Button 
             onClick={() => setDialogoCrearAbierto(true)}
-            className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] w-full sm:w-auto"
           >
             + Nuevo Cliente
           </Button>

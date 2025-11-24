@@ -1,16 +1,84 @@
 import { WebSocket } from 'ws';
 import { ai } from '../config/genai';
 import { getCRMContext } from '@/services/crm-context.service';
+import { registrarConexion, desregistrarConexion } from '@/services/notificacion-realtime.service';
 
 export async function handleVoiceSession(ws: WebSocket) {
-  if (!ai) {
-    ws.send(JSON.stringify({ type: 'error', message: 'AI not configured' }));
-    ws.close();
-    return;
-  }
-
+  let usuarioId: string | null = null;
   let liveSession: any = null;
 
+  try {
+    // Primero, esperar a que el cliente envíe su registro con usuarioId
+    const registroPromise = new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Timeout esperando registro de usuario'));
+      }, 5000);
+
+      const messageHandler = (data: Buffer) => {
+        try {
+          const msg = JSON.parse(data.toString());
+          if (msg.tipo === 'registro' && msg.usuarioId) {
+            clearTimeout(timeout);
+            ws.removeListener('message', messageHandler);
+            resolve(msg.usuarioId);
+          }
+        } catch (err) {
+          console.warn('[Voice] Error parsing registro message:', err);
+        }
+      };
+
+      ws.on('message', messageHandler);
+    });
+
+    usuarioId = await registroPromise;
+    console.log(`✅ Usuario ${usuarioId} registrado para notificaciones`);
+    
+    // Registrar la conexión para notificaciones
+    registrarConexion(usuarioId, ws);
+
+    // Enviar confirmación de registro
+    ws.send(JSON.stringify({ 
+      tipo: 'registro_confirmado',
+      usuarioId: usuarioId,
+      mensaje: 'Conectado para recibir notificaciones'
+    }));
+
+    // Si no hay AI configurado, solo mantener la conexión para notificaciones
+    if (!ai) {
+      console.log(`[Voice] AI no configurado, manteniendo conexión solo para notificaciones`);
+      
+      ws.on('close', () => {
+        if (usuarioId) {
+          desregistrarConexion(usuarioId);
+        }
+      });
+
+      ws.on('error', (err) => {
+        console.error('[Voice] WebSocket error:', err);
+        if (usuarioId) {
+          desregistrarConexion(usuarioId);
+        }
+      });
+
+      return;
+    }
+
+    // Si hay AI, continuar con la sesión de voz
+    handleVoiceSessionWithAI(ws, usuarioId, liveSession);
+
+  } catch (error: any) {
+    console.error('[Voice] Error en handleVoiceSession:', error);
+    ws.send(JSON.stringify({ type: 'error', message: error.message || 'Setup failed' }));
+    
+    if (usuarioId) {
+      desregistrarConexion(usuarioId);
+    }
+    
+    ws.close();
+  }
+}
+
+async function handleVoiceSessionWithAI(ws: WebSocket, usuarioId: string, liveSession: any) {
   try {
     // Obtener contexto del CRM al iniciar la sesión
     const context = await getCRMContext();
@@ -96,6 +164,9 @@ Estilo de respuesta en VOZ:
       if (liveSession) {
         liveSession.close();
       }
+      if (usuarioId) {
+        desregistrarConexion(usuarioId);
+      }
     });
 
     ws.on('error', (err) => {
@@ -103,10 +174,16 @@ Estilo de respuesta en VOZ:
       if (liveSession) {
         liveSession.close();
       }
+      if (usuarioId) {
+        desregistrarConexion(usuarioId);
+      }
     });
   } catch (error: any) {
-    console.error('[Voice] Error setting up session:', error);
+    console.error('[Voice] Error setting up AI session:', error);
     ws.send(JSON.stringify({ type: 'error', message: error.message || 'Setup failed' }));
+    if (usuarioId) {
+      desregistrarConexion(usuarioId);
+    }
     ws.close();
   }
 }

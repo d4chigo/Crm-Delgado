@@ -201,12 +201,7 @@ export const WidgetAlertas: React.FC<WidgetAlertasProps> = ({ usuarioId }) => {
         )}
 
         {/* Botón */}
-        <div className="flex items-center justify-between text-sm pt-2 border-t border-opacity-20">
-          <span className={`font-medium ${
-            esUrgente ? 'text-red-700' : 'text-yellow-700'
-          }`}>
-            Ver detalles
-          </span>
+        <div className="flex items-center justify-end text-sm pt-2 border-t border-opacity-20">
           <ChevronRight className="w-4 h-4" />
         </div>
       </div>

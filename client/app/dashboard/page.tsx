@@ -120,22 +120,25 @@ export default function PaginaDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header mejorado */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#303030] to-[#555] bg-clip-text text-transparent">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2">Bienvenido de vuelta, <span className="font-semibold text-[#303030]">{usuario.name}</span></p>
+      {/* Hero Section - Elegante y Minimalista */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 md:p-12">
+        {/* Decoración de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#FCBA00]/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
         </div>
-        <Button
-          variant="outline"
-          onClick={cargarMetricas}
-          className="border-[#FCBA00] text-[#FCBA00] hover:bg-[#FCBA00]/10 hover:text-[#FCBA00] transition-all duration-200 shadow-sm"
-        >
-          <IconoActualizar className="w-4 h-4 mr-2" />
-          Actualizar
-        </Button>
+
+        {/* Contenido */}
+        <div className="relative z-10">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              Bienvenido de vuelta
+            </h1>
+            <p className="text-lg text-slate-300">
+              <span className="font-semibold text-[#FCBA00]">{usuario.name}</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -155,110 +158,86 @@ export default function PaginaDashboard() {
         </div>
       )}
 
-      {/* Sección principal: Leads Recientes y Link Delgado */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Widget de Alertas y Leads Recientes - más ancho */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Widget de Alertas */}
-          {usuario?.id && <WidgetAlertas usuarioId={usuario.id} />}
-          
-          {/* Leads Recientes Card */}
-          <Card className="border-0 shadow-md h-full">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-bold text-[#303030] flex items-center gap-2">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <IconoUsuarios className="w-5 h-5 text-blue-600" />
-                  </div>
-                  Leads Recientes
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={cargarLeadsRecientes}
-                  className="bg-[#FCBA00] text-[#303030] border-[#FCBA00] hover:bg-[#E5A200] transition-all duration-200"
-                >
-                  <IconoActualizar className="w-4 h-4 mr-1" />
-                  Actualizar
-                </Button>
+      {/* Grid de contenido principal - Proporcional */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
+        {/* Sección izquierda - Leads Recientes */}
+        <Card className="border-0 shadow-lg overflow-hidden flex flex-col">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100/50 px-6 py-4 border-b border-blue-200">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <IconoUsuarios className="w-5 h-5 text-white" />
               </div>
-            </CardHeader>
-            <CardContent>
-              {cargandoLeads ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FCBA00]"></div>
-                  <span className="ml-2 text-sm text-muted-foreground">Cargando leads...</span>
-                </div>
-              ) : leadsRecientes.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <IconoUsuarios className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-sm font-medium">No hay leads recientes</p>
-                  <p className="text-xs mt-1">Los nuevos leads aparecerán aquí</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {leadsRecientes.slice(0, 6).map((lead, indice) => (
-                    <div
-                      key={lead.id || indice}
-                      className="flex items-center gap-4 p-4 rounded-lg bg-gradient-to-r from-gray-50 to-transparent border border-gray-200 hover:border-[#FCBA00]/50 hover:shadow-md hover:bg-[#FCBA00]/5 transition-all duration-200 group"
-                    >
-                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#FCBA00] to-[#E5A200] rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                        <span className="text-white font-bold text-sm">
-                          {lead.nombre ? lead.nombre.charAt(0).toUpperCase() : '?'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm text-[#303030] truncate group-hover:text-[#FCBA00] transition-colors">
-                          {lead.nombre || 'Sin nombre'}
-                        </h4>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {lead.correo || lead.telefono || 'Sin información de contacto'}
-                        </p>
-                        {lead.empresa && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            📍 {lead.empresa}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {lead.creadoEn ? new Date(lead.creadoEn).toLocaleDateString('es-ES') : 'Reciente'}
-                        </span>
-                        {lead.estadoLead && (
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                            lead.estadoLead === 'NUEVO'
-                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                              : lead.estadoLead === 'CONTACTADO'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                              : 'bg-green-100 text-green-700 border border-green-200'
-                          }`}>
-                            {lead.estadoLead}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {leadsRecientes.length > 6 && (
-                <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-                  <Button
-                    onClick={() => enrutador.push('/dashboard/leads')}
-                    className="bg-[#FCBA00] text-[#303030] hover:bg-[#E5A200] transition-all duration-200 font-semibold"
+              Últimos Leads
+            </h2>
+          </div>
+          
+          <CardContent className="p-6 flex-1 overflow-y-auto">
+            {cargandoLeads ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FCBA00]"></div>
+                <span className="ml-3 text-sm text-muted-foreground">Cargando leads...</span>
+              </div>
+            ) : leadsRecientes.length === 0 ? (
+              <div className="text-center h-full flex flex-col items-center justify-center">
+                <IconoUsuarios className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                <p className="text-slate-600 font-medium">Sin leads aún</p>
+                <p className="text-slate-500 text-sm mt-1">Los nuevos leads aparecerán aquí automáticamente</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {leadsRecientes.slice(0, 6).map((lead, indice) => (
+                  <div
+                    key={lead.id || indice}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-[#FCBA00]/50 transition-all duration-200 group cursor-pointer"
                   >
-                    Ver todos los leads ({leadsRecientes.length})
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <div className="flex-shrink-0 w-11 h-11 bg-gradient-to-br from-[#FCBA00] to-[#E5A200] rounded-full flex items-center justify-center shadow-md">
+                      <span className="text-white font-bold text-sm">
+                        {lead.nombre ? lead.nombre.charAt(0).toUpperCase() : '?'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-slate-900 truncate">
+                        {lead.nombre || 'Sin nombre'}
+                      </h4>
+                      <p className="text-xs text-slate-500 truncate">
+                        {lead.correo || lead.telefono || 'Sin contacto'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {lead.estadoLead && (
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                          lead.estadoLead === 'NUEVO'
+                            ? 'bg-blue-100 text-blue-700'
+                            : lead.estadoLead === 'CONTACTADO'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {lead.estadoLead}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+          
+          {leadsRecientes.length > 0 && (
+            <div className="px-6 py-4 border-t border-slate-200 text-center bg-slate-50">
+              <Button
+                onClick={() => enrutador.push('/dashboard/leads')}
+                className="bg-[#FCBA00] hover:bg-[#E5A200] text-slate-900 font-semibold w-full"
+              >
+                Ver todos los leads
+              </Button>
+            </div>
+          )}
+        </Card>
 
-        {/* Link Delgado - columna lateral */}
-        <div className="lg:col-span-1">
+        {/* Sección derecha - Link Delgado */}
+        <div className="flex flex-col">
           <WebPreview
             url="https://linkdelgado.netlify.app/"
             title="Link Delgado"

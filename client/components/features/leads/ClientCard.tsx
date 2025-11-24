@@ -47,10 +47,10 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
   return (
     <Card className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500 bg-gradient-to-br from-white to-blue-50/20">
       {/* Header con nombre y acciones rápidas */}
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
+      <CardHeader className="pb-3 overflow-hidden">
+        <div className="flex items-start justify-between gap-2 min-w-0">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 min-w-0">
               <User className="h-4 w-4 text-blue-600 flex-shrink-0" />
               <CardTitle className="text-lg truncate">
                 {cliente.nombre} {cliente.apellido}
