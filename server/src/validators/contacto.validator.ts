@@ -5,13 +5,24 @@ const soloLetrasRegexp = new RegExp("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$");
 const soloDigitosRegexp = new RegExp("^\\d+$");
 
 // Validar email de forma más robusta - acepta caracteres Unicode
-const emailRegexp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Regex mejorado que acepta emails más complejos
+const emailRegexp = /^[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // Email opcional que acepta strings vacíos
 const emailOpcional = z
   .union([
     z.string().trim().min(1).refine(
-      (val) => emailRegexp.test(val),
+      (val) => {
+        // Validación más permisiva: solo rechaza formatos claramente inválidos
+        if (!val.includes('@')) return false;
+        if (val.startsWith('@') || val.endsWith('@')) return false;
+        const [local, domain] = val.split('@');
+        if (!local || !domain) return false;
+        if (!domain.includes('.')) return false;
+        if (domain.startsWith('.') || domain.endsWith('.')) return false;
+        if (val.includes('..')) return false;
+        return true;
+      },
       'Correo electrónico inválido'
     ),
     z.string().trim().length(0) // string vacío
