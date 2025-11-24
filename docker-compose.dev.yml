@@ -87,6 +87,7 @@ services:
       - ./client/context:/app/context
       - ./client/styles:/app/styles
       - ./client/public:/app/public
+      - ./client/constants:/app/constants
       - ./client/middleware.ts:/app/middleware.ts
       - /app/node_modules
       - /app/.next
