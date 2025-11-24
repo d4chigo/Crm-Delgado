@@ -27,6 +27,7 @@ import contactoService from "@/services/api/contacto.service"
 import { useOportunidades } from "@/hooks/useOportunidades"
 import dynamic from "next/dynamic"
 import type { Contacto } from "@/types/contacto.types"
+import { EstadoLead } from "@/types/contacto.types"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 import { DialogoCrearOportunidad, type DatosOportunidad } from "@/components/features/opportunities/DialogoCrearOportunidad"
 
@@ -145,6 +146,14 @@ export default function PaginaLeads() {
 
   const leadsFiltrados = useMemo(() => {
     let filtrados = leads
+    
+    // Excluir leads contactados (estado CONTACTADO) que no estén en el filtro específico
+    if (!estadoFiltro) {
+      filtrados = filtrados.filter((lead: Lead) => {
+        const estadoLogico = determinarEstadoLogico(lead)
+        return estadoLogico !== 'CONTACTADO'
+      })
+    }
     
     // Filtrar por etiqueta
     if (etiquetaFiltro !== "todas") {
@@ -301,14 +310,14 @@ export default function PaginaLeads() {
     
     // Actualizar estado a CONTACTADO si es NUEVO
     const leadActual = leads.find(l => l.telefono === whatsappTelefono)
-    if (leadActual && (leadActual.estadoLead === 'NUEVO' || leadActual.estado === 'NUEVO')) {
+    if (leadActual && (leadActual.estadoLead === 'NUEVO' || leadActual.estadoLead === undefined)) {
       try {
-        await leadService.actualizarLead(leadActual.id, { estado: 'CONTACTADO' })
+        await leadService.actualizarLead(leadActual.id, { estadoLead: EstadoLead.CONTACTADO })
         
         // Actualizar el estado del lead en el state local inmediatamente
         setLeads(leads.map(l => 
           l.id === leadActual.id 
-            ? { ...l, estadoLead: 'CONTACTADO', estado: 'CONTACTADO' }
+            ? { ...l, estadoLead: EstadoLead.CONTACTADO }
             : l
         ))
         
