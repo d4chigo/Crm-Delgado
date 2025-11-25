@@ -147,14 +147,6 @@ export default function PaginaLeads() {
   const leadsFiltrados = useMemo(() => {
     let filtrados = leads
     
-    // Excluir leads contactados (estado CONTACTADO) que no estén en el filtro específico
-    if (!estadoFiltro) {
-      filtrados = filtrados.filter((lead: Lead) => {
-        const estadoLogico = determinarEstadoLogico(lead)
-        return estadoLogico !== 'CONTACTADO'
-      })
-    }
-    
     // Filtrar por etiqueta
     if (etiquetaFiltro !== "todas") {
       filtrados = filtrados.filter((lead: Lead) => 
