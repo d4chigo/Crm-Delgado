@@ -32,6 +32,10 @@ import AssistantFab from "@/components/assistant/AssistantFab"
 import AssistantPanel from "@/components/assistant/AssistantPanel"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
+import { PanelFiltrosAcumulables } from "@/components/features/filtros/PanelFiltrosAcumulables"
+import { useFiltrosAcumulables } from "@/hooks/useFiltrosAcumulables"
+import { FILTROS_PIPELINE as CONFIGURACION_FILTROS_PIPELINE } from "@/config/configuracionFiltros"
+import { mapeoFiltrosPipeline } from "@/utils/mapeoFiltros"
 
 // Mapeo de etapas para el pipeline
 const ETAPAS_PIPELINE: { id: string; nombre: string; color: string }[] = [
@@ -59,6 +63,19 @@ export default function PaginaPipeline() {
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const [overTrash, setOverTrash] = useState(false)
+  
+  // Hook para filtros acumulables
+  const {
+    filtrosActivos,
+    datosFiltrados,
+    agregarFiltro,
+    eliminarFiltro,
+    limpiarTodos
+  } = useFiltrosAcumulables({
+    datos: oportunidades,
+    mapeoFiltros: mapeoFiltrosPipeline
+  })
+  
   const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
     if (element) {
       (window as any).__pipelineScrollContainer = element
@@ -374,6 +391,15 @@ export default function PaginaPipeline() {
             </Select>
           </div>
         </div>
+
+        {/* Panel de Filtros Acumulables */}
+        <PanelFiltrosAcumulables
+          filtrosActivos={filtrosActivos}
+          onAgregarFiltro={agregarFiltro}
+          onEliminarFiltro={eliminarFiltro}
+          onLimpiarTodos={limpiarTodos}
+          configuracionFiltros={CONFIGURACION_FILTROS_PIPELINE}
+        />
 
         {/* Barra de búsqueda y filtros */}
         <div className="flex gap-4">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, FileText, ArrowRight, Loader2, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Trash2, TrendingUp, Building2, IdCard, Cake, Globe } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
+import { agregarEmojiEtiqueta } from "@/utils/etiqueta-emojis"
 
 interface LeadCardProps {
   lead: Contacto
@@ -183,7 +184,7 @@ export function LeadCard({ lead, onVerDetalles, onCotizar, onEditar, onWhatsApp,
                   }}
                   className="text-xs px-2 py-0.5"
                 >
-                  {ce.etiqueta.icono && <span className="mr-0.5">{ce.etiqueta.icono}</span>}
+                  <span className="mr-0.5">{agregarEmojiEtiqueta(ce.etiqueta.nombre, ce.etiqueta.icono)}</span>
                   {ce.etiqueta.nombre}
                 </Badge>
               ))}

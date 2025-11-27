@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, FileText, TrendingUp, User, Mail, Phone, DollarSign, MapPin, Edit, MessageSquare, Calendar, Globe, Trash2, Building2, IdCard, Cake } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Contacto, EstadoLead, Prioridad } from "@/types/contacto.types"
+import { agregarEmojiEtiqueta } from "@/utils/etiqueta-emojis"
 
 interface ClientCardProps {
   cliente: Contacto
@@ -168,7 +169,7 @@ export function ClientCard({ cliente, onVerDetalles, onCotizar, onAgregarOportun
                   }}
                   className="text-xs"
                 >
-                  {ce.etiqueta.icono && <span className="mr-1">{ce.etiqueta.icono}</span>}
+                  <span className="mr-1">{agregarEmojiEtiqueta(ce.etiqueta.nombre, ce.etiqueta.icono)}</span>
                   {ce.etiqueta.nombre}
                 </Badge>
               ))}

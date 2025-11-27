@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { agregarEmojiEtiqueta } from '@/utils/etiqueta-emojis';
 
 interface SelectorEtiquetasProps {
   contactoId: string;
@@ -198,7 +199,7 @@ export function SelectorEtiquetas({
           }}
           className="border"
         >
-          {etiquetaMostrar.icono && <span className="mr-1">{etiquetaMostrar.icono}</span>}
+          <span className="mr-1">{agregarEmojiEtiqueta(etiquetaMostrar.nombre, etiquetaMostrar.icono)}</span>
           {etiquetaMostrar.nombre}
         </Badge>
       </div>
@@ -270,7 +271,7 @@ export function SelectorEtiquetas({
                     }}
                     className="border"
                   >
-                    {etiqueta.icono && <span className="mr-1">{etiqueta.icono}</span>}
+                    <span className="mr-1">{agregarEmojiEtiqueta(etiqueta.nombre, etiqueta.icono)}</span>
                     {etiqueta.nombre}
                   </Badge>
                 </Label>

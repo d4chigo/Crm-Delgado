@@ -30,6 +30,10 @@ import type { Contacto } from "@/types/contacto.types"
 import { EstadoLead } from "@/types/contacto.types"
 import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
 import { DialogoCrearOportunidad, type DatosOportunidad } from "@/components/features/opportunities/DialogoCrearOportunidad"
+import { PanelFiltrosAcumulables } from "@/components/features/filtros/PanelFiltrosAcumulables"
+import { useFiltrosAcumulables } from "@/hooks/useFiltrosAcumulables"
+import { FILTROS_LEADS as CONFIGURACION_FILTROS_LEADS } from "@/config/configuracionFiltros"
+import { mapeoFiltrosLeads } from "@/utils/mapeoFiltros"
 
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
@@ -66,6 +70,18 @@ export default function PaginaLeads() {
   const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Lead | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { oportunidades, removerDelPipeline } = useOportunidades()
+  
+  // Hook para filtros acumulables
+  const {
+    filtrosActivos,
+    datosFiltrados,
+    agregarFiltro,
+    eliminarFiltro,
+    limpiarTodos
+  } = useFiltrosAcumulables({
+    datos: leads,
+    mapeoFiltros: mapeoFiltrosLeads
+  })
 
   const cargarLeads = useCallback(async (filtros?: any) => {
     setEstaCargando(true)
@@ -476,6 +492,15 @@ export default function PaginaLeads() {
         <StatCard title="Conversión" value="0%" description="Leads convertidos a clientes" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
       </div>
 
+      {/* Panel de Filtros Acumulables */}
+      <PanelFiltrosAcumulables
+        filtrosActivos={filtrosActivos}
+        onAgregarFiltro={agregarFiltro}
+        onEliminarFiltro={eliminarFiltro}
+        onLimpiarTodos={limpiarTodos}
+        configuracionFiltros={CONFIGURACION_FILTROS_LEADS}
+      />
+
       <div className="space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-2">
           {FILTROS_LEADS.map((filtro) => (
@@ -536,10 +561,10 @@ export default function PaginaLeads() {
           </Card>
         )}
 
-        {!estaCargando && leadsFiltrados.length > 0 && (
+        {!estaCargando && datosFiltrados.length > 0 && (
           <div className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ gridAutoRows: '1fr', alignItems: 'stretch' }}>
-              {leadsFiltrados.map((lead) => (
+              {datosFiltrados.map((lead) => (
                 <LeadCard
                   key={lead.id}
                   lead={lead}
@@ -572,7 +597,7 @@ export default function PaginaLeads() {
         {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t">
             <p className="text-sm text-muted-foreground">
-              Mostrando <span className="font-semibold">{leadsFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
+              Mostrando <span className="font-semibold">{datosFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
             </p>
             <div className="flex items-center gap-2">
               <Button 
@@ -602,13 +627,13 @@ export default function PaginaLeads() {
           </div>
         )}
 
-        {!estaCargando && leadsFiltrados.length === 0 && !error && (
+        {!estaCargando && datosFiltrados.length === 0 && !error && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No hay leads</h3>
               <p className="text-muted-foreground text-center mb-4">
-                {busqueda ? "No se encontraron leads con ese criterio de búsqueda" : "Importa contactos de Google o crea nuevos leads para comenzar a gestionarlos"}
+                {busqueda || filtrosActivos.length > 0 ? "No se encontraron leads con ese criterio de búsqueda o filtros" : "Importa contactos de Google o crea nuevos leads para comenzar a gestionarlos"}
               </p>
             </CardContent>
           </Card>

@@ -114,6 +114,13 @@ async function seed() {
             descripcion: 'Proyectos de habilitaciones urbanas',
             icono: '🏗️',
             orden: 11
+          },
+          {
+            nombre: 'Construcción',
+            color: '#DC2626', // Rojo
+            descripcion: 'Proyecto en fase de construcción',
+            icono: '🏢',
+            orden: 12
           }
         ]
       });
@@ -140,6 +147,26 @@ async function seed() {
         console.log('✅ Etiqueta "Habilitaciones" creada exitosamente');
       } else {
         console.log('ℹ️  La etiqueta "Habilitaciones" ya existe');
+      }
+
+      // Verificar si la etiqueta "Construcción" existe
+      const construccionExiste = await prisma.etiqueta.findFirst({
+        where: { nombre: 'Construcción' }
+      });
+      
+      if (!construccionExiste) {
+        await prisma.etiqueta.create({
+          data: {
+            nombre: 'Construcción',
+            color: '#DC2626', // Rojo
+            descripcion: 'Proyecto en fase de construcción',
+            icono: '🏢',
+            orden: 12
+          }
+        });
+        console.log('✅ Etiqueta "Construcción" creada exitosamente');
+      } else {
+        console.log('ℹ️  La etiqueta "Construcción" ya existe');
       }
     }
 

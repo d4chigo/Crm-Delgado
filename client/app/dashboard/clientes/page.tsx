@@ -23,6 +23,10 @@ import { Loader2, Search, Users, TrendingUp, Tag, ChevronLeft, ChevronRight, Mes
 import { TipoContacto, Contacto } from "@/types/contacto.types"
 import AssistantFab from "@/components/assistant/AssistantFab"
 import dynamic from "next/dynamic"
+import { PanelFiltrosAcumulables } from "@/components/features/filtros/PanelFiltrosAcumulables"
+import { useFiltrosAcumulables } from "@/hooks/useFiltrosAcumulables"
+import { FILTROS_CLIENTES as CONFIGURACION_FILTROS_CLIENTES } from "@/config/configuracionFiltros"
+import { mapeoFiltrosClientes } from "@/utils/mapeoFiltros"
 const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPanel"), { ssr: false })
 
 export default function PaginaClientes() {
@@ -68,6 +72,18 @@ export default function PaginaClientes() {
   // Agendar reunión
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [clienteParaAgendar, setClienteParaAgendar] = useState<Contacto | null>(null)
+
+  // Hook para filtros acumulables
+  const {
+    filtrosActivos,
+    datosFiltrados,
+    agregarFiltro,
+    eliminarFiltro,
+    limpiarTodos
+  } = useFiltrosAcumulables({
+    datos: contactos,
+    mapeoFiltros: mapeoFiltrosClientes
+  })
 
   useEffect(() => {
     cargarContactos({ tipo: TipoContacto.CLIENTE, pagina: 1, limite: 6 })
@@ -142,6 +158,15 @@ export default function PaginaClientes() {
         <StatCard title="Oportunidades" value="0" description="En proceso" icon={TrendingUp} iconColor="text-blue-500" valueColor="text-blue-600" />
       </div>
 
+      {/* Panel de Filtros Acumulables */}
+      <PanelFiltrosAcumulables
+        filtrosActivos={filtrosActivos}
+        onAgregarFiltro={agregarFiltro}
+        onEliminarFiltro={eliminarFiltro}
+        onLimpiarTodos={limpiarTodos}
+        configuracionFiltros={CONFIGURACION_FILTROS_CLIENTES}
+      />
+
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-end">
           <div className="flex-1 relative">
@@ -170,10 +195,10 @@ export default function PaginaClientes() {
         {estaCargando && (<div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#FCBA00]" /></div>)}
         {error && (<Card className="border-red-200 bg-red-50"><CardContent className="pt-6"><p className="text-red-600">{error}</p></CardContent></Card>)}
 
-                {!estaCargando && clientesFiltrados.length > 0 && (
+                {!estaCargando && datosFiltrados.length > 0 && (
           <div className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ gridAutoRows: '1fr', alignItems: 'stretch' }}>
-              {clientesFiltrados.map((cliente) => (
+              {datosFiltrados.map((cliente) => (
                 <ClientCard
                   key={cliente.id}
                   cliente={cliente}
@@ -200,7 +225,7 @@ export default function PaginaClientes() {
                 {!estaCargando && contactos.length > 0 && paginacion.totalPaginas > 1 && (
           <div className="flex items-center justify-between mt-8 pt-6 border-t">
             <p className="text-sm text-muted-foreground">
-              Mostrando <span className="font-semibold">{clientesFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> clientes
+              Mostrando <span className="font-semibold">{datosFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> clientes
             </p>
             <div className="flex items-center gap-2">
               <Button 
@@ -230,8 +255,8 @@ export default function PaginaClientes() {
           </div>
         )}
 
-        {!estaCargando && clientesFiltrados.length === 0 && !error && (
-          <Card><CardContent className="flex flex-col items-center justify-center py-12"><Users className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay clientes</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda ? "No se encontraron clientes con ese criterio de búsqueda" : "Convierte tus leads en clientes para comenzar"}</p></CardContent></Card>
+        {!estaCargando && datosFiltrados.length === 0 && !error && (
+          <Card><CardContent className="flex flex-col items-center justify-center py-12"><Users className="h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No hay clientes</h3><p className="text-muted-foreground text-center mb-4">{filtros?.busqueda || filtrosActivos.length > 0 ? "No se encontraron clientes con ese criterio de búsqueda o filtros" : "Convierte tus leads en clientes para comenzar"}</p></CardContent></Card>
         )}
       </div>
 

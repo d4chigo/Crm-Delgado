@@ -5,6 +5,7 @@ import { Etiqueta } from '@/types/etiqueta.types';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Loader2, Tag } from 'lucide-react';
+import { agregarEmojiEtiqueta } from '@/utils/etiqueta-emojis';
 
 interface SelectorEtiquetasCreacionProps {
   etiquetasSeleccionadas: string[]; // IDs de etiquetas seleccionadas (solo una)
@@ -104,7 +105,7 @@ export function SelectorEtiquetasCreacion({
                 style={{ backgroundColor: etiqueta.color }}
                 className="text-white text-xs py-0 px-2"
               >
-                {etiqueta.icono && <span className="mr-1">{etiqueta.icono}</span>}
+                <span className="mr-1">{agregarEmojiEtiqueta(etiqueta.nombre, etiqueta.icono)}</span>
                 {etiqueta.nombre}
               </Badge>
             );
@@ -156,7 +157,7 @@ export function SelectorEtiquetasCreacion({
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: etiqueta.color }}
               />
-              {etiqueta.icono && <span className="text-xs">{etiqueta.icono}</span>}
+              <span className="text-xs">{agregarEmojiEtiqueta(etiqueta.nombre, etiqueta.icono)}</span>
               <span className="text-xs">{etiqueta.nombre}</span>
             </Label>
           </div>

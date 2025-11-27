@@ -14,6 +14,7 @@ import { ListaCotizacionesSoloLectura } from '@/components/features/cotizaciones
 import { ESTADOS_LEAD_DISPLAY } from '@/types/estadoLead.types';
 import { toast } from '@/hooks/use-toast';
 import leadService from '@/services/api/lead.service';
+import { agregarEmojiEtiqueta } from '@/utils/etiqueta-emojis';
 
 // Componente para mostrar un campo de información
 const InfoField = ({ icon: Icon, label, value, color = 'text-gray-600' }: { icon: any; label: string; value?: string | number; color?: string }) => (
@@ -218,7 +219,7 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
                           border: `1px solid ${et.etiqueta.color}`
                         }}
                       >
-                        {et.etiqueta.icono && <span className="mr-0.5">{et.etiqueta.icono}</span>}
+                        <span className="mr-0.5">{agregarEmojiEtiqueta(et.etiqueta.nombre, et.etiqueta.icono)}</span>
                         {et.etiqueta.nombre}
                       </Badge>
                     ))}
