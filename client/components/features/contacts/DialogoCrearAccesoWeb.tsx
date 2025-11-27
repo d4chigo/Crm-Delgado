@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Globe, Copy, CheckCircle2, AlertCircle, Trash2, Eye, EyeOff, Lock, Unlock } from "lucide-react"
 import type { Contacto } from "@/types/contacto.types"
 import { useToast } from "@/hooks/use-toast"
+import { useClipboard } from "@/hooks/useClipboard"
 
 interface DialogoCrearAccesoWebProps {
   contacto: Contacto | null
@@ -55,6 +56,7 @@ export function DialogoCrearAccesoWeb({
   const [error, setError] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
   const { toast } = useToast()
+  const { copyToClipboard } = useClipboard()
 
   useEffect(() => {
     if (abierto && contacto) {
@@ -316,19 +318,16 @@ export function DialogoCrearAccesoWeb({
     }
   }
 
-  const handleCopiarCredenciales = () => {
+  const handleCopiarCredenciales = async () => {
     if (!acceso) return
 
     const texto = `Portal Web - Credenciales de Acceso\n\nCliente: ${contacto?.nombre} ${contacto?.apellido}\nURL: ${acceso.urlPortal}\nCorreo: ${acceso.correo}\nContraseña: ${acceso.passwordTemporal}\n\nPor favor, cambie su contraseña después del primer inicio de sesión.`
 
-    navigator.clipboard.writeText(texto)
-    setCopiado(true)
-    toast({
-      title: "✅ Copiado",
-      description: "Las credenciales se copiaron al portapapeles",
-    })
-
-    setTimeout(() => setCopiado(false), 2000)
+    const success = await copyToClipboard(texto, "✅ Copiado")
+    if (success) {
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2000)
+    }
   }
 
   const handleCerrar = () => {
@@ -455,10 +454,7 @@ export function DialogoCrearAccesoWeb({
                     <div className="flex justify-between items-center bg-slate-50 p-2 rounded mt-1 border border-slate-200">
                       <code className="text-xs text-[#FCBA00]">{acceso.urlPortal}</code>
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(acceso.urlPortal)
-                          toast({ title: "✅ Copiado" })
-                        }}
+                        onClick={() => copyToClipboard(acceso.urlPortal)}
                         className="text-slate-400 hover:text-slate-600"
                       >
                         <Copy className="h-3 w-3" />
@@ -471,10 +467,7 @@ export function DialogoCrearAccesoWeb({
                     <div className="flex justify-between items-center bg-slate-50 p-2 rounded mt-1 border border-slate-200">
                       <code className="text-xs">{acceso.correo}</code>
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(acceso.correo)
-                          toast({ title: "✅ Copiado" })
-                        }}
+                        onClick={() => copyToClipboard(acceso.correo)}
                         className="text-slate-400 hover:text-slate-600"
                       >
                         <Copy className="h-3 w-3" />
@@ -507,10 +500,7 @@ export function DialogoCrearAccesoWeb({
                         {mostraContraseña ? acceso.passwordTemporal : '••••••••••'}
                       </code>
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(acceso.passwordTemporal)
-                          toast({ title: "✅ Copiado" })
-                        }}
+                        onClick={() => copyToClipboard(acceso.passwordTemporal)}
                         className="text-slate-400 hover:text-slate-600"
                       >
                         <Copy className="h-3 w-3" />

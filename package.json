@@ -1,7 +1,7 @@
 {
-  "name": "crm-delgado",
+  "name": "crm-delgado-escritorio",
   "version": "1.0.0",
-  "description": "",
+  "description": "Aplicación de escritorio CRM Delgado",
   "homepage": "https://github.com/d4chigo/Crm-Delgado#readme",
   "bugs": {
     "url": "https://github.com/d4chigo/Crm-Delgado/issues"
@@ -12,13 +12,15 @@
   },
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
-  "main": "app/main.js",
+  "type": "module",
+  "main": "app/dist/principal.js",
   "scripts": {
-    "dev": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "node iniciar.js setup",
+    "dev": "node iniciar.js dev",
+    "build": "node iniciar.js build",
+    "package": "node iniciar.js package"
   },
-  "devDependencies": {
-    "electron": "^38.2.1"
+  "dependencies": {
+    "dotenv": "^16.6.1"
   }
 }

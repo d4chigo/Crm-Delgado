@@ -10,8 +10,8 @@ datasource db {
 model Usuario {
   id            String               @id @default(uuid())
   nombre        String
-  email         String               @unique
-  password      String
+  correo        String               @unique
+  contrasena    String
   rol           Rol                  @default(AGENTE)
   avatar        String?
   telefono      String?
@@ -38,16 +38,16 @@ model Lead {
   ciudad            String?
   dni               String?
   sexo              Sexo?
-  fechaNacimiento   DateTime?
-  creadoEn          DateTime             @default(now())
-  actualizadoEn     DateTime             @updatedAt
-  usuarioId         String
+  fecha_nacimiento  DateTime?
+  creado_en         DateTime             @default(now())
+  actualizado_en    DateTime             @updatedAt
+  id_usuario        String
   cargo             String?
   departamento      String?
   distrito          String?
   empresa           String?
   estado            EstadoLead?          @default(NUEVO)
-  fechaSeguimiento  DateTime?
+  fecha_seguimiento DateTime?
   fuente            String?
   etiquetas         String?
   notas             String?
@@ -56,15 +56,15 @@ model Lead {
   probabilidad      Int?
   provincia         String?
   etiquetasRel      LeadEtiqueta[]
-  usuario           Usuario              @relation(fields: [usuarioId], references: [id])
+  usuario           Usuario              @relation(fields: [id_usuario], references: [id])
   oportunidades     OportunidadCliente[]
   clientesAsociados LeadClienteAsociacion[] @relation("LeadRelacion")
   alertas           AlertaLead[]
   cotizaciones      Cotizacion[]
 
-  @@index([usuarioId])
+  @@index([id_usuario])
   @@index([correo])
-  @@index([creadoEn])
+  @@index([creado_en])
   @@index([departamento])
   @@index([estado])
   @@index([prioridad])
@@ -81,31 +81,31 @@ model Cliente {
   ciudad            String?
   dni               String?
   sexo              Sexo?
-  fechaNacimiento   DateTime?
-  creadoEn          DateTime             @default(now())
-  actualizadoEn     DateTime             @updatedAt
-  usuarioId         String
+  fecha_nacimiento  DateTime?
+  creado_en         DateTime             @default(now())
+  actualizado_en    DateTime             @updatedAt
+  id_usuario        String
   cargo             String?
   departamento      String?
   distrito          String?
   empresa           String?
-  fechaConversion   DateTime?
-  fechaSeguimiento  DateTime?
+  fecha_conversion  DateTime?
+  fecha_seguimiento DateTime?
   notas             String?
   presupuesto       Float?
   prioridad         Prioridad            @default(MEDIA)
   probabilidad      Int?
   provincia         String?
   etiquetasRel      ClienteEtiqueta[]
-  usuario           Usuario              @relation(fields: [usuarioId], references: [id])
+  usuario           Usuario              @relation(fields: [id_usuario], references: [id])
   cotizaciones      Cotizacion[]
   oportunidades     OportunidadCliente[]
   proyectos         ProyectoCliente[]
   leadsAsociados    LeadClienteAsociacion[] @relation("ClienteRelacion")
 
-  @@index([usuarioId])
+  @@index([id_usuario])
   @@index([correo])
-  @@index([creadoEn])
+  @@index([creado_en])
   @@index([departamento])
   @@index([prioridad])
   @@map("clientes")
@@ -119,8 +119,8 @@ model Etiqueta {
   icono         String?
   activa        Boolean            @default(true)
   orden         Int                @default(0)
-  creadoEn      DateTime           @default(now())
-  actualizadoEn DateTime           @updatedAt
+  creado_en     DateTime           @default(now())
+  actualizado_en DateTime          @updatedAt
   leads         LeadEtiqueta[]
   clientes      ClienteEtiqueta[]
   proyectos     ProyectoEtiqueta[]
@@ -131,175 +131,175 @@ model Etiqueta {
 }
 
 model LeadEtiqueta {
-  leadId     String
-  etiquetaId String
-  asignadoEn DateTime @default(now())
-  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+  id_lead    String
+  id_etiqueta String
+  asignado_en DateTime @default(now())
+  lead       Lead     @relation(fields: [id_lead], references: [id], onDelete: Cascade)
+  etiqueta   Etiqueta @relation(fields: [id_etiqueta], references: [id], onDelete: Cascade)
 
-  @@id([leadId, etiquetaId])
-  @@index([leadId])
-  @@index([etiquetaId])
+  @@id([id_lead, id_etiqueta])
+  @@index([id_lead])
+  @@index([id_etiqueta])
   @@map("lead_etiquetas")
 }
 
 model ClienteEtiqueta {
-  clienteId  String
-  etiquetaId String
-  asignadoEn DateTime @default(now())
-  cliente    Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+  id_cliente  String
+  id_etiqueta String
+  asignado_en DateTime @default(now())
+  cliente     Cliente  @relation(fields: [id_cliente], references: [id], onDelete: Cascade)
+  etiqueta    Etiqueta @relation(fields: [id_etiqueta], references: [id], onDelete: Cascade)
 
-  @@id([clienteId, etiquetaId])
-  @@index([clienteId])
-  @@index([etiquetaId])
+  @@id([id_cliente, id_etiqueta])
+  @@index([id_cliente])
+  @@index([id_etiqueta])
   @@map("cliente_etiquetas")
 }
 
 model LeadClienteAsociacion {
-  leadId     String
-  clienteId  String
-  asociadoEn DateTime @default(now())
+  id_lead    String
+  id_cliente String
+  asociado_en DateTime @default(now())
   notas      String?
   estado     String?
-  cliente    Cliente  @relation("ClienteRelacion", fields: [clienteId], references: [id], onDelete: Cascade)
-  lead       Lead     @relation("LeadRelacion", fields: [leadId], references: [id], onDelete: Cascade)
+  cliente    Cliente  @relation("ClienteRelacion", fields: [id_cliente], references: [id], onDelete: Cascade)
+  lead       Lead     @relation("LeadRelacion", fields: [id_lead], references: [id], onDelete: Cascade)
 
-  @@id([leadId, clienteId])
-  @@index([leadId])
-  @@index([clienteId])
+  @@id([id_lead, id_cliente])
+  @@index([id_lead])
+  @@index([id_cliente])
   @@map("lead_cliente_asociaciones")
 }
 
 model OportunidadCliente {
   id              String        @id @default(uuid())
-  leadId          String?
-  clienteId       String?
+  id_lead         String?
+  id_cliente      String?
   titulo          String
   proyecto        String?
   propiedad       String?
   etapa           String        @default("CONTACTO_INICIAL")
   valor           Float?
   probabilidad    Int?          @default(25)
-  proximaAccion   String?
-  ultimaActividad DateTime      @default(now())
+  proxima_accion  String?
+  ultima_actividad DateTime     @default(now())
   notas           String?
-  creadoEn        DateTime      @default(now())
-  actualizadoEn   DateTime      @updatedAt
-  usuarioId       String
-  lead            Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  cliente         Cliente?      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
+  creado_en       DateTime      @default(now())
+  actualizado_en  DateTime      @updatedAt
+  id_usuario      String
+  lead            Lead?         @relation(fields: [id_lead], references: [id], onDelete: Cascade)
+  cliente         Cliente?      @relation(fields: [id_cliente], references: [id], onDelete: Cascade)
+  usuario         Usuario       @relation(fields: [id_usuario], references: [id])
 
-  @@index([leadId])
-  @@index([clienteId])
-  @@index([usuarioId])
+  @@index([id_lead])
+  @@index([id_cliente])
+  @@index([id_usuario])
   @@index([etapa])
-  @@index([creadoEn])
+  @@index([creado_en])
   @@map("oportunidades_clientes")
 }
 
 model HistorialPipelineLead {
   id                    String        @id @default(uuid())
-  oportunidadId         String
-  leadId                String
-  etapaAnterior         String
-  etapaNueva            String
-  probabilidadAnterior  Int?
-  probabilidadNueva     Int?
-  valorAnterior         Float?
-  valorNuevo            Float?
-  cambiadoEn            DateTime      @default(now())
-  cambiadoPor           String
+  id_oportunidad        String
+  id_lead               String
+  etapa_anterior        String
+  etapa_nueva           String
+  probabilidad_anterior Int?
+  probabilidad_nueva    Int?
+  valor_anterior        Float?
+  valor_nuevo           Float?
+  cambiado_en           DateTime      @default(now())
+  cambiado_por          String
   notas                 String?       @db.Text
   razon                 String?
 
-  @@index([oportunidadId])
-  @@index([leadId])
-  @@index([cambiadoPor])
-  @@index([cambiadoEn])
-  @@index([etapaNueva])
-  @@map("historial_pipeline_leads")
+  @@index([id_oportunidad])
+  @@index([id_lead])
+  @@index([cambiado_por])
+  @@index([cambiado_en])
+  @@index([etapa_nueva])
+  @@map("historial_etapas_leads")
 }
 
 model ProyectoEtiqueta {
-  proyectoId String
-  etiquetaId String
-  asignadoEn DateTime  @default(now())
-  etiqueta   Etiqueta  @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
-  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  id_proyecto String
+  id_etiqueta String
+  asignado_en DateTime  @default(now())
+  etiqueta    Etiqueta  @relation(fields: [id_etiqueta], references: [id], onDelete: Cascade)
+  proyecto    Proyecto  @relation(fields: [id_proyecto], references: [id], onDelete: Cascade)
 
-  @@id([proyectoId, etiquetaId])
-  @@index([proyectoId])
-  @@index([etiquetaId])
-  @@map("proyecto_etiquetas")
+  @@id([id_proyecto, id_etiqueta])
+  @@index([id_proyecto])
+  @@index([id_etiqueta])
+  @@map("etiquetas_proyectos")
 }
 
 model ProyectoCliente {
-  proyectoId String
-  clienteId  String
-  asociadoEn DateTime  @default(now())
-  notas      String?
-  cliente    Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  proyecto   Proyecto @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  id_proyecto String
+  id_cliente  String
+  asociado_en DateTime  @default(now())
+  notas       String?
+  cliente     Cliente   @relation(fields: [id_cliente], references: [id], onDelete: Cascade)
+  proyecto    Proyecto  @relation(fields: [id_proyecto], references: [id], onDelete: Cascade)
 
-  @@id([proyectoId, clienteId])
-  @@index([proyectoId])
-  @@index([clienteId])
-  @@map("proyecto_clientes")
+  @@id([id_proyecto, id_cliente])
+  @@index([id_proyecto])
+  @@index([id_cliente])
+  @@map("clientes_proyectos")
 }
 
 model ProyectoContacto {
-  proyectoId String
-  contactoId String
-  tipoContacto String // 'CLIENTE' o 'LEAD'
-  asociadoEn DateTime  @default(now())
-  notas      String?
-  proyecto   Proyecto @relation("ProyectoContactos", fields: [proyectoId], references: [id], onDelete: Cascade)
+  id_proyecto String
+  id_contacto String
+  tipo_contacto String // 'CLIENTE' o 'LEAD'
+  asociado_en DateTime  @default(now())
+  notas       String?
+  proyecto    Proyecto @relation("ProyectoContactos", fields: [id_proyecto], references: [id], onDelete: Cascade)
 
-  @@id([proyectoId, contactoId])
-  @@index([proyectoId])
-  @@index([contactoId])
-  @@map("proyecto_contactos")
+  @@id([id_proyecto, id_contacto])
+  @@index([id_proyecto])
+  @@index([id_contacto])
+  @@map("contactos_proyectos")
 }
 
 model Cotizacion {
   id                     String           @id @default(uuid())
-  leadId                 String?
-  clienteId              String?
-  numeroReferencia       String           @unique
-  nombreProyecto         String
-  tipoInmueble           String?
+  id_lead                String?
+  id_cliente             String?
+  numero_referencia      String           @unique
+  nombre_proyecto        String
+  tipo_inmueble          String?
   descripcion            String?
-  precioInmueble         Float
-  cuotaInicial           Float
-  porcentajeCuotaInicial Float
-  montoFinanciar         Float
-  plazoMeses             Int
-  tipoCuota              TipoCuota        @default(FIJA)
-  tasaInteresAnual       Float
-  permitePostergar       Boolean          @default(false)
-  cuotasPostergables     Int?
-  permiteDoble           Boolean          @default(false)
-  cuotasDoblesAnuales    Int?
-  permiteCambioFecha     Boolean          @default(false)
-  montoCuotaManual       Float?
-  cuotaMensualEstimada   Float
-  totalIntereses         Float
-  totalPagar             Float
+  precio_inmueble        Float
+  cuota_inicial          Float
+  porcentaje_cuota_inicial Float
+  monto_financiar        Float
+  plazo_meses            Int
+  tipo_cuota             TipoCuota        @default(FIJA)
+  tasa_interes_anual     Float
+  permite_postergar      Boolean          @default(false)
+  cuotas_postergables    Int?
+  permite_doble          Boolean          @default(false)
+  cuotas_dobles_anuales  Int?
+  permite_cambio_fecha   Boolean          @default(false)
+  monto_cuota_manual     Float?
+  cuota_mensual_estimada Float
+  total_intereses        Float
+  total_pagar            Float
   estado                 EstadoCotizacion @default(BORRADOR)
   notas                  String?
   observaciones          String?
-  fechaValidez           DateTime?
-  creadoEn               DateTime         @default(now())
-  actualizadoEn          DateTime         @updatedAt
-  lead                   Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  cliente                Cliente?         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  fecha_validez          DateTime?
+  creado_en              DateTime         @default(now())
+  actualizado_en         DateTime         @updatedAt
+  lead                   Lead?            @relation(fields: [id_lead], references: [id], onDelete: Cascade)
+  cliente                Cliente?         @relation(fields: [id_cliente], references: [id], onDelete: Cascade)
 
-  @@index([leadId])
-  @@index([clienteId])
+  @@index([id_lead])
+  @@index([id_cliente])
   @@index([estado])
-  @@index([tipoCuota])
+  @@index([tipo_cuota])
   @@map("cotizaciones")
 }
 
@@ -307,12 +307,12 @@ model Reporte {
   id                String   @id @default(uuid())
   tipo              String
   parametros        Json?
-  resultadosResumen Json?
-  generadoPor       String?
-  generadoEn        DateTime @default(now())
-  usuario           Usuario? @relation("UsuarioReportes", fields: [generadoPor], references: [id])
+  resultados_resumen Json?
+  generado_por      String?
+  generado_en       DateTime @default(now())
+  usuario           Usuario? @relation("UsuarioReportes", fields: [generado_por], references: [id])
 
-  @@index([generadoPor])
+  @@index([generado_por])
   @@map("reportes")
 }
 
@@ -322,18 +322,18 @@ model Notificacion {
   descripcion   String   @db.Text
   tipo          String   @default("INFO")
   leida         Boolean  @default(false)
-  usuarioId     String?
-  contactoId    String?
+  id_usuario    String?
+  id_contacto   String?
   referencia    String?  // ID del recurso relacionado (lead, contacto, etc)
-  tipoReferencia String?  // Tipo de recurso (LEAD, CONTACTO, OPORTUNIDAD, etc)
-  creadoEn      DateTime @default(now())
-  leidaEn       DateTime?
+  tipo_referencia String?  // Tipo de recurso (LEAD, CONTACTO, OPORTUNIDAD, etc)
+  creado_en     DateTime @default(now())
+  leida_en      DateTime?
 
-  @@index([usuarioId])
-  @@index([contactoId])
+  @@index([id_usuario])
+  @@index([id_contacto])
   @@index([leida])
-  @@index([creadoEn])
-  @@index([tipoReferencia])
+  @@index([creado_en])
+  @@index([tipo_referencia])
   @@map("notificaciones")
 }
 
@@ -348,46 +348,46 @@ model Proyecto {
   longitud      Float?
   estado        EstadoProyecto     @default(DISPONIBLE)
   activo        Boolean            @default(true)
-  tipoProyecto  TipoProyecto?      @map("tipo_proyecto")
+  tipo_proyecto TipoProyecto?
   categoria     String?
   galeria       Json?
   caracteristicas Json?
-  mostrarEnWeb  Boolean            @default(true) @map("mostrar_en_web")
-  ordenWeb      Int?               @map("orden_web")
-  creadoEn      DateTime           @default(now())
-  actualizadoEn DateTime           @updatedAt
-  usuarioId     String
+  mostrar_en_web Boolean           @default(true)
+  orden_web     Int?
+  creado_en     DateTime           @default(now())
+  actualizado_en DateTime          @updatedAt
+  id_usuario    String
   clientes      ProyectoCliente[]
   contactos     ProyectoContacto[] @relation("ProyectoContactos")
   etiquetas     ProyectoEtiqueta[]
-  usuario       Usuario            @relation(fields: [usuarioId], references: [id])
+  usuario       Usuario            @relation(fields: [id_usuario], references: [id])
 
   @@index([activo])
   @@index([estado])
-  @@index([usuarioId])
-  @@index([tipoProyecto])
-  @@index([mostrarEnWeb])
+  @@index([id_usuario])
+  @@index([tipo_proyecto])
+  @@index([mostrar_en_web])
   @@map("proyectos")
 }
 
 // ==================== MODELO PARA ALERTAS DE LEADS ====================
 model AlertaLead {
   id            String           @id @default(uuid())
-  leadId        String?
-  usuarioId     String
-  fechaCreada   DateTime         @default(now())
-  fechaLimite   DateTime         // 24 horas desde creación
+  id_lead       String?
+  id_usuario    String
+  fecha_creada  DateTime         @default(now())
+  fecha_limite  DateTime         // 24 horas desde creación
   completada    Boolean          @default(false)
-  completadaEn  DateTime?
+  completada_en DateTime?
   notas         String?          @db.Text
-  lead          Lead?            @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  usuario       Usuario          @relation(fields: [usuarioId], references: [id])
+  lead          Lead?            @relation(fields: [id_lead], references: [id], onDelete: Cascade)
+  usuario       Usuario          @relation(fields: [id_usuario], references: [id])
 
-  @@index([usuarioId])
-  @@index([leadId])
+  @@index([id_usuario])
+  @@index([id_lead])
   @@index([completada])
-  @@index([fechaLimite])
-  @@index([fechaCreada])
+  @@index([fecha_limite])
+  @@index([fecha_creada])
   @@map("alertas_leads")
 }
 
@@ -466,9 +466,9 @@ enum TipoServicio {
 }
 
 enum EstadoTestimonio {
-  PENDIENTE @map("pending")
-  APROBADO  @map("approved")
-  RECHAZADO @map("rejected")
+  PENDIENTE @map("pendiente")
+  APROBADO  @map("aprobado")
+  RECHAZADO @map("rechazado")
 }
 
 // Otros servicios para el sitio web
@@ -478,13 +478,13 @@ model OtrosServicios {
   descripcion      String?
   caracteristicas  String?      @db.LongText  // JSON array as string
   imagenes         String?      @db.LongText  // JSON array as string
-  enlaceImagen     String?      @map("image_link")
-  enlaceVideo      String?      @map("video_link")
-  tipoServicio     TipoServicio @map("service_type") @default(GENERAL)
-  creadoEn         DateTime     @default(now()) @map("created_at")
-  actualizadoEn    DateTime     @updatedAt @map("updated_at")
+  enlace_imagen    String?
+  enlace_video     String?
+  tipo_servicio    TipoServicio @default(GENERAL)
+  creado_en        DateTime     @default(now())
+  actualizado_en   DateTime     @updatedAt
 
-  @@map("otros_servicios")
+  @@map("servicios_adicionales")
 }
 
 // Miembros del equipo para el sitio web
@@ -497,16 +497,16 @@ model MiembroEquipo {
   telefono       String
   foto           String?   @db.LongText
   activo         Boolean   @default(true)
-  ordenMostrar   Int       @map("display_order")
+  orden_mostrar  Int
   facebook       String?
   instagram      String?
   tiktok         String?
-  creadoEn       DateTime  @default(now()) @map("created_at")
-  actualizadoEn  DateTime? @updatedAt @map("updated_at")
+  creado_en      DateTime  @default(now())
+  actualizado_en DateTime? @updatedAt
 
   @@index([activo])
-  @@index([ordenMostrar])
-  @@map("team_members")
+  @@index([orden_mostrar])
+  @@map("miembros_equipo")
 }
 
 // Testimonios para el sitio web
@@ -518,39 +518,39 @@ model Testimonio {
   testimonio     String           @db.Text
   foto           String?
   media          String?
-  videoUrl       String?          @map("video_url")
+  video_url      String?
   estado         EstadoTestimonio @default(APROBADO)
-  creadoEn       DateTime         @map("created_at")
-  aprobadoEn     DateTime?        @map("approved_at")
+  creado_en      DateTime
+  aprobado_en    DateTime?
 
   @@index([estado])
-  @@map("testimonials")
+  @@map("testimonios")
 }
 
 // Páginas de servicios para el sitio web (Techo Propio, Crédito, etc.)
 model PaginaServicio {
   id                String    @id @default(uuid())
-  tipoServicio      TipoProyecto @map("tipo_servicio")
+  tipo_servicio     TipoProyecto
   titulo            String
   subtitulo         String?
-  descripcionCorta  String?   @map("descripcion_corta")
-  descripcionLarga  String?   @map("descripcion_larga")
-  imagenBanner      String?   @map("imagen_banner")
-  videoBanner       String?   @map("video_banner")
+  descripcion_corta String?
+  descripcion_larga String?
+  imagen_banner     String?
+  video_banner      String?
   requisitos        Json?
   beneficios        Json?
   pasos             Json?
   preguntas         Json?
   activo            Boolean   @default(true)
-  ordenMostrar      Int       @default(0) @map("orden_mostrar")
-  metaTitle         String?   @map("meta_title")
-  metaDescription   String?   @map("meta_description")
-  creadoEn          DateTime  @default(now()) @map("created_at")
-  actualizadoEn     DateTime  @updatedAt @map("updated_at")
+  orden_mostrar     Int       @default(0)
+  meta_title        String?
+  meta_description  String?
+  creado_en         DateTime  @default(now())
+  actualizado_en    DateTime  @updatedAt
 
-  @@unique([tipoServicio])
+  @@unique([tipo_servicio])
   @@index([activo])
-  @@index([ordenMostrar])
+  @@index([orden_mostrar])
   @@map("paginas_servicios")
 }
 
@@ -558,61 +558,61 @@ model PaginaServicio {
 
 // Contraseñas para acceso web de clientes
 model ClientePassword {
-  contactoId    String   @id @map("contacto_id")
-  passwordWeb   String   @map("password_web")
-  activo        Boolean  @default(true) @map("activo")
-  creadoEn      DateTime @default(now()) @map("created_at")
-  actualizadoEn DateTime @updatedAt @map("updated_at")
+  id_contacto   String   @id
+  contrasena_web String
+  activo        Boolean  @default(true)
+  creado_en     DateTime @default(now())
+  actualizado_en DateTime @updatedAt
 
-  @@map("cliente_passwords")
+  @@map("contrasenas_clientes")
 }
 
 // Documentos subidos por clientes
 model ClienteDocumento {
   id              String   @id @default(uuid())
-  contactoId      String   @map("contacto_id")
-  nombreArchivo   String   @map("nombre_archivo")
-  nombreOriginal  String   @map("nombre_original")
-  rutaArchivo     String   @map("ruta_archivo")
-  tipoDocumento   String   @map("tipo_documento")
+  id_contacto     String
+  nombre_archivo  String
+  nombre_original String
+  ruta_archivo    String
+  tipo_documento  String
   descripcion     String?
-  tamanoBytes     Int      @map("tamano_bytes")
-  mimeType        String   @map("mime_type")
-  subidoEn        DateTime @default(now()) @map("subido_en")
+  tamano_bytes    Int
+  mime_type       String
+  subido_en       DateTime @default(now())
   estado          String   @default("PENDIENTE")
-  revisadoPor     String?  @map("revisado_por")
-  revisadoEn      DateTime? @map("revisado_en")
+  revisado_por    String?
+  revisado_en     DateTime?
   notas           String?
 
-  @@index([contactoId])
+  @@index([id_contacto])
   @@index([estado])
-  @@index([subidoEn])
-  @@map("cliente_documentos")
+  @@index([subido_en])
+  @@map("documentos_clientes")
 }
 
 // Registro de accesos al portal
 model ClienteAcceso {
   id             String   @id @default(uuid())
-  contactoId     String   @map("contacto_id")
-  fechaAcceso    DateTime @default(now()) @map("fecha_acceso")
-  ipAddress      String   @map("ip_address")
-  userAgent      String?  @map("user_agent")
+  id_contacto    String
+  fecha_acceso   DateTime @default(now())
+  ip_address     String
+  user_agent     String?
 
-  @@index([contactoId])
-  @@index([fechaAcceso])
-  @@map("cliente_accesos")
+  @@index([id_contacto])
+  @@index([fecha_acceso])
+  @@map("accesos_clientes")
 }
 
 // Actividades del cliente en el portal
 model ClienteActividad {
   id          String   @id @default(uuid())
-  contactoId  String   @map("contacto_id")
+  id_contacto String
   tipo        String
   descripcion String
   fecha       DateTime @default(now())
   metadata    Json?
 
-  @@index([contactoId])
+  @@index([id_contacto])
   @@index([fecha])
-  @@map("cliente_actividades")
+  @@map("actividades_clientes")
 }

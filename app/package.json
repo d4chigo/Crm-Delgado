@@ -1,0 +1,83 @@
+{
+  "name": "crm-delgado-escritorio",
+  "version": "1.0.0",
+  "description": "Aplicación de escritorio CRM Delgado",
+  "author": "Tu Nombre",
+  "license": "ISC",
+  "main": "dist/principal.js",
+  "homepage": "./",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc && npm run build:client",
+    "build:client": "cd ../client && npm run build",
+    "package": "npm run build && electron-builder",
+    "package:windows": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:linux": "npm run build && electron-builder --linux",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.6.4",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  },
+  "build": {
+    "appId": "com.crmdelgado.app",
+    "productName": "CRM Delgado",
+    "directories": {
+      "buildResources": "../client/public",
+      "output": "dist"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "../client/.next/**/*",
+      "../server/node_modules/**/*",
+      "../server/prisma/**/*",
+      "../server/dist/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "certificateFile": null,
+      "certificatePassword": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CRM Delgado"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    }
+  }
+}
