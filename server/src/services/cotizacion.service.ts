@@ -146,8 +146,8 @@ export class CotizacionService {
       };
 
       // Agregar IDs de lead/cliente
-      if (datos.leadId) dataCotizacion.leadId = datos.leadId;
-      if (datos.clienteId) dataCotizacion.clienteId = datos.clienteId;
+      if (datos.leadId) dataCotizacion.idLead = datos.leadId;
+      if (datos.clienteId) dataCotizacion.idCliente = datos.clienteId;
 
       // Agregar campos opcionales solo si existen
       if (datos.tipoInmueble !== undefined && datos.tipoInmueble !== null) dataCotizacion.tipoInmueble = datos.tipoInmueble;
@@ -217,8 +217,8 @@ export class CotizacionService {
     // Soporte para búsqueda por contactoId (lead o cliente)
     if (contactoId) {
       where.OR = [
-        { leadId: contactoId },
-        { clienteId: contactoId }
+        { idLead: contactoId },
+        { idCliente: contactoId }
       ];
     }
 
@@ -479,7 +479,7 @@ export class CotizacionService {
 
     // Obtener cotizaciones para lead o cliente
     const cotizaciones = await prisma.cotizacion.findMany({
-      where: lead ? { leadId: contactoId } : { clienteId: contactoId },
+      where: lead ? { idLead: contactoId } : { idCliente: contactoId },
       orderBy: { creadoEn: 'desc' },
       include: {
         lead: {
