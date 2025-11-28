@@ -1,123 +1,23 @@
 /**
  * Componente Badge para mostrar contador de notificaciones en tiempo real
- * Conecta automáticamente a WebSocket para recibir notificaciones instantáneas
+ * Usa el contexto global de notificaciones
  */
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Bell, X, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { obtenerUsuario } from '@/lib/autenticacion';
-import { useLeadNotifications } from '@/hooks/useLeadNotifications';
-
-interface NotificacionLead {
-  tipo: string;
-  titulo: string;
-  datos: {
-    leadId: string;
-    nombre: string;
-    apellido?: string;
-    email: string;
-    telefono: string;
-    interes?: string;
-    origen?: string;
-    fecha: string;
-  };
-  accion: string;
-  urgencia: string;
-}
+import { useNotificaciones } from '@/contexts/NotificacionesContext';
 
 export const NotificationBadge: React.FC = () => {
-  const userData = obtenerUsuario();
-  const [noLeidas, setNoLeidas] = useState<number>(0);
-  const [animando, setAnimando] = useState(false);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
-  const [notificaciones, setNotificaciones] = useState<NotificacionLead[]>([]);
-  const [conectado, setConectado] = useState(false);
-
-  const reproducirSonido = useCallback(() => {
-    try {
-      // Crear un sonido más audible usando Web Audio API
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Crear múltiples notas para un sonido más agradable
-      const notas = [800, 1000, 1200];
-      
-      notas.forEach((frecuencia, index) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = frecuencia;
-        oscillator.type = 'sine';
-
-        const startTime = audioContext.currentTime + (index * 0.1);
-        gainNode.gain.setValueAtTime(0.3, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
-
-        oscillator.start(startTime);
-        oscillator.stop(startTime + 0.3);
-      });
-    } catch (error) {
-      console.warn('⚠️ No se pudo reproducir sonido:', error);
-    }
-  }, []);
-
-  const handleNewLead = useCallback((lead: NotificacionLead) => {
-    console.log('🔔 Nueva notificación recibida:', lead.datos.nombre);
-    
-    setNoLeidas(prev => prev + 1);
-    setNotificaciones(prev => [lead, ...prev]);
-    
-    // Reproducir sonido
-    reproducirSonido();
-    
-    // Animar el icono
-    setAnimando(true);
-    setTimeout(() => setAnimando(false), 600);
-
-    // Mostrar notificación del navegador si está permitido
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('🔔 ¡Nuevo Lead!', {
-        body: `${lead.datos.nombre} ${lead.datos.apellido || ''} - ${lead.datos.interes || 'Sin interés especificado'}`,
-        icon: '/logo.png',
-        tag: 'nuevo-lead',
-        requireInteraction: true
-      });
-    }
-
-    // Limpiar notificación de la campanita después de 20 minutos (1200000 ms)
-    setTimeout(() => {
-      setNotificaciones(prev => prev.filter(n => n !== lead));
-      setNoLeidas(prev => Math.max(0, prev - 1));
-    }, 1200000);
-  }, [reproducirSonido]);
-
-  const { conectado: wsConectado } = useLeadNotifications(userData?.id, handleNewLead, setConectado);
+  const { notificaciones, conectado, obtenerNoLeidas, marcarComoLeida, limpiarNotificaciones } = useNotificaciones();
   
-  // Sincronizar el estado de conexión del hook
-  useEffect(() => {
-    setConectado(wsConectado);
-  }, [wsConectado]);
+  const noLeidas = obtenerNoLeidas().length;
 
-  // Solicitar permiso para notificaciones del navegador
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
-  const limpiarNotificaciones = () => {
-    setNoLeidas(0);
-    setNotificaciones([]);
-  };
-
-  const removerNotificacion = (index: number) => {
-    setNotificaciones(prev => prev.filter((_, i) => i !== index));
-    setNoLeidas(prev => Math.max(0, prev - 1));
+  const removerNotificacion = (id: string) => {
+    marcarComoLeida(id);
   };
 
   return (
@@ -125,7 +25,7 @@ export const NotificationBadge: React.FC = () => {
       <Button
         variant="ghost"
         size="icon"
-        className={`relative transition-all ${animando ? 'animate-bounce' : ''}`}
+        className="relative transition-all"
         onClick={() => setMostrarDropdown(!mostrarDropdown)}
         title={conectado ? 'Conectado a notificaciones en tiempo real' : 'Desconectado de notificaciones'}
       >
@@ -186,8 +86,8 @@ export const NotificationBadge: React.FC = () => {
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                {notificaciones.map((notif, index) => (
-                  <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-l-4 border-l-blue-500">
+                {notificaciones.map((notif) => (
+                  <div key={notif.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-l-4 border-l-blue-500">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -220,7 +120,7 @@ export const NotificationBadge: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 flex-shrink-0"
-                        onClick={() => removerNotificacion(index)}
+                        onClick={() => removerNotificacion(notif.id)}
                       >
                         <X className="h-4 w-4" />
                       </Button>

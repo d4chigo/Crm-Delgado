@@ -16,7 +16,7 @@ import {
   Settings as IconoConfiguracion,
 } from "lucide-react"
 import { BarraLateral, Encabezado } from "@/components/layout"
-import { LeadNotificationsListener } from "@/components/LeadNotificationsListener"
+import { ToastNotificaciones } from "@/components/ToastNotificaciones"
 import type { ElementoNavegacion } from "@/types/dashboard.types"
 
 const navegacion: ElementoNavegacion[] = [
@@ -62,8 +62,8 @@ export default function LayoutDashboard({ children }: { children: React.ReactNod
         <main className="px-4 lg:px-8 py-6">{children}</main>
       </div>
 
-      {/* Listener para notificaciones de nuevos leads */}
-      <LeadNotificationsListener />
+      {/* Mostrar toasts cuando llegan notificaciones */}
+      <ToastNotificaciones />
     </div>
   )
 }
