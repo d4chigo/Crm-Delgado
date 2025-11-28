@@ -34,6 +34,7 @@ export const useLeadNotifications = (
   const connectWebSocket = useCallback(() => {
     // No intentar conectar si ya tenemos una conexión
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('✅ WebSocket ya está conectado');
       return () => {};
     }
 
@@ -89,6 +90,7 @@ export const useLeadNotifications = (
             tipo: 'registro',
             usuarioId: usuarioId
           }));
+          console.log('📤 Mensaje de registro enviado al servidor');
         } catch (sendError) {
           console.warn('⚠️ Error al enviar registro:', sendError);
         }
@@ -98,9 +100,14 @@ export const useLeadNotifications = (
         try {
           const data = JSON.parse(event.data);
 
+          // Loguear todos los mensajes para debugging
+          console.log('📨 Mensaje recibido del WebSocket:', data.tipo);
+
           if (data.tipo === 'NUEVO_LEAD') {
             console.log('🔔 ¡Nuevo lead!:', data.datos?.nombre || 'Sin nombre');
             onNewLead(data);
+          } else if (data.tipo === 'registro_confirmado') {
+            console.log('✅ Registro confirmado por el servidor');
           }
         } catch (parseError) {
           console.warn('⚠️ Error al procesar notificación:', parseError);
@@ -114,8 +121,9 @@ export const useLeadNotifications = (
       };
 
       wsRef.current.onclose = () => {
+        console.log(`❌ WebSocket desconectado (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
         if (attemptCountRef.current < maxAttemptsRef.current) {
-          console.log(`🔌 WebSocket desconectado. Reintentando en 5 segundos... (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
+          console.log(`🔌 Reintentando en 5 segundos...`);
           
           // Limpiar cualquier timer anterior
           if (reconnectTimerRef.current) {
@@ -153,9 +161,14 @@ export const useLeadNotifications = (
   }, [usuarioId, onNewLead]);
 
   useEffect(() => {
+    // Solo conectar si tenemos usuarioId
+    if (!usuarioId) {
+      return;
+    }
+
     const cleanup = connectWebSocket();
     return cleanup;
-  }, [connectWebSocket]);
+  }, [usuarioId, connectWebSocket]);
 
   return { connectWebSocket };
 };
