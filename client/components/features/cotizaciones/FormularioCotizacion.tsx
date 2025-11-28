@@ -333,10 +333,16 @@ export const FormularioCotizacion = ({
       </html>`;
     try {
       console.log('[Cotizacion] Verificando si Electron está disponible...');
+      console.log('[Cotizacion] window.electron:', (window as any).electron);
+      console.log('[Cotizacion] window.electron?.pdf:', (window as any).electron?.pdf);
+      console.log('[Cotizacion] window.electron?.pdf?.guardar:', (window as any).electron?.pdf?.guardar);
+      
       if ((window as any).electron?.pdf?.guardar) {
         console.log('[Cotizacion] Guardando PDF con Electron...');
         const nombreArchivo = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g, '_')}.pdf`;
+        console.log('[Cotizacion] Nombre de archivo:', nombreArchivo);
         const resultado = await (window as any).electron.pdf.guardar(html, nombreArchivo);
+        console.log('[Cotizacion] Resultado de guardado:', resultado);
         if (resultado) {
           console.log('[Cotizacion] PDF guardado exitosamente');
           return;
@@ -346,9 +352,11 @@ export const FormularioCotizacion = ({
         }
       } else {
         console.log('[Cotizacion] Electron no disponible, usando fallback del navegador');
+        console.log('[Cotizacion] Detalles: electron=', (window as any).electron, 'pdf=', (window as any).electron?.pdf);
       }
     } catch (error) {
       console.error('[Cotizacion] Error al guardar PDF con Electron:', error);
+      console.error('[Cotizacion] Stack:', (error as any)?.stack);
     }
     // Fallback: abrir diálogo de impresión si no hay Electron
     console.log('[Cotizacion] Abriendo diálogo de impresión del navegador...');
