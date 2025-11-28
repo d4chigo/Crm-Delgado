@@ -48,7 +48,7 @@ export const crearNotificacionNuevoLead = async (datos: DatosNotificacionLead): 
           titulo,
           descripcion,
           tipo: 'NUEVO_LEAD',
-          usuarioId: usuario.id,
+          idUsuario: usuario.id,
           referencia: datos.leadId,
           tipoReferencia: 'LEAD',
           leida: false
@@ -70,7 +70,7 @@ export const obtenerNotificacionesNoLeidas = async (usuarioId: string): Promise<
   try {
     return await prisma.notificacion.findMany({
       where: {
-        usuarioId,
+        idUsuario: usuarioId,
         leida: false
       },
       orderBy: { creadoEn: 'desc' },

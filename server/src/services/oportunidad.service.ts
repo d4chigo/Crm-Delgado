@@ -422,7 +422,7 @@ export class OportunidadService {
                   telefono: leadActual.telefono,
                   empresa: leadActual.empresa,
                   prioridad: leadActual.prioridad || 'MEDIA',
-                  usuarioId: leadActual.usuarioId,
+                  idUsuario: leadActual.idUsuario,
                   // Copiar campos adicionales del lead
                   cargo: leadActual.cargo,
                   departamento: leadActual.departamento,
