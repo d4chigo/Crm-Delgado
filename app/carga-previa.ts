@@ -30,6 +30,19 @@ contextBridge.exposeInMainWorld('electron', {
         console.error('Error al generar PDF:', error)
         throw error
       }
+    },
+
+    /**
+     * Genera un PDF a partir de HTML y lo guarda directamente
+     */
+    guardar: async (html: string, nombreArchivo: string): Promise<boolean> => {
+      try {
+        const resultado = await ipcRenderer.invoke('guardarPdf', { html, nombreArchivo })
+        return resultado
+      } catch (error) {
+        console.error('Error al guardar PDF:', error)
+        throw error
+      }
     }
   },
 

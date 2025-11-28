@@ -333,27 +333,22 @@ export const FormularioCotizacion = ({
       </html>`;
     try {
       console.log('[Cotizacion] Verificando si Electron está disponible...');
-      if ((window as any).electron?.pdf?.generate) {
-        console.log('[Cotizacion] Generando PDF con Electron...');
-        const base64 = await (window as any).electron.pdf.generate(html);
-        console.log('[Cotizacion] PDF generado, tamaño base64:', base64.length);
-        const byteChars = atob(base64);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g, '_')}.pdf`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
-        console.log('[Cotizacion] PDF descargado exitosamente');
-        return;
+      if ((window as any).electron?.pdf?.guardar) {
+        console.log('[Cotizacion] Guardando PDF con Electron...');
+        const nombreArchivo = `Cotizacion_${(datos.nombreProyecto || 'Proyecto').replace(/\s+/g, '_')}.pdf`;
+        const resultado = await (window as any).electron.pdf.guardar(html, nombreArchivo);
+        if (resultado) {
+          console.log('[Cotizacion] PDF guardado exitosamente');
+          return;
+        } else {
+          console.log('[Cotizacion] Guardado cancelado por el usuario');
+          return;
+        }
       } else {
         console.log('[Cotizacion] Electron no disponible, usando fallback del navegador');
       }
     } catch (error) {
-      console.error('[Cotizacion] Error al generar PDF con Electron:', error);
+      console.error('[Cotizacion] Error al guardar PDF con Electron:', error);
     }
     // Fallback: abrir diálogo de impresión si no hay Electron
     console.log('[Cotizacion] Abriendo diálogo de impresión del navegador...');

@@ -204,27 +204,22 @@ export function ListaCotizacionesSoloLectura({ cotizaciones, loading, onEliminar
     // Si hay integración Electron
     try {
       console.log('[ListaCotizaciones] Verificando si Electron está disponible...');
-      if ((window as any).electron?.pdf?.generate) {
-        console.log('[ListaCotizaciones] Generando PDF con Electron...');
-        const base64 = await (window as any).electron.pdf.generate(html);
-        console.log('[ListaCotizaciones] PDF generado, tamaño base64:', base64.length);
-        const byteChars = atob(base64);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Cotizacion_${(c.nombreProyecto || 'Proyecto').replace(/\s+/g,'_')}.pdf`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
-        console.log('[ListaCotizaciones] PDF descargado exitosamente');
-        return;
+      if ((window as any).electron?.pdf?.guardar) {
+        console.log('[ListaCotizaciones] Guardando PDF con Electron...');
+        const nombreArchivo = `Cotizacion_${(c.nombreProyecto || 'Proyecto').replace(/\s+/g,'_')}.pdf`;
+        const resultado = await (window as any).electron.pdf.guardar(html, nombreArchivo);
+        if (resultado) {
+          console.log('[ListaCotizaciones] PDF guardado exitosamente');
+          return;
+        } else {
+          console.log('[ListaCotizaciones] Guardado cancelado por el usuario');
+          return;
+        }
       } else {
         console.log('[ListaCotizaciones] Electron no disponible, usando fallback del navegador');
       }
     } catch (error) {
-      console.error('[ListaCotizaciones] Error al generar PDF con Electron:', error);
+      console.error('[ListaCotizaciones] Error al guardar PDF con Electron:', error);
     }
     // Fallback navegador
     console.log('[ListaCotizaciones] Abriendo diálogo de impresión del navegador...');

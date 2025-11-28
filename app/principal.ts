@@ -1,5 +1,6 @@
-import { app, BrowserWindow, shell, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron'
 import path from 'path'
+import fs from 'fs'
 
 let ventanaPrincipal: BrowserWindow | null = null
 
@@ -158,6 +159,58 @@ ipcMain.handle('generarPdf', async (_event, { html }) => {
     return bufferPdf.toString('base64')
   } catch (error) {
     console.error('[PDF] Error al generar PDF:', error)
+    throw error
+  } finally {
+    ventanaOculta.destroy()
+  }
+})
+
+// IPC: Guardar PDF directamente
+ipcMain.handle('guardarPdf', async (_event, { html, nombreArchivo }) => {
+  console.log('[PDF] Iniciando guardado de PDF:', nombreArchivo)
+  const ventanaOculta = new BrowserWindow({
+    show: false,
+    webPreferences: { 
+      offscreen: true,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  })
+
+  try {
+    console.log('[PDF] Cargando HTML en ventana oculta...')
+    await ventanaOculta.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+    
+    console.log('[PDF] Esperando a que la página cargue...')
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    console.log('[PDF] Generando PDF...')
+    const bufferPdf = await ventanaOculta.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 10, bottom: 10, left: 10, right: 10 }
+    })
+    
+    // Mostrar diálogo para guardar archivo
+    const resultado = await dialog.showSaveDialog(ventanaPrincipal!, {
+      defaultPath: nombreArchivo,
+      filters: [
+        { name: 'PDF', extensions: ['pdf'] },
+        { name: 'Todos', extensions: ['*'] }
+      ]
+    })
+
+    if (!resultado.canceled && resultado.filePath) {
+      console.log('[PDF] Guardando PDF en:', resultado.filePath)
+      await fs.promises.writeFile(resultado.filePath, bufferPdf)
+      console.log('[PDF] PDF guardado exitosamente')
+      return true
+    } else {
+      console.log('[PDF] Guardado cancelado por el usuario')
+      return false
+    }
+  } catch (error) {
+    console.error('[PDF] Error al guardar PDF:', error)
     throw error
   } finally {
     ventanaOculta.destroy()
