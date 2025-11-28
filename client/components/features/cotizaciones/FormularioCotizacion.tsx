@@ -511,7 +511,7 @@ export const FormularioCotizacion = ({
                       </div>
                       <div>
                         <Label className="text-xs">Tipo</Label>
-                        <Select value={datos.cuotaEspecialTipo as any || ''} onValueChange={(v) => setDatos({ ...datos, cuotaEspecialTipo: v as any })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="FIJO">Monto Fijo</SelectItem><SelectItem value="PORCENTAJE">Porcentaje</SelectItem></SelectContent></Select>
+                        <Select value={datos.cuotaEspecialTipo as any || ''} onValueChange={(v) => setDatos({ ...datos, cuotaEspecialTipo: v as any })}><SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="FIJO">Monto Fijo</SelectItem></SelectContent></Select>
                       </div>
                       <div>
                         <Label className="text-xs">Valor</Label>

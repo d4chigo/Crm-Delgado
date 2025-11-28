@@ -43,7 +43,7 @@ export const cotizacionService = {
     tasaAnual: number,
     plazoMeses: number,
     options?: {
-      modalidadPago?: 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL';
+      modalidadPago?: 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL' | 'FLEXIBLE_ESPECIAL_AMORTIZACION';
       // FLEXIBLE_TRADICIONAL
       flexibleOverridesText?: string; // formato "mes:monto\n..."
       // ESCALONADA
@@ -461,9 +461,9 @@ export const cotizacionService = {
 
   /**
    * Calcular cronograma para FLEXIBLE_ESPECIAL_AMORTIZACION: 
-   * - Cuota normal en meses regulares
-   * - Cuota completamente FIJA en meses especiales (cuando cuotaEspecialTipo=FIJO)
-   * - O cuota aumentada en porcentaje (cuando cuotaEspecialTipo=PORCENTAJE)
+   * - Cuota fija base en todos los meses
+   * - Pago especial adicional cada N meses (FIJO o PORCENTAJE)
+   * - Amortización correcta con interés compuesto
    */
   calcularCronogramaFlexibleEspecial(
     monto: number,
@@ -480,16 +480,22 @@ export const cotizacionService = {
     };
 
     const freq = freqToMonths[frecuenciaCuotaEspecial];
-    let cuotaBase = montoCuotaManual ?? 0;
+    const tasaMensual = tasaAnual === 0 ? 0 : tasaAnual / 100 / 12;
     
-    // Si no hay cuota manual, calcular una razonable
+    // Calcular cuota base mensual (sin pago especial)
+    let cuotaBase = montoCuotaManual ?? 0;
     if (!montoCuotaManual || montoCuotaManual <= 0) {
-      cuotaBase = Math.round((monto / (monto > 10000 ? 36 : 24)) * 100) / 100;
+      // Calcular cuota fija estándar
+      if (tasaMensual === 0) {
+        cuotaBase = Math.round((monto / 24) * 100) / 100; // 24 meses por defecto
+      } else {
+        const factor = Math.pow(1 + tasaMensual, 24);
+        cuotaBase = Math.round((monto * tasaMensual * factor) / (factor - 1) * 100) / 100;
+      }
     }
 
     let saldo = monto;
     const cronograma: Array<any> = [];
-    const tasaMensual = tasaAnual === 0 ? 0 : tasaAnual / 100 / 12;
     let mes = 1;
 
     // Continuar hasta agotar el saldo
@@ -499,14 +505,19 @@ export const cotizacionService = {
       // Determinar si este mes es especial (cada N meses)
       const esEspecial = mes % freq === 0;
       
+      // Cuota base + pago especial si aplica
       let cuotaMes = cuotaBase;
+      let pagoEspecialAplicado = 0;
+      
       if (esEspecial) {
         if (cuotaEspecialTipo === 'FIJO') {
-          // FIJO: la cuota especial es EXACTAMENTE el valor indicado (no es suma)
-          cuotaMes = Math.round(cuotaEspecialValor * 100) / 100;
+          // FIJO: suma el monto fijo a la cuota base
+          pagoEspecialAplicado = cuotaEspecialValor;
+          cuotaMes = Math.round((cuotaBase + cuotaEspecialValor) * 100) / 100;
         } else if (cuotaEspecialTipo === 'PORCENTAJE') {
           // PORCENTAJE: suma un porcentaje adicional a la cuota base
-          cuotaMes = Math.round(cuotaBase * (1 + cuotaEspecialValor / 100) * 100) / 100;
+          pagoEspecialAplicado = Math.round(cuotaBase * (cuotaEspecialValor / 100) * 100) / 100;
+          cuotaMes = Math.round((cuotaBase + pagoEspecialAplicado) * 100) / 100;
         }
       }
 
@@ -527,7 +538,7 @@ export const cotizacionService = {
         cuota: cuotaMes,
         cuotaBase: cuotaBase,
         pagoEspecial: esEspecial ? cuotaEspecialValor : 0,
-        pagoEspecialAplicado: esEspecial ? cuotaEspecialValor : 0,
+        pagoEspecialAplicado: pagoEspecialAplicado,
         pagoEspecialNoUtilizado: 0,
         interes,
         capital,
