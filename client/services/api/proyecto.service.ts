@@ -399,5 +399,30 @@ export const proyectoService = {
       console.error('Error al obtener proyectos del cliente:', error)
       throw error
     }
+  },
+
+  /**
+   * Obtener proyectos de un contacto (lead o cliente)
+   */
+  async obtenerPorContacto(contactoId: string): Promise<Proyecto[]> {
+    try {
+      const token = localStorage.getItem('crm_token')
+
+      const response = await fetch(`${API_URL}/proyectos/contacto/${contactoId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al obtener proyectos del contacto')
+      }
+
+      const resultado = await response.json()
+      return resultado.datos || []
+    } catch (error) {
+      console.error('Error al obtener proyectos del contacto:', error)
+      throw error
+    }
   }
 }

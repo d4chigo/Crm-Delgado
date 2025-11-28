@@ -7,6 +7,9 @@ const router = Router()
 // Todas las rutas requieren autenticación
 router.use(autenticar)
 
+// Obtener proyectos de un contacto (lead o cliente)
+router.get('/contacto/:contactoId', proyectoController.obtenerPorContacto)
+
 // Obtener proyectos de un cliente específico
 router.get('/cliente/:clienteId', proyectoController.obtenerPorCliente)
 

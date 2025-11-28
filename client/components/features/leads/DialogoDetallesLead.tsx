@@ -72,16 +72,6 @@ export function DialogoDetallesLead({ lead, abierto, onCerrar, onActualizado }: 
               </div>
             </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button
-              onClick={onCerrar}
-              variant="ghost"
-              size="sm"
-              className="hover:bg-slate-700"
-            >
-              <X className="h-5 w-5 text-white" />
-            </Button>
-          </div>
         </div>
 
         {/* Body - Scrollable */}

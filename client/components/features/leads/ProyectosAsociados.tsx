@@ -52,7 +52,8 @@ export function ProyectosAsociados({ clienteId, onActualizado }: ProyectosAsocia
 
   const cargarProyectosAsociados = async () => {
     try {
-      const proyectos = await proyectoService.obtenerPorCliente(clienteId);
+      // Usar obtenerPorContacto que funciona tanto para leads como clientes
+      const proyectos = await proyectoService.obtenerPorContacto(clienteId);
       setProyectosAsociados(proyectos);
     } catch (error) {
       console.error('Error al cargar proyectos asociados:', error);

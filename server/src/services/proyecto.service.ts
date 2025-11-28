@@ -398,5 +398,47 @@ export const proyectoService = {
         creadoEn: 'desc'
       }
     })
+  },
+
+  /**
+   * Obtener proyectos de un contacto (lead o cliente)
+   */
+  async obtenerPorContacto(contactoId: string) {
+    return await prisma.proyecto.findMany({
+      where: {
+        OR: [
+          {
+            clientes: {
+              some: {
+                idCliente: contactoId
+              }
+            }
+          },
+          {
+            contactos: {
+              some: {
+                idContacto: contactoId
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        etiquetas: {
+          include: {
+            etiqueta: true
+          }
+        },
+        clientes: {
+          include: {
+            cliente: true
+          }
+        },
+        contactos: true
+      },
+      orderBy: {
+        creadoEn: 'desc'
+      }
+    })
   }
 }

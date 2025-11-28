@@ -430,5 +430,29 @@ export const proyectoController = {
         error: error.message
       })
     }
+  },
+
+  /**
+   * GET /api/proyectos/contacto/:contactoId
+   * Obtener proyectos de un contacto (lead o cliente)
+   */
+  async obtenerPorContacto(req: Request, res: Response) {
+    try {
+      const { contactoId } = req.params
+
+      const proyectos = await proyectoService.obtenerPorContacto(contactoId)
+
+      return res.json({
+        exito: true,
+        datos: proyectos
+      })
+    } catch (error: any) {
+      console.error('Error al obtener proyectos del contacto:', error)
+      return res.status(500).json({
+        exito: false,
+        mensaje: 'Error al obtener proyectos del contacto',
+        error: error.message
+      })
+    }
   }
 }
