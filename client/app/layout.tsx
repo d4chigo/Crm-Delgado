@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { ElectronHelper } from '@/components/layout/ElectronHelper'
 import { Toaster } from '@/components/ui/toaster'
+import { ProveedorNotificaciones } from '@/contexts/NotificacionesContext'
 
 export const metadata: Metadata = {
   title: 'CRM Delgado Propiedades',
@@ -22,10 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <ElectronHelper />
-        {children}
-        <Toaster />
-        <Analytics />
+        <ProveedorNotificaciones>
+          <ElectronHelper />
+          {children}
+          <Toaster />
+          <Analytics />
+        </ProveedorNotificaciones>
       </body>
     </html>
   )

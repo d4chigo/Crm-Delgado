@@ -33,7 +33,7 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
 
   // Leads por etapa de oportunidad (más relevante que estado del lead)
   const oppWhere: any = {
-    leadId: { not: null }
+    idLead: { not: null }
   };
   if (filtros?.usuarioId) {
     oppWhere.idUsuario = filtros.usuarioId;
@@ -44,7 +44,7 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
     if (filtros.fechaFin) oppWhere.creadoEn.lte = filtros.fechaFin;
   }
   
-  const oppWhereClause = Object.keys(oppWhere).length > 1 ? oppWhere : { leadId: { not: null } };
+  const oppWhereClause = Object.keys(oppWhere).length > 1 ? oppWhere : { idLead: { not: null } };
 
   const oportunidadesPorEtapa = await prisma.oportunidadCliente.groupBy({
     by: ['etapa'],
@@ -120,8 +120,8 @@ export async function obtenerReporteConversion(filtros?: { fechaInicio?: Date; f
         isNot: null
       }
     },
-    select: { clienteId: true },
-    distinct: ['clienteId']
+    select: { idCliente: true },
+    distinct: ['idCliente']
   });
 
   // Oportunidades ganadas (CIERRE_GANADO)
@@ -199,7 +199,7 @@ export async function obtenerReporteActividad(filtros?: { usuarioId?: string; fe
 
   // Oportunidades por usuario (agente)
   const oportunidadesPorUsuario = await prisma.oportunidadCliente.groupBy({
-    by: ['usuarioId'],
+    by: ['idUsuario'],
     where,
     _count: { id: true },
   });
@@ -208,12 +208,12 @@ export async function obtenerReporteActividad(filtros?: { usuarioId?: string; fe
   const usuariosConActividad = await Promise.all(
     oportunidadesPorUsuario.map(async (item: any) => {
       const usuario = await prisma.usuario.findUnique({
-        where: { id: item.usuarioId },
+        where: { id: item.idUsuario },
         select: { id: true, nombre: true },
       });
       return {
         usuario: usuario?.nombre || 'Desconocido',
-        usuarioId: item.usuarioId,
+        usuarioId: item.idUsuario,
         oportunidadesTotal: item._count.id,
       };
     })
@@ -435,8 +435,8 @@ export async function obtenerReporteFuenteLeads(filtros?: { fechaInicio?: Date; 
             fuente: item.fuente
           }
         },
-        select: { clienteId: true },
-        distinct: ['clienteId']
+        select: { idCliente: true },
+        distinct: ['idCliente']
       });
 
       // Oportunidades ganadas desde esta fuente

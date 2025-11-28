@@ -3,7 +3,7 @@
  * Escucha nuevos leads y otros eventos a través de WebSocket
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 
 interface NotificacionLead {
   tipo: string;
@@ -22,15 +22,22 @@ interface NotificacionLead {
   urgencia: string;
 }
 
+interface UseLeadNotificationsReturn {
+  connectWebSocket: () => void;
+  conectado: boolean;
+}
+
 export const useLeadNotifications = (
   usuarioId: string | undefined,
-  onNewLead: (lead: NotificacionLead) => void
-) => {
+  onNewLead: (lead: NotificacionLead) => void,
+  onConexionCambiada?: (conectado: boolean) => void
+): UseLeadNotificationsReturn => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const attemptCountRef = useRef(0);
   const maxAttemptsRef = useRef(5);
   const isConnectingRef = useRef(false);
+  const [conectado, setConectado] = useState(false);
 
   const connectWebSocket = useCallback(() => {
     // No intentar conectar si ya estamos conectando o ya tenemos una conexión
@@ -84,6 +91,8 @@ export const useLeadNotifications = (
       wsRef.current.onopen = () => {
         console.log('✅ Conectado a WebSocket de notificaciones');
         attemptCountRef.current = 0; 
+        setConectado(true);
+        onConexionCambiada?.(true);
         
         // Limpiar timer de reconexión si existe
         if (reconnectTimerRef.current) {
@@ -129,6 +138,8 @@ export const useLeadNotifications = (
 
       wsRef.current.onclose = () => {
         isConnectingRef.current = false;
+        setConectado(false);
+        onConexionCambiada?.(false);
         console.log(`❌ WebSocket desconectado (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
         if (attemptCountRef.current < maxAttemptsRef.current) {
           console.log(`🔌 Reintentando en 5 segundos...`);
@@ -174,9 +185,24 @@ export const useLeadNotifications = (
       return;
     }
 
-    const cleanup = connectWebSocket();
-    return cleanup;
-  }, [usuarioId, connectWebSocket]);
+    // Verificar si ya estamos conectados
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('✅ WebSocket ya está conectado, no reconectar');
+      return;
+    }
 
-  return { connectWebSocket };
+    // Conectar solo una vez por usuarioId
+    if (!isConnectingRef.current && (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED)) {
+      connectWebSocket();
+    }
+
+    // Cleanup: cerrar conexión al desmontar
+    return () => {
+      if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+        wsRef.current.close();
+      }
+    };
+  }, [usuarioId]);
+
+  return { connectWebSocket, conectado };
 };
