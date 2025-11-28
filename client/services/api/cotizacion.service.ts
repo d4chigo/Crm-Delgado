@@ -43,7 +43,7 @@ export const cotizacionService = {
     tasaAnual: number,
     plazoMeses: number,
     options?: {
-      modalidadPago?: 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL' | 'FLEXIBLE_ESPECIAL_AMORTIZACION';
+      modalidadPago?: 'FIJA' | 'FLEXIBLE_TRADICIONAL' | 'ESCALONADA' | 'GRACIA' | 'FLEXIBLE_ESPECIAL';
       // FLEXIBLE_TRADICIONAL
       flexibleOverridesText?: string; // formato "mes:monto\n..."
       // ESCALONADA
@@ -63,11 +63,6 @@ export const cotizacionService = {
     if (monto <= 0 || tasaAnual < 0 || plazoMeses <= 0) return [];
 
     const modalidad = options?.modalidadPago || 'FIJA';
-    
-    // FLEXIBLE_ESPECIAL_AMORTIZACION: manejo especial - cuota fija + pago especial cada N meses
-    if (modalidad === 'FLEXIBLE_ESPECIAL_AMORTIZACION' && options?.frecuenciaCuotaEspecial && options?.cuotaEspecialValor !== undefined) {
-      return this.calcularCronogramaFlexibleEspecial(monto, tasaAnual, options.frecuenciaCuotaEspecial, options.cuotaEspecialValor, options.cuotaEspecialTipo, options.montoCuotaManual);
-    }
   
   let cuota = this.calcularCuotaMensual(monto, tasaAnual, plazoMeses);
   

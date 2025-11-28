@@ -483,7 +483,7 @@ export const FormularioCotizacion = ({
                   </div>
                 </div>
 
-                {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL_AMORTIZACION' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
+                {(datos.tipoCuota === 'FLEXIBLE' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
                   <div className="pt-4 mt-4 border-t">
                     <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Flexible</h4>
                     <div>
@@ -501,7 +501,7 @@ export const FormularioCotizacion = ({
                   </div>
                 )}
 
-                {(datos.tipoCuota === 'FLEXIBLE_ESPECIAL_AMORTIZACION' || datos.tipoCuota === 'FLEXIBLE_ESPECIAL') && (
+                {datos.tipoCuota === 'FLEXIBLE_ESPECIAL' && (
                   <div className="pt-4 mt-4 border-t">
                     <h4 className="text-xs font-semibold text-gray-600 mb-3">Configuración de Cuota Especial</h4>
                     <div className="grid grid-cols-3 gap-x-4">
