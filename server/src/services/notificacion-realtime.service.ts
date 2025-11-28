@@ -68,6 +68,7 @@ export const enviarNotificacionAUsuario = (usuarioId: string, datos: any): boole
 export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): Promise<void> => {
   try {
     console.log('🔔 Notificando nuevo lead en tiempo real...');
+    console.log(`📊 Conexiones WebSocket activas: ${activeConnections.size}`);
 
     // Obtener todos los admins y supervisores
     let usuarios: any[] = [];
@@ -82,13 +83,14 @@ export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): 
         },
         select: { id: true, nombre: true, correo: true }
       });
-      console.log(`📢 Enviando notificación a ${usuarios.length} usuarios...`);
+      console.log(`📢 Encontrados ${usuarios.length} admins/supervisores en BD`);
     } catch (dbError) {
       console.warn('⚠️ No se pudo obtener usuarios de BD:', dbError);
       return; // Salir silenciosamente si no hay conexión a BD
     }
 
     // Enviar a cada usuario conectado
+    let enviados = 0;
     for (const usuario of usuarios) {
       try {
         const enviado = enviarNotificacionAUsuario(usuario.id, {
@@ -109,14 +111,18 @@ export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): 
           urgencia: 'alta'
         });
 
-        if (!enviado) {
-          console.log(`ℹ️ Usuario ${usuario.id} no conectado por WebSocket, usará notificación en BD`);
+        if (enviado) {
+          enviados++;
+        } else {
+          console.log(`ℹ️ Usuario ${usuario.id} (${usuario.nombre}) no conectado por WebSocket`);
         }
       } catch (sendError) {
         console.warn(`⚠️ Error enviando notificación a usuario ${usuario.id}:`, sendError);
         // Continuar con el siguiente usuario
       }
     }
+    
+    console.log(`✅ Notificaciones enviadas por WebSocket: ${enviados}/${usuarios.length}`)
 
   } catch (error) {
     console.error('❌ Error en notificarNuevoLeadEnTiempoReal:', error);
