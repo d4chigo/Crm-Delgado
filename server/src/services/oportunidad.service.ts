@@ -119,7 +119,7 @@ export class OportunidadService {
     const skip = (pagina - 1) * limite;
 
     // Construir condiciones de búsqueda
-    const where: any = { usuarioId };
+    const where: any = { idUsuario: usuarioId };
 
     if (clienteId) {
       where.clienteId = clienteId;
@@ -205,7 +205,7 @@ export class OportunidadService {
    */
   async obtenerOportunidadPorId(id: string, usuarioId: string) {
     const oportunidad = await prisma.oportunidadCliente.findFirst({
-      where: { id, usuarioId },
+      where: { id, idUsuario: usuarioId },
       include: {
         cliente: {
           include: {
@@ -246,7 +246,7 @@ export class OportunidadService {
   ) {
     // Verificar que existe
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { id, usuarioId }
+      where: { id, idUsuario: usuarioId }
     });
 
     if (!oportunidadExistente) {
@@ -322,7 +322,7 @@ export class OportunidadService {
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { id, usuarioId },
+      where: { id, idUsuario: usuarioId },
       include: {
         cliente: true,
         lead: true
@@ -597,14 +597,14 @@ export class OportunidadService {
    */
   async obtenerEstadisticas(usuarioId: string) {
     const oportunidades = await prisma.oportunidadCliente.findMany({
-      where: { usuarioId }
+      where: { idUsuario: usuarioId }
     });
 
     type OportunidadValor = { valor: any; etapa: string };
 
     const estadisticasPorEtapa = await prisma.oportunidadCliente.groupBy({
       by: ['etapa'],
-      where: { usuarioId },
+      where: { idUsuario: usuarioId },
       _count: { id: true },
       _sum: { valor: true }
     });
@@ -649,7 +649,7 @@ export class OportunidadService {
     }
 
     const oportunidades = await prisma.oportunidadCliente.findMany({
-      where: { clienteId, usuarioId },
+      where: { clienteId, idUsuario: usuarioId },
       orderBy: { ultimaActividad: 'desc' },
       include: {
         cliente: {

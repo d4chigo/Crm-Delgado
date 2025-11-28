@@ -4,7 +4,7 @@ import { Rol, Sexo, EstadoLead, Prioridad } from '@prisma/client';
 export interface Usuario {
   id: string;
   nombre: string;
-  email: string;
+  correo: string;
   rol: Rol;
   avatar?: string;
   telefono?: string;
@@ -13,12 +13,12 @@ export interface Usuario {
   actualizadoEn: Date;
 }
 
-export interface UsuarioSinPassword extends Omit<Usuario, 'password'> {}
+export interface UsuarioSinPassword extends Omit<Usuario, 'contrasena'> {}
 
 // ==================== JWT ====================
 export interface PayloadJWT {
   usuarioId: string;
-  email: string;
+  email: string; // Se mantiene como 'email' en el JWT por compatibilidad
   rol: Rol | 'CLIENTE'; // Permitir CLIENTE para portal web
 }
 
@@ -43,14 +43,14 @@ export interface RespuestaError {
 
 // ==================== AUTENTICACIÓN ====================
 export interface LoginDTO {
-  email: string;
-  password: string;
+  email: string; // Se recibe como 'email' del frontend
+  password: string; // Se recibe como 'password' del frontend
 }
 
 export interface RegistroDTO {
   nombre: string;
-  email: string;
-  password: string;
+  email: string; // Se recibe como 'email' del frontend
+  password: string; // Se recibe como 'password' del frontend
   telefono?: string;
 }
 

@@ -137,6 +137,15 @@ async function dev() {
     await ejecutarComando('npx', ['prisma', 'migrate', 'deploy'], path.join(dirRaiz, 'server'));
     escribirExito('Migraciones completadas');
 
+    // Ejecutar seed
+    escribirPaso('Ejecutando seed de datos...');
+    try {
+      await ejecutarComando('npx', ['prisma', 'db', 'seed'], path.join(dirRaiz, 'server'));
+      escribirExito('Seed ejecutado');
+    } catch (error) {
+      escribirPaso('Seed no disponible o ya ejecutado (esto es normal)');
+    }
+
     escribirPaso('Iniciando servidor backend en puerto 5000...');
     spawn('npm', ['run', 'dev'], {
       cwd: path.join(dirRaiz, 'server'),

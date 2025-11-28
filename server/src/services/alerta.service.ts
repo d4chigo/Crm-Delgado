@@ -78,7 +78,7 @@ export const generarAlertasLeadsNoContactados = async (): Promise<any[]> => {
           select: {
             id: true,
             nombre: true,
-            email: true,
+            correo: true,
           },
         },
       },
@@ -174,7 +174,7 @@ export const obtenerEstadisticasAlertas = async (
     const ahora = new Date();
 
     const alertas = await prisma.alertaLead.findMany({
-      where: { usuarioId },
+      where: { idUsuario: usuarioId },
     });
 
     const activas = alertas.filter((a: any) => !a.completada);
@@ -272,7 +272,7 @@ export const obtenerTodasAlertas = async (filtro?: {
           select: {
             id: true,
             nombre: true,
-            email: true,
+            correo: true,
           },
         },
       },

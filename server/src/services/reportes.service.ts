@@ -8,7 +8,7 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
   const where: any = {};
   
   if (filtros?.usuarioId) {
-    where.usuarioId = filtros.usuarioId;
+    where.idUsuario = filtros.usuarioId;
   }
   
   if (filtros?.fechaInicio || filtros?.fechaFin) {
@@ -36,7 +36,7 @@ export async function obtenerReporteLead(filtros?: { usuarioId?: string; fechaIn
     leadId: { not: null }
   };
   if (filtros?.usuarioId) {
-    oppWhere.usuarioId = filtros.usuarioId;
+    oppWhere.idUsuario = filtros.usuarioId;
   }
   if (filtros?.fechaInicio || filtros?.fechaFin) {
     oppWhere.creadoEn = {};
@@ -188,7 +188,7 @@ export async function obtenerReporteActividad(filtros?: { usuarioId?: string; fe
   const where: any = {};
   
   if (filtros?.usuarioId) {
-    where.usuarioId = filtros.usuarioId;
+    where.idUsuario = filtros.usuarioId;
   }
   
   if (filtros?.fechaInicio || filtros?.fechaFin) {
@@ -349,7 +349,7 @@ export async function obtenerAnalisisTiempoEficiencia(filtros?: { usuarioId?: st
   const where: any = {};
   
   if (filtros?.usuarioId) {
-    where.usuarioId = filtros.usuarioId;
+    where.idUsuario = filtros.usuarioId;
   }
 
   const leads = await prisma.lead.findMany({

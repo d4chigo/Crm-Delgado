@@ -61,11 +61,11 @@ export class EtiquetaService {
   async asignarEtiquetas(contactoId: string, etiquetaIds: string[], usuarioId: string) {
     // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
     const lead = await prisma.lead.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     });
 
     const cliente = !lead ? await prisma.cliente.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     }) : null;
 
     if (!lead && !cliente) {
@@ -113,11 +113,11 @@ export class EtiquetaService {
   async agregarEtiqueta(contactoId: string, etiquetaId: string, usuarioId: string) {
     // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
     const lead = await prisma.lead.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     });
 
     const cliente = !lead ? await prisma.cliente.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     }) : null;
 
     if (!lead && !cliente) {
@@ -179,11 +179,11 @@ export class EtiquetaService {
   async removerEtiqueta(contactoId: string, etiquetaId: string, usuarioId: string) {
     // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
     const lead = await prisma.lead.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     });
 
     const cliente = !lead ? await prisma.cliente.findFirst({
-      where: { id: contactoId, usuarioId }
+      where: { id: contactoId, idUsuario: usuarioId }
     }) : null;
 
     if (!lead && !cliente) {

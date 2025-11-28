@@ -87,7 +87,7 @@ export const proyectoService = {
           select: {
             id: true,
             nombre: true,
-            email: true
+            correo: true
           }
         }
       },
@@ -127,7 +127,7 @@ export const proyectoService = {
           select: {
             id: true,
             nombre: true,
-            email: true
+            correo: true
           }
         }
       }

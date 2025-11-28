@@ -15,11 +15,11 @@ router.post('/seed', async (req, res) => {
     const adminEmail = 'admin@crm-delgado.com';
     const adminPass = 'admin123';
 
-    let admin = await prisma.usuario.findUnique({ where: { email: adminEmail } });
+    let admin = await prisma.usuario.findUnique({ where: { correo: adminEmail } });
     if (!admin) {
       const hash = await bcrypt.hash(adminPass, 10);
       admin = await prisma.usuario.create({
-        data: { nombre: 'Admin', email: adminEmail, password: hash, rol: 'ADMIN', activo: true }
+        data: { nombre: 'Admin', correo: adminEmail, contrasena: hash, rol: 'ADMIN', activo: true }
       });
     }
 
@@ -56,8 +56,8 @@ router.post('/seed', async (req, res) => {
       exito: true,
       mensaje: 'Seed ejecutado',
       datos: {
-        admin: { email: admin.email },
-        clienteDemo: { id: contacto.id, email: contacto.correo, password: 'demo1234' }
+        admin: { correo: admin.correo },
+        clienteDemo: { id: contacto.id, correo: contacto.correo, contrasena: 'demo1234' }
       }
     });
   } catch (error: any) {

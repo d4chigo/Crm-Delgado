@@ -13,7 +13,7 @@ export interface DatosLeadRealtime {
   leadId: string;
   nombre: string;
   apellido?: string;
-  email: string;
+  correo: string;
   telefono: string;
   interes?: string;
   origen?: string;
@@ -80,7 +80,7 @@ export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): 
           ],
           activo: true
         },
-        select: { id: true, nombre: true, email: true }
+        select: { id: true, nombre: true, correo: true }
       });
       console.log(`📢 Enviando notificación a ${usuarios.length} usuarios...`);
     } catch (dbError) {
@@ -98,7 +98,7 @@ export const notificarNuevoLeadEnTiempoReal = async (datos: DatosLeadRealtime): 
             leadId: datos.leadId,
             nombre: datos.nombre,
             apellido: datos.apellido,
-            email: datos.email,
+            correo: datos.correo,
             telefono: datos.telefono,
             interes: datos.interes,
             origen: datos.origen,

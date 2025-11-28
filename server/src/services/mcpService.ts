@@ -421,7 +421,7 @@ export async function getEstadisticasPorAgente() {
 
     return usuarios.map((usuario) => ({
       nombre: usuario.nombre,
-      email: usuario.email,
+      email: usuario.correo,
       totalLeads: usuario.leads.length,
       totalClientes: usuario.clientes.length,
       totalOportunidades: usuario.oportunidades.length,

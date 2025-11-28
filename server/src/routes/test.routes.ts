@@ -64,7 +64,7 @@ router.get('/portal-cliente-diagnostic', async (req: Request, res: Response) => 
             select: {
               id: true,
               nombre: true,
-              email: true
+              correo: true
             }
           }
         }
@@ -83,7 +83,7 @@ router.get('/portal-cliente-diagnostic', async (req: Request, res: Response) => 
         select: {
           id: true,
           nombre: true,
-          email: true,
+          correo: true,
           telefono: true
         }
       });

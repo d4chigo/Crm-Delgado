@@ -32,7 +32,7 @@ class ClientPortalController {
             select: {
               id: true,
               nombre: true,
-              email: true,
+              correo: true,
               telefono: true,
               avatar: true
             }
@@ -164,7 +164,7 @@ class ClientPortalController {
             select: {
               id: true,
               nombre: true,
-              email: true,
+              correo: true,
               telefono: true,
               avatar: true
             }
@@ -204,7 +204,7 @@ class ClientPortalController {
             select: {
               id: true,
               nombre: true,
-              email: true,
+              correo: true,
               telefono: true,
               avatar: true
             }

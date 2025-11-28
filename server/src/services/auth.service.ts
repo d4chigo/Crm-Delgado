@@ -12,7 +12,7 @@ export class AuthService {
 
     // Verificar si el email ya existe
     const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email }
+      where: { correo: email }
     });
 
     if (usuarioExistente) {
@@ -26,8 +26,8 @@ export class AuthService {
     const usuario = await prisma.usuario.create({
       data: {
         nombre,
-        email,
-        password: passwordHasheada,
+        correo: email,
+        contrasena: passwordHasheada,
         telefono
       }
     });
@@ -35,14 +35,14 @@ export class AuthService {
     // Generar token
     const payload: PayloadJWT = {
       usuarioId: usuario.id,
-      email: usuario.email,
+      email: usuario.correo,
       rol: usuario.rol
     };
 
     const token = generarToken(payload);
 
-    // Retornar usuario sin password
-    const { password: _, ...usuarioSinPassword } = usuario;
+    // Retornar usuario sin contraseña
+    const { contrasena: _, ...usuarioSinPassword } = usuario;
 
     return {
       usuario: {
@@ -132,7 +132,7 @@ export class AuthService {
 
     // Buscar usuario
     const usuario = await prisma.usuario.findUnique({
-      where: { email }
+      where: { correo: email }
     });
 
     if (!usuario) {
@@ -145,7 +145,7 @@ export class AuthService {
     }
 
     // Verificar contraseña
-    const passwordValida = await compararPassword(password, usuario.password);
+    const passwordValida = await compararPassword(password, usuario.contrasena);
 
     if (!passwordValida) {
       throw new Error('Credenciales inválidas');
@@ -154,14 +154,14 @@ export class AuthService {
     // Generar token
     const payload: PayloadJWT = {
       usuarioId: usuario.id,
-      email: usuario.email,
+      email: usuario.correo,
       rol: usuario.rol
     };
 
     const token = generarToken(payload);
 
-    // Retornar usuario sin password
-    const { password: _, ...usuarioSinPassword } = usuario;
+    // Retornar usuario sin contraseña
+    const { contrasena: _, ...usuarioSinPassword } = usuario;
 
     return {
       usuario: {
@@ -188,7 +188,7 @@ export class AuthService {
       throw new Error('Usuario no encontrado');
     }
 
-    const { password: _, ...usuarioSinPassword } = usuario;
+    const { contrasena: _, ...usuarioSinPassword } = usuario;
     return {
       ...usuarioSinPassword,
       telefono: usuarioSinPassword.telefono ?? undefined,

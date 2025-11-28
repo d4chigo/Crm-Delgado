@@ -10,7 +10,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
+    "db:seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +31,7 @@
     "express-rate-limit": "^8.1.0",
     "googleapis": "^162.0.0",
     "helmet": "^8.1.0",
+    "iconv-lite": "0.6.3",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",

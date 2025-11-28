@@ -1,3 +1,10 @@
+const path = require('path');
+
+// La raíz del proyecto está en: /Crm-Delgado (dos niveles arriba)
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
+console.log('📝 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Cargada' : '❌ No encontrada');
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
@@ -19,16 +26,16 @@ async function seed() {
       const admin = await prisma.usuario.create({
         data: {
           nombre: 'Administrador',
-          email: 'admin@crm-delgado.com',
-          password: passwordHasheada,
+          correo: 'admin@crm-delgado.com',
+          contrasena: passwordHasheada,
           rol: 'ADMIN',
           telefono: '1234567890'
         }
       });
 
       console.log('✅ Usuario administrador creado exitosamente');
-      console.log('📧 Email:', admin.email);
-      console.log('🔑 Password: admin123');
+      console.log('📧 Correo:', admin.correo);
+      console.log('🔑 Contraseña: admin123');
       console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');
     } else {
       console.log('ℹ️  Ya existe un usuario administrador');
@@ -74,6 +81,20 @@ async function seed() {
             descripcion: 'Interesado en alquilar',
             icono: '🔑',
             orden: 5
+          },
+          {
+            nombre: 'Habilitaciones',
+            color: '#F97316',
+            descripcion: 'Proyectos de habilitaciones urbanas',
+            icono: '🏗️',
+            orden: 6
+          },
+          {
+            nombre: 'Construcción',
+            color: '#EF4444',
+            descripcion: 'Proyectos de construcción',
+            icono: '🏗️',
+            orden: 7
           }
         ]
       });

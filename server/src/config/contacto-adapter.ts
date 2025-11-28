@@ -42,6 +42,29 @@ export class ContactoAdapter {
   }
 
   /**
+   * Transformar where clause - NO transformar a snake_case ya que Prisma maneja el mapeo
+   */
+  private static transformWhere(where: any): any {
+    if (!where) return where;
+
+    const transformed: any = {};
+    
+    for (const [key, value] of Object.entries(where)) {
+      // No transformar - Prisma maneja el mapeo automáticamente con @map
+      const newKey = key;
+
+      // Si el valor es un objeto (ej: { lte: Date }), procesarlo recursivamente
+      if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        transformed[newKey] = this.transformWhere(value);
+      } else {
+        transformed[newKey] = value;
+      }
+    }
+
+    return transformed;
+  }
+
+  /**
    * Crear un lead (tratado como contacto de tipo LEAD)
    */
   static async create(data: any) {
@@ -123,7 +146,7 @@ export class ContactoAdapter {
 
     // Si especifica tipo, buscar solo en esa tabla
     if (where.tipo === 'LEAD') {
-      const leadWhere = { ...where };
+      const leadWhere = this.transformWhere(where);
       delete leadWhere.tipo;
       const leads = await prisma.lead.findMany({ 
         where: leadWhere, 
@@ -137,7 +160,7 @@ export class ContactoAdapter {
     }
 
     if (where.tipo === 'CLIENTE') {
-      const clienteWhere = { ...where };
+      const clienteWhere = this.transformWhere(where);
       delete clienteWhere.tipo;
       const clientes = await prisma.cliente.findMany({ 
         where: clienteWhere, 
@@ -151,7 +174,7 @@ export class ContactoAdapter {
     }
 
     // Si no especifica tipo, obtener de ambas tablas
-    const baseWhere = { ...where };
+    const baseWhere = this.transformWhere(where);
     delete baseWhere.tipo;
     
     const [leads, clientes] = await Promise.all([

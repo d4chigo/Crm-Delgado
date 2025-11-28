@@ -62,7 +62,7 @@ export class ContactoService {
     const skip = (pagina - 1) * limite;
 
     // Construir condiciones de búsqueda base
-    const whereBase: any = { usuarioId };
+    const whereBase: any = { idUsuario: usuarioId };
 
     if (estado) {
       whereBase.estado = estado;
@@ -229,7 +229,7 @@ export class ContactoService {
   async obtenerContactoPorId(id: string, usuarioId: string) {
     // Buscar en leads primero, luego en clientes
     let contacto = await prisma.lead.findFirst({
-      where: { id, usuarioId },
+      where: { id, idUsuario: usuarioId },
       include: {
         etiquetasRel: {
           include: {
@@ -241,7 +241,7 @@ export class ContactoService {
 
     if (!contacto) {
       contacto = await prisma.cliente.findFirst({
-        where: { id, usuarioId },
+        where: { id, idUsuario: usuarioId },
         include: {
           etiquetasRel: {
             include: {
@@ -318,11 +318,11 @@ export class ContactoService {
   async actualizarContacto(id: string, datos: ActualizarContactoDTO, usuarioId: string) {
     // Verificar que el contacto existe (puede ser lead o cliente) y pertenece al usuario
     const lead = await prisma.lead.findFirst({
-      where: { id, usuarioId }
+      where: { id, idUsuario: usuarioId }
     });
 
     const cliente = !lead ? await prisma.cliente.findFirst({
-      where: { id, usuarioId }
+      where: { id, idUsuario: usuarioId }
     }) : null;
 
     const contactoExistente = lead || cliente;
@@ -541,7 +541,7 @@ export class ContactoService {
     if (tipo === 'LEAD') {
       // Buscar solo leads
       const leads = await prisma.lead.findMany({
-        where: { usuarioId },
+        where: { idUsuario: usuarioId },
         orderBy: { creadoEn: 'desc' },
         take: limite,
         select: {
@@ -571,7 +571,7 @@ export class ContactoService {
     if (tipo === 'CLIENTE') {
       // Buscar solo clientes
       const clientes = await prisma.cliente.findMany({
-        where: { usuarioId },
+        where: { idUsuario: usuarioId },
         orderBy: { creadoEn: 'desc' },
         take: limite,
         select: {
