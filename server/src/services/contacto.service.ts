@@ -942,7 +942,8 @@ export class ContactoService {
         return { importados: 0, duplicados: 0, errores: 0 };
       }
 
-      for (const person of contactosGoogle) {
+      for (let idx = 0; idx < contactosGoogle.length; idx++) {
+        const person = contactosGoogle[idx];
         try {
           const nombre = person.names?.[0]?.givenName || '';
           const apellido = person.names?.[0]?.familyName || '';
@@ -989,9 +990,10 @@ export class ContactoService {
               continue;
             }
 
-            // Generar un identificador único basado en nombre y timestamp
+            // Generar un identificador único basado en nombre, timestamp e índice
             const identificador = `${nombre}${apellido}`.toLowerCase().replace(/\s+/g, '');
-            correoFinal = `${identificador}_${Date.now()}@importado.local`;
+            const timestamp = Date.now();
+            correoFinal = `${identificador}_${timestamp}_${idx}@importado.local`;
             console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
           }
 
@@ -1050,7 +1052,10 @@ export class ContactoService {
           console.error('❌ Error al importar contacto individual:', {
             nombre: person.names?.[0]?.givenName,
             apellido: person.names?.[0]?.familyName,
-            error: error.message
+            correo: person.emailAddresses?.[0]?.value,
+            error: error.message,
+            code: error.code,
+            stack: error.stack?.split('\n')[0]
           });
           errores++;
         }
