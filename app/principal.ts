@@ -10,7 +10,7 @@ const crearVentana = () => {
   const rutaIcono = path.join(__dirname, '..', '..', 'client', 'public', 'logodelgado.png')
   
   ventanaPrincipal = new BrowserWindow({
-    width: 1400,
+    width: 1200,
     height: 900,
     minWidth: 1024,
     minHeight: 768,

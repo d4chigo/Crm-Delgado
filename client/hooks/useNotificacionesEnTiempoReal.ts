@@ -33,12 +33,12 @@ export const useNotificacionesEnTiempoReal = (
 
   const obtenerToken = useCallback(() => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token');
+    return localStorage.getItem('crm_token');
   }, []);
 
   const obtenerUsuarioId = useCallback(() => {
     if (typeof window === 'undefined') return null;
-    const usuario = localStorage.getItem('usuario');
+    const usuario = localStorage.getItem('crm_user');
     if (!usuario) return null;
     try {
       return JSON.parse(usuario).id;
@@ -48,35 +48,74 @@ export const useNotificacionesEnTiempoReal = (
   }, []);
 
   const conectarWebSocket = useCallback(() => {
+    // No reconectar si ya hay una conexión activa
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('[Notificaciones] Ya conectado, ignorando nueva conexión');
+      return;
+    }
+
     if (!habilitado) return;
 
     const token = obtenerToken();
     const usuarioId = obtenerUsuarioId();
 
+    console.log('[Notificaciones] Intentando conectar...');
+    console.log('[Notificaciones] Token disponible:', !!token);
+    console.log('[Notificaciones] UsuarioId disponible:', !!usuarioId);
+    console.log('[Notificaciones] UsuarioId valor:', usuarioId);
+
     if (!token || !usuarioId) {
-      console.warn('[Notificaciones] Token o usuarioId no disponibles');
+      console.warn('[Notificaciones] ❌ Token o usuarioId no disponibles');
+      console.warn('[Notificaciones] Token:', token ? 'SÍ' : 'NO');
+      console.warn('[Notificaciones] UsuarioId:', usuarioId ? 'SÍ' : 'NO');
       return;
     }
 
     try {
       const protocolo = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocolo}//${window.location.host}/api/voice`;
+      // Conectar al servidor backend (puerto 5000), no al cliente (puerto 3000)
+      const host = window.location.hostname;
+      const wsUrl = `${protocolo}//${host}:5000/api/voice`;
 
       console.log('[Notificaciones] Conectando a WebSocket:', wsUrl);
 
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('[Notificaciones] WebSocket conectado');
+        console.log('[Notificaciones] ✅ WebSocket conectado');
+        console.log('[Notificaciones] Estado WebSocket:', wsRef.current?.readyState);
+        console.log('[Notificaciones] Enviando registro con usuarioId:', usuarioId);
 
-        // Enviar registro con usuarioId
-        wsRef.current?.send(
-          JSON.stringify({
-            tipo: 'registro',
-            usuarioId: usuarioId,
-            token: token,
-          })
-        );
+        // Esperar a que el WebSocket esté en estado OPEN (1) antes de enviar
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          try {
+            wsRef.current.send(
+              JSON.stringify({
+                tipo: 'registro',
+                usuarioId: usuarioId,
+                token: token,
+              })
+            );
+            console.log('[Notificaciones] ✅ Registro enviado, esperando confirmación...');
+          } catch (error) {
+            console.error('[Notificaciones] Error al enviar registro:', error);
+          }
+        } else {
+          console.warn('[Notificaciones] WebSocket no está en estado OPEN, reintentando...');
+          // Reintentar después de un pequeño delay
+          setTimeout(() => {
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              wsRef.current.send(
+                JSON.stringify({
+                  tipo: 'registro',
+                  usuarioId: usuarioId,
+                  token: token,
+                })
+              );
+              console.log('[Notificaciones] ✅ Registro enviado (reintento)');
+            }
+          }, 100);
+        }
 
         setConectado(true);
         setIntentosReconexion(0);
@@ -131,14 +170,24 @@ export const useNotificacionesEnTiempoReal = (
         }
       };
 
-      wsRef.current.onerror = (error) => {
-        console.error('[Notificaciones] Error WebSocket:', error);
+      wsRef.current.onerror = (event) => {
+        console.warn('[Notificaciones] ⚠️ Error WebSocket');
+        console.warn('[Notificaciones] Tipo de evento:', event.type);
+        console.warn('[Notificaciones] Estado WebSocket:', wsRef.current?.readyState);
+        console.warn('[Notificaciones] URL:', wsRef.current?.url);
+        
+        // Los errores de WebSocket no tienen detalles en el evento
+        // El error real se ve en onclose con el código de cierre
         setConectado(false);
         onConexion?.(false);
       };
 
-      wsRef.current.onclose = () => {
+      wsRef.current.onclose = (event) => {
         console.log('[Notificaciones] WebSocket desconectado');
+        console.log('[Notificaciones] Código de cierre:', event.code);
+        console.log('[Notificaciones] Razón:', event.reason);
+        console.log('[Notificaciones] Limpio:', event.wasClean);
+        
         setConectado(false);
         onConexion?.(false);
 
@@ -153,13 +202,15 @@ export const useNotificacionesEnTiempoReal = (
             setIntentosReconexion((prev) => prev + 1);
             conectarWebSocket();
           }, delayMs);
+        } else if (intentosReconexion >= 5) {
+          console.error('[Notificaciones] ❌ Máximo de intentos de reconexión alcanzado');
         }
       };
     } catch (error) {
       console.error('[Notificaciones] Error al conectar WebSocket:', error);
       setConectado(false);
     }
-  }, [habilitado, obtenerToken, obtenerUsuarioId, onNotificacion, onConexion, intentosReconexion, toast]);
+  }, [habilitado, obtenerToken, obtenerUsuarioId, onNotificacion, onConexion, toast]);
 
   const desconectar = useCallback(() => {
     if (reconectarTimeoutRef.current) {
@@ -181,10 +232,14 @@ export const useNotificacionesEnTiempoReal = (
     setTimeout(() => conectarWebSocket(), 500);
   }, [desconectar, conectarWebSocket]);
 
+  // Efecto para conectar cuando se habilita
   useEffect(() => {
-    if (!habilitado) return;
+    if (!habilitado) {
+      desconectar();
+      return;
+    }
 
-    // Conectar cuando el componente se monta
+    // Conectar cuando el componente se monta o cuando se habilita
     conectarWebSocket();
 
     // Reconectar cuando el usuario vuelve a la pestaña
@@ -199,9 +254,8 @@ export const useNotificacionesEnTiempoReal = (
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      desconectar();
     };
-  }, [habilitado, conectarWebSocket, desconectar, reconectar, conectado]);
+  }, [habilitado, conectarWebSocket, reconectar, conectado, desconectar]);
 
   return {
     conectado,

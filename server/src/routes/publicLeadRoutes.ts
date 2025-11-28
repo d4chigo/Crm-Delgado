@@ -166,16 +166,16 @@ router.post('/lead', async (req: Request, res: Response) => {
           // Verificar si ya tiene esta etiqueta
           const tieneEtiqueta = await prisma.leadEtiqueta.findFirst({
             where: {
-              leadId: lead.id,
-              etiquetaId: etiqueta.id
+              idLead: lead.id,
+              idEtiqueta: etiqueta.id
             }
           });
 
           if (!tieneEtiqueta) {
             await prisma.leadEtiqueta.create({
               data: {
-                leadId: lead.id,
-                etiquetaId: etiqueta.id
+                idLead: lead.id,
+                idEtiqueta: etiqueta.id
               }
             });
           }
@@ -246,6 +246,10 @@ router.post('/lead', async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('❌ Error al crear lead:', error);
+    console.error('❌ Tipo de error:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('❌ Mensaje:', error instanceof Error ? error.message : String(error));
+    console.error('❌ Stack:', error instanceof Error ? error.stack : 'No stack available');
+    
     res.status(500).json({
       exito: false,
       mensaje: 'Error al crear el lead',

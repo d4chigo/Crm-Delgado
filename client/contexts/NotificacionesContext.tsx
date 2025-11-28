@@ -6,9 +6,27 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
-import { useNotificacionesEnTiempoReal, Notificacion } from '@/hooks/useNotificacionesEnTiempoReal';
+import { useLeadNotifications } from '@/hooks/useLeadNotifications';
+import authService from '@/services/api/auth.service';
 
-interface NotificacionConId extends Notificacion {
+interface NotificacionLead {
+  tipo: string;
+  titulo: string;
+  datos: {
+    leadId: string;
+    nombre: string;
+    apellido?: string;
+    email: string;
+    telefono: string;
+    interes?: string;
+    origen?: string;
+    fecha: string;
+  };
+  accion: string;
+  urgencia: string;
+}
+
+interface NotificacionConId extends NotificacionLead {
   id: string;
   leida: boolean;
 }
@@ -16,7 +34,7 @@ interface NotificacionConId extends Notificacion {
 interface NotificacionesContextType {
   notificaciones: NotificacionConId[];
   conectado: boolean;
-  agregarNotificacion: (notificacion: Notificacion) => void;
+  agregarNotificacion: (notificacion: NotificacionLead) => void;
   marcarComoLeida: (id: string) => void;
   marcarTodoComoLeido: () => void;
   limpiarNotificaciones: () => void;
@@ -29,8 +47,9 @@ const NotificacionesContext = createContext<NotificacionesContextType | undefine
 export const ProveedorNotificaciones: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notificaciones, setNotificaciones] = useState<NotificacionConId[]>([]);
   const [conectado, setConectado] = useState(false);
+  const usuario = authService.obtenerUsuario();
 
-  const agregarNotificacion = useCallback((notificacion: Notificacion) => {
+  const agregarNotificacion = useCallback((notificacion: NotificacionLead) => {
     const id = `${Date.now()}-${Math.random()}`;
     const nuevaNotificacion: NotificacionConId = {
       ...notificacion,
@@ -70,11 +89,11 @@ export const ProveedorNotificaciones: React.FC<{ children: React.ReactNode }> = 
     return notificaciones.filter((notif) => !notif.leida);
   }, [notificaciones]);
 
-  const { conectado: wsConectado, reconectar } = useNotificacionesEnTiempoReal({
-    habilitado: true,
-    onNotificacion: agregarNotificacion,
-    onConexion: setConectado,
-  });
+  // Usar el hook que funciona
+  const { connectWebSocket } = useLeadNotifications(
+    usuario?.id,
+    agregarNotificacion
+  );
 
   // Cargar notificaciones guardadas al montar
   useEffect(() => {
@@ -86,9 +105,20 @@ export const ProveedorNotificaciones: React.FC<{ children: React.ReactNode }> = 
     }
   }, []);
 
+  // Conectar cuando el usuario está disponible
+  useEffect(() => {
+    if (usuario?.id) {
+      setConectado(true);
+    }
+  }, [usuario?.id]);
+
+  const reconectar = useCallback(() => {
+    connectWebSocket();
+  }, [connectWebSocket]);
+
   const valor: NotificacionesContextType = {
     notificaciones,
-    conectado: wsConectado,
+    conectado,
     agregarNotificacion,
     marcarComoLeida,
     marcarTodoComoLeido,

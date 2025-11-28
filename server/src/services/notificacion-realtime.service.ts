@@ -49,7 +49,6 @@ export const enviarNotificacionAUsuario = (usuarioId: string, datos: any): boole
 
   try {
     ws.send(JSON.stringify({
-      tipo: 'notificacion',
       timestamp: new Date().toISOString(),
       ...datos
     }));
