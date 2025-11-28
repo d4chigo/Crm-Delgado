@@ -937,6 +937,7 @@ export class ContactoService {
       console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle.length}`);
 
       for (const person of contactosGoogle) {
+        let correoFinal: string | null | undefined;
         try {
           const nombre = person.names?.[0]?.givenName || '';
           const apellido = person.names?.[0]?.familyName || '';
@@ -951,7 +952,7 @@ export class ContactoService {
           }
 
           // Si no tiene correo, usar un correo temporal basado en el nombre
-          let correoFinal = correo;
+          correoFinal = correo;
           if (!correo) {
             // Primero verificar si ya existe un lead con el mismo nombre y apellido
             const leadPorNombre = await prisma.lead.findFirst({
@@ -1044,7 +1045,10 @@ export class ContactoService {
           console.error('❌ Error al importar contacto individual:', {
             nombre: person.names?.[0]?.givenName,
             apellido: person.names?.[0]?.familyName,
-            error: error.message
+            correo: correoFinal,
+            error: error.message,
+            code: error.code,
+            meta: error.meta
           });
           errores++;
         }
