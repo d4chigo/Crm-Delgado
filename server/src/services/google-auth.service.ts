@@ -83,11 +83,18 @@ class GoogleAuthService {
       throw new Error('Access token vacío o inválido');
     }
     
-    this.oauth2Client.setCredentials({ access_token: accessToken });
-    
-    const people = google.people({ version: 'v1', auth: this.oauth2Client });
-    
     try {
+      // Crear un nuevo cliente OAuth para este token específico
+      const oauth2ClientTemp = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID || 'your-client-id',
+        process.env.GOOGLE_CLIENT_SECRET || 'your-client-secret',
+        process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback'
+      );
+      
+      oauth2ClientTemp.setCredentials({ access_token: accessToken });
+      
+      const people = google.people({ version: 'v1', auth: oauth2ClientTemp });
+      
       console.log('[Google Auth] Llamando a Google People API...');
       const response = await people.people.connections.list({
         resourceName: 'people/me',
@@ -103,7 +110,13 @@ class GoogleAuthService {
         hasConnections: !!response.data.connections
       });
       
-      return response.data.connections || [];
+      // Si no hay contactos, retornar array vacío pero loguear
+      if (!response.data.connections || response.data.connections.length === 0) {
+        console.warn('[Google Auth] ⚠️ No se encontraron contactos en Google');
+        return [];
+      }
+      
+      return response.data.connections;
     } catch (error: any) {
       console.error('[Google Auth] Error al obtener contactos de Google:', error.message);
       console.error('[Google Auth] Error code:', error.code);

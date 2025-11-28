@@ -30,6 +30,33 @@ router.get('/google', autenticar, (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/auth/google/test-token
+ * Endpoint de debug para probar un token de Google
+ */
+router.post('/google/test-token', autenticar, async (req: Request, res: Response) => {
+  try {
+    const { accessToken } = req.body;
+    
+    if (!accessToken) {
+      respuestaError(res, 'Access token requerido', 400);
+      return;
+    }
+    
+    console.log('[Google Auth Debug] Probando token...');
+    const contactos = await googleAuthService.getContacts(accessToken);
+    
+    respuestaExito(res, {
+      tokenValido: true,
+      contactosEncontrados: contactos?.length || 0,
+      contactos: contactos?.slice(0, 5) || [] // Primeros 5 para debug
+    }, 'Token válido');
+  } catch (error: any) {
+    console.error('[Google Auth Debug] Error:', error.message);
+    respuestaError(res, error.message || 'Error al probar token', 500);
+  }
+});
+
+/**
  * GET /api/auth/google/callback
  * Callback de Google OAuth
  */

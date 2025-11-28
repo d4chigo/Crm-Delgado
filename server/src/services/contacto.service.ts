@@ -934,7 +934,13 @@ export class ContactoService {
       console.log('[Contacto Service] Llamando a googleAuthService.getContacts...');
       const contactosGoogle = await googleAuthService.getContacts(accessToken);
       
-      console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle.length}`);
+      console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle?.length || 0}`);
+      
+      // Si no hay contactos, retornar resultado vacío
+      if (!contactosGoogle || contactosGoogle.length === 0) {
+        console.warn('[Contacto Service] ⚠️ No hay contactos para importar');
+        return { importados: 0, duplicados: 0, errores: 0 };
+      }
 
       for (const person of contactosGoogle) {
         try {
