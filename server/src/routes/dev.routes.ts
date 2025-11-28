@@ -5,9 +5,13 @@ import bcrypt from 'bcrypt';
 const router = Router();
 
 // Ruta de semilla de desarrollo. Protegida por variable de entorno ALLOW_DEV_SEED
+// En desarrollo, también se permite sin la variable si NODE_ENV es development
 router.post('/seed', async (req, res) => {
   try {
-    if (process.env.ALLOW_DEV_SEED !== 'true') {
+    const isDev = process.env.NODE_ENV === 'development';
+    const isAllowed = process.env.ALLOW_DEV_SEED === 'true' || isDev;
+    
+    if (!isAllowed) {
       return res.status(403).json({ exito: false, mensaje: 'Semilla deshabilitada' });
     }
 

@@ -18,14 +18,17 @@ interface RespuestaError {
 type RespuestaAPI<T> = RespuestaExito<T> | RespuestaError;
 
 // Función para cerrar sesión y redirigir al login
-function cerrarSesionYRedirigir() {
+function cerrarSesionYRedirigir(razon?: string) {
   if (typeof window !== 'undefined') {
+    console.warn('[API] Cerrando sesión:', razon || 'Sin especificar');
     // Limpiar localStorage
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
     
-    // Redirigir al login
-    window.location.href = '/login';
+    // Esperar un poco antes de redirigir para que se vea el error en consola
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 1000);
   }
 }
 
@@ -37,6 +40,11 @@ async function fetchAPI<T>(
   const url = `${API_URL}${endpoint}`;
   
   const token = typeof window !== 'undefined' ? localStorage.getItem('crm_token') : null;
+  
+  // Debug: mostrar si hay token
+  if (!token) {
+    console.warn(`[API] Sin token para ${endpoint}`);
+  }
   
   try {
     const response = await fetch(url, {
@@ -54,14 +62,15 @@ async function fetchAPI<T>(
 
     // Si el token es inválido o expiró (401 Unauthorized)
     if (response.status === 401) {
-      cerrarSesionYRedirigir();
+      console.error(`[API] 401 Unauthorized en ${endpoint}`);
+      cerrarSesionYRedirigir(`401 Unauthorized en ${endpoint}`);
       throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
     }
 
     // Si no hay respuesta o el servidor no responde
     if (!response.ok && response.status >= 500) {
-      console.error(`[API] Error 500 en ${endpoint}`);
-      throw new Error('Error del servidor. Intenta de nuevo más tarde.');
+      console.error(`[API] Error ${response.status} en ${endpoint}`);
+      throw new Error(`Error del servidor (${response.status}). Intenta de nuevo más tarde.`);
     }
 
     const contentType = response.headers.get('content-type');
@@ -88,7 +97,7 @@ async function fetchAPI<T>(
         throw new Error('Este email ya está registrado');
       }
       if (data.codigo === 'TOKEN_INVALIDO' || data.codigo === 'TOKEN_EXPIRADO') {
-        cerrarSesionYRedirigir();
+        cerrarSesionYRedirigir(`${data.codigo} en ${endpoint}`);
         throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
       }
       

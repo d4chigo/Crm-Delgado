@@ -5,6 +5,57 @@ import leadPipelineService from '@/services/lead-pipeline.service';
 const router = Router();
 
 /**
+ * GET /api/leads/filtros/avanzados
+ * Obtener oportunidades con filtros avanzados
+ */
+router.get('/filtros/avanzados', autenticar, async (req: Request, res: Response) => {
+  try {
+    // Por ahora devolver datos vacíos
+    res.json({
+      exito: true,
+      datos: {
+        total: 0,
+        pagina: 1,
+        limite: 20,
+        totalPaginas: 0,
+        oportunidades: []
+      }
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      exito: false,
+      error: error.message || 'Error al obtener oportunidades'
+    });
+  }
+});
+
+/**
+ * GET /api/leads/estadisticas/filtros
+ * Obtener estadísticas con filtros
+ */
+router.get('/estadisticas/filtros', autenticar, async (req: Request, res: Response) => {
+  try {
+    // Por ahora devolver datos vacíos
+    res.json({
+      exito: true,
+      datos: {
+        estadisticas: {
+          total: 0,
+          valorTotal: 0,
+          probabilidadPromedio: 0,
+          porEtapa: []
+        }
+      }
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      exito: false,
+      error: error.message || 'Error al obtener estadísticas'
+    });
+  }
+});
+
+/**
  * POST /api/leads/:id/convertir-a-oportunidad
  * Convertir un lead a oportunidad manualmente
  */
@@ -224,6 +275,139 @@ router.get('/oportunidades/:oportunidadId/historial', autenticar, async (req: Re
     res.status(500).json({
       exito: false,
       mensaje: error.message || 'Error al obtener historial'
+    });
+  }
+});
+
+/**
+ * GET /api/leads/filtros/avanzados
+ * Obtener oportunidades con filtros avanzados
+ * Query params:
+ * - etapas: string[] (ej: CONTACTO_INICIAL,AGENDAMIENTO)
+ * - estados: string[] (ej: NUEVO,CONTACTADO)
+ * - etiquetas: string[] (ej: VIP,URGENTE)
+ * - fechaInicio: ISO date string
+ * - fechaFin: ISO date string
+ * - mes: number (1-12)
+ * - anio: number
+ * - proyecto: string
+ * - busqueda: string
+ * - probabilidadMin: number
+ * - probabilidadMax: number
+ * - valorMin: number
+ * - valorMax: number
+ * - pagina: number (default: 1)
+ * - limite: number (default: 20)
+ */
+router.get('/filtros/avanzados', autenticar, async (req: Request, res: Response) => {
+  try {
+    const usuarioId = (req as any).usuario?.id;
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        exito: false,
+        mensaje: 'No autorizado'
+      });
+    }
+
+    // Parsear parámetros de query
+    const {
+      etapas,
+      estados,
+      etiquetas,
+      fechaInicio,
+      fechaFin,
+      mes,
+      anio,
+      proyecto,
+      busqueda,
+      probabilidadMin,
+      probabilidadMax,
+      valorMin,
+      valorMax,
+      pagina = '1',
+      limite = '20'
+    } = req.query;
+
+    // Convertir strings a arrays
+    const etapasArray = etapas ? (typeof etapas === 'string' ? etapas.split(',') : Array.isArray(etapas) ? (etapas as string[]) : undefined) : undefined;
+    const estadosArray = estados ? (typeof estados === 'string' ? estados.split(',') : Array.isArray(estados) ? (estados as string[]) : undefined) : undefined;
+    const etiquetasArray = etiquetas ? (typeof etiquetas === 'string' ? etiquetas.split(',') : Array.isArray(etiquetas) ? (etiquetas as string[]) : undefined) : undefined;
+
+    const resultado = await leadPipelineService.obtenerOportunidadesConFiltros(
+      usuarioId,
+      {
+        etapas: etapasArray as string[] | undefined,
+        estados: estadosArray as string[] | undefined,
+        etiquetas: etiquetasArray as string[] | undefined,
+        fechaInicio: fechaInicio ? new Date(fechaInicio as string) : undefined,
+        fechaFin: fechaFin ? new Date(fechaFin as string) : undefined,
+        mes: mes ? parseInt(mes as string) : undefined,
+        anio: anio ? parseInt(anio as string) : undefined,
+        proyecto: proyecto as string,
+        busqueda: busqueda as string,
+        probabilidadMin: probabilidadMin ? parseInt(probabilidadMin as string) : undefined,
+        probabilidadMax: probabilidadMax ? parseInt(probabilidadMax as string) : undefined,
+        valorMin: valorMin ? parseFloat(valorMin as string) : undefined,
+        valorMax: valorMax ? parseFloat(valorMax as string) : undefined,
+        pagina: parseInt(pagina as string),
+        limite: parseInt(limite as string)
+      }
+    );
+
+    res.json({
+      exito: true,
+      ...resultado
+    });
+  } catch (error: any) {
+    console.error('Error al obtener oportunidades con filtros:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: error.message || 'Error al obtener oportunidades'
+    });
+  }
+});
+
+/**
+ * GET /api/leads/estadisticas/filtros
+ * Obtener estadísticas de oportunidades por filtros
+ */
+router.get('/estadisticas/filtros', autenticar, async (req: Request, res: Response) => {
+  try {
+    const usuarioId = (req as any).usuario?.id;
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        exito: false,
+        mensaje: 'No autorizado'
+      });
+    }
+
+    const { etapas, fechaInicio, fechaFin, mes, anio } = req.query;
+
+    // Convertir strings a arrays
+    const etapasArray = etapas ? (typeof etapas === 'string' ? etapas.split(',') : Array.isArray(etapas) ? (etapas as string[]) : undefined) : undefined;
+
+    const estadisticas = await leadPipelineService.obtenerEstadisticasPorFiltros(
+      usuarioId,
+      {
+        etapas: etapasArray as string[] | undefined,
+        fechaInicio: fechaInicio ? new Date(fechaInicio as string) : undefined,
+        fechaFin: fechaFin ? new Date(fechaFin as string) : undefined,
+        mes: mes ? parseInt(mes as string) : undefined,
+        anio: anio ? parseInt(anio as string) : undefined
+      }
+    );
+
+    res.json({
+      exito: true,
+      estadisticas
+    });
+  } catch (error: any) {
+    console.error('Error al obtener estadísticas de filtros:', error);
+    res.status(500).json({
+      exito: false,
+      mensaje: error.message || 'Error al obtener estadísticas'
     });
   }
 });

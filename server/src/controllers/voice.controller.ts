@@ -11,7 +11,10 @@ export async function handleVoiceSession(ws: WebSocket) {
     // Primero, esperar a que el cliente envíe su registro con usuarioId
     const registroPromise = new Promise<string>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Timeout esperando registro de usuario'));
+        // En lugar de rechazar, simplemente cerrar la conexión silenciosamente
+        // ya que probablemente no es un cliente de voz
+        ws.close();
+        reject(new Error('No se recibió registro de usuario'));
       }, 5000);
 
       const messageHandler = (data: Buffer) => {
@@ -67,14 +70,25 @@ export async function handleVoiceSession(ws: WebSocket) {
     handleVoiceSessionWithAI(ws, usuarioId, liveSession);
 
   } catch (error: any) {
-    console.error('[Voice] Error en handleVoiceSession:', error);
-    ws.send(JSON.stringify({ type: 'error', message: error.message || 'Setup failed' }));
+    // Solo loguear si es un error real, no si es el timeout esperado
+    if (error.message !== 'No se recibió registro de usuario') {
+      console.error('[Voice] Error en handleVoiceSession:', error);
+      try {
+        ws.send(JSON.stringify({ type: 'error', message: error.message || 'Setup failed' }));
+      } catch (e) {
+        // Ignorar si no se puede enviar el mensaje
+      }
+    }
     
     if (usuarioId) {
       desregistrarConexion(usuarioId);
     }
     
-    ws.close();
+    try {
+      ws.close();
+    } catch (e) {
+      // Ignorar si ya está cerrado
+    }
   }
 }
 

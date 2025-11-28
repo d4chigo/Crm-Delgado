@@ -454,6 +454,257 @@ export class LeadPipelineService {
       throw error;
     }
   }
+
+  /**
+   * Obtener oportunidades con filtros avanzados
+   */
+  async obtenerOportunidadesConFiltros(
+    usuarioId: string,
+    filtros: {
+      etapas?: string[];
+      estados?: string[];
+      etiquetas?: string[];
+      fechaInicio?: Date;
+      fechaFin?: Date;
+      mes?: number;
+      anio?: number;
+      proyecto?: string;
+      busqueda?: string;
+      probabilidadMin?: number;
+      probabilidadMax?: number;
+      valorMin?: number;
+      valorMax?: number;
+      pagina?: number;
+      limite?: number;
+    }
+  ) {
+    try {
+      const {
+        etapas,
+        estados,
+        etiquetas,
+        fechaInicio,
+        fechaFin,
+        mes,
+        anio,
+        proyecto,
+        busqueda,
+        probabilidadMin,
+        probabilidadMax,
+        valorMin,
+        valorMax,
+        pagina = 1,
+        limite = 20
+      } = filtros;
+
+      // Construir where clause dinámicamente
+      const where: any = { usuarioId };
+
+      // Filtro por etapas
+      if (etapas && etapas.length > 0) {
+        where.etapa = { in: etapas };
+      }
+
+      // Filtro por proyecto
+      if (proyecto) {
+        where.proyecto = { contains: proyecto };
+      }
+
+      // Filtro por búsqueda (título o notas)
+      if (busqueda) {
+        where.OR = [
+          { titulo: { contains: busqueda } },
+          { notas: { contains: busqueda } }
+        ];
+      }
+
+      // Filtro por probabilidad
+      if (probabilidadMin !== undefined || probabilidadMax !== undefined) {
+        where.probabilidad = {};
+        if (probabilidadMin !== undefined) where.probabilidad.gte = probabilidadMin;
+        if (probabilidadMax !== undefined) where.probabilidad.lte = probabilidadMax;
+      }
+
+      // Filtro por valor
+      if (valorMin !== undefined || valorMax !== undefined) {
+        where.valor = {};
+        if (valorMin !== undefined) where.valor.gte = valorMin;
+        if (valorMax !== undefined) where.valor.lte = valorMax;
+      }
+
+      // Filtro por rango de fechas
+      if (fechaInicio || fechaFin || mes || anio) {
+        where.creadoEn = {};
+        
+        if (mes && anio) {
+          // Filtro por mes y año específico
+          const primerDia = new Date(anio, mes - 1, 1);
+          const ultimoDia = new Date(anio, mes, 0);
+          where.creadoEn.gte = primerDia;
+          where.creadoEn.lte = ultimoDia;
+        } else if (anio) {
+          // Filtro por año completo
+          const primerDia = new Date(anio, 0, 1);
+          const ultimoDia = new Date(anio, 11, 31);
+          where.creadoEn.gte = primerDia;
+          where.creadoEn.lte = ultimoDia;
+        } else {
+          // Filtro por rango de fechas
+          if (fechaInicio) where.creadoEn.gte = fechaInicio;
+          if (fechaFin) where.creadoEn.lte = fechaFin;
+        }
+      }
+
+      // Filtro por estados del lead (si se proporciona)
+      if (estados && estados.length > 0) {
+        where.cliente = {
+          estadoLead: { in: estados }
+        };
+      }
+
+      // Filtro por etiquetas
+      if (etiquetas && etiquetas.length > 0) {
+        where.cliente = {
+          ...where.cliente,
+          etiquetasRel: {
+            some: {
+              etiqueta: {
+                nombre: { in: etiquetas }
+              }
+            }
+          }
+        };
+      }
+
+      // Calcular skip para paginación
+      const skip = (pagina - 1) * limite;
+
+      // Obtener total de registros
+      const total = await prisma.oportunidadCliente.count({ where });
+
+      // Obtener oportunidades
+      const oportunidades = await prisma.oportunidadCliente.findMany({
+        where,
+        include: {
+          cliente: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              telefono: true,
+              empresa: true,
+              estadoLead: true,
+              etiquetasRel: {
+                select: {
+                  etiqueta: {
+                    select: {
+                      id: true,
+                      nombre: true,
+                      color: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          creadoEn: 'desc'
+        },
+        skip,
+        take: limite
+      });
+
+      return {
+        total,
+        pagina,
+        limite,
+        totalPaginas: Math.ceil(total / limite),
+        oportunidades
+      };
+    } catch (error: any) {
+      console.error(`❌ Error al obtener oportunidades con filtros:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener estadísticas de oportunidades por filtros
+   */
+  async obtenerEstadisticasPorFiltros(
+    usuarioId: string,
+    filtros: {
+      etapas?: string[];
+      fechaInicio?: Date;
+      fechaFin?: Date;
+      mes?: number;
+      anio?: number;
+    }
+  ) {
+    try {
+      const { etapas, fechaInicio, fechaFin, mes, anio } = filtros;
+
+      // Construir where clause
+      const where: any = { usuarioId };
+
+      if (etapas && etapas.length > 0) {
+        where.etapa = { in: etapas };
+      }
+
+      if (fechaInicio || fechaFin || mes || anio) {
+        where.creadoEn = {};
+        
+        if (mes && anio) {
+          const primerDia = new Date(anio, mes - 1, 1);
+          const ultimoDia = new Date(anio, mes, 0);
+          where.creadoEn.gte = primerDia;
+          where.creadoEn.lte = ultimoDia;
+        } else if (anio) {
+          const primerDia = new Date(anio, 0, 1);
+          const ultimoDia = new Date(anio, 11, 31);
+          where.creadoEn.gte = primerDia;
+          where.creadoEn.lte = ultimoDia;
+        } else {
+          if (fechaInicio) where.creadoEn.gte = fechaInicio;
+          if (fechaFin) where.creadoEn.lte = fechaFin;
+        }
+      }
+
+      // Obtener estadísticas
+      const total = await prisma.oportunidadCliente.count({ where });
+      
+      const valorTotal = await prisma.oportunidadCliente.aggregate({
+        where,
+        _sum: { valor: true }
+      });
+
+      const probabilidadPromedio = await prisma.oportunidadCliente.aggregate({
+        where,
+        _avg: { probabilidad: true }
+      });
+
+      // Contar por etapa
+      const porEtapa = await prisma.oportunidadCliente.groupBy({
+        by: ['etapa'],
+        where,
+        _count: true
+      });
+
+      return {
+        total,
+        valorTotal: valorTotal._sum.valor || 0,
+        probabilidadPromedio: probabilidadPromedio._avg.probabilidad || 0,
+        porEtapa: porEtapa.map((item: any) => ({
+          etapa: item.etapa,
+          cantidad: item._count
+        }))
+      };
+    } catch (error: any) {
+      console.error(`❌ Error al obtener estadísticas por filtros:`, error.message);
+      throw error;
+    }
+  }
 }
 
 export default new LeadPipelineService();

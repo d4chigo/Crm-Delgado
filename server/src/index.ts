@@ -183,8 +183,16 @@ const httpServer = createServer(app);
 const wss = new WebSocketServer({ server: httpServer, path: '/api/voice' });
 
 wss.on('connection', (ws) => {
-  console.log('[Voice] New WebSocket connection');
-  handleVoiceSession(ws);
+  console.log('[Voice] Nueva conexión WebSocket');
+  handleVoiceSession(ws).catch((err) => {
+    // Ignorar errores silenciosamente - probablemente sea un cliente que no es de voz
+    console.debug('[Voice] Conexión cerrada:', err?.message);
+  });
+});
+
+// Manejar errores del servidor WebSocket
+wss.on('error', (err) => {
+  console.error('[Voice] Error en WebSocket server:', err);
 });
 
 httpServer.listen(PORT, () => {

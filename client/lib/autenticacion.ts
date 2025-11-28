@@ -33,7 +33,8 @@ export function obtenerUsuario(): Usuario | null {
 
 export function cerrarSesion() {
   localStorage.removeItem("crm_user")
-  document.cookie = "crm_session=; path=/; max-age=0" // Eliminar cookie
+  localStorage.removeItem("crm_token")
+  document.cookie = "crm_token=; path=/; max-age=0" // Eliminar cookie
   window.location.href = "/login"
 }
 

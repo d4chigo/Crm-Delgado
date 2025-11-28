@@ -1,770 +1,317 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useOportunidades } from "@/hooks/useOportunidades"
-import { etiquetaService } from "@/services/api/etiqueta.service"
-import type { Etiqueta } from "@/types/etiqueta.types"
-import type { OportunidadCliente } from "@/types/oportunidad.types"
-import {
-  Building2,
-  DollarSign,
-  Phone,
-  Mail,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Loader2,
-  Search,
-  Tag,
-  GripVertical,
-  Trash2,
-} from "lucide-react"
-import AssistantFab from "@/components/assistant/AssistantFab"
-import AssistantPanel from "@/components/assistant/AssistantPanel"
-import DialogoWhatsApp from "@/components/features/whatsapp/DialogoWhatsApp"
-import { DialogoAgendarReunion } from "@/components/features/calendar/DialogoAgendarReunion"
-
-// Mapeo de etapas para el pipeline
-const ETAPAS_PIPELINE: { id: string; nombre: string; color: string }[] = [
-  { id: "CONTACTO_INICIAL", nombre: "Contacto Inicial", color: "bg-blue-500" },
-  { id: "AGENDAMIENTO", nombre: "Agendamiento", color: "bg-purple-500" },
-  { id: "SEPARACION", nombre: "Separación", color: "bg-indigo-500" },
-  { id: "CIERRE_GANADO", nombre: "Cierre Ganado", color: "bg-green-500" },
-  { id: "CIERRE_PERDIDO", nombre: "Cierre Perdido", color: "bg-red-500" },
-  { id: "FIDELIZACION", nombre: "Fidelización", color: "bg-cyan-500" },
-]
+import useFiltrosPipeline from "@/hooks/useFiltrosPipeline"
+import { FiltrosPipeline, TablaPipeline, PipelineKanban } from "@/components/features/opportunities"
+import { BarChart3, TrendingUp, DollarSign, Percent, Download, LayoutGrid, List } from "lucide-react"
+import { ErrorDisplay } from "@/components/ErrorDisplay"
+import type { FiltrosAvanzados } from "@/components/features/opportunities/FiltrosPipeline"
 
 export default function PaginaPipeline() {
   const { toast } = useToast()
-  const { oportunidades, estadisticas, cargando, error, moverOportunidad, eliminarOportunidad, refrescar } = useOportunidades()
+  const router = useRouter()
+  const [vista, setVista] = useState<'tabla' | 'kanban'>('kanban')
   
-  const [selectedMonth, setSelectedMonth] = useState<string>("all")
-  const [selectedYears, setSelectedYears] = useState<string[]>(["2025"])
-  const [selectedDeal, setSelectedDeal] = useState<OportunidadCliente | null>(null)
-  const [busqueda, setBusqueda] = useState<string>("")
-  const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
-  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
-  const [abiertoAsistente, setAbiertoAsistente] = useState(false)
-  const [dialogoWhatsappAbierto, setDialogoWhatsappAbierto] = useState(false)
-  const [whatsappTelefono, setWhatsappTelefono] = useState<string | null>(null)
-  const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
-  const [draggedItem, setDraggedItem] = useState<string | null>(null)
-  const [overTrash, setOverTrash] = useState(false)
-  const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
-    if (element) {
-      (window as any).__pipelineScrollContainer = element
-    }
-  }, [])
+  const {
+    filtros,
+    oportunidades,
+    estadisticas,
+    cargando,
+    error,
+    total,
+    totalPaginas,
+    aplicarFiltros,
+    cambiarPagina,
+    exportarACSV
+  } = useFiltrosPipeline()
 
-  const years = Array.from({ length: 11 }, (_, i) => (2020 + i).toString())
-
-  // Cargar etiquetas al montar
+  // Cargar datos iniciales cuando el componente se monta
   useEffect(() => {
-    const cargarEtiquetas = async () => {
-      try {
-        const etiquetasObtenidas = await etiquetaService.obtenerTodas()
-        if (Array.isArray(etiquetasObtenidas)) {
-          setEtiquetas(etiquetasObtenidas)
-        }
-      } catch (error) {
-        toast({ 
-          title: 'Error al cargar etiquetas',
-          description: (error as Error).message,
-          variant: 'destructive',
-        });
-      }
-    }
-    cargarEtiquetas()
+    aplicarFiltros({
+      limite: 20,
+      pagina: 1
+    })
   }, [])
 
-  // Cargar oportunidades al montar (solo una vez)
-  useEffect(() => {
-    refrescar()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
-  // Filtrar oportunidades por mes, años, búsqueda y etiqueta
-  const oportunidadesFiltradas = oportunidades.filter((op: OportunidadCliente) => {
-    // Filtro por mes y años
-    if (selectedMonth !== "all" && selectedYears.length > 0) {
-      const opDate = new Date(op.creadoEn)
-      const opMonth = opDate.getMonth() + 1
-      const opYear = opDate.getFullYear()
-      if (opMonth !== Number.parseInt(selectedMonth) || !selectedYears.includes(opYear.toString())) {
-        return false
-      }
-    }
-
-    // Filtro por búsqueda (nombre, DNI, teléfono, empresa)
-    if (busqueda.trim()) {
-      const searchLower = busqueda.toLowerCase()
-      const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
-      const dni = op.cliente?.dni?.toLowerCase() || ''
-      const telefono = op.cliente?.telefono?.replace(/\D/g, '') || ''
-      const correo = op.cliente?.correo?.toLowerCase() || ''
-      const empresa = op.cliente?.empresa?.toLowerCase() || ''
-      const titulo = op.titulo?.toLowerCase() || ''
-      
-      if (!nombreCompleto.includes(searchLower) && 
-          !dni.includes(searchLower) &&
-          !telefono.includes(searchLower.replace(/\D/g, '')) &&
-          !correo.includes(searchLower) && 
-          !empresa.includes(searchLower) &&
-          !titulo.includes(searchLower)) {
-        return false
-      }
-    }
-
-    // Filtro por etiqueta
-    if (etiquetaFiltro !== "todas") {
-      // Verificar si el cliente tiene la etiqueta seleccionada
-      const tieneEtiqueta = op.cliente?.etiquetas?.some((et: any) => et.etiqueta.id === etiquetaFiltro)
-      if (!tieneEtiqueta) {
-        return false
-      }
-    }
-
-    return true
-  })
-
-  // Calcular datos por etapa
-  const etapasConDatos = ETAPAS_PIPELINE.map((etapa) => {
-    const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
-    return {
-      ...etapa,
-      count: oportunidadesEtapa.length,
-      value: oportunidadesEtapa.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0),
-    }
-  })
-
-  // Estadísticas generales
-  const valorPipeline = oportunidadesFiltradas
-    .filter((op: OportunidadCliente) => !["CIERRE_GANADO", "CIERRE_PERDIDO"].includes(op.etapa))
-    .reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
-
-  const oportunidadesGanadas = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === "CIERRE_GANADO")
-  const valorGanado = oportunidadesGanadas.reduce((acc: number, op: OportunidadCliente) => acc + (op.valor ? Number(op.valor) : 0), 0)
-
-  const getProbabilityColor = (probability?: number | null) => {
-    if (!probability) return "text-gray-600 bg-gray-50"
-    if (probability >= 75) return "text-green-600 bg-green-50"
-    if (probability >= 50) return "text-yellow-600 bg-yellow-50"
-    return "text-red-600 bg-red-50"
+  const handleEditar = (oportunidad: any) => {
+    console.log('Editar:', oportunidad)
   }
 
-  const handleWhatsApp = useCallback((telefono: string, nombre: string) => {
-    console.log('[WA] handler called with', telefono, nombre)
-    if (!telefono) {
-      toast({ title: 'Teléfono no disponible', description: 'El contacto no tiene teléfono registrado.' })
-      return
-    }
-    setWhatsappTelefono(telefono)
-    setDialogoWhatsappAbierto(true)
-  }, [toast])
-
-  const handleEnviarWhatsApp = useCallback((mensajeLocal: string) => {
-    let raw = (whatsappTelefono || "").replace(/\D/g, "")
-    if (raw.length === 9) raw = `51${raw}`
-    if (!raw) {
-      toast({ title: "Sin teléfono", description: "Este contacto no tiene teléfono. Copia y envía manualmente.", variant: "destructive" })
-      return
-    }
-    const url = `https://wa.me/${raw}?text=${encodeURIComponent(mensajeLocal)}`
-    try {
-      window.open(url, "_blank")
-    } catch {}
-    setDialogoWhatsappAbierto(false)
-  }, [whatsappTelefono, toast])
-
-  const handleScheduleMeeting = () => {
-    setDialogoAgendarAbierto(true)
-  };
-
-  const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: string) => {
-    try {
-      await moverOportunidad(oportunidadId, nuevaEtapa)
-      await refrescar()
-      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
-    }
-  };
-
-  const handleEliminarOportunidad = async (oportunidadId: string) => {
-    console.log('🗑️ Intentando eliminar oportunidad:', oportunidadId);
-    
-    if (!confirm('¿Estás seguro de que deseas eliminar esta oportunidad?')) {
-      return;
-    }
-
-    try {
-      console.log('📡 Llamando a eliminarOportunidad del hook');
-      await eliminarOportunidad(oportunidadId);
-      
-      console.log('✅ Oportunidad eliminada correctamente');
-      toast({ title: 'Éxito', description: 'Oportunidad eliminada correctamente' });
-      setSelectedDeal(null);
-    } catch (error: any) {
-      console.error('❌ Error al eliminar:', error);
-      toast({ title: 'Error', description: error.message || 'No se pudo eliminar la oportunidad', variant: 'destructive' });
-    }
-  };
-
-  const handleDragEnd = async (result: DragEndEvent) => {
-    const { active, over } = result
-
-    // Si se soltó fuera de una zona droppable
-    if (!over) {
-      return
-    }
-
-    // Si se soltó en el mismo lugar
-    if (active.id === over.id) {
-      return
-    }
-
-    // El ID del over debería ser la etapa, el ID del active es el oportunidad.id
-    const nuevaEtapa = String(over.id)
-    const oportunidadId = String(active.id)
-
-    try {
-      await moverOportunidad(oportunidadId, nuevaEtapa)
-      await refrescar()
-      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
-      // Refrescar para revertir cambios en UI
-      await refrescar()
-    }
-    setDraggedItem(null)
-  }
-
-  const handleDragStart = (oportunidadId: string) => {
-    setDraggedItem(oportunidadId)
-  }
-
-  const handleDropZone = async (etapaId: string, e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (!draggedItem) return
-
-    if (draggedItem === etapaId) {
-      setDraggedItem(null)
-      return
-    }
-
-    try {
-      await moverOportunidad(draggedItem, etapaId)
-      await refrescar()
-      toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Error al mover oportunidad', variant: 'destructive' })
-      await refrescar()
-    }
-    setDraggedItem(null)
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    
-    const container = (window as any).__pipelineScrollContainer
-    if (!container) return
-
-    const rect = container.getBoundingClientRect()
-    const threshold = 100 // Píxeles desde el borde para activar scroll
-    const scrollSpeed = 20 // Píxeles por scroll
-
-    // Scroll izquierda
-    if (e.clientX - rect.left < threshold) {
-      container.scrollLeft -= scrollSpeed
-    }
-    
-    // Scroll derecha
-    if (rect.right - e.clientX < threshold) {
-      container.scrollLeft += scrollSpeed
+  const handleEliminar = (id: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar esta oportunidad?')) {
+      console.log('Eliminar:', id)
     }
   }
 
-  const handleDropTrash = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setOverTrash(false)
-    
-    if (!draggedItem) return
+  const handleVer = (oportunidad: any) => {
+    console.log('Ver detalles:', oportunidad)
+  }
 
-    const oportunidad = oportunidades.find(op => op.id === draggedItem)
-    if (!oportunidad) return
-
-    const confirmar = confirm(
-      `¿Deseas eliminar la oportunidad de ${oportunidad.cliente?.nombre}?\n\nEsta acción no se puede deshacer.`
+  // Mostrar pantalla de carga mientras se cargan los datos
+  if (cargando && (!oportunidades || oportunidades.length === 0)) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Cargando datos...</p>
+        </div>
+      </div>
     )
-
-    if (!confirmar) {
-      setDraggedItem(null)
-      return
-    }
-
-    try {
-      await handleEliminarOportunidad(draggedItem)
-      toast({ title: 'Éxito', description: 'Oportunidad eliminada' })
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Error al eliminar', variant: 'destructive' })
-    }
-    setDraggedItem(null)
   }
 
   return (
-    <div className="space-y-6 relative">
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#303030]">Pipeline de Ventas</h1>
-            <p className="text-muted-foreground mt-1">Gestiona el proceso de ventas de principio a fin</p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button onClick={refrescar} variant="outline">
-              {cargando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Actualizar
-            </Button>
-
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[180px]">
-                <Calendar className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Seleccionar mes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los meses</SelectItem>
-                <SelectItem value="1">Enero</SelectItem>
-                <SelectItem value="2">Febrero</SelectItem>
-                <SelectItem value="3">Marzo</SelectItem>
-                <SelectItem value="4">Abril</SelectItem>
-                <SelectItem value="5">Mayo</SelectItem>
-                <SelectItem value="6">Junio</SelectItem>
-                <SelectItem value="7">Julio</SelectItem>
-                <SelectItem value="8">Agosto</SelectItem>
-                <SelectItem value="9">Septiembre</SelectItem>
-                <SelectItem value="10">Octubre</SelectItem>
-                <SelectItem value="11">Noviembre</SelectItem>
-                <SelectItem value="12">Diciembre</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedYears[0] || "2025"} onValueChange={(year) => setSelectedYears([year])}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Seleccionar año" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Barra de búsqueda y filtros */}
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, DNI, teléfono, empresa, correo o título..."
-              value={busqueda}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value)}
-              className="pl-9 border-[#FCBA00]/20 focus:border-[#FCBA00] focus:ring-[#FCBA00]"
-            />
-          </div>
-          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
-            <SelectTrigger className="w-[220px]">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                <SelectValue placeholder="Todas las etiquetas" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas las etiquetas</SelectItem>
-              {etiquetas.map((etiqueta: Etiqueta) => (
-                <SelectItem key={etiqueta.id} value={etiqueta.id}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: etiqueta.color }}
-                    />
-                    {etiqueta.nombre}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Trash Icon */}
-          <div
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setOverTrash(true)
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault()
-              setOverTrash(false)
-            }}
-            onDrop={handleDropTrash}
-            className={`p-3 rounded-lg border-2 transition-all cursor-move ${
-              overTrash
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 hover:border-red-400 hover:bg-red-50/50'
-            }`}
-            title="Arrastra oportunidades aquí para eliminar"
-          >
-            <Trash2 className={`w-5 h-5 ${
-              overTrash ? 'text-red-600' : 'text-gray-600'
-            }`} />
-          </div>
-        </div>
-      </div>
-
-
-      {/* Kanban Board con Drag and Drop */}
-      <div 
-        ref={scrollContainerRef}
-        className="overflow-x-auto pb-4"
-        onDragOver={handleDragOver}
-      >
-        <div className="flex gap-4 min-w-max">
-          {etapasConDatos.map((etapa) => {
-            const oportunidadesEtapa = oportunidadesFiltradas.filter((op: OportunidadCliente) => op.etapa === etapa.id)
-            return (
-              <div
-                key={etapa.id}
-                className="flex-shrink-0 w-80"
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Pipeline de Oportunidades
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Gestiona y filtra tus oportunidades de venta con filtros avanzados
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setVista('kanban')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  vista === 'kanban'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
               >
-                <Card 
-                  className="border-border h-full"
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    e.currentTarget.classList.add('bg-muted/50', 'border-2', 'border-[#FCBA00]')
-                  }}
-                  onDragLeave={(e) => {
-                    e.currentTarget.classList.remove('bg-muted/50', 'border-2', 'border-[#FCBA00]')
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    e.currentTarget.classList.remove('bg-muted/50', 'border-2', 'border-[#FCBA00]')
-                    handleDropZone(etapa.id, e)
-                  }}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${etapa.color}`} />
-                        <CardTitle className="text-base font-semibold text-[#303030]">{etapa.nombre}</CardTitle>
-                      </div>
-                      <Badge variant="secondary" className="font-semibold">
-                        {etapa.count}
-                      </Badge>
-                    </div>
-                    <div className="text-sm font-medium text-muted-foreground">
-                      S/ {(etapa.value / 1000).toFixed(0)}K
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3 h-[calc(100vh-420px)] overflow-y-auto pr-2 scrollbar-visible">
-                    {oportunidadesEtapa.map((oportunidad: OportunidadCliente) => (
-                      <div
-                        key={oportunidad.id}
-                        draggable
-                        onDragStart={() => handleDragStart(oportunidad.id)}
-                        onDragEnd={() => setDraggedItem(null)}
-                        className={`transition-all cursor-move ${draggedItem === oportunidad.id ? 'opacity-50' : ''}`}
-                      >
-                        <Card
-                          className="border-border hover:shadow-md transition-shadow bg-white group"
-                          onClick={() => setSelectedDeal(oportunidad)}
-                        >
-                          <CardContent className="p-4 space-y-3 relative">
-                            {/* Drag Handle */}
-                            <div className="absolute top-2 right-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                              <GripVertical className="w-4 h-4" />
-                            </div>
-
-                            {/* Client Info */}
-                            <div className="flex items-start justify-between pr-6">
-                              <div className="flex items-center gap-2 flex-1">
-                                <Avatar className="w-8 h-8 bg-[#FCBA00]">
-                                  <AvatarFallback className="bg-[#FCBA00] text-[#303030] text-xs font-bold">
-                                    {(oportunidad.lead?.nombre || oportunidad.cliente?.nombre)?.charAt(0) || 'C'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold text-sm text-[#303030] line-clamp-1">
-                                    {(oportunidad.lead?.nombre || oportunidad.cliente?.nombre) || 'Sin nombre'} {(oportunidad.lead?.apellido || oportunidad.cliente?.apellido) || ''}
-                                  </h4>
-                                  <p className="text-xs text-muted-foreground line-clamp-1">{oportunidad.titulo}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Property */}
-                            <div className="space-y-2">
-                              {/* Tags */}
-                              {(() => {
-                                const etiquetas = (oportunidad.cliente?.etiquetasRel || oportunidad.lead?.etiquetasRel || []) as Array<{ etiqueta: { id: string; nombre: string; color: string } }>
-                                return etiquetas && etiquetas.length > 0 && (
-                                  <div className="flex gap-1 flex-wrap">
-                                    {etiquetas.slice(0, 3).map((et: any) => (
-                                      <Badge
-                                        key={et.etiqueta.id}
-                                        className="text-xs font-semibold"
-                                        style={{
-                                          backgroundColor: et.etiqueta.color || '#E5E7EB',
-                                          color: 'white'
-                                        }}
-                                      >
-                                        {et.etiqueta.nombre}
-                                      </Badge>
-                                    ))}
-                                    {etiquetas.length > 3 && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        +{etiquetas.length - 3}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                )
-                              })()}
-                            </div>
-
-                            {/* Value */}
-                            <div className="flex items-center justify-between pt-2 border-t border-border">
-                              <span className="text-lg font-bold text-[#FCBA00]">
-                                S/ {oportunidad.valor ? (Number(oportunidad.valor) / 1000).toFixed(0) : '0'}K
-                              </span>
-                              <Badge className={`${getProbabilityColor(oportunidad.probabilidad)} font-semibold text-xs`}>
-                                {oportunidad.probabilidad || 0}%
-                              </Badge>
-                            </div>
-
-                            {/* Last Activity */}
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="w-3 h-3" />
-                              <span>{new Date(oportunidad.ultimaActividad).toLocaleDateString('es-PE')}</span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-                    {oportunidadesEtapa.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
-                        <p>No hay oportunidades</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )
-          })}
+                <LayoutGrid size={18} />
+                Kanban
+              </button>
+              <button
+                onClick={() => setVista('tabla')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  vista === 'tabla'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                <List size={18} />
+                Tabla
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Deal Details Dialog */}
-      {selectedDeal && (
-        <Dialog open={!!selectedDeal} onOpenChange={() => setSelectedDeal(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-[#FCBA00]/30">
-            <DialogHeader className="border-b border-[#FCBA00]/20 pb-4">
-              <div className="flex items-start justify-between gap-4">
+        {/* Estadísticas */}
+        {estadisticas && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Total de Oportunidades */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+              <div className="flex items-center justify-between">
                 <div>
-                  <DialogTitle className="text-2xl font-bold text-[#303030]">
-                    {(selectedDeal.lead?.nombre || selectedDeal.cliente?.nombre) || 'Sin nombre'} {(selectedDeal.lead?.apellido || selectedDeal.cliente?.apellido) || ''}
-                  </DialogTitle>
-                  <DialogDescription className="mt-2">{selectedDeal.titulo}</DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              {/* Stage & Probability */}
-              <div className="flex gap-3 items-center flex-wrap">
-                <Badge
-                  className={`${ETAPAS_PIPELINE.find((e: { id: string; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.color} text-white font-medium`}
-                >
-                  {ETAPAS_PIPELINE.find((e: { id: string; nombre: string; color: string }) => e.id === selectedDeal.etapa)?.nombre}
-                </Badge>
-                <Badge className={`${getProbabilityColor(selectedDeal.probabilidad)} font-semibold`}>
-                  Probabilidad: {selectedDeal.probabilidad || 0}%
-                </Badge>
-                {/* Etiquetas del cliente */}
-                {selectedDeal.cliente?.etiquetas && selectedDeal.cliente.etiquetas.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {selectedDeal.cliente.etiquetas.slice(0, 3).map((et: any) => (
-                      <Badge
-                        key={et.etiqueta.id}
-                        className="text-xs font-semibold"
-                        style={{
-                          backgroundColor: et.etiqueta.color || '#E5E7EB',
-                          color: 'white'
-                        }}
-                      >
-                        {et.etiqueta.nombre}
-                      </Badge>
-                    ))}
-                    {selectedDeal.cliente.etiquetas.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{selectedDeal.cliente.etiquetas.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Contact Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Email</p>
-                  <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate min-w-0 flex-1" title={selectedDeal.cliente?.correo || 'Sin email'}>
-                      {selectedDeal.cliente?.correo || 'Sin email'}
-                    </span>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                    Total Oportunidades
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                    {estadisticas.total}
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Teléfono</p>
-                  <p className="font-medium text-[#303030] flex items-center gap-2">
-                    <Phone className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate min-w-0 flex-1">
-                      {selectedDeal.cliente?.telefono || 'Sin teléfono'}
-                    </span>
-                  </p>
-                </div>
-              </div>
-              
-              {/* Action Buttons - WhatsApp & Calendar */}
-              <div className="flex gap-2 pt-2">
-                <Button 
-                  onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-                <Button 
-                  onClick={() => handleScheduleMeeting()}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Agendar Reunión
-                </Button>
-              </div>
-
-              {/* Property Details */}
-              <div className="p-4 bg-gradient-to-br from-[#FCBA00]/5 to-[#FCBA00]/0 border border-[#FCBA00]/20 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Propiedad</p>
-                    <p className="font-semibold text-[#303030]">{selectedDeal.propiedad || 'Sin propiedad'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Valor</p>
-                    <p className="text-2xl font-bold text-[#FCBA00]">
-                      S/ {selectedDeal.valor ? Number(selectedDeal.valor).toLocaleString("es-PE") : '0'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Activity Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Última Actividad</p>
-                  <p className="font-medium text-[#303030]">
-                    {new Date(selectedDeal.ultimaActividad).toLocaleDateString('es-PE')}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Próxima Acción</p>
-                  <p className="font-medium text-[#303030]">{selectedDeal.proximaAccion || 'Sin próxima acción'}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Proyecto</p>
-                  <p className="font-medium text-[#303030]">
-                    {selectedDeal.cliente?.proyectos && selectedDeal.cliente.proyectos.length > 0
-                      ? selectedDeal.cliente.proyectos.map(p => p.proyecto.nombre).join(', ')
-                      : selectedDeal.proyecto || 'Sin proyecto'}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Fecha de Creación</p>
-                  <p className="font-medium text-[#303030]">
-                    {new Date(selectedDeal.creadoEn).toLocaleDateString('es-PE')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">Notas</p>
-                <p className="text-sm text-[#303030] bg-muted/30 p-3 rounded-lg">
-                  {selectedDeal.notas || 'Sin notas'}
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-[#FCBA00]/20">
-                <Button 
-                  variant="destructive"
-                  onClick={() => {
-                    handleEliminarOportunidad(selectedDeal.id)
-                  }}
-                  className="flex-1"
-                >
-                  Eliminar
-                </Button>
-                <Button 
-                  onClick={() => setSelectedDeal(null)}
-                  className="flex-1 bg-[#FCBA00] hover:bg-[#E5A200] text-[#303030] font-semibold"
-                >
-                  Cerrar
-                </Button>
+                <BarChart3 size={32} className="text-blue-500 opacity-20" />
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
-      {/* Modal para enviar WhatsApp */}
-      <DialogoWhatsApp
-        abierto={dialogoWhatsappAbierto}
-        onCerrar={() => setDialogoWhatsappAbierto(false)}
-        mensajeInicial="Hola, te contacto para hacer seguimiento."
-        telefono={whatsappTelefono}
-        titulo="Enviar mensaje por WhatsApp"
-        onEnviar={handleEnviarWhatsApp}
-      />
+            {/* Valor Total */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-green-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                    Valor Total
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                    {new Intl.NumberFormat('es-ES', {
+                      style: 'currency',
+                      currency: 'USD',
+                      minimumFractionDigits: 0
+                    }).format(estadisticas.valorTotal)}
+                  </p>
+                </div>
+                <DollarSign size={32} className="text-green-500 opacity-20" />
+              </div>
+            </div>
 
-      {/* Modal para agendar reunión */}
-      {selectedDeal && (
-        <DialogoAgendarReunion
-          abierto={dialogoAgendarAbierto}
-          onCerrar={() => setDialogoAgendarAbierto(false)}
-          contactoNombre={selectedDeal.cliente?.nombre}
-          contactoEmail={selectedDeal.cliente?.correo}
-          contactoTelefono={selectedDeal.cliente?.telefono}
-          onEventoCreado={refrescar}
-        />
-      )}
+            {/* Probabilidad Promedio */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-amber-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                    Probabilidad Promedio
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                    {estadisticas.probabilidadPromedio.toFixed(1)}%
+                  </p>
+                </div>
+                <Percent size={32} className="text-amber-500 opacity-20" />
+              </div>
+            </div>
 
-      <AssistantFab onClick={() => setAbiertoAsistente(true)} />
-      <AssistantPanel open={abiertoAsistente} onClose={() => setAbiertoAsistente(false)} />
+            {/* Oportunidades Ganadas */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                    Ganadas
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                    {estadisticas.porEtapa.find((e: any) => e.etapa === 'CIERRE_GANADO')?.cantidad || 0}
+                  </p>
+                </div>
+                <TrendingUp size={32} className="text-purple-500 opacity-20" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Vista Kanban */}
+        {vista === 'kanban' && (
+          <>
+            {/* Filtros */}
+            <div className="mb-6">
+              <FiltrosPipeline
+                onAplicar={aplicarFiltros}
+                cargando={cargando}
+              />
+            </div>
+
+            {/* Kanban Board */}
+            <div className="mb-6">
+              <PipelineKanban
+                columnas={[
+                  {
+                    id: 'CONTACTO_INICIAL',
+                    titulo: 'Contacto Inicial',
+                    color: 'bg-blue-500',
+                    tarjetas: oportunidades?.filter(o => o.etapa === 'CONTACTO_INICIAL').map(o => ({
+                      id: o.id,
+                      titulo: o.titulo,
+                      valor: o.valor,
+                      cliente: o.cliente?.nombre,
+                      probabilidad: o.probabilidad
+                    })) || []
+                  },
+                  {
+                    id: 'AGENDAMIENTO',
+                    titulo: 'Agendamiento',
+                    color: 'bg-purple-500',
+                    tarjetas: oportunidades?.filter(o => o.etapa === 'AGENDAMIENTO').map(o => ({
+                      id: o.id,
+                      titulo: o.titulo,
+                      valor: o.valor,
+                      cliente: o.cliente?.nombre,
+                      probabilidad: o.probabilidad
+                    })) || []
+                  },
+                  {
+                    id: 'SEPARACION',
+                    titulo: 'Separación',
+                    color: 'bg-yellow-500',
+                    tarjetas: oportunidades?.filter(o => o.etapa === 'SEPARACION').map(o => ({
+                      id: o.id,
+                      titulo: o.titulo,
+                      valor: o.valor,
+                      cliente: o.cliente?.nombre,
+                      probabilidad: o.probabilidad
+                    })) || []
+                  },
+                  {
+                    id: 'CIERRE_GANADO',
+                    titulo: 'Cierre Ganado',
+                    color: 'bg-green-500',
+                    tarjetas: oportunidades?.filter(o => o.etapa === 'CIERRE_GANADO').map(o => ({
+                      id: o.id,
+                      titulo: o.titulo,
+                      valor: o.valor,
+                      cliente: o.cliente?.nombre,
+                      probabilidad: o.probabilidad
+                    })) || []
+                  },
+                  {
+                    id: 'CIERRE_PERDIDO',
+                    titulo: 'Cierre Perdido',
+                    color: 'bg-red-500',
+                    tarjetas: oportunidades?.filter(o => o.etapa === 'CIERRE_PERDIDO').map(o => ({
+                      id: o.id,
+                      titulo: o.titulo,
+                      valor: o.valor,
+                      cliente: o.cliente?.nombre,
+                      probabilidad: o.probabilidad
+                    })) || []
+                  },
+                ]}
+                onMoverTarjeta={(tarjetaId, columnaDesde, columnHasta) => {
+                  console.log(`Mover ${tarjetaId} de ${columnaDesde} a ${columnHasta}`);
+                  // Aquí iría la lógica para actualizar la etapa en el servidor
+                }}
+                onEliminarTarjeta={(tarjetaId) => {
+                  console.log(`Eliminar ${tarjetaId}`);
+                  // Aquí iría la lógica para eliminar en el servidor
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Vista Tabla */}
+        {vista === 'tabla' && (
+          <>
+            {/* Filtros */}
+            <div className="mb-6">
+              <FiltrosPipeline
+                onAplicar={aplicarFiltros}
+                cargando={cargando}
+              />
+            </div>
+
+            {/* Mensaje de Error */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg">
+                <p className="font-medium">Error al cargar datos</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Tabla de Oportunidades */}
+            <div className="mb-6">
+              <TablaPipeline
+                oportunidades={oportunidades}
+                total={total}
+                pagina={filtros.pagina || 1}
+                totalPaginas={totalPaginas}
+                cargando={cargando}
+                onPaginaChange={cambiarPagina}
+                onEditar={handleEditar}
+                onEliminar={handleEliminar}
+                onVer={handleVer}
+              />
+            </div>
+
+            {/* Botón de Exportación */}
+            {oportunidades && oportunidades.length > 0 && (
+              <div className="flex justify-end">
+                <button
+                  onClick={exportarACSV}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors shadow-md"
+                >
+                  <Download size={18} />
+                  Exportar a CSV
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      
+      <ErrorDisplay />
     </div>
   )
 }

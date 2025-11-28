@@ -14,4 +14,16 @@ router.post('/login-cliente', authController.loginCliente.bind(authController));
 // Rutas protegidas
 router.get('/perfil', autenticar, authController.obtenerPerfil.bind(authController));
 
+// Debug: verificar token
+router.get('/debug/verificar-token', autenticar, (req: any, res: any) => {
+  res.json({
+    exito: true,
+    datos: {
+      mensaje: 'Token válido',
+      usuario: req.usuario,
+      headers: req.headers
+    }
+  });
+});
+
 export default router;

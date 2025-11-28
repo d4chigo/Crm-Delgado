@@ -9,7 +9,7 @@ export interface LoginDTO {
 export interface Usuario {
   id: string;
   nombre: string;
-  email: string;
+  correo: string;
   avatar?: string;
   telefono?: string;
   activo: boolean;
@@ -34,14 +34,34 @@ class AuthService {
    * Iniciar sesión
    */
   async login(datos: LoginDTO): Promise<RespuestaLogin> {
-    const respuesta = await fetchAPI<RespuestaLogin>('/auth/login', {
+    // Hacer petición directa sin usar fetchAPI para evitar loop
+    const API_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000/api';
+    const url = `${API_URL}/auth/login`;
+    
+    const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(datos),
     });
 
-    // Guardar token y usuario en localStorage
-    this.guardarToken(respuesta.token.token);
-    this.guardarUsuario(respuesta.usuario);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al iniciar sesión');
+    }
+
+    const data = await response.json();
+    const respuesta = data.datos as RespuestaLogin;
+
+    // Guardar token y usuario en localStorage INMEDIATAMENTE
+    if (typeof window !== 'undefined') {
+      console.log('[AuthService] Guardando token:', respuesta.token.token.substring(0, 20) + '...');
+      localStorage.setItem(TOKEN_KEY, respuesta.token.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(respuesta.usuario));
+      console.log('[AuthService] Token guardado:', localStorage.getItem(TOKEN_KEY)?.substring(0, 20) + '...');
+      console.log('[AuthService] Usuario guardado:', localStorage.getItem(USER_KEY));
+    }
 
     return respuesta;
   }
@@ -53,24 +73,6 @@ class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
-    }
-  }
-
-  /**
-   * Guardar token en localStorage
-   */
-  private guardarToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(TOKEN_KEY, token);
-    }
-  }
-
-  /**
-   * Guardar usuario en localStorage
-   */
-  private guardarUsuario(usuario: Usuario): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(USER_KEY, JSON.stringify(usuario));
     }
   }
 
@@ -118,7 +120,9 @@ class AuthService {
       },
     });
 
-    this.guardarUsuario(usuario);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+    }
     return usuario;
   }
 }

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Lock as IconoCandado, Mail as IconoCorreo, Check as IconoCheck } from "lucide-react"
 import authService from "@/services/api/auth.service"
 import Image from "next/image"
+import { ErrorDisplay } from "@/components/ErrorDisplay"
 
 export default function PaginaLogin() {
   const enrutador = useRouter()
@@ -32,16 +33,22 @@ export default function PaginaLogin() {
         password: contrasena,
       })
 
+      console.log('Login exitoso, token:', respuesta.token.token.substring(0, 20) + '...')
+      console.log('Token guardado en localStorage:', localStorage.getItem('crm_token')?.substring(0, 20) + '...')
+
       // Mostrar mensaje de éxito
       setExito(true)
 
-      // Crear cookie de sesión para middleware
-      document.cookie = "crm_session=true; path=/; max-age=86400" // 24 horas
+      // Crear cookie de token para middleware (7 días)
+      const fechaExpiracion = new Date()
+      fechaExpiracion.setDate(fechaExpiracion.getDate() + 7)
+      document.cookie = `crm_token=${respuesta.token.token}; path=/; expires=${fechaExpiracion.toUTCString()}; SameSite=Lax`
 
-      // Redirigir al dashboard después de un breve delay
-      setTimeout(() => {
-        enrutador.push("/dashboard")
-      }, 500)
+      // Esperar a que se guarde el token en localStorage
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Redirigir al dashboard
+      enrutador.push("/dashboard")
     } catch (error: any) {
       setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.")
       setEstaCargando(false)
@@ -274,6 +281,8 @@ export default function PaginaLogin() {
           animation-delay: 0s;
         }
       `}</style>
+      
+      <ErrorDisplay />
     </div>
   )
 }

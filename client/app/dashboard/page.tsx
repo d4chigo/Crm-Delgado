@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { obtenerUsuario } from "@/lib/autenticacion"
+import { obtenerUsuario, obtenerToken } from "@/lib/autenticacion"
+import { useProtectedRoute } from "@/hooks/useProtectedRoute"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { fetchAPI } from "@/services/api/config"
@@ -28,6 +29,8 @@ import { WidgetAlertas } from "@/components/features/alerts"
 
 export default function PaginaDashboard() {
   const enrutador = useRouter()
+  useProtectedRoute()
+  
   const [usuario, setUsuario] = useState<any>(null)
   const [metricas, setMetricas] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
@@ -44,15 +47,13 @@ export default function PaginaDashboard() {
 
   useEffect(() => {
     const usuarioActual = obtenerUsuario()
-    if (!usuarioActual) {
-      enrutador.push("/login")
-    } else {
+    if (usuarioActual) {
       setUsuario(usuarioActual)
       cargarMetricas()
       cargarLeadsRecientes()
       cargarResumenStats()
     }
-  }, [enrutador])
+  }, [])
 
   async function cargarMetricas() {
     try {
