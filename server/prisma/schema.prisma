@@ -471,6 +471,24 @@ enum EstadoTestimonio {
   RECHAZADO @map("rechazado")
 }
 
+// Testimonios para el sitio web
+model Testimonio {
+  id            Int               @id @default(autoincrement())
+  nombre        String
+  correo        String
+  calificacion  Int
+  testimonio    String            @db.Text
+  foto          String?
+  media         String?
+  videoUrl      String?           @map("video_url")
+  estado        EstadoTestimonio  @default(APROBADO)
+  creadoEn      DateTime          @map("creado_en")
+  aprobadoEn    DateTime?         @map("aprobado_en")
+
+  @@index([estado])
+  @@map("testimonios")
+}
+
 // Otros servicios para el sitio web
 model OtrosServicios {
   id               Int          @id @default(autoincrement())
@@ -478,53 +496,35 @@ model OtrosServicios {
   descripcion      String?
   caracteristicas  String?      @db.LongText  // JSON array as string
   imagenes         String?      @db.LongText  // JSON array as string
-  enlace_imagen    String?
-  enlace_video     String?
-  tipo_servicio    TipoServicio @default(GENERAL)
-  creado_en        DateTime     @default(now())
-  actualizado_en   DateTime     @updatedAt
+  enlaceImagen     String?      @map("enlace_imagen")
+  enlaceVideo      String?      @map("enlace_video")
+  tipoServicio     TipoServicio @default(GENERAL) @map("tipo_servicio")
+  creadoEn         DateTime     @default(now()) @map("creado_en")
+  actualizadoEn    DateTime     @updatedAt @map("actualizado_en")
 
   @@map("servicios_adicionales")
 }
 
 // Miembros del equipo para el sitio web
 model MiembroEquipo {
-  id             Int       @id @default(autoincrement())
-  nombre         String
-  cargo          String
-  descripcion    String    @db.LongText
-  correo         String
-  telefono       String
-  foto           String?   @db.LongText
-  activo         Boolean   @default(true)
-  orden_mostrar  Int
-  facebook       String?
-  instagram      String?
-  tiktok         String?
-  creado_en      DateTime  @default(now())
-  actualizado_en DateTime? @updatedAt
+  id              Int       @id @default(autoincrement())
+  nombre          String
+  cargo           String
+  descripcion     String    @db.LongText
+  correo          String
+  telefono        String
+  foto            String?   @db.LongText
+  activo          Boolean   @default(true)
+  ordenMostrar    Int       @map("orden_mostrar")
+  facebook        String?
+  instagram       String?
+  tiktok          String?
+  creadoEn        DateTime  @default(now()) @map("creado_en")
+  actualizadoEn   DateTime? @updatedAt @map("actualizado_en")
 
   @@index([activo])
-  @@index([orden_mostrar])
+  @@index([ordenMostrar])
   @@map("miembros_equipo")
-}
-
-// Testimonios para el sitio web
-model Testimonio {
-  id             Int              @id @default(autoincrement())
-  nombre         String
-  correo         String
-  calificacion   Int
-  testimonio     String           @db.Text
-  foto           String?
-  media          String?
-  video_url      String?
-  estado         EstadoTestimonio @default(APROBADO)
-  creado_en      DateTime
-  aprobado_en    DateTime?
-
-  @@index([estado])
-  @@map("testimonios")
 }
 
 // Páginas de servicios para el sitio web (Techo Propio, Crédito, etc.)

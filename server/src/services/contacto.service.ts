@@ -520,10 +520,10 @@ export class ContactoService {
   async obtenerEstadisticas(usuarioId: string) {
     const [totalLeads, totalClientes] = await Promise.all([
       prisma.contacto.count({
-        where: { usuarioId, tipo: 'LEAD' }
+        where: { idUsuario: usuarioId, tipo: 'LEAD' }
       }),
       prisma.contacto.count({
-        where: { usuarioId, tipo: 'CLIENTE' }
+        where: { idUsuario: usuarioId, tipo: 'CLIENTE' }
       })
     ]);
 

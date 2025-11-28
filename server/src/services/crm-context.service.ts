@@ -165,7 +165,7 @@ export async function getCRMContext() {
         where: { proyecto: { not: null } },
       }),
       prisma.oportunidadCliente.groupBy({
-        by: ['usuarioId'],
+        by: ['idUsuario'],
         _count: { _all: true },
       }),
       
@@ -196,7 +196,7 @@ export async function getCRMContext() {
       }),
       prisma.proyecto.count(),
       prisma.proyecto.groupBy({
-        by: ['usuarioId'],
+        by: ['idUsuario'],
         _count: { _all: true },
       }),
       
