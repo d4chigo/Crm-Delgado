@@ -192,7 +192,12 @@ ipcMain.handle('guardarPdf', async (_event, { html, nombreArchivo }) => {
     })
     
     // Mostrar diálogo para guardar archivo
-    const resultado = await dialog.showSaveDialog(ventanaPrincipal!, {
+    if (!ventanaPrincipal) {
+      console.error('[PDF] Ventana principal no disponible')
+      throw new Error('Ventana principal no disponible')
+    }
+    
+    const resultado = await dialog.showSaveDialog(ventanaPrincipal, {
       defaultPath: nombreArchivo,
       filters: [
         { name: 'PDF', extensions: ['pdf'] },
