@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('electron', {
     /**
      * Genera un PDF a partir de HTML y retorna como base64
      */
-    generar: async (html: string): Promise<string> => {
+    generate: async (html: string): Promise<string> => {
       try {
         const base64 = await ipcRenderer.invoke('generarPdf', { html })
         return base64

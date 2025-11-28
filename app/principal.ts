@@ -130,18 +130,35 @@ const crearMenu = () => {
 
 // IPC: Generar PDF
 ipcMain.handle('generarPdf', async (_event, { html }) => {
+  console.log('[PDF] Iniciando generación de PDF...')
   const ventanaOculta = new BrowserWindow({
     show: false,
-    webPreferences: { offscreen: true }
+    webPreferences: { 
+      offscreen: true,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
   })
 
   try {
+    console.log('[PDF] Cargando HTML en ventana oculta...')
     await ventanaOculta.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+    
+    console.log('[PDF] Esperando a que la página cargue...')
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    console.log('[PDF] Generando PDF...')
     const bufferPdf = await ventanaOculta.webContents.printToPDF({
       printBackground: true,
-      pageSize: 'A4'
+      pageSize: 'A4',
+      margins: { top: 10, bottom: 10, left: 10, right: 10 }
     })
+    
+    console.log('[PDF] PDF generado exitosamente, tamaño:', bufferPdf.length)
     return bufferPdf.toString('base64')
+  } catch (error) {
+    console.error('[PDF] Error al generar PDF:', error)
+    throw error
   } finally {
     ventanaOculta.destroy()
   }
