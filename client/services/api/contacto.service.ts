@@ -252,14 +252,19 @@ class ContactoService {
    * Importar contactos desde Google
    */
   async importarDesdeGoogle(accessToken: string): Promise<{ importados: number; duplicados: number; errores: number }> {
+    console.log('[ContactoService] Iniciando importación desde Google');
+    console.log('[ContactoService] Access token recibido, longitud:', accessToken?.length || 0);
+    
     const token = authService.obtenerToken();
     
     if (!token) {
+      console.error('[ContactoService] No hay token de sesión');
       throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente para importar contactos.');
     }
 
     try {
-      return await fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
+      console.log('[ContactoService] Llamando a /contactos/importar/google con token de sesión');
+      const resultado = await fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -267,9 +272,12 @@ class ContactoService {
         },
         body: JSON.stringify({ accessToken }),
       });
+      console.log('[ContactoService] Respuesta recibida:', resultado);
+      return resultado;
     } catch (error: any) {
+      console.error('[ContactoService] Error en importación:', error.message);
       // Si el token expiró durante la petición
-      if (error.message.includes('sesión ha expirado')) {
+      if (error.message.includes('sesión ha expirada')) {
         throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente para importar contactos.');
       }
       throw error;

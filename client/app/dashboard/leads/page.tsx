@@ -12,7 +12,7 @@ import { toast } from "@/hooks/use-toast"
 import { etiquetaService } from "@/services/api/etiqueta.service"
 import leadService from "@/services/api/lead.service"
 import type { Etiqueta } from "@/types/etiqueta.types"
-import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar } from "@/components/features/leads"
+import { LeadCard, DialogoDetallesLead, DialogoEditarLead, DialogoCrearLead, DialogoConfirmarEliminar, FiltrosLeadsAvanzados } from "@/components/features/leads"
 import { ContactImportDialog } from "@/components/features/contacts/ContactImportDialog"
 import { DialogoCrearAccesoWeb } from "@/components/features/contacts"
 import { FormularioCotizacion } from "@/components/features/cotizaciones"
@@ -228,14 +228,18 @@ export default function PaginaLeads() {
       if (googleToken) {
         setImportando(true)
         try {
+          console.log('🔍 Google token recibido en callback:', googleToken.substring(0, 30) + '...')
+          
           // Validar que tengamos sesión activa antes de importar
           const token = localStorage.getItem('crm_token')
           if (!token) {
             throw new Error('Tu sesión ha expirado. Por favor recarga la página e inicia sesión nuevamente.')
           }
 
+          console.log('📤 Enviando token de Google al servidor...')
           // Importar contactos usando el token
           const resultado = await contactoService.importarDesdeGoogle(googleToken)
+          console.log('✅ Resultado de importación:', resultado)
           
           toast({
             title: "✅ Importación completada",
@@ -469,43 +473,16 @@ export default function PaginaLeads() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {FILTROS_LEADS.map((filtro) => (
-            <Button
-              key={filtro.value}
-              onClick={() => setEstadoFiltro(filtro.value)}
-              variant={estadoFiltro === filtro.value ? "default" : "outline"}
-              className={estadoFiltro === filtro.value ? "bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]" : ""}
-            >
-              {filtro.label}
-            </Button>
-          ))}
-        </div>
+        {/* Filtros Avanzados */}
+        <FiltrosLeadsAvanzados
+          onAplicar={(filtros) => {
+            setBusqueda(filtros.busqueda || "")
+            cargarLeads({ busqueda: filtros.busqueda })
+          }}
+          cargando={estaCargando}
+        />
 
-        <div className="flex gap-4 items-end flex-wrap">
-          <div className="flex-1 relative min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar leads" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} className="pl-9" />
-          </div>
-          <Select value={etiquetaFiltro} onValueChange={setEtiquetaFiltro}>
-            <SelectTrigger className="w-[220px]">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                <SelectValue placeholder="Todas las etiquetas" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas las etiquetas</SelectItem>
-              {Array.isArray(etiquetas) && etiquetas.map((et) => (
-                <SelectItem key={et.id} value={et.id}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: et.color }} />
-                    {et.nombre}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex gap-4 items-center flex-wrap">
           <ContactImportDialog onImport={handleImportarGoogle} />
           <Button 
             onClick={() => setDialogoCrearAbierto(true)}

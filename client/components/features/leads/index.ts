@@ -8,4 +8,5 @@ export { ClientCard } from './ClientCard';
 export { DialogoCrearLead } from './DialogoCrearLead';
 export { DialogoConfirmarEliminar } from './DialogoConfirmarEliminar';
 export { DialogoCambiarEstado } from './DialogoCambiarEstado';
+export { FiltrosLeadsAvanzados } from './FiltrosLeadsAvanzados';
 
