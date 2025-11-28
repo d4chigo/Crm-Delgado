@@ -30,9 +30,15 @@ export const useLeadNotifications = (
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const attemptCountRef = useRef(0);
   const maxAttemptsRef = useRef(5);
+  const isConnectingRef = useRef(false);
 
   const connectWebSocket = useCallback(() => {
-    // No intentar conectar si ya tenemos una conexión
+    // No intentar conectar si ya estamos conectando o ya tenemos una conexión
+    if (isConnectingRef.current) {
+      console.log('⏳ Conexión en progreso...');
+      return () => {};
+    }
+
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       console.log('✅ WebSocket ya está conectado');
       return () => {};
@@ -49,6 +55,7 @@ export const useLeadNotifications = (
       return () => {};
     }
 
+    isConnectingRef.current = true;
     attemptCountRef.current++;
 
     // Determinar el protocolo según si estamos en http o https
@@ -121,6 +128,7 @@ export const useLeadNotifications = (
       };
 
       wsRef.current.onclose = () => {
+        isConnectingRef.current = false;
         console.log(`❌ WebSocket desconectado (intento ${attemptCountRef.current}/${maxAttemptsRef.current})`);
         if (attemptCountRef.current < maxAttemptsRef.current) {
           console.log(`🔌 Reintentando en 5 segundos...`);
