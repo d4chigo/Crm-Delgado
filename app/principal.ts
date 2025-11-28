@@ -152,7 +152,7 @@ ipcMain.handle('generarPdf', async (_event, { html }) => {
     const bufferPdf = await ventanaOculta.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { top: 5, bottom: 5, left: 5, right: 5 }
+      margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 }
     })
     
     console.log('[PDF] PDF generado exitosamente, tamaño:', bufferPdf.length)
@@ -188,7 +188,7 @@ ipcMain.handle('guardarPdf', async (_event, { html, nombreArchivo }) => {
     const bufferPdf = await ventanaOculta.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { top: 5, bottom: 5, left: 5, right: 5 }
+      margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 }
     })
     
     // Mostrar diálogo para guardar archivo
