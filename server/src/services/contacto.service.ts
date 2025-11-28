@@ -934,16 +934,9 @@ export class ContactoService {
       console.log('[Contacto Service] Llamando a googleAuthService.getContacts...');
       const contactosGoogle = await googleAuthService.getContacts(accessToken);
       
-      console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle?.length || 0}`);
-      
-      // Si no hay contactos, retornar resultado vacío
-      if (!contactosGoogle || contactosGoogle.length === 0) {
-        console.warn('[Contacto Service] ⚠️ No hay contactos para importar');
-        return { importados: 0, duplicados: 0, errores: 0 };
-      }
+      console.log(`📊 Total de contactos recibidos de Google: ${contactosGoogle.length}`);
 
-      for (let idx = 0; idx < contactosGoogle.length; idx++) {
-        const person = contactosGoogle[idx];
+      for (const person of contactosGoogle) {
         try {
           const nombre = person.names?.[0]?.givenName || '';
           const apellido = person.names?.[0]?.familyName || '';
@@ -990,10 +983,9 @@ export class ContactoService {
               continue;
             }
 
-            // Generar un identificador único basado en nombre, timestamp e índice
+            // Generar un identificador único basado en nombre y timestamp
             const identificador = `${nombre}${apellido}`.toLowerCase().replace(/\s+/g, '');
-            const timestamp = Date.now();
-            correoFinal = `${identificador}_${timestamp}_${idx}@importado.local`;
+            correoFinal = `${identificador}_${Date.now()}@importado.local`;
             console.log(`📧 Contacto sin correo, usando temporal: ${correoFinal}`);
           }
 
@@ -1052,10 +1044,7 @@ export class ContactoService {
           console.error('❌ Error al importar contacto individual:', {
             nombre: person.names?.[0]?.givenName,
             apellido: person.names?.[0]?.familyName,
-            correo: person.emailAddresses?.[0]?.value,
-            error: error.message,
-            code: error.code,
-            stack: error.stack?.split('\n')[0]
+            error: error.message
           });
           errores++;
         }
