@@ -129,7 +129,7 @@ router.post('/lead', async (req: Request, res: Response) => {
           estado: 'NUEVO',
           fuente: origen || 'Web',
           notas: mensaje || `Interés: ${interes || 'No especificado'}`,
-          usuarioId: usuarioAsignado.id
+          idUsuario: usuarioAsignado.id
         }
       });
     }
@@ -204,7 +204,7 @@ router.post('/lead', async (req: Request, res: Response) => {
         leadId: lead.id,
         nombre,
         apellido,
-        email,
+        correo: email,
         telefono,
         interes,
         origen,
