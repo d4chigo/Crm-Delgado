@@ -204,6 +204,16 @@ ipcMain.handle('guardarPdf', async (_event, { html, nombreArchivo }) => {
       console.log('[PDF] Guardando PDF en:', resultado.filePath)
       await fs.promises.writeFile(resultado.filePath, bufferPdf)
       console.log('[PDF] PDF guardado exitosamente')
+      
+      // Abrir la carpeta donde se guardó el archivo
+      try {
+        const carpeta = path.dirname(resultado.filePath)
+        console.log('[PDF] Abriendo carpeta:', carpeta)
+        await shell.openPath(carpeta)
+      } catch (error) {
+        console.error('[PDF] Error al abrir carpeta:', error)
+      }
+      
       return true
     } else {
       console.log('[PDF] Guardado cancelado por el usuario')
