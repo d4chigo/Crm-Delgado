@@ -285,7 +285,36 @@ export const cotizacionService = {
    */
   async crear(datos: CrearCotizacionDTO): Promise<Cotizacion> {
     try {
-  const response = await axiosInstance.post('cotizaciones', datos);
+      // Limpiar campos que solo existen en el cliente (no en el servidor)
+      const datosLimpios: any = {
+        leadId: datos.leadId,
+        clienteId: datos.clienteId,
+        nombreProyecto: datos.nombreProyecto,
+        tipoInmueble: datos.tipoInmueble,
+        descripcion: datos.descripcion,
+        precioInmueble: datos.precioInmueble,
+        cuotaInicial: datos.cuotaInicial,
+        plazoMeses: datos.plazoMeses,
+        tipoCuota: datos.tipoCuota,
+        tasaInteresAnual: datos.tasaInteresAnual,
+        permitePostergar: datos.permitePostergar,
+        cuotasPostergables: datos.cuotasPostergables && datos.cuotasPostergables > 0 ? datos.cuotasPostergables : undefined,
+        permiteDoble: datos.permiteDoble,
+        cuotasDoblesAnuales: datos.cuotasDoblesAnuales && datos.cuotasDoblesAnuales > 0 ? datos.cuotasDoblesAnuales : undefined,
+        permiteCambioFecha: datos.permiteCambioFecha,
+        montoCuotaManual: datos.montoCuotaManual && datos.montoCuotaManual > 0 ? datos.montoCuotaManual : undefined,
+        notas: datos.notas && datos.notas.trim() ? datos.notas : undefined,
+        fechaValidez: datos.fechaValidez
+      };
+
+      // Remover campos undefined y null
+      Object.keys(datosLimpios).forEach(key => {
+        if (datosLimpios[key] === undefined || datosLimpios[key] === null) {
+          delete datosLimpios[key];
+        }
+      });
+
+      const response = await axiosInstance.post('cotizaciones', datosLimpios);
       return response.data;
     } catch (error: any) {
       throw new Error(

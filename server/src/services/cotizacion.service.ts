@@ -91,11 +91,15 @@ export class CotizacionService {
    */
   async crearCotizacion(datos: CrearCotizacionDTO): Promise<any> {
     try {
+      console.log('🔧 [CotizacionService] Iniciando creación de cotización');
+      console.log('🔧 [CotizacionService] Datos recibidos:', JSON.stringify(datos, null, 2));
+      
       // Validar que al menos leadId o clienteId esté presente
       if (!datos.leadId && !datos.clienteId) {
         throw new Error('Se requiere al menos un leadId o clienteId');
       }
 
+      console.log('🔧 [CotizacionService] Verificando lead/cliente...');
       // Verificar que el lead o cliente existe
       const lead = datos.leadId ? await prisma.lead.findUnique({
         where: { id: datos.leadId }

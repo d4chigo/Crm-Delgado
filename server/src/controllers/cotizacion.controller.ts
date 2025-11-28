@@ -8,13 +8,15 @@ export class CotizacionController {
    */
   async crearCotizacion(req: Request, res: Response) {
     try {
+      console.log('📥 [Cotizacion Controller] Datos recibidos:', JSON.stringify(req.body, null, 2));
       const datos: CrearCotizacionDTO = req.body;
       const cotizacion = await cotizacionService.crearCotizacion(datos);
       
       res.status(201).json(cotizacion);
     } catch (error: any) {
-      console.error('Error al crear cotización:', error);
-      res.status(400).json({ error: error.message });
+      console.error('❌ [Cotizacion Controller] Error al crear cotización:', error.message);
+      console.error('❌ [Cotizacion Controller] Stack:', error.stack);
+      res.status(400).json({ error: error.message, detalles: error.toString() });
     }
   }
 
