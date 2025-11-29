@@ -15,14 +15,12 @@ import {
   obtenerReporteLead,
   obtenerReporteConversion,
   obtenerReporteActividad,
-  obtenerReporteVentasCerradas,
   obtenerReporteClientesActivos,
   obtenerAnalisisTiempoEficiencia,
   obtenerReporteFuenteLeads,
   type ReporteLead,
   type ReporteConversion,
   type ReporteActividad,
-  type ReporteVentasCerradas,
   type ReporteClientesActivos,
   type AnalisisTiempoEficiencia,
   type ReporteFuenteLeads,
@@ -40,7 +38,6 @@ export default function PaginaReportes() {
   const [reporteLead, setReporteLead] = useState<ReporteLead | null>(null)
   const [reporteConversion, setReporteConversion] = useState<ReporteConversion | null>(null)
   const [reporteActividad, setReporteActividad] = useState<ReporteActividad | null>(null)
-  const [reporteVentas, setReporteVentas] = useState<ReporteVentasCerradas | null>(null)
   const [reporteClientes, setReporteClientes] = useState<ReporteClientesActivos | null>(null)
   const [reporteTiempo, setReporteTiempo] = useState<AnalisisTiempoEficiencia | null>(null)
   const [reporteFuente, setReporteFuente] = useState<ReporteFuenteLeads | null>(null)
@@ -53,22 +50,20 @@ export default function PaginaReportes() {
     setCargando(true)
     try {
       console.log('[FRONTEND] Cargando reportes...')
-      const [lead, conversion, actividad, ventas, clientes, tiempo, fuente] = await Promise.all([
+      const [lead, conversion, actividad, clientes, tiempo, fuente] = await Promise.all([
         obtenerReporteLead(),
         obtenerReporteConversion(),
         obtenerReporteActividad(),
-        obtenerReporteVentasCerradas(),
         obtenerReporteClientesActivos(),
         obtenerAnalisisTiempoEficiencia(),
         obtenerReporteFuenteLeads(),
       ])
 
-      console.log('[FRONTEND] Reportes cargados:', { lead, conversion, actividad, ventas, clientes, tiempo, fuente })
+      console.log('[FRONTEND] Reportes cargados:', { lead, conversion, actividad, clientes, tiempo, fuente })
 
       setReporteLead(lead)
       setReporteConversion(conversion)
       setReporteActividad(actividad)
-      setReporteVentas(ventas)
       setReporteClientes(clientes)
       setReporteTiempo(tiempo)
       setReporteFuente(fuente)
@@ -100,11 +95,10 @@ export default function PaginaReportes() {
       </div>
 
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="leads">Leads</TabsTrigger>
           <TabsTrigger value="conversion">Conversión</TabsTrigger>
           <TabsTrigger value="actividad">Actividad</TabsTrigger>
-          <TabsTrigger value="ventas">Ventas</TabsTrigger>
           <TabsTrigger value="clientes">Clientes</TabsTrigger>
           <TabsTrigger value="tiempo">Eficiencia</TabsTrigger>
           <TabsTrigger value="fuente">Fuentes</TabsTrigger>
@@ -232,17 +226,6 @@ export default function PaginaReportes() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Valor Total Ganado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold text-green-600">
-                S/ {(reporteConversion?.valorGanado || 0).toLocaleString()}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Conversión por Etapa</CardTitle>
             </CardHeader>
             <CardContent>
@@ -303,70 +286,6 @@ export default function PaginaReportes() {
           </Card>
         </TabsContent>
 
-        {/* REPORTE DE VENTAS CERRADAS */}
-        <TabsContent value="ventas" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Ventas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{reporteVentas?.totalVentas || 0}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Monto Total</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  S/ {(reporteVentas?.montoTotal || 0).toLocaleString()}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Días Promedio Cierre</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{reporteVentas?.diasPromedioCierre || 0}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalle de Ventas Cerradas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Proyecto</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Días</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reporteVentas?.ventasDetalladas.slice(0, 10).map((venta: any) => (
-                      <TableRow key={venta.id}>
-                        <TableCell className="font-medium">{venta.titulo}</TableCell>
-                        <TableCell>{venta.cliente?.nombre || '-'}</TableCell>
-                        <TableCell>{venta.proyecto || '-'}</TableCell>
-                        <TableCell>S/ {(venta.valor || 0).toLocaleString()}</TableCell>
-                        <TableCell>{venta.diasParaCierre}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* REPORTE DE CLIENTES ACTIVOS */}
         <TabsContent value="clientes" className="space-y-4">
           <Card>
@@ -390,7 +309,6 @@ export default function PaginaReportes() {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Correo</TableHead>
                       <TableHead>Oportunidades</TableHead>
-                      <TableHead>Monto en Juego</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -400,9 +318,6 @@ export default function PaginaReportes() {
                         <TableCell>{cliente.correo || '-'}</TableCell>
                         <TableCell>
                           <Badge>{cliente.oportunidadesActivas}</Badge>
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          S/ {cliente.montoEnJuego.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     ))}
