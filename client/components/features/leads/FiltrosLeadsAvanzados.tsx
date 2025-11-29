@@ -47,7 +47,7 @@ interface FiltrosLeadsAvanzadosProps {
 }
 
 const ESTADOS_LEAD = ['NUEVO', 'CONTACTADO', 'CALIFICADO', 'DESCALIFICADO', 'CONVERTIDO'];
-const FUENTES_LEAD = ['TIKTOK', 'YOUTUBE', 'INSTAGRAM', 'FACEBOOK', 'REFERENCIA'];
+const FUENTES_LEAD = ['TikTok', 'YouTube', 'Instagram', 'Facebook', 'Recomendación'];
 
 /**
  * Componente de Filtros Avanzados Profesional para Leads

@@ -24,7 +24,7 @@ export class EtiquetaService {
         where: { id: contactoId },
         include: {
           etiquetasRel: {
-            include: {
+            select: {
               etiqueta: true
             }
           }
@@ -40,7 +40,7 @@ export class EtiquetaService {
         where: { id: contactoId },
         include: {
           etiquetasRel: {
-            include: {
+            select: {
               etiqueta: true
             }
           }
@@ -82,29 +82,29 @@ export class EtiquetaService {
       // Eliminar todas las etiquetas actuales
       if (lead) {
         await prisma.leadEtiqueta.deleteMany({
-          where: { leadId: contactoId }
+          where: { idLead: contactoId }
         });
 
         // Asignar las nuevas etiquetas
         if (etiquetaIds.length > 0) {
           await prisma.leadEtiqueta.createMany({
             data: etiquetaIds.map(etiquetaId => ({
-              leadId: contactoId,
-              etiquetaId
+              idLead: contactoId,
+              idEtiqueta: etiquetaId
             }))
           });
         }
       } else {
         await prisma.clienteEtiqueta.deleteMany({
-          where: { clienteId: contactoId }
+          where: { idCliente: contactoId }
         });
 
         // Asignar las nuevas etiquetas
         if (etiquetaIds.length > 0) {
           await prisma.clienteEtiqueta.createMany({
             data: etiquetaIds.map(etiquetaId => ({
-              clienteId: contactoId,
-              etiquetaId
+              idCliente: contactoId,
+              idEtiqueta: etiquetaId
             }))
           });
         }
@@ -139,9 +139,9 @@ export class EtiquetaService {
       // Verificar si la relación ya existe
       const existente = await prisma.leadEtiqueta.findUnique({
         where: {
-          leadId_etiquetaId: {
-            leadId: contactoId,
-            etiquetaId
+          idLead_idEtiqueta: {
+            idLead: contactoId,
+            idEtiqueta: etiquetaId
           }
         }
       });
@@ -153,17 +153,17 @@ export class EtiquetaService {
       // Crear la relación
       await prisma.leadEtiqueta.create({
         data: {
-          leadId: contactoId,
-          etiquetaId
+          idLead: contactoId,
+          idEtiqueta: etiquetaId
         }
       });
     } else {
       // Verificar si la relación ya existe
       const existente = await prisma.clienteEtiqueta.findUnique({
         where: {
-          clienteId_etiquetaId: {
-            clienteId: contactoId,
-            etiquetaId
+          idCliente_idEtiqueta: {
+            idCliente: contactoId,
+            idEtiqueta: etiquetaId
           }
         }
       });
@@ -175,8 +175,8 @@ export class EtiquetaService {
       // Crear la relación
       await prisma.clienteEtiqueta.create({
         data: {
-          clienteId: contactoId,
-          etiquetaId
+          idCliente: contactoId,
+          idEtiqueta: etiquetaId
         }
       });
     }
@@ -204,18 +204,18 @@ export class EtiquetaService {
     if (lead) {
       await prisma.leadEtiqueta.delete({
         where: {
-          leadId_etiquetaId: {
-            leadId: contactoId,
-            etiquetaId
+          idLead_idEtiqueta: {
+            idLead: contactoId,
+            idEtiqueta: etiquetaId
           }
         }
       });
     } else {
       await prisma.clienteEtiqueta.delete({
         where: {
-          clienteId_etiquetaId: {
-            clienteId: contactoId,
-            etiquetaId
+          idCliente_idEtiqueta: {
+            idCliente: contactoId,
+            idEtiqueta: etiquetaId
           }
         }
       });

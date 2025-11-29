@@ -62,6 +62,7 @@ export default function PaginaPipeline() {
   const [dialogoAgendarAbierto, setDialogoAgendarAbierto] = useState(false)
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
   const [overTrash, setOverTrash] = useState(false)
+  const [refrescarLeads, setRefrescarLeads] = useState<(() => void) | null>(null)
   const scrollContainerRef = useCallback((element: HTMLDivElement | null) => {
     if (element) {
       (window as any).__pipelineScrollContainer = element
@@ -255,7 +256,7 @@ export default function PaginaPipeline() {
 
   const handleMoverOportunidad = async (oportunidadId: string, nuevaEtapa: string) => {
     try {
-      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await moverOportunidad(oportunidadId, nuevaEtapa, refrescarLeads || undefined)
       await refrescar()
       toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
     } catch (error: any) {
@@ -301,7 +302,7 @@ export default function PaginaPipeline() {
     const oportunidadId = String(active.id)
 
     try {
-      await moverOportunidad(oportunidadId, nuevaEtapa)
+      await moverOportunidad(oportunidadId, nuevaEtapa, refrescarLeads || undefined)
       await refrescar()
       toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
     } catch (error: any) {
@@ -328,7 +329,7 @@ export default function PaginaPipeline() {
     }
 
     try {
-      await moverOportunidad(draggedItem, etapaId)
+      await moverOportunidad(draggedItem, etapaId, refrescarLeads || undefined)
       await refrescar()
       toast({ title: 'Éxito', description: 'Oportunidad movida exitosamente' })
     } catch (error: any) {
@@ -640,8 +641,8 @@ export default function PaginaPipeline() {
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate min-w-0 flex-1" title={selectedDeal.cliente?.correo || 'Sin email'}>
-                      {selectedDeal.cliente?.correo || 'Sin email'}
+                    <span className="truncate min-w-0 flex-1" title={(selectedDeal.cliente?.correo || selectedDeal.lead?.correo) || 'Sin email'}>
+                      {(selectedDeal.cliente?.correo || selectedDeal.lead?.correo) || 'Sin email'}
                     </span>
                   </p>
                 </div>
@@ -650,7 +651,7 @@ export default function PaginaPipeline() {
                   <p className="font-medium text-[#303030] flex items-center gap-2">
                     <Phone className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate min-w-0 flex-1">
-                      {selectedDeal.cliente?.telefono || 'Sin teléfono'}
+                      {(selectedDeal.cliente?.telefono || selectedDeal.lead?.telefono) || 'Sin teléfono'}
                     </span>
                   </p>
                 </div>
@@ -659,7 +660,7 @@ export default function PaginaPipeline() {
               {/* Action Buttons - WhatsApp & Calendar */}
               <div className="flex gap-2 pt-2">
                 <Button 
-                  onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || '', selectedDeal.cliente?.nombre || '')}
+                  onClick={() => handleWhatsApp(selectedDeal.cliente?.telefono || selectedDeal.lead?.telefono || '', selectedDeal.cliente?.nombre || selectedDeal.lead?.nombre || '')}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
                 >
                   <Phone className="h-4 w-4 mr-2" />
@@ -764,9 +765,9 @@ export default function PaginaPipeline() {
         <DialogoAgendarReunion
           abierto={dialogoAgendarAbierto}
           onCerrar={() => setDialogoAgendarAbierto(false)}
-          contactoNombre={selectedDeal.cliente?.nombre}
-          contactoEmail={selectedDeal.cliente?.correo}
-          contactoTelefono={selectedDeal.cliente?.telefono}
+          contactoNombre={selectedDeal.cliente?.nombre || selectedDeal.lead?.nombre}
+          contactoEmail={selectedDeal.cliente?.correo || selectedDeal.lead?.correo}
+          contactoTelefono={selectedDeal.cliente?.telefono || selectedDeal.lead?.telefono}
           onEventoCreado={refrescar}
         />
       )}

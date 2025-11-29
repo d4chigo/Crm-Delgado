@@ -18,8 +18,8 @@ export const crearAlertaLead = async (
 
     const alerta = await prisma.alertaLead.create({
       data: {
-        leadId: contactoId,
-        usuarioId,
+        idLead: contactoId,
+        idUsuario: usuarioId,
         fechaCreada: ahora,
         fechaLimite,
         completada: false,
@@ -63,9 +63,8 @@ export const generarAlertasLeadsNoContactados = async (): Promise<any[]> => {
     // 2. NO han sido contactados (estado === NUEVO o EN_ESPERA)
     // 3. NO tienen una alerta activa ya creada
 
-    const leadsNoContactados = await prisma.contacto.findMany({
+    const leadsNoContactados = await prisma.lead.findMany({
       where: {
-        tipo: 'LEAD',
         creadoEn: {
           lte: hace24horas, // Creado hace 24+ horas
         },
@@ -92,7 +91,7 @@ export const generarAlertasLeadsNoContactados = async (): Promise<any[]> => {
       try {
         const alerta = await crearAlertaLead(
           lead.id,
-          lead.usuarioId,
+          lead.idUsuario,
           `Lead creado hace ${Math.floor((ahora.getTime() - lead.creadoEn.getTime()) / (60 * 60 * 1000))} horas`
         );
         alertasCreadas.push(alerta);
@@ -174,7 +173,7 @@ export const obtenerEstadisticasAlertas = async (
     const ahora = new Date();
 
     const alertas = await prisma.alertaLead.findMany({
-      where: { idUsuario: usuarioId },
+      where: { usuarioId },
     });
 
     const activas = alertas.filter((a: any) => !a.completada);

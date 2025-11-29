@@ -380,38 +380,38 @@ export class OportunidadService {
     // Actualizar estado del lead si es necesario
     if (estadoLead) {
       try {
-        console.log(`📝 Actualizando estado del lead. leadId: ${oportunidadExistente.leadId}, clienteId: ${oportunidadExistente.clienteId}, etapa: ${etapa}`);
+        console.log(`📝 Actualizando estado del lead. idLead: ${oportunidadExistente.idLead}, idCliente: ${oportunidadExistente.idCliente}, etapa: ${etapa}`);
         
         // Determinar si es un lead o cliente
-        if (oportunidadExistente.leadId) {
-          console.log(`🔄 Actualizando estado del lead ${oportunidadExistente.leadId} a ${estadoLead}...`);
+        if (oportunidadExistente.idLead) {
+          console.log(`🔄 Actualizando estado del lead ${oportunidadExistente.idLead} a ${estadoLead}...`);
           
           await prisma.lead.update({
-            where: { id: oportunidadExistente.leadId },
+            where: { id: oportunidadExistente.idLead },
             data: {
               estado: estadoLead,
               actualizadoEn: new Date()
             }
           });
-          console.log(`✅ Estado del lead ${oportunidadExistente.leadId} actualizado a ${estadoLead}`);
+          console.log(`✅ Estado del lead ${oportunidadExistente.idLead} actualizado a ${estadoLead}`);
 
           // Si llega a FIDELIZACIÓN, convertir lead a cliente
           if (etapa === 'FIDELIZACION' || etapa === 'FIDELIZACIÓN') {
             console.log(`⭐ Verificando si hay que convertir a cliente (etapa: ${etapa})`);
             
             const leadActual = await prisma.lead.findUnique({
-              where: { id: oportunidadExistente.leadId },
+              where: { id: oportunidadExistente.idLead },
               include: {
                 etiquetasRel: {
-                  include: {
-                    etiqueta: true
+                  select: {
+                    idEtiqueta: true
                   }
                 }
               }
             });
 
             if (leadActual) {
-              console.log(`🔄 Convirtiendo lead ${oportunidadExistente.leadId} a cliente...`);
+              console.log(`🔄 Convirtiendo lead ${oportunidadExistente.idLead} a cliente...`);
               
               // Crear cliente con TODOS los datos del lead (migración completa)
               const nuevoCliente = await prisma.cliente.create({
@@ -450,8 +450,8 @@ export class OportunidadService {
                 
                 const etiquetasTransferidas = await prisma.clienteEtiqueta.createMany({
                   data: leadActual.etiquetasRel.map((et: any) => ({
-                    clienteId: nuevoCliente.id,
-                    etiquetaId: et.etiquetaId
+                    idCliente: nuevoCliente.id,
+                    idEtiqueta: et.idEtiqueta
                   })),
                   skipDuplicates: true
                 });
@@ -459,34 +459,34 @@ export class OportunidadService {
                 console.log(`✅ ${etiquetasTransferidas.count} etiqueta(s) transferida(s)`);
               }
 
-              // Actualizar la oportunidad para usar clienteId en lugar de leadId
+              // Actualizar la oportunidad para usar idCliente en lugar de idLead
               await prisma.oportunidadCliente.update({
                 where: { id },
                 data: {
-                  clienteId: nuevoCliente.id,
-                  leadId: null,
+                  idCliente: nuevoCliente.id,
+                  idLead: null,
                   notas: (oportunidadExistente.notas || '') + `\n[CONVERSIÓN] Lead convertido a Cliente el ${new Date().toLocaleDateString('es-PE')}`
                 }
               });
 
               // ⭐ CRÍTICO: Eliminar el lead original para que NO aparezca en dos lugares
-              console.log(`🗑️ Eliminando lead original ${oportunidadExistente.leadId}...`);
+              console.log(`🗑️ Eliminando lead original ${oportunidadExistente.idLead}...`);
               await prisma.lead.delete({
-                where: { id: oportunidadExistente.leadId }
+                where: { id: oportunidadExistente.idLead }
               });
 
-              console.log(`✅ Lead ${oportunidadExistente.leadId} convertido y eliminado`);
+              console.log(`✅ Lead ${oportunidadExistente.idLead} convertido y eliminado`);
               console.log(`✅ Cliente ${nuevoCliente.id} creado exitosamente con etiquetas`);
-              console.log(`🔄 ACTUALIZADO: clienteId=${nuevoCliente.id}, leadId=null`);
+              console.log(`🔄 ACTUALIZADO: idCliente=${nuevoCliente.id}, idLead=null`);
             } else {
-              console.warn(`⚠️ No se encontró el lead ${oportunidadExistente.leadId} para convertir`);
+              console.warn(`⚠️ No se encontró el lead ${oportunidadExistente.idLead} para convertir`);
             }
           } else {
             console.log(`ℹ️ Etapa actual: ${etapa} (no es FIDELIZACION)`);
           }
-        } else if (oportunidadExistente.clienteId) {
+        } else if (oportunidadExistente.idCliente) {
           // Los clientes no tienen estado, solo leads
-          console.log(`⚠️ No se puede actualizar estado: ${oportunidadExistente.clienteId} es un cliente`);
+          console.log(`⚠️ No se puede actualizar estado: ${oportunidadExistente.idCliente} es un cliente`);
         }
       } catch (error) {
         console.error('❌ Error al actualizar el estado del lead:', error);
@@ -496,9 +496,9 @@ export class OportunidadService {
     // Sincronizar estado del lead con la nueva etapa
     try {
       const leadPipelineService = require('./lead-pipeline.service').default;
-      const contactoId = oportunidadExistente.leadId || oportunidadExistente.clienteId;
+      const contactoId = oportunidadExistente.idLead || oportunidadExistente.idCliente;
       
-      if (oportunidadExistente.leadId) {
+      if (oportunidadExistente.idLead) {
         await leadPipelineService.sincronizarEstadoLead(contactoId);
         
         // Registrar el cambio en el historial
@@ -563,7 +563,7 @@ export class OportunidadService {
     });
 
     console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`✅ Etapa cambiada a ${etapa}. Lead: ${oportunidadFinal?.leadId}, Cliente: ${oportunidadFinal?.clienteId}`);
+    console.log(`✅ Etapa cambiada a ${etapa}. Lead: ${oportunidadFinal?.idLead}, Cliente: ${oportunidadFinal?.idCliente}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
     return oportunidadFinal;
   }
@@ -649,7 +649,7 @@ export class OportunidadService {
     }
 
     const oportunidades = await prisma.oportunidadCliente.findMany({
-      where: { clienteId, idUsuario: usuarioId },
+      where: { idCliente: clienteId, idUsuario: usuarioId },
       orderBy: { ultimaActividad: 'desc' },
       include: {
         cliente: {
@@ -690,8 +690,8 @@ export class OportunidadService {
     // Buscar la oportunidad asociada a este lead
     const oportunidad = await prisma.oportunidadCliente.findFirst({
       where: {
-        leadId: leadId,
-        usuarioId
+        idLead: leadId,
+        idUsuario: usuarioId
       },
       include: {
         lead: {

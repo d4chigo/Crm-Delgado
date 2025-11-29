@@ -44,7 +44,7 @@ export function useOportunidades() {
     }
   }
 
-  const moverOportunidad = async (id: string, nuevaEtapa: EtapaPipeline) => {
+  const moverOportunidad = async (id: string, nuevaEtapa: EtapaPipeline, onFidelizacion?: () => void) => {
     try {
       await cambiarEtapaOportunidad(id, nuevaEtapa)
       
@@ -59,6 +59,19 @@ export function useOportunidades() {
 
       // Recargar estadísticas
       await cargarEstadisticas()
+      
+      // Si se cambió a FIDELIZACION, ejecutar callback para refrescar leads
+      if (nuevaEtapa === 'FIDELIZACION') {
+        // Ejecutar callback si existe
+        if (onFidelizacion) {
+          onFidelizacion()
+        }
+        
+        // Emitir evento global para que otras páginas se enteren
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('leadConvertidoACliente', { detail: { id } }))
+        }
+      }
       
       return true
     } catch (err: any) {

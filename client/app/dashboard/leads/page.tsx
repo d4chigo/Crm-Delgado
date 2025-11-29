@@ -104,6 +104,20 @@ export default function PaginaLeads() {
     cargarEtiquetas()
   }, [cargarEtiquetas, cargarLeads])
 
+  // Escuchar evento cuando un lead se convierte a cliente en FIDELIZACION
+  useEffect(() => {
+    const handleLeadConvertido = () => {
+      console.log('📢 Lead convertido a cliente detectado, refrescando lista de leads...')
+      cargarLeads({ pagina: 1 })
+    }
+
+    window.addEventListener('leadConvertidoACliente', handleLeadConvertido)
+    
+    return () => {
+      window.removeEventListener('leadConvertidoACliente', handleLeadConvertido)
+    }
+  }, [cargarLeads])
+
   useEffect(() => {
     // Limpiar timeout anterior si existe
     if (searchTimeoutRef.current) {
