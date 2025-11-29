@@ -304,52 +304,76 @@ export default function EmailMarketingPage() {
 
                 {/* Selector de Contactos Individuales */}
                 {destinatarios === 'individuales' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">✋ Selecciona Contactos Individuales</label>
-                    <div className="mb-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">✋ Selecciona Contactos Individuales</label>
                       <input
                         type="text"
-                        placeholder="Busca por nombre o correo..."
+                        placeholder="🔍 Busca por nombre o correo..."
                         value={busquedaContactos}
                         onChange={(e) => setBusquedaContactos(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       />
                     </div>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {estadisticas?.contactos
-                        ?.filter(c => 
-                          c.nombre.toLowerCase().includes(busquedaContactos.toLowerCase()) ||
-                          c.correo.toLowerCase().includes(busquedaContactos.toLowerCase())
-                        )
-                        .map(contacto => (
-                          <label key={contacto.id} className="flex items-center gap-2 p-2 hover:bg-blue-100 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={contactosSeleccionados.includes(contacto.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setContactosSeleccionados([...contactosSeleccionados, contacto.id]);
-                                } else {
-                                  setContactosSeleccionados(contactosSeleccionados.filter(id => id !== contacto.id));
-                                }
-                              }}
-                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{contacto.nombre}</p>
-                              <p className="text-xs text-gray-600 truncate">{contacto.correo}</p>
-                            </div>
-                            <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">
-                              {contacto.tipo === 'LEAD' ? '👥' : '🏢'}
-                            </span>
-                          </label>
-                        ))}
-                    </div>
+
+                    {/* Contactos Seleccionados */}
                     {contactosSeleccionados.length > 0 && (
-                      <p className="text-xs text-blue-600 mt-2 font-medium">
-                        ✓ {contactosSeleccionados.length} contacto(s) seleccionado(s)
-                      </p>
+                      <div className="bg-white rounded-lg p-3 border border-blue-300">
+                        <p className="text-xs font-semibold text-blue-700 mb-2">
+                          ✓ {contactosSeleccionados.length} contacto(s) seleccionado(s)
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {estadisticas?.contactos
+                            ?.filter(c => contactosSeleccionados.includes(c.id))
+                            .map(contacto => (
+                              <div key={contacto.id} className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+                                <span>{contacto.nombre}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setContactosSeleccionados(contactosSeleccionados.filter(id => id !== contacto.id))}
+                                  className="ml-1 hover:text-blue-900 font-bold"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
                     )}
+
+                    {/* Lista de Contactos Disponibles */}
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 mb-2">Disponibles para agregar:</p>
+                      <div className="max-h-48 overflow-y-auto space-y-1 bg-white rounded-lg p-2 border border-gray-200">
+                        {estadisticas?.contactos && estadisticas.contactos.length > 0 ? (
+                          estadisticas.contactos
+                            ?.filter(c => 
+                              !contactosSeleccionados.includes(c.id) &&
+                              (c.nombre.toLowerCase().includes(busquedaContactos.toLowerCase()) ||
+                               c.correo.toLowerCase().includes(busquedaContactos.toLowerCase()))
+                            )
+                            .map(contacto => (
+                              <label key={contacto.id} className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  onChange={() => setContactosSeleccionados([...contactosSeleccionados, contacto.id])}
+                                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 truncate">{contacto.nombre}</p>
+                                  <p className="text-xs text-gray-500 truncate">{contacto.correo}</p>
+                                </div>
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 flex-shrink-0">
+                                  {contacto.tipo === 'LEAD' ? '👥 Lead' : '🏢 Cliente'}
+                                </span>
+                              </label>
+                            ))
+                        ) : (
+                          <p className="text-xs text-gray-500 p-2">No hay contactos disponibles</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
