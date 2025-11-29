@@ -89,6 +89,12 @@ export async function obtenerEstadisticas(req: Request, res: Response) {
           correo: c.correo,
           tipo: c.tipo,
         })),
+        contactos: todosContactos.filter(c => validarEmail(c.correo)).map(c => ({
+          id: c.id,
+          nombre: c.nombre,
+          correo: c.correo,
+          tipo: c.tipo === 'lead' ? 'LEAD' : 'CLIENTE',
+        })),
         etiquetas: etiquetas.map((e: any) => ({
           id: e.id,
           nombre: e.nombre,
@@ -119,7 +125,7 @@ export async function obtenerEstadisticas(req: Request, res: Response) {
  */
 export async function enviarCampana(req: Request, res: Response) {
   try {
-    const { asunto, contenido, contenidoHtml, destinatarios, filtros, urlImagen, etiquetaIds } = req.body;
+    const { asunto, contenido, contenidoHtml, destinatarios, filtros, urlImagen, etiquetaIds, contactoIds } = req.body;
 
     // Validar datos requeridos
     if (!asunto || !contenido || !destinatarios) {
@@ -129,10 +135,10 @@ export async function enviarCampana(req: Request, res: Response) {
       });
     }
 
-    if (!['leads', 'clientes', 'todos'].includes(destinatarios)) {
+    if (!['leads', 'clientes', 'todos', 'etiquetas', 'individuales'].includes(destinatarios)) {
       return res.status(400).json({
         exito: false,
-        error: 'Destinatarios debe ser: leads, clientes o todos',
+        error: 'Destinatarios debe ser: leads, clientes, todos, etiquetas o individuales',
       });
     }
 
@@ -140,6 +146,9 @@ export async function enviarCampana(req: Request, res: Response) {
     console.log(`📋 Destinatarios: ${destinatarios}`);
     if (etiquetaIds && etiquetaIds.length > 0) {
       console.log(`🏷️  Etiquetas seleccionadas: ${etiquetaIds.join(', ')}`);
+    }
+    if (contactoIds && contactoIds.length > 0) {
+      console.log(`👥 Contactos individuales: ${contactoIds.length}`);
     }
 
     // Obtener contactos según el filtro
@@ -156,7 +165,64 @@ export async function enviarCampana(req: Request, res: Response) {
         }
       : {};
 
-    if (destinatarios === 'leads' || destinatarios === 'todos') {
+    // Si es por contactos individuales
+    if (destinatarios === 'individuales' && contactoIds && contactoIds.length > 0) {
+      const leads = await prisma.lead.findMany({
+        select: { id: true, nombre: true, apellido: true, correo: true },
+        where: { id: { in: contactoIds } }
+      });
+      const clientes = await prisma.cliente.findMany({
+        select: { id: true, nombre: true, apellido: true, correo: true },
+        where: { id: { in: contactoIds } }
+      });
+      
+      contactos.push(
+        ...leads.map((l: any) => ({
+          id: l.id,
+          nombre: l.nombre,
+          apellido: l.apellido,
+          correo: l.correo || '',
+          tipo: 'lead' as const,
+        })),
+        ...clientes.map((c: any) => ({
+          id: c.id,
+          nombre: c.nombre,
+          apellido: c.apellido,
+          correo: c.correo || '',
+          tipo: 'cliente' as const,
+        }))
+      );
+    }
+    // Si es por etiquetas
+    else if (destinatarios === 'etiquetas' && etiquetaIds && etiquetaIds.length > 0) {
+      const leads = await prisma.lead.findMany({
+        select: { id: true, nombre: true, apellido: true, correo: true },
+        where: whereEtiquetas
+      });
+      const clientes = await prisma.cliente.findMany({
+        select: { id: true, nombre: true, apellido: true, correo: true },
+        where: whereEtiquetas
+      });
+      
+      contactos.push(
+        ...leads.map((l: any) => ({
+          id: l.id,
+          nombre: l.nombre,
+          apellido: l.apellido,
+          correo: l.correo || '',
+          tipo: 'lead' as const,
+        })),
+        ...clientes.map((c: any) => ({
+          id: c.id,
+          nombre: c.nombre,
+          apellido: c.apellido,
+          correo: c.correo || '',
+          tipo: 'cliente' as const,
+        }))
+      );
+    }
+    // Si es por tipo (leads, clientes, todos)
+    else if (destinatarios === 'leads' || destinatarios === 'todos') {
       const leadsQuery: any = {
         select: { id: true, nombre: true, apellido: true, correo: true },
         where: { ...whereEtiquetas }
