@@ -519,8 +519,8 @@ class ClientPortalController {
       const oportunidades = await prisma.oportunidadCliente.findMany({
         where: {
           OR: [
-            { clienteId: usuarioId },
-            { leadId: usuarioId }
+            { id_cliente: usuarioId },
+            { id_lead: usuarioId }
           ]
         },
         orderBy: { ultimaActividad: 'desc' },
@@ -528,17 +528,17 @@ class ClientPortalController {
       });
 
       const documentosSubidos = await prisma.clienteDocumento.findMany({
-        where: { contactoId: usuarioId }
+        where: { id_contacto: usuarioId }
       });
 
       const cotizaciones = await prisma.cotizacion.findMany({
         where: {
           OR: [
-            { leadId: usuarioId },
-            { clienteId: usuarioId }
+            { id_lead: usuarioId },
+            { id_cliente: usuarioId }
           ]
         },
-        orderBy: { creadoEn: 'desc' },
+        orderBy: { creado_en: 'desc' },
         take: 3
       });
 
