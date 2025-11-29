@@ -107,6 +107,7 @@ export function DialogoCrearLead({ abierto, onCerrar, onCreado, tipo = 'lead' }:
       // Preparar datos para enviar
       const datos: CrearContactoDTO = {
         nombre: formulario.nombre.trim(),
+        tipo: tipo === 'cliente' ? 'CLIENTE' : 'LEAD',
       }
 
       // Agregar campos opcionales solo si tienen valor

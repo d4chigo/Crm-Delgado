@@ -111,6 +111,7 @@ export interface CrearContactoDTO {
   dni?: string;
   sexo?: Sexo;
   fechaNacimiento?: string;
+  tipo?: 'LEAD' | 'CLIENTE';
   
   // Información profesional
   empresa?: string;
