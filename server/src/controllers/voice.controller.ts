@@ -120,7 +120,22 @@ ${context.detalles.topProyectos.map((p: any, i: number) => `  ${i + 1}. ${p.proy
       model: 'gemini-2.5-flash-native-audio-preview-09-2025',
       config: {
         responseModalities: ['AUDIO'],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
+        speechConfig: { 
+          voiceConfig: { 
+            prebuiltVoiceConfig: { 
+              voiceName: 'Aoife'  // Voz femenina natural y casi humana, similar a Google Assistant
+            } 
+          },
+          languageCode: 'es-ES',  // Español (España) - voz natural en español
+          prosodyOverrides: [
+            {
+              phoneme: 'default',
+              duration: 1.0,
+              pitch: 1.0,
+              rate: 0.95  // Velocidad ligeramente más lenta para fluidez
+            }
+          ]
+        },
         systemInstruction: `Eres un asistente analítico experto para el CRM inmobiliario "CRM Delgado".
 
 Respondes en español de manera concisa y profesional, usando métricas y datos concretos.

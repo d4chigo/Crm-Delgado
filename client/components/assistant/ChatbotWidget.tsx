@@ -331,7 +331,26 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0 scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-gray-100 scroll-smooth">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0 scroll-smooth" style={{
+        scrollbarWidth: 'thin',
+        scrollbarColor: '#fbbf24 #f3f4f6'
+      }}>
+        <style>{`
+          div::-webkit-scrollbar {
+            width: 8px;
+          }
+          div::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+          }
+          div::-webkit-scrollbar-thumb {
+            background: #fbbf24;
+            border-radius: 10px;
+          }
+          div::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+          }
+        `}</style>
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
             <div
