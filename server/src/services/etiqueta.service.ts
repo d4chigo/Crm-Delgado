@@ -18,40 +18,46 @@ export class EtiquetaService {
    * Obtener etiquetas de un contacto específico
    */
   async obtenerEtiquetasDeContacto(contactoId: string) {
-    // Intentar obtener del modelo Lead
-    const leadConEtiquetas = await prisma.lead.findUnique({
-      where: { id: contactoId },
-      include: {
-        etiquetasRel: {
-          include: {
-            etiqueta: true
+    try {
+      // Intentar obtener del modelo Lead
+      const leadConEtiquetas = await prisma.lead.findUnique({
+        where: { id: contactoId },
+        include: {
+          etiquetasRel: {
+            include: {
+              etiqueta: true
+            }
           }
         }
+      });
+
+      if (leadConEtiquetas) {
+        return leadConEtiquetas.etiquetasRel?.map((ce: any) => ce.etiqueta) || [];
       }
-    });
 
-    if (leadConEtiquetas) {
-      return leadConEtiquetas.etiquetasRel.map((ce: any) => ce.etiqueta) || [];
-    }
-
-    // Si no es un lead, intentar con Cliente
-    const clienteConEtiquetas = await prisma.cliente.findUnique({
-      where: { id: contactoId },
-      include: {
-        etiquetasRel: {
-          include: {
-            etiqueta: true
+      // Si no es un lead, intentar con Cliente
+      const clienteConEtiquetas = await prisma.cliente.findUnique({
+        where: { id: contactoId },
+        include: {
+          etiquetasRel: {
+            include: {
+              etiqueta: true
+            }
           }
         }
+      });
+
+      if (clienteConEtiquetas) {
+        return clienteConEtiquetas.etiquetasRel?.map((ce: any) => ce.etiqueta) || [];
       }
-    });
 
-    if (clienteConEtiquetas) {
-      return clienteConEtiquetas.etiquetasRel.map((ce: any) => ce.etiqueta) || [];
+      // Si no encuentra en ninguna tabla, retornar array vacío
+      return [];
+    } catch (error: any) {
+      console.error(`Error obteniendo etiquetas del contacto ${contactoId}:`, error);
+      // Retornar array vacío en caso de error para no bloquear la creación
+      return [];
     }
-
-    // Si no encuentra en ninguna tabla, retornar array vacío
-    return [];
   }
 
   /**
@@ -59,52 +65,57 @@ export class EtiquetaService {
    * Reemplaza todas las etiquetas existentes con las nuevas
    */
   async asignarEtiquetas(contactoId: string, etiquetaIds: string[], usuarioId: string) {
-    // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
-    const lead = await prisma.lead.findFirst({
-      where: { id: contactoId, idUsuario: usuarioId }
-    });
-
-    const cliente = !lead ? await prisma.cliente.findFirst({
-      where: { id: contactoId, idUsuario: usuarioId }
-    }) : null;
-
-    if (!lead && !cliente) {
-      throw new Error('Contacto no encontrado');
-    }
-
-    // Eliminar todas las etiquetas actuales
-    if (lead) {
-      await prisma.leadEtiqueta.deleteMany({
-        where: { leadId: contactoId }
+    try {
+      // Verificar que el contacto existe y pertenece al usuario (puede ser lead o cliente)
+      const lead = await prisma.lead.findFirst({
+        where: { id: contactoId, idUsuario: usuarioId }
       });
 
-      // Asignar las nuevas etiquetas
-      if (etiquetaIds.length > 0) {
-        await prisma.leadEtiqueta.createMany({
-          data: etiquetaIds.map(etiquetaId => ({
-            leadId: contactoId,
-            etiquetaId
-          }))
-        });
-      }
-    } else {
-      await prisma.clienteEtiqueta.deleteMany({
-        where: { clienteId: contactoId }
-      });
+      const cliente = !lead ? await prisma.cliente.findFirst({
+        where: { id: contactoId, idUsuario: usuarioId }
+      }) : null;
 
-      // Asignar las nuevas etiquetas
-      if (etiquetaIds.length > 0) {
-        await prisma.clienteEtiqueta.createMany({
-          data: etiquetaIds.map(etiquetaId => ({
-            clienteId: contactoId,
-            etiquetaId
-          }))
-        });
+      if (!lead && !cliente) {
+        throw new Error('Contacto no encontrado');
       }
+
+      // Eliminar todas las etiquetas actuales
+      if (lead) {
+        await prisma.leadEtiqueta.deleteMany({
+          where: { leadId: contactoId }
+        });
+
+        // Asignar las nuevas etiquetas
+        if (etiquetaIds.length > 0) {
+          await prisma.leadEtiqueta.createMany({
+            data: etiquetaIds.map(etiquetaId => ({
+              leadId: contactoId,
+              etiquetaId
+            }))
+          });
+        }
+      } else {
+        await prisma.clienteEtiqueta.deleteMany({
+          where: { clienteId: contactoId }
+        });
+
+        // Asignar las nuevas etiquetas
+        if (etiquetaIds.length > 0) {
+          await prisma.clienteEtiqueta.createMany({
+            data: etiquetaIds.map(etiquetaId => ({
+              clienteId: contactoId,
+              etiquetaId
+            }))
+          });
+        }
+      }
+
+      // Retornar las etiquetas actualizadas
+      return await this.obtenerEtiquetasDeContacto(contactoId);
+    } catch (error: any) {
+      console.error(`Error asignando etiquetas al contacto ${contactoId}:`, error);
+      throw error;
     }
-
-    // Retornar las etiquetas actualizadas
-    return await this.obtenerEtiquetasDeContacto(contactoId);
   }
 
   /**
