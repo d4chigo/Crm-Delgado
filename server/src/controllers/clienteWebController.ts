@@ -79,6 +79,7 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
       data: {
         id_contacto: contactoId,
         contrasena_web: passwordHash,
+        activo: true,
       },
     });
 

@@ -61,20 +61,26 @@ export class AuthService {
    * Autentica un cliente del portal
    */
   async loginCliente(correo: string, password: string): Promise<{ token: string; cliente: any }> {
+    console.log(`[Auth] Intentando login de cliente con correo: ${correo}`);
+    
     // Buscar cliente por correo en Cliente o Lead
     let cliente: any = await prisma.cliente.findFirst({
       where: { correo }
     });
 
     if (!cliente) {
+      console.log(`[Auth] No encontrado en tabla cliente, buscando en lead...`);
       cliente = await prisma.lead.findFirst({
         where: { correo }
       });
     }
 
     if (!cliente) {
-      throw new Error('Cliente no encontrado');
+      console.log(`[Auth] Cliente no encontrado con correo: ${correo}`);
+      throw new Error('Credenciales inválidas');
     }
+
+    console.log(`[Auth] Cliente encontrado: ${cliente.id}`);
 
     // Verificar que tiene acceso web activo
     const clienteAcceso = await prisma.clientePassword.findUnique({
@@ -89,20 +95,28 @@ export class AuthService {
     });
 
     if (!clienteAcceso) {
+      console.log(`[Auth] No hay acceso web configurado para: ${cliente.id}`);
       throw new Error('Credenciales inválidas');
     }
 
+    console.log(`[Auth] Acceso web encontrado. Activo: ${clienteAcceso.activo}`);
+
     // Verificar que el acceso está activo
     if (!clienteAcceso.activo) {
+      console.log(`[Auth] Acceso desactivado para: ${cliente.id}`);
       throw new Error('Acceso desactivado. Por favor contacta al administrador.');
     }
 
     // Verificar contraseña
+    console.log(`[Auth] Verificando contraseña...`);
     const passwordValida = await compararPassword(password, clienteAcceso.contrasena_web);
 
     if (!passwordValida) {
+      console.log(`[Auth] Contraseña inválida para: ${cliente.id}`);
       throw new Error('Credenciales inválidas');
     }
+
+    console.log(`[Auth] Login exitoso para: ${cliente.id}`);
 
     // Generar token
     const payload: PayloadJWT = {
