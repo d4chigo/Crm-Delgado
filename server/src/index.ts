@@ -73,6 +73,8 @@ const defaultOrigins = [
   process.env.CORS_ORIGIN || 'http://localhost:3000',  // Frontend del CRM
   'http://localhost:8081',  // Portal de clientes PGDP
   'http://localhost:8080',  // Alternativa
+  'http://127.0.0.1:8081',  // PGDP en localhost
+  'http://127.0.0.1:8080',  // Alternativa
 ];
 
 // Orígenes extra configurables por entorno (separados por comas)
@@ -84,21 +86,34 @@ const extraOrigins = (process.env.CORS_EXTRA_ORIGINS || '')
 // Unificar y eliminar duplicados
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...extraOrigins]));
 
+console.log('[CORS] Orígenes permitidos:', allowedOrigins);
+
 app.use(cors({
   origin: (origin, callback) => {
     // Permitir requests sin origin (como Postman, curl, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('[CORS] Request sin origin (probablemente desde servidor)');
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] Origen permitido: ${origin}`);
       callback(null, true);
     } else {
       console.warn(`[CORS] Origen no permitido: ${origin}`);
-      callback(new Error('No permitido por CORS'));
+      // En desarrollo, permitir igual pero con warning
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[CORS] Permitiendo en desarrollo: ${origin}`);
+        callback(null, true);
+      } else {
+        callback(new Error('No permitido por CORS'));
+      }
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires', 'Accept'],
+  exposedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting - más permisivo en desarrollo
