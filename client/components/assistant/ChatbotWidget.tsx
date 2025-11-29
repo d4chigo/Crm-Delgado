@@ -290,8 +290,8 @@ export default function ChatbotWidget() {
 
   return (
     <div className="flex flex-col w-full h-full bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl shadow-2xl overflow-hidden">
-      {/* Header Premium */}
-      <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-5 text-white shadow-xl flex-shrink-0">
+      {/* Header Premium - FIJO */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-5 text-white shadow-xl flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-white/20 backdrop-blur border-2 border-white/30 shadow-lg">
@@ -331,7 +331,7 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0 scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-gray-100 scroll-smooth">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
             <div
@@ -367,8 +367,8 @@ export default function ChatbotWidget() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t border-gray-300 p-4 bg-white flex-shrink-0 shadow-lg">
+      {/* Input - FIJO */}
+      <div className="sticky bottom-0 z-40 border-t border-gray-300 p-4 bg-white flex-shrink-0 shadow-lg">
         <form onSubmit={handleSend} className="flex gap-2">
           <button
             type="button"
