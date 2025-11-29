@@ -79,7 +79,7 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
     }
   }, []);
 
-  // Verificar autenticación inicial
+  // Verificar autenticación inicial y sincronizar
   useEffect(() => {
     verificarAutenticacion();
     if (typeof window !== 'undefined') setPermisoNotifs(Notification.permission);
@@ -88,6 +88,9 @@ export default function CalendarView({ onAuthChange }: CalendarViewProps) {
   // Sincronizar automáticamente cada 5 minutos
   useEffect(() => {
     if (!autenticado) return;
+
+    // Sincronizar inmediatamente al montar
+    recargarEventos();
 
     const intervalo = setInterval(() => {
       recargarEventos();
