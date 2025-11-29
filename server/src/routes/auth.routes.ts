@@ -10,6 +10,7 @@ const router = Router();
 router.post('/registro', validar(registroSchema), authController.registrar.bind(authController));
 router.post('/login', validar(loginSchema), authController.login.bind(authController));
 router.post('/login-cliente', authController.loginCliente.bind(authController)); // Login para clientes del portal
+router.post('/portal-login', authController.loginCliente.bind(authController)); // Alias para portal
 
 // Rutas protegidas
 router.get('/perfil', autenticar, authController.obtenerPerfil.bind(authController));
