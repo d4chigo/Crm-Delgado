@@ -75,22 +75,28 @@ export default function ChatbotWidget() {
         };
 
         recognitionRef.current.onerror = (event: any) => {
-          console.error('[Voz] Error:', event.error);
+          // Solo loguear en desarrollo, no mostrar error en consola
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Voz] Error (ignorado):', event.error);
+          }
           setIsListening(false);
           
-          // Mostrar mensaje de error amigable
-          let errorMsg = 'Error en el micrófono';
-          let showError = true;
+          // Mostrar mensaje de error amigable SOLO para errores críticos
+          let errorMsg = '';
+          let showError = false;
           
           if (event.error === 'network') {
-            errorMsg = '⚠️ Sin conexión de red. Puedes escribir normalmente.';
+            // No mostrar error de red, es muy común en desarrollo
+            console.log('[Voz] Error de red (esperado en desarrollo)');
           } else if (event.error === 'no-speech') {
-            errorMsg = '⚠️ No se detectó voz. Intenta de nuevo.';
-            showError = false; // No mostrar este error, es muy común
+            // No mostrar, es muy común
+            console.log('[Voz] No se detectó voz');
           } else if (event.error === 'not-allowed') {
             errorMsg = '⚠️ Permiso de micrófono denegado. Habilítalo en configuración.';
+            showError = true;
           } else if (event.error === 'service-not-allowed') {
             errorMsg = '⚠️ El servicio de voz no está disponible en tu región.';
+            showError = true;
           }
           
           if (showError) {
@@ -132,42 +138,69 @@ export default function ChatbotWidget() {
     // Limpiar síntesis anterior
     window.speechSynthesis.cancel();
 
-    const cleanText = text
+    // Limpiar texto para lectura natural
+    let cleanText = text
       .replace(/\*\*/g, '')
       .replace(/• /g, '')
-      .replace(/👋|📊|💰|📈|👥|📞|❌|📞/g, '')
+      .replace(/👋|📊|💰|📈|👥|📞|❌|📞|⚠️|✅|❌|📄|📞|🎤|🔊|💡/g, '')
+      .replace(/\n\n/g, '. ') // Párrafos a puntos
+      .replace(/\n/g, ' ') // Saltos de línea a espacios
       .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'es-ES';
-    utterance.rate = 0.9; // Más lento para claridad
-    utterance.pitch = 1.2; // Más agudo para voz femenina
-    utterance.volume = 1;
-
-    // Seleccionar voz femenina si está disponible
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(voice => 
-      voice.lang === 'es-ES' && (voice.name.includes('female') || voice.name.includes('mujer'))
-    ) || voices.find(voice => voice.lang === 'es-ES');
+    // Dividir en oraciones para lectura más natural
+    const sentences = cleanText.split(/(?<=[.!?])\s+/);
     
-    if (femaleVoice) {
-      utterance.voice = femaleVoice;
-    }
+    // Procesar cada oración con pequeños delays
+    sentences.forEach((sentence, index) => {
+      if (!sentence.trim()) return;
+      
+      const utterance = new SpeechSynthesisUtterance(sentence.trim());
+      utterance.lang = 'es-ES';
+      
+      // Configuración para voz fluida como Google Assistant
+      utterance.rate = 1.0; // Velocidad natural
+      utterance.pitch = 1.1; // Ligeramente más agudo (femenino)
+      utterance.volume = 1;
+      
+      // Intentar obtener voz femenina de Google
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Prioridad: Google Spanish Female > Spanish Female > Spanish
+      const googleFemaleVoice = voices.find(v => 
+        v.lang === 'es-ES' && v.name.includes('Google') && (v.name.includes('female') || v.name.includes('mujer'))
+      );
+      const femaleVoice = voices.find(v => 
+        v.lang === 'es-ES' && (v.name.includes('female') || v.name.includes('mujer'))
+      );
+      const spanishVoice = voices.find(v => v.lang === 'es-ES');
+      
+      const selectedVoice = googleFemaleVoice || femaleVoice || spanishVoice;
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-    };
+      if (index === 0) {
+        utterance.onstart = () => {
+          setIsSpeaking(true);
+        };
+      }
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
+      if (index === sentences.length - 1) {
+        utterance.onend = () => {
+          setIsSpeaking(false);
+        };
+      }
 
-    utterance.onerror = (event) => {
-      console.error('Error en síntesis de voz:', event.error);
-      setIsSpeaking(false);
-    };
+      utterance.onerror = (event) => {
+        console.log('[Síntesis] Error:', event.error);
+        setIsSpeaking(false);
+      };
 
-    window.speechSynthesis.speak(utterance);
+      // Agregar pequeño delay entre oraciones para naturalidad
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, index * 100);
+    });
   }
 
   async function handleSend(e: React.FormEvent) {
