@@ -14,6 +14,13 @@ interface Etiqueta {
   icono?: string;
 }
 
+interface Contacto {
+  id: string;
+  nombre: string;
+  correo: string;
+  tipo: 'LEAD' | 'CLIENTE';
+}
+
 interface Estadisticas {
   totalContactos: number;
   emailsValidos: number;
@@ -23,6 +30,7 @@ interface Estadisticas {
   clientes: { total: number; validos: number; invalidos: number };
   contactosInvalidos: Array<{ id: string; nombre: string; correo: string; tipo: string }>;
   etiquetas: Etiqueta[];
+  contactos: Contacto[];
 }
 
 interface ResultadoCampana {
@@ -42,9 +50,12 @@ export default function EmailMarketingPage() {
   // Formulario
   const [asunto, setAsunto] = useState('');
   const [contenido, setContenido] = useState('');
-  const [destinatarios, setDestinatarios] = useState<'leads' | 'clientes' | 'todos'>('todos');
+  const [destinatarios, setDestinatarios] = useState<'leads' | 'clientes' | 'todos' | 'etiquetas' | 'individuales'>('todos');
   const [urlImagen, setUrlImagen] = useState('');
   const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);
+  const [contactosSeleccionados, setContactosSeleccionados] = useState<string[]>([]);
+  const [busquedaContactos, setBusquedaContactos] = useState('');
+  const [mostrarSelectorContactos, setMostrarSelectorContactos] = useState(false);
 
   // Cargar estadísticas
   useEffect(() => {
@@ -74,6 +85,16 @@ export default function EmailMarketingPage() {
       return;
     }
 
+    if (destinatarios === 'etiquetas' && etiquetasSeleccionadas.length === 0) {
+      alert('Por favor selecciona al menos una etiqueta');
+      return;
+    }
+
+    if (destinatarios === 'individuales' && contactosSeleccionados.length === 0) {
+      alert('Por favor selecciona al menos un contacto');
+      return;
+    }
+
     setEnviando(true);
     try {
       const res = await fetch('http://localhost:5000/api/email-marketing/enviar-campana', {
@@ -85,6 +106,7 @@ export default function EmailMarketingPage() {
           destinatarios,
           urlImagen: urlImagen.trim() || undefined,
           etiquetaIds: etiquetasSeleccionadas.length > 0 ? etiquetasSeleccionadas : undefined,
+          contactoIds: contactosSeleccionados.length > 0 ? contactosSeleccionados : undefined,
         }),
       });
 
@@ -95,6 +117,7 @@ export default function EmailMarketingPage() {
         setContenido('');
         setUrlImagen('');
         setEtiquetasSeleccionadas([]);
+        setContactosSeleccionados([]);
         alert('✅ Campaña enviada exitosamente');
       } else {
         alert('❌ Error: ' + data.error);
@@ -209,32 +232,37 @@ export default function EmailMarketingPage() {
               <form onSubmit={enviarCampana} className="space-y-6">
                 {/* Destinatarios */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Destinatarios</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['leads', 'clientes', 'todos'] as const).map(tipo => (
+                  <label className="block text-sm font-medium text-gray-700 mb-3">📧 Selecciona Destinatarios</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {(['leads', 'clientes', 'todos', 'etiquetas', 'individuales'] as const).map(tipo => (
                       <button
                         key={tipo}
                         type="button"
-                        onClick={() => setDestinatarios(tipo)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        onClick={() => {
+                          setDestinatarios(tipo);
+                          if (tipo === 'individuales') setMostrarSelectorContactos(true);
+                        }}
+                        className={`px-3 py-2 rounded-lg font-medium transition-all text-sm ${
                           destinatarios === tipo
-                            ? 'bg-amber-500 text-white'
+                            ? 'bg-amber-500 text-white ring-2 ring-amber-300'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
-                        {tipo === 'leads' && `Leads (${estadisticas?.leads.validos || 0})`}
-                        {tipo === 'clientes' && `Clientes (${estadisticas?.clientes.validos || 0})`}
-                        {tipo === 'todos' && `Todos (${estadisticas?.emailsValidos || 0})`}
+                        {tipo === 'leads' && `👥 Leads (${estadisticas?.leads.validos || 0})`}
+                        {tipo === 'clientes' && `🏢 Clientes (${estadisticas?.clientes.validos || 0})`}
+                        {tipo === 'todos' && `📋 Todos (${estadisticas?.emailsValidos || 0})`}
+                        {tipo === 'etiquetas' && `🏷️ Por Etiquetas`}
+                        {tipo === 'individuales' && `✋ Individuales (${contactosSeleccionados.length})`}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Filtrar por Etiquetas */}
-                {estadisticas?.etiquetas && estadisticas.etiquetas.length > 0 && (
+                {destinatarios === 'etiquetas' && estadisticas?.etiquetas && estadisticas.etiquetas.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">🏷️ Filtrar por Etiquetas (Opcional)</label>
-                    <p className="text-xs text-gray-500 mb-3">Selecciona una o más etiquetas para enviar solo a contactos con esas etiquetas</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">🏷️ Selecciona Etiquetas</label>
+                    <p className="text-xs text-gray-500 mb-3">Elige una o más etiquetas para enviar solo a contactos con esas etiquetas</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {estadisticas.etiquetas.map(etiqueta => (
                         <button
@@ -269,6 +297,57 @@ export default function EmailMarketingPage() {
                     {etiquetasSeleccionadas.length > 0 && (
                       <p className="text-xs text-amber-600 mt-2">
                         ✓ {etiquetasSeleccionadas.length} etiqueta(s) seleccionada(s)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Selector de Contactos Individuales */}
+                {destinatarios === 'individuales' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">✋ Selecciona Contactos Individuales</label>
+                    <div className="mb-3">
+                      <input
+                        type="text"
+                        placeholder="Busca por nombre o correo..."
+                        value={busquedaContactos}
+                        onChange={(e) => setBusquedaContactos(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {estadisticas?.contactos
+                        ?.filter(c => 
+                          c.nombre.toLowerCase().includes(busquedaContactos.toLowerCase()) ||
+                          c.correo.toLowerCase().includes(busquedaContactos.toLowerCase())
+                        )
+                        .map(contacto => (
+                          <label key={contacto.id} className="flex items-center gap-2 p-2 hover:bg-blue-100 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={contactosSeleccionados.includes(contacto.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setContactosSeleccionados([...contactosSeleccionados, contacto.id]);
+                                } else {
+                                  setContactosSeleccionados(contactosSeleccionados.filter(id => id !== contacto.id));
+                                }
+                              }}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{contacto.nombre}</p>
+                              <p className="text-xs text-gray-600 truncate">{contacto.correo}</p>
+                            </div>
+                            <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-700">
+                              {contacto.tipo === 'LEAD' ? '👥' : '🏢'}
+                            </span>
+                          </label>
+                        ))}
+                    </div>
+                    {contactosSeleccionados.length > 0 && (
+                      <p className="text-xs text-blue-600 mt-2 font-medium">
+                        ✓ {contactosSeleccionados.length} contacto(s) seleccionado(s)
                       </p>
                     )}
                   </div>
