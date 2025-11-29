@@ -170,18 +170,16 @@ export default function PaginaPipeline() {
       }
     }
 
-    // Filtro por búsqueda (nombre, DNI, teléfono, empresa)
+    // Filtro por búsqueda (nombre, teléfono, empresa)
     if (busqueda.trim()) {
       const searchLower = busqueda.toLowerCase()
       const nombreCompleto = `${op.cliente?.nombre || ''} ${op.cliente?.apellido || ''}`.toLowerCase()
-      const dni = op.cliente?.dni?.toLowerCase() || ''
       const telefono = op.cliente?.telefono?.replace(/\D/g, '') || ''
       const correo = op.cliente?.correo?.toLowerCase() || ''
       const empresa = op.cliente?.empresa?.toLowerCase() || ''
       const titulo = op.titulo?.toLowerCase() || ''
       
       if (!nombreCompleto.includes(searchLower) && 
-          !dni.includes(searchLower) &&
           !telefono.includes(searchLower.replace(/\D/g, '')) &&
           !correo.includes(searchLower) && 
           !empresa.includes(searchLower) &&
@@ -193,7 +191,7 @@ export default function PaginaPipeline() {
     // Filtro por etiqueta
     if (etiquetaFiltro !== "todas") {
       // Verificar si el cliente tiene la etiqueta seleccionada
-      const tieneEtiqueta = op.cliente?.etiquetas?.some((et: any) => et.etiqueta.id === etiquetaFiltro)
+      const tieneEtiqueta = op.cliente?.etiquetasRel?.some((et: any) => et.etiqueta.id === etiquetaFiltro)
       if (!tieneEtiqueta) {
         return false
       }
@@ -613,9 +611,9 @@ export default function PaginaPipeline() {
                   Probabilidad: {selectedDeal.probabilidad || 0}%
                 </Badge>
                 {/* Etiquetas del cliente */}
-                {selectedDeal.cliente?.etiquetas && selectedDeal.cliente.etiquetas.length > 0 && (
+                {selectedDeal.cliente?.etiquetasRel && selectedDeal.cliente.etiquetasRel.length > 0 && (
                   <div className="flex gap-1 flex-wrap">
-                    {selectedDeal.cliente.etiquetas.slice(0, 3).map((et: any) => (
+                    {selectedDeal.cliente.etiquetasRel.slice(0, 3).map((et: any) => (
                       <Badge
                         key={et.etiqueta.id}
                         className="text-xs font-semibold"
@@ -627,9 +625,9 @@ export default function PaginaPipeline() {
                         {et.etiqueta.nombre}
                       </Badge>
                     ))}
-                    {selectedDeal.cliente.etiquetas.length > 3 && (
+                    {selectedDeal.cliente.etiquetasRel.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{selectedDeal.cliente.etiquetas.length - 3}
+                        +{selectedDeal.cliente.etiquetasRel.length - 3}
                       </Badge>
                     )}
                   </div>
