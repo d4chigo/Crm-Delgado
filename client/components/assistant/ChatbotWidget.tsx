@@ -44,42 +44,62 @@ export default function ChatbotWidget() {
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = 'es-ES';
+        recognitionRef.current.maxAlternatives = 1;
 
         recognitionRef.current.onstart = () => {
           setIsListening(true);
+          console.log('[Voz] Grabación iniciada');
         };
 
         recognitionRef.current.onresult = (event: any) => {
           let transcript = '';
+          let isFinal = false;
+          
           for (let i = event.resultIndex; i < event.results.length; i++) {
             transcript += event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              isFinal = true;
+            }
           }
+          
           setInput(transcript);
+          
+          if (isFinal) {
+            console.log('[Voz] Texto final:', transcript);
+          }
         };
 
         recognitionRef.current.onend = () => {
           setIsListening(false);
+          console.log('[Voz] Grabación finalizada');
         };
 
         recognitionRef.current.onerror = (event: any) => {
-          console.error('Error en reconocimiento de voz:', event.error);
+          console.error('[Voz] Error:', event.error);
           setIsListening(false);
           
           // Mostrar mensaje de error amigable
           let errorMsg = 'Error en el micrófono';
+          let showError = true;
+          
           if (event.error === 'network') {
-            errorMsg = 'Sin conexión de red. Verifica tu internet.';
+            errorMsg = '⚠️ Sin conexión de red. Puedes escribir normalmente.';
           } else if (event.error === 'no-speech') {
-            errorMsg = 'No se detectó voz. Intenta de nuevo.';
+            errorMsg = '⚠️ No se detectó voz. Intenta de nuevo.';
+            showError = false; // No mostrar este error, es muy común
           } else if (event.error === 'not-allowed') {
-            errorMsg = 'Permiso de micrófono denegado.';
+            errorMsg = '⚠️ Permiso de micrófono denegado. Habilítalo en configuración.';
+          } else if (event.error === 'service-not-allowed') {
+            errorMsg = '⚠️ El servicio de voz no está disponible en tu región.';
           }
           
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            text: `⚠️ ${errorMsg}`,
-            timestamp: new Date()
-          }]);
+          if (showError) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              text: errorMsg,
+              timestamp: new Date()
+            }]);
+          }
         };
       }
     }
@@ -88,13 +108,21 @@ export default function ChatbotWidget() {
   function startListening() {
     if (recognitionRef.current && !isListening) {
       setInput('');
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Error al iniciar grabación:', error);
+      }
     }
   }
 
   function stopListening() {
     if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error al detener grabación:', error);
+      }
     }
   }
 
@@ -112,14 +140,30 @@ export default function ChatbotWidget() {
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'es-ES';
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = 0.9; // Más lento para claridad
+    utterance.pitch = 1.2; // Más agudo para voz femenina
+    utterance.volume = 1;
+
+    // Seleccionar voz femenina si está disponible
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(voice => 
+      voice.lang === 'es-ES' && (voice.name.includes('female') || voice.name.includes('mujer'))
+    ) || voices.find(voice => voice.lang === 'es-ES');
+    
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
+    }
 
     utterance.onstart = () => {
       setIsSpeaking(true);
     };
 
     utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Error en síntesis de voz:', event.error);
       setIsSpeaking(false);
     };
 
@@ -145,23 +189,25 @@ export default function ChatbotWidget() {
       if (!response.ok) throw new Error('Error en la respuesta');
       const data = await response.json();
       const answer = data.datos?.answer || data.answer || 'No pude procesar tu pregunta.';
+      
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         text: answer,
         timestamp: new Date(),
         isMarkdown: true
       }]);
-      // Hablar la respuesta automáticamente
-      setTimeout(() => speakText(answer), 500);
+      
+      // Hablar la respuesta automáticamente con pequeño delay
+      setTimeout(() => speakText(answer), 800);
     } catch (error: any) {
-      console.error('Error:', error);
-      const errorMsg = '❌ Lo siento, ocurrió un error. Por favor intenta de nuevo.';
+      console.error('[Chat] Error:', error);
+      const errorMsg = 'Disculpa, tuve un problema procesando tu pregunta. Intenta de nuevo.';
       setMessages(prev => [...prev, {
         role: 'assistant',
         text: errorMsg,
         timestamp: new Date()
       }]);
-      setTimeout(() => speakText(errorMsg), 500);
+      setTimeout(() => speakText(errorMsg), 800);
     } finally {
       setLoading(false);
     }
