@@ -268,7 +268,8 @@ export class ContactoService {
    * Crear un nuevo contacto (como LEAD por defecto)
    */
   async crearContacto(datos: CrearContactoDTO, usuarioId: string) {
-    const { fechaNacimiento, ...restoDatos } = datos;
+    const { fechaNacimiento, tipo, ...restoDatos } = datos;
+    const tipoContacto = tipo || 'LEAD'; // Por defecto es LEAD
 
     // Verificar si el correo ya existe (en leads o clientes)
     if (datos.correo) {
@@ -300,16 +301,28 @@ export class ContactoService {
       }
     }
 
-    // Crear como LEAD por defecto
-    const lead = await prisma.lead.create({
-      data: {
-        ...restoDatos,
-        fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined,
-        idUsuario: usuarioId
-      }
-    });
+    // Crear como LEAD o CLIENTE según el tipo especificado
+    if (tipoContacto === 'CLIENTE') {
+      const cliente = await prisma.cliente.create({
+        data: {
+          ...restoDatos,
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined,
+          idUsuario: usuarioId
+        }
+      });
 
-    return { ...this.agregarEdad(lead), tipo: 'LEAD' };
+      return { ...this.agregarEdad(cliente), tipo: 'CLIENTE' };
+    } else {
+      const lead = await prisma.lead.create({
+        data: {
+          ...restoDatos,
+          fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : undefined,
+          idUsuario: usuarioId
+        }
+      });
+
+      return { ...this.agregarEdad(lead), tipo: 'LEAD' };
+    }
   }
 
   /**
