@@ -252,8 +252,8 @@ class ClientPortalController {
       const cotizaciones = await prisma.cotizacion.findMany({
         where: {
           OR: [
-            { leadId: usuarioId },
-            { clienteId: usuarioId }
+            { idLead: usuarioId },
+            { idCliente: usuarioId }
           ]
         },
         orderBy: { creadoEn: 'desc' }
@@ -283,8 +283,8 @@ class ClientPortalController {
       }
 
       const documentosSubidos = await prisma.clienteDocumento.findMany({
-        where: { contactoId: usuarioId },
-        orderBy: { subidoEn: 'desc' }
+        where: { id_contacto: usuarioId },
+        orderBy: { subido_en: 'desc' }
       });
 
       const documentosRequeridos = [
