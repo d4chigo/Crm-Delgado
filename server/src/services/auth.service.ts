@@ -78,13 +78,13 @@ export class AuthService {
 
     // Verificar que tiene acceso web activo
     const clienteAcceso = await prisma.clientePassword.findUnique({
-      where: { contactoId: cliente.id },
+      where: { id_contacto: cliente.id },
       select: {
-        contactoId: true,
-        passwordWeb: true,
+        id_contacto: true,
+        contrasena_web: true,
         activo: true,
-        creadoEn: true,
-        actualizadoEn: true
+        creado_en: true,
+        actualizado_en: true
       }
     });
 
@@ -98,7 +98,7 @@ export class AuthService {
     }
 
     // Verificar contraseña
-    const passwordValida = await compararPassword(password, clienteAcceso.passwordWeb);
+    const passwordValida = await compararPassword(password, clienteAcceso.contrasena_web);
 
     if (!passwordValida) {
       throw new Error('Credenciales inválidas');

@@ -27,14 +27,18 @@ export default function PaginaLogin() {
     setEstaCargando(true)
 
     try {
+      console.log('[Login] Iniciando login con:', { email: correo })
+      
       // Login real contra el backend
       const respuesta = await authService.login({
         email: correo,
         password: contrasena,
       })
 
-      console.log('Login exitoso, token:', respuesta.token.token.substring(0, 20) + '...')
-      console.log('Token guardado en localStorage:', localStorage.getItem('crm_token')?.substring(0, 20) + '...')
+      console.log('[Login] ✅ Login exitoso')
+      console.log('[Login] Token recibido:', respuesta.token.token.substring(0, 20) + '...')
+      console.log('[Login] Token en localStorage:', localStorage.getItem('crm_token')?.substring(0, 20) + '...')
+      console.log('[Login] Usuario guardado:', localStorage.getItem('crm_user'))
 
       // Mostrar mensaje de éxito
       setExito(true)
@@ -45,11 +49,15 @@ export default function PaginaLogin() {
       document.cookie = `crm_token=${respuesta.token.token}; path=/; expires=${fechaExpiracion.toUTCString()}; SameSite=Lax`
 
       // Esperar a que se guarde el token en localStorage
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      console.log('[Login] Verificando token antes de redirigir:', localStorage.getItem('crm_token')?.substring(0, 20) + '...')
 
       // Redirigir al dashboard
+      console.log('[Login] Redirigiendo a /dashboard')
       enrutador.push("/dashboard")
     } catch (error: any) {
+      console.error('[Login] ❌ Error en login:', error)
       setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.")
       setEstaCargando(false)
     }

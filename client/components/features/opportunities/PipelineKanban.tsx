@@ -87,14 +87,20 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
 
               {/* Estadísticas */}
               <div className={`${colorMap[columna.color] || 'bg-gray-50'} p-3 border-b`}>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <DollarSign size={14} className="text-green-600" />
-                    <span className="font-semibold text-green-600">${(totalValor / 1000).toFixed(1)}K</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">Valor Total:</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">
+                      {new Intl.NumberFormat('es-ES', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 0
+                      }).format(totalValor)}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <TrendingUp size={14} className="text-blue-600" />
-                    <span className="font-semibold text-blue-600">{totalProbabilidad}%</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">Probabilidad Prom:</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{totalProbabilidad}%</span>
                   </div>
                 </div>
               </div>
@@ -137,16 +143,26 @@ export const PipelineKanban: React.FC<PipelineKanbanProps> = ({
                       </div>
 
                       {/* Información adicional */}
-                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-500 flex items-center justify-between text-xs">
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-500 space-y-1">
                         {tarjeta.valor && (
-                          <span className="text-green-600 dark:text-green-400 font-semibold">
-                            ${(tarjeta.valor / 1000).toFixed(1)}K
-                          </span>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Valor:</span>
+                            <span className="text-green-600 dark:text-green-400 font-semibold">
+                              {new Intl.NumberFormat('es-ES', {
+                                style: 'currency',
+                                currency: 'USD',
+                                minimumFractionDigits: 0
+                              }).format(tarjeta.valor)}
+                            </span>
+                          </div>
                         )}
                         {tarjeta.probabilidad && (
-                          <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                            {tarjeta.probabilidad}%
-                          </span>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Probabilidad:</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                              {tarjeta.probabilidad}%
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>

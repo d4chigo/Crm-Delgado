@@ -13,6 +13,8 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
     const { id: contactoId } = req.params;
     const { passwordTemporal, enviarEmail = true } = req.body;
 
+    console.log('🔧 [crearAccesoWeb] Iniciando con contactoId:', contactoId);
+
     // Verificar que el contacto existe (puede ser LEAD o CLIENTE)
     let contacto = await prisma.lead.findUnique({
       where: { id: contactoId },
@@ -38,6 +40,7 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
     }
 
     if (!contacto) {
+      console.error('❌ Contacto no encontrado:', contactoId);
       return res.status(404).json({
         success: false,
         message: 'Contacto no encontrado',
@@ -45,6 +48,7 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
     }
 
     if (!contacto.correo) {
+      console.error('❌ Contacto sin correo:', contactoId);
       return res.status(400).json({
         success: false,
         message: 'El contacto debe tener un correo electrónico',
@@ -53,10 +57,11 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
 
     // Verificar si ya tiene acceso web
     const accesoExistente = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
     });
 
     if (accesoExistente) {
+      console.warn('⚠️ Acceso web ya existe:', contactoId);
       return res.status(400).json({
         success: false,
         message: 'Este cliente ya tiene acceso web creado',
@@ -67,11 +72,13 @@ export const crearAccesoWeb = async (req: Request, res: Response) => {
     const password = passwordTemporal || generarPasswordTemporal();
     const passwordHash = await bcrypt.hash(password, 10);
 
+    console.log('🔧 [crearAccesoWeb] Creando acceso web para:', contactoId);
+
     // Crear registro de acceso web
     const clientePassword = await prisma.clientePassword.create({
       data: {
-        contactoId,
-        passwordWeb: passwordHash,
+        id_contacto: contactoId,
+        contrasena_web: passwordHash,
       },
     });
 
@@ -150,8 +157,8 @@ export const resetearPasswordCliente = async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     await prisma.clientePassword.update({
-      where: { contactoId },
-      data: { passwordWeb: passwordHash },
+      where: { id_contacto: contactoId },
+      data: { contrasena_web: passwordHash },
     });
 
     if (enviarEmail) {
@@ -193,12 +200,12 @@ export const verificarAccesoWeb = async (req: Request, res: Response) => {
     console.log(`🔍 Verificando acceso web para contacto: ${contactoId}`);
 
     const acceso = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
       select: {
-        contactoId: true,
+        id_contacto: true,
         activo: true,
-        creadoEn: true,
-        actualizadoEn: true,
+        creado_en: true,
+        actualizado_en: true,
       },
     });
 
@@ -208,10 +215,10 @@ export const verificarAccesoWeb = async (req: Request, res: Response) => {
       exito: true,
       tieneAcceso: !!acceso,
       datos: acceso ? {
-        contactoId: acceso.contactoId,
+        contactoId: acceso.id_contacto,
         activo: acceso.activo ?? true,
-        creadoEn: acceso.creadoEn,
-        actualizadoEn: acceso.actualizadoEn,
+        creadoEn: acceso.creado_en,
+        actualizadoEn: acceso.actualizado_en,
       } : null,
     });
   } catch (error) {
@@ -234,7 +241,7 @@ export const eliminarAccesoWeb = async (req: Request, res: Response) => {
 
     // Verificar que existe el acceso
     const accesoExistente = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
     });
 
     if (!accesoExistente) {
@@ -246,7 +253,7 @@ export const eliminarAccesoWeb = async (req: Request, res: Response) => {
 
     // Eliminar el acceso
     await prisma.clientePassword.delete({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
     });
 
     res.json({
@@ -273,7 +280,7 @@ export const toggleAccesoWeb = async (req: Request, res: Response) => {
 
     // Verificar que existe el acceso
     const accesoExistente = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
     });
 
     if (!accesoExistente) {
@@ -283,16 +290,15 @@ export const toggleAccesoWeb = async (req: Request, res: Response) => {
       });
     }
 
-    // Actualizar el estado del acceso usando raw SQL para mayor control
-    await prisma.$executeRaw`
-      UPDATE \`cliente_passwords\` 
-      SET \`activo\` = ${activo ? 1 : 0}, \`updated_at\` = NOW()
-      WHERE \`contacto_id\` = ${contactoId}
-    `;
+    // Actualizar el estado del acceso
+    await prisma.clientePassword.update({
+      where: { id_contacto: contactoId },
+      data: { activo },
+    });
 
     // Obtener el registro actualizado para confirmación
     const accesoActualizado = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
     });
 
     res.json({
@@ -320,12 +326,12 @@ export const obtenerInfoAccesoWeb = async (req: Request, res: Response) => {
     const { id: contactoId } = req.params;
 
     const acceso = await prisma.clientePassword.findUnique({
-      where: { contactoId },
+      where: { id_contacto: contactoId },
       select: {
-        passwordWeb: true,
+        contrasena_web: true,
         activo: true,
-        creadoEn: true,
-        actualizadoEn: true,
+        creado_en: true,
+        actualizado_en: true,
       },
     });
 

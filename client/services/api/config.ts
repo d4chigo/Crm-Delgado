@@ -42,8 +42,12 @@ async function fetchAPI<T>(
   const token = typeof window !== 'undefined' ? localStorage.getItem('crm_token') : null;
   
   // Debug: mostrar si hay token
-  if (!token) {
-    console.warn(`[API] Sin token para ${endpoint}`);
+  console.log(`[fetchAPI] Endpoint: ${endpoint}`);
+  console.log(`[fetchAPI] Token presente: ${token ? 'Sí' : 'No'}`);
+  if (token) {
+    console.log(`[fetchAPI] Token: ${token.substring(0, 30)}...`);
+  } else {
+    console.warn(`[fetchAPI] ⚠️ Sin token para ${endpoint}`);
   }
   
   try {
@@ -63,8 +67,15 @@ async function fetchAPI<T>(
     // Si el token es inválido o expiró (401 Unauthorized)
     if (response.status === 401) {
       console.error(`[API] 401 Unauthorized en ${endpoint}`);
-      cerrarSesionYRedirigir(`401 Unauthorized en ${endpoint}`);
-      throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+      // Solo redirigir si el token existe pero es inválido
+      // Si no hay token, dejar que el componente lo maneje
+      if (token) {
+        cerrarSesionYRedirigir(`401 Unauthorized en ${endpoint}`);
+        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+      } else {
+        console.warn(`[API] Sin token para ${endpoint}, esperando token...`);
+        throw new Error('Sin token de autenticación');
+      }
     }
 
     // Si no hay respuesta o el servidor no responde

@@ -369,9 +369,9 @@ export async function getMetrics(req: Request, res: Response) {
     }));
 
     // Mejores agentes (proxy: usuarios ordenados por cantidad de oportunidades GANADO y valor)
-    type GroupByUsuario = { usuarioId: string; _count: { _all: number }; _sum: { valor: number | null } };
+    type GroupByUsuario = { idUsuario: string; _count: { _all: number }; _sum: { valor: number | null } };
     const mejoresAgentesRaw = await prisma.oportunidadCliente.groupBy({
-      by: ['usuarioId'],
+      by: ['idUsuario'],
       _count: { _all: true },
       _sum: { valor: true },
       where: { etapa: 'CIERRE_GANADO', creadoEn: { gte: startOfYear, lt: endOfYear } },
@@ -382,7 +382,7 @@ export async function getMetrics(req: Request, res: Response) {
     );
     const mejoresAgentes: { name: string; sales: number; value: number; conversion: number }[] = mejoresAgentesRaw
       .map(a => ({
-        name: userMap.get(a.usuarioId) || 'Agente',
+        name: userMap.get(a.idUsuario) || 'Agente',
         sales: a._count._all,
         value: Number(a._sum.valor || 0),
         conversion: 0, // si se requiere, se calcula con leads -> GANADO

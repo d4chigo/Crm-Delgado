@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   ChevronDown,
   X,
@@ -13,6 +13,8 @@ import {
   Layers
 } from 'lucide-react';
 import { STAGE_LABELS, STAGE_COLORS, STAGES_ORDER } from '@/lib/pipeline-stages';
+import { etiquetaService } from '@/services/api/etiqueta.service';
+import type { Etiqueta } from '@/types/etiqueta.types';
 
 interface FiltrosPipelineProps {
   onFiltrosChange?: (filtros: FiltrosAvanzados) => void;
@@ -39,7 +41,6 @@ export interface FiltrosAvanzados {
 }
 
 const ESTADOS_LEAD = ['NUEVO', 'CONTACTADO', 'CONVERTIDO', 'DESCALIFICADO'];
-const ETIQUETAS_COMUNES = ['VIP', 'URGENTE', 'SEGUIMIENTO', 'CLIENTE_POTENCIAL'];
 
 /**
  * Componente de Filtros Avanzados estilo Excel para el Pipeline
@@ -59,6 +60,28 @@ export const FiltrosPipeline: React.FC<FiltrosPipelineProps> = ({
   const [etapasSeleccionadas, setEtapasSeleccionadas] = useState<string[]>([]);
   const [estadosSeleccionados, setEstadosSeleccionados] = useState<string[]>([]);
   const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
+  const [cargandoEtiquetas, setCargandoEtiquetas] = useState(true);
+
+  // Cargar etiquetas de la BD
+  useEffect(() => {
+    const cargarEtiquetas = async () => {
+      try {
+        setCargandoEtiquetas(true);
+        const etiquetasObtenidas = await etiquetaService.obtenerTodas();
+        if (Array.isArray(etiquetasObtenidas)) {
+          setEtiquetas(etiquetasObtenidas);
+        }
+      } catch (error) {
+        console.error('Error al cargar etiquetas:', error);
+        setEtiquetas([]);
+      } finally {
+        setCargandoEtiquetas(false);
+      }
+    };
+
+    cargarEtiquetas();
+  }, []);
 
   // Actualizar filtros cuando cambian
   const actualizarFiltros = useCallback((nuevosFiltros: FiltrosAvanzados) => {
@@ -249,18 +272,25 @@ export const FiltrosPipeline: React.FC<FiltrosPipelineProps> = ({
                 <Tag size={16} />
                 Etiquetas
               </label>
-              <div className="space-y-2">
-                {ETIQUETAS_COMUNES.map((etiqueta) => (
-                  <label key={etiqueta} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={etiquetasSeleccionadas.includes(etiqueta)}
-                      onChange={() => toggleEtiqueta(etiqueta)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{etiqueta}</span>
-                  </label>
-                ))}
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {cargandoEtiquetas ? (
+                  <p className="text-sm text-gray-500">Cargando etiquetas...</p>
+                ) : etiquetas.length > 0 ? (
+                  etiquetas.map((etiqueta: Etiqueta) => (
+                    <label key={etiqueta.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={etiquetasSeleccionadas.includes(etiqueta.id)}
+                        onChange={() => toggleEtiqueta(etiqueta.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: etiqueta.color }} />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{etiqueta.nombre}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No hay etiquetas disponibles</p>
+                )}
               </div>
             </div>
 
@@ -294,8 +324,8 @@ export const FiltrosPipeline: React.FC<FiltrosPipelineProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Todos</option>
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const year = new Date().getFullYear() - i;
+                    {Array.from({ length: 11 }, (_, i) => {
+                      const year = new Date().getFullYear() - 5 + i;
                       return (
                         <option key={year} value={year}>
                           {year}

@@ -47,7 +47,7 @@ interface FiltrosLeadsAvanzadosProps {
 }
 
 const ESTADOS_LEAD = ['NUEVO', 'CONTACTADO', 'CALIFICADO', 'DESCALIFICADO', 'CONVERTIDO'];
-const FUENTES_LEAD = ['WEBSITE', 'TIKTOK', 'YOUTUBE', 'INSTAGRAM', 'FACEBOOK', 'LINKEDIN', 'REFERENCIA', 'EVENTO', 'PUBLICIDAD', 'OTRO'];
+const FUENTES_LEAD = ['TIKTOK', 'YOUTUBE', 'INSTAGRAM', 'FACEBOOK', 'REFERENCIA'];
 
 /**
  * Componente de Filtros Avanzados Profesional para Leads
@@ -63,7 +63,7 @@ export const FiltrosLeadsAvanzados: React.FC<FiltrosLeadsAvanzadosProps> = ({
     ordenarPor: 'reciente'
   });
 
-  const [mostrarFiltros, setMostrarFiltros] = useState(true);
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [estadosSeleccionados, setEstadosSeleccionados] = useState<string[]>([]);
   const [fuentesSeleccionadas, setFuentesSeleccionadas] = useState<string[]>([]);
   const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);

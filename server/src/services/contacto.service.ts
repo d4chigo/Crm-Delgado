@@ -1101,13 +1101,13 @@ export class ContactoService {
       throw new Error('El lead no fue encontrado');
     }
 
-    if (lead.usuarioId !== usuarioId) {
+    if (lead.idUsuario !== usuarioId) {
       throw new Error('No tienes permiso para modificar este lead');
     }
 
     // Verificar si ya existe una oportunidad para este lead
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { leadId: leadId }
+      where: { idLead: leadId }
     });
 
     if (oportunidadExistente) {
@@ -1127,13 +1127,13 @@ export class ContactoService {
 
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
-        leadId: leadId,
+        idLead: leadId,
         titulo,
         etapa,
         valor: datosOportunidad?.valor,
         probabilidad: datosOportunidad?.probabilidad || 25,
         proximaAccion: datosOportunidad?.proximaAccion,
-        usuarioId: usuarioId,
+        idUsuario: usuarioId,
         ultimaActividad: new Date(),
         notas: datosOportunidad?.notas
           ? `${datosOportunidad.notas}\n\nAgregado al pipeline desde lead el ${new Date().toLocaleDateString('es-PE')}`

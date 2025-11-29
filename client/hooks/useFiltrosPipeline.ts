@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { FiltrosAvanzados } from '@/components/features/opportunities/FiltrosPipeline';
+import { fetchAPI } from '@/services/api/config';
 
 interface Oportunidad {
   id: string;
@@ -61,7 +62,9 @@ export const useFiltrosPipeline = () => {
    */
   const obtenerTokenActual = useCallback(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_token');
+      const token = localStorage.getItem('crm_token');
+      console.log('[obtenerTokenActual] Token en localStorage:', token ? `${token.substring(0, 20)}...` : 'No encontrado');
+      return token;
     }
     return null;
   }, []);
@@ -129,28 +132,14 @@ export const useFiltrosPipeline = () => {
       setCargando(true);
       setError(null);
 
-      const tokenActual = obtenerTokenActual();
-      if (!tokenActual) {
-        throw new Error('No hay token de autenticación disponible');
-      }
-
       const queryString = construirQueryString(filtrosActuales);
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const url = `${apiBaseUrl}/leads/filtros/avanzados${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/leads/filtros/avanzados${queryString ? `?${queryString}` : ''}`;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenActual}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      console.log('[useFiltrosPipeline] Obteniendo oportunidades desde:', endpoint);
 
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data: ResultadoFiltros = await response.json();
+      const data: ResultadoFiltros = await fetchAPI<ResultadoFiltros>(endpoint);
+      
+      console.log('[useFiltrosPipeline] ✅ Oportunidades obtenidas:', data.oportunidades.length);
       
       setOportunidades(data.oportunidades);
       setTotal(data.total);
@@ -160,8 +149,8 @@ export const useFiltrosPipeline = () => {
       return data;
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : 'Error al obtener oportunidades';
+      console.error('[useFiltrosPipeline] ❌ Error:', mensaje);
       setError(mensaje);
-      console.error('Error en obtenerOportunidades:', err);
       return null;
     } finally {
       setCargando(false);
@@ -173,11 +162,6 @@ export const useFiltrosPipeline = () => {
    */
   const obtenerEstadisticas = useCallback(async (filtrosActuales: FiltrosAvanzados) => {
     try {
-      const tokenActual = obtenerTokenActual();
-      if (!tokenActual) {
-        throw new Error('No hay token de autenticación disponible');
-      }
-
       const params = new URLSearchParams();
 
       if (filtrosActuales.etapas?.length) {
@@ -197,26 +181,20 @@ export const useFiltrosPipeline = () => {
       }
 
       const queryString = params.toString();
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-      const url = `${apiBaseUrl}/leads/estadisticas/filtros${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/leads/estadisticas/filtros${queryString ? `?${queryString}` : ''}`;
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenActual}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchAPI<{ estadisticas: Estadisticas }>(endpoint);
       setEstadisticas(data.estadisticas);
       return data.estadisticas;
     } catch (err) {
-      console.error('Error en obtenerEstadisticas:', err);
+      const mensaje = err instanceof Error ? err.message : 'Error al obtener estadísticas';
+      console.error('[useFiltrosPipeline] Error en obtenerEstadisticas:', mensaje);
+      
+      // Si es error de token, no mostrar error (el hook useEsperarToken se encarga)
+      if (mensaje.includes('token') || mensaje.includes('autenticación')) {
+        console.log('[useFiltrosPipeline] Esperando token para estadísticas...');
+      }
+      
       return null;
     }
   }, []);
@@ -233,6 +211,22 @@ export const useFiltrosPipeline = () => {
 
     await obtenerOportunidades(filtrosConPaginacion);
   }, [obtenerOportunidades]);
+
+  /**
+   * Recargar oportunidades con los filtros actuales
+   */
+  const recargarOportunidades = useCallback(async () => {
+    if (Object.keys(filtros).length === 0) {
+      // Si no hay filtros aplicados, cargar con valores por defecto
+      await obtenerOportunidades({
+        pagina: 1,
+        limite: 20
+      });
+    } else {
+      // Si hay filtros, recargar con los mismos filtros
+      await obtenerOportunidades(filtros);
+    }
+  }, [filtros, obtenerOportunidades]);
 
   /**
    * Cambiar página
@@ -310,7 +304,8 @@ export const useFiltrosPipeline = () => {
     cambiarPagina,
     exportarACSV,
     obtenerOportunidades,
-    obtenerEstadisticas
+    obtenerEstadisticas,
+    recargarOportunidades
   };
 };
 

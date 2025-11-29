@@ -223,6 +223,7 @@ export async function getCRMContext() {
         orderBy: { creadoEn: 'desc' },
         include: { 
           cliente: { select: { nombre: true, apellido: true } },
+          lead: { select: { nombre: true, apellido: true } },
           usuario: { select: { nombre: true } }
         }
       }),
@@ -231,6 +232,7 @@ export async function getCRMContext() {
         orderBy: { creadoEn: 'desc' },
         include: { 
           cliente: { select: { nombre: true, apellido: true } },
+          lead: { select: { nombre: true, apellido: true } },
         }
       }),
       
@@ -250,6 +252,7 @@ export async function getCRMContext() {
       prisma.oportunidadCliente.findMany({
         include: { 
           cliente: { select: { nombre: true, apellido: true, correo: true, telefono: true } },
+          lead: { select: { nombre: true, apellido: true, correo: true, telefono: true } },
           usuario: { select: { nombre: true } }
         }
       }),
@@ -262,6 +265,7 @@ export async function getCRMContext() {
       prisma.cotizacion.findMany({
         include: { 
           cliente: { select: { nombre: true, apellido: true } },
+          lead: { select: { nombre: true, apellido: true } },
         }
       }),
       prisma.etiqueta.findMany(),
@@ -458,23 +462,29 @@ export async function getCRMContext() {
           creadoEn: c.creadoEn,
           usuario: c.usuario.nombre,
         })),
-        oportunidades: oportunidadesRecientes.map((o: any) => ({
-          id: o.id,
-          titulo: o.titulo,
-          cliente: `${o.cliente.nombre} ${o.cliente.apellido || ''}`,
-          etapa: o.etapa,
-          valor: Number(o.valor || 0),
-          creadoEn: o.creadoEn,
-          usuario: o.usuario.nombre,
-        })),
-        cotizaciones: cotizacionesRecientes.map((c: any) => ({
-          id: c.id,
-          cliente: `${c.cliente.nombre} ${c.cliente.apellido || ''}`,
-          proyecto: c.nombreProyecto,
-          valorTotal: Number((c as any).totalPagar || 0),
-          estado: c.estado,
-          creadoEn: c.creadoEn,
-        })),
+        oportunidades: oportunidadesRecientes.map((o: any) => {
+          const contacto = o.cliente || o.lead;
+          return {
+            id: o.id,
+            titulo: o.titulo,
+            cliente: contacto ? `${contacto.nombre} ${contacto.apellido || ''}` : 'Sin contacto',
+            etapa: o.etapa,
+            valor: Number(o.valor || 0),
+            creadoEn: o.creadoEn,
+            usuario: o.usuario.nombre,
+          };
+        }),
+        cotizaciones: cotizacionesRecientes.map((c: any) => {
+          const contacto = c.cliente || c.lead;
+          return {
+            id: c.id,
+            cliente: contacto ? `${contacto.nombre} ${contacto.apellido || ''}` : 'Sin contacto',
+            proyecto: c.nombreProyecto,
+            valorTotal: Number((c as any).totalPagar || 0),
+            estado: c.estado,
+            creadoEn: c.creadoEn,
+          };
+        }),
       },
       datosCompletos: {
         leads: todosLosLeads,

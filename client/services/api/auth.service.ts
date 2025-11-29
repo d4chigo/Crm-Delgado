@@ -38,6 +38,9 @@ class AuthService {
     const API_URL = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:5000/api';
     const url = `${API_URL}/auth/login`;
     
+    console.log('[AuthService.login] Iniciando petición a:', url);
+    console.log('[AuthService.login] Datos enviados:', { email: datos.email });
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -46,21 +49,39 @@ class AuthService {
       body: JSON.stringify(datos),
     });
 
+    console.log('[AuthService.login] Response status:', response.status);
+    console.log('[AuthService.login] Response ok:', response.ok);
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('[AuthService.login] ❌ Error en respuesta:', errorData);
       throw new Error(errorData.error || 'Error al iniciar sesión');
     }
 
     const data = await response.json();
+    console.log('[AuthService.login] Respuesta recibida:', { exito: data.exito, tieneToken: !!data.datos?.token });
+    
     const respuesta = data.datos as RespuestaLogin;
+
+    console.log('[AuthService.login] Estructura respuesta:', {
+      tieneToken: !!respuesta.token,
+      tieneTokenToken: !!respuesta.token?.token,
+      tieneUsuario: !!respuesta.usuario
+    });
 
     // Guardar token y usuario en localStorage INMEDIATAMENTE
     if (typeof window !== 'undefined') {
-      console.log('[AuthService] Guardando token:', respuesta.token.token.substring(0, 20) + '...');
+      console.log('[AuthService.login] Guardando en localStorage...');
+      console.log('[AuthService.login] Token a guardar:', respuesta.token.token.substring(0, 20) + '...');
+      
       localStorage.setItem(TOKEN_KEY, respuesta.token.token);
       localStorage.setItem(USER_KEY, JSON.stringify(respuesta.usuario));
-      console.log('[AuthService] Token guardado:', localStorage.getItem(TOKEN_KEY)?.substring(0, 20) + '...');
-      console.log('[AuthService] Usuario guardado:', localStorage.getItem(USER_KEY));
+      
+      const tokenGuardado = localStorage.getItem(TOKEN_KEY);
+      const usuarioGuardado = localStorage.getItem(USER_KEY);
+      
+      console.log('[AuthService.login] ✅ Token guardado:', tokenGuardado?.substring(0, 20) + '...');
+      console.log('[AuthService.login] ✅ Usuario guardado:', usuarioGuardado);
     }
 
     return respuesta;

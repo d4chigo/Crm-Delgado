@@ -5,8 +5,15 @@ import { respuestaError } from '@/utils/respuesta.util';
 export const autenticar = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
+    
+    console.log('[AUTH] Headers recibidos:', {
+      authorization: authHeader ? `${authHeader.substring(0, 30)}...` : 'No presente',
+      url: req.url,
+      method: req.method
+    });
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('[AUTH] Token no proporcionado en header Authorization');
       respuestaError(res, 'Token no proporcionado', 401, null, 'TOKEN_NO_ENCONTRADO');
       return;
     }

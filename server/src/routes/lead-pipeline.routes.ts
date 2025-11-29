@@ -5,57 +5,6 @@ import leadPipelineService from '@/services/lead-pipeline.service';
 const router = Router();
 
 /**
- * GET /api/leads/filtros/avanzados
- * Obtener oportunidades con filtros avanzados
- */
-router.get('/filtros/avanzados', autenticar, async (req: Request, res: Response) => {
-  try {
-    // Por ahora devolver datos vacíos
-    res.json({
-      exito: true,
-      datos: {
-        total: 0,
-        pagina: 1,
-        limite: 20,
-        totalPaginas: 0,
-        oportunidades: []
-      }
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      exito: false,
-      error: error.message || 'Error al obtener oportunidades'
-    });
-  }
-});
-
-/**
- * GET /api/leads/estadisticas/filtros
- * Obtener estadísticas con filtros
- */
-router.get('/estadisticas/filtros', autenticar, async (req: Request, res: Response) => {
-  try {
-    // Por ahora devolver datos vacíos
-    res.json({
-      exito: true,
-      datos: {
-        estadisticas: {
-          total: 0,
-          valorTotal: 0,
-          probabilidadPromedio: 0,
-          porEtapa: []
-        }
-      }
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      exito: false,
-      error: error.message || 'Error al obtener estadísticas'
-    });
-  }
-});
-
-/**
  * POST /api/leads/:id/convertir-a-oportunidad
  * Convertir un lead a oportunidad manualmente
  */

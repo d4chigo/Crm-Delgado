@@ -382,6 +382,13 @@ export default function PaginaLeads() {
       toast({ title: "Éxito", description: "Oportunidad creada en el pipeline correctamente" })
       setDialogoOportunidadAbierto(false)
       cargarLeadsConInteligencia()
+      
+      // Redirigir al pipeline después de 1 segundo para que el usuario vea la oportunidad creada
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = "/dashboard/pipeline"
+        }
+      }, 1000)
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "No se pudo agregar al pipeline", variant: "destructive" })
     } finally {
