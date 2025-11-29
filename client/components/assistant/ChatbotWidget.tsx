@@ -64,6 +64,22 @@ export default function ChatbotWidget() {
         recognitionRef.current.onerror = (event: any) => {
           console.error('Error en reconocimiento de voz:', event.error);
           setIsListening(false);
+          
+          // Mostrar mensaje de error amigable
+          let errorMsg = 'Error en el micrófono';
+          if (event.error === 'network') {
+            errorMsg = 'Sin conexión de red. Verifica tu internet.';
+          } else if (event.error === 'no-speech') {
+            errorMsg = 'No se detectó voz. Intenta de nuevo.';
+          } else if (event.error === 'not-allowed') {
+            errorMsg = 'Permiso de micrófono denegado.';
+          }
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            text: `⚠️ ${errorMsg}`,
+            timestamp: new Date()
+          }]);
         };
       }
     }
@@ -194,7 +210,7 @@ export default function ChatbotWidget() {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-[85vh] bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl shadow-2xl overflow-hidden">
       {/* Header Premium */}
       <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-5 text-white shadow-xl flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -236,11 +252,11 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0 scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 scrollbar-thin scrollbar-thumb-amber-300 scrollbar-track-transparent">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
             <div
-              className={`max-w-md px-5 py-4 rounded-2xl text-sm leading-relaxed break-words transition-all ${
+              className={`max-w-sm px-4 py-3 rounded-2xl text-sm leading-relaxed break-words transition-all ${
                 msg.role === 'user'
                   ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-br-none shadow-lg hover:shadow-xl'
                   : 'bg-white text-gray-800 rounded-bl-none shadow-md border border-gray-200 hover:shadow-lg'
@@ -273,8 +289,8 @@ export default function ChatbotWidget() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-300 p-5 bg-white flex-shrink-0 shadow-lg">
-        <form onSubmit={handleSend} className="flex gap-3">
+      <div className="border-t border-gray-300 p-4 bg-white flex-shrink-0 shadow-lg">
+        <form onSubmit={handleSend} className="flex gap-2">
           <button
             type="button"
             onClick={isListening ? stopListening : startListening}
@@ -283,30 +299,30 @@ export default function ChatbotWidget() {
               isListening
                 ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                 : 'bg-blue-500 hover:bg-blue-600'
-            } disabled:opacity-50 text-white p-3 rounded-full transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex-shrink-0 font-bold`}
+            } disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-md hover:shadow-lg disabled:shadow-none flex-shrink-0`}
             title={isListening ? 'Detener grabación' : 'Iniciar grabación de voz'}
           >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isListening ? '🎤 Escuchando...' : 'Pregunta sobre leads, ventas, estadísticas, análisis...'}
+            placeholder={isListening ? '🎤 Escuchando...' : 'Pregunta algo...'}
             disabled={loading}
-            className="flex-1 px-5 py-3 border-2 border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 bg-gray-50 hover:bg-white transition-all shadow-sm"
+            className="flex-1 px-4 py-2.5 border-2 border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 bg-gray-50 hover:bg-white transition-all shadow-sm"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white p-3 rounded-full transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex-shrink-0 font-bold"
+            className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-md hover:shadow-lg disabled:shadow-none flex-shrink-0"
             title="Enviar mensaje"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4" />
           </button>
         </form>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          🎤 Micrófono • 🔊 Voz automática • 💡 Pregunta sobre análisis, leads, ventas o estadísticas
+        <p className="text-xs text-gray-500 mt-1.5 text-center">
+          🎤 Voz • 🔊 Audio • 💡 Análisis de CRM
         </p>
       </div>
     </div>
