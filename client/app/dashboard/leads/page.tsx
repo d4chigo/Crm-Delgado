@@ -45,6 +45,7 @@ export default function PaginaLeads() {
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
   const [etiquetaFiltro, setEtiquetaFiltro] = useState<string>("todas")
   const [estadoFiltro, setEstadoFiltro] = useState<string>("")
+  const [filtrosAvanzados, setFiltrosAvanzados] = useState<any>(null)
   const [leadSeleccionado, setLeadSeleccionado] = useState<Lead | null>(null)
   const [dialogoDetallesAbierto, setDialogoDetallesAbierto] = useState(false)
   const [dialogoEditarAbierto, setDialogoEditarAbierto] = useState(false)
@@ -147,6 +148,43 @@ export default function PaginaLeads() {
   const leadsFiltrados = useMemo(() => {
     let filtrados = leads
     
+    // Si hay filtros avanzados, aplicarlos
+    if (filtrosAvanzados) {
+      // Filtro por búsqueda
+      if (filtrosAvanzados.busqueda?.trim()) {
+        const searchLower = filtrosAvanzados.busqueda.toLowerCase()
+        filtrados = filtrados.filter((lead: Lead) => {
+          const nombreCompleto = `${lead.nombre || ''} ${lead.apellido || ''}`.toLowerCase()
+          const correo = lead.correo?.toLowerCase() || ''
+          const telefono = lead.telefono?.replace(/\D/g, '') || ''
+          const empresa = lead.empresa?.toLowerCase() || ''
+          
+          return nombreCompleto.includes(searchLower) || 
+                 correo.includes(searchLower) || 
+                 telefono.includes(searchLower.replace(/\D/g, '')) ||
+                 empresa.includes(searchLower)
+        })
+      }
+      
+      // Filtro por etiquetas
+      if (filtrosAvanzados.etiquetas && filtrosAvanzados.etiquetas.length > 0) {
+        filtrados = filtrados.filter((lead: Lead) => 
+          lead.etiquetas?.some((e: any) => filtrosAvanzados.etiquetas?.includes(e.etiqueta.id))
+        )
+      }
+      
+      // Filtro por estado
+      if (filtrosAvanzados.estado && filtrosAvanzados.estado.length > 0) {
+        filtrados = filtrados.filter((lead: Lead) => {
+          const estadoLogico = determinarEstadoLogico(lead)
+          return filtrosAvanzados.estado?.includes(estadoLogico)
+        })
+      }
+      
+      return filtrados
+    }
+    
+    // Si no hay filtros avanzados, usar los filtros simples
     // Filtrar por etiqueta
     if (etiquetaFiltro !== "todas") {
       filtrados = filtrados.filter((lead: Lead) => 
@@ -163,7 +201,7 @@ export default function PaginaLeads() {
     }
     
     return filtrados
-  }, [leads, etiquetaFiltro, estadoFiltro, determinarEstadoLogico])
+  }, [leads, etiquetaFiltro, estadoFiltro, filtrosAvanzados, determinarEstadoLogico])
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
@@ -483,8 +521,8 @@ export default function PaginaLeads() {
         {/* Filtros Avanzados */}
         <FiltrosLeadsAvanzados
           onAplicar={(filtros) => {
+            setFiltrosAvanzados(filtros)
             setBusqueda(filtros.busqueda || "")
-            cargarLeads({ busqueda: filtros.busqueda })
           }}
           cargando={estaCargando}
         />
