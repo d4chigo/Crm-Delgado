@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Send, Loader2, Sparkles, Phone, Copy, Check, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Sparkles, Phone, Copy, Check, AlertCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -23,12 +23,92 @@ export default function ChatbotWidget() {
   const [loading, setLoading] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Inicializar reconocimiento de voz
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'es-ES';
+
+        recognitionRef.current.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognitionRef.current.onresult = (event: any) => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          setInput(transcript);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Error en reconocimiento de voz:', event.error);
+          setIsListening(false);
+        };
+      }
+    }
+  }, []);
+
+  function startListening() {
+    if (recognitionRef.current && !isListening) {
+      setInput('');
+      recognitionRef.current.start();
+    }
+  }
+
+  function stopListening() {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
+  }
+
+  function speakText(text: string) {
+    if (!voiceEnabled) return;
+
+    // Limpiar síntesis anterior
+    window.speechSynthesis.cancel();
+
+    const cleanText = text
+      .replace(/\*\*/g, '')
+      .replace(/• /g, '')
+      .replace(/👋|📊|💰|📈|👥|📞|❌|📞/g, '')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'es-ES';
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -55,13 +135,17 @@ export default function ChatbotWidget() {
         timestamp: new Date(),
         isMarkdown: true
       }]);
+      // Hablar la respuesta automáticamente
+      setTimeout(() => speakText(answer), 500);
     } catch (error: any) {
       console.error('Error:', error);
+      const errorMsg = '❌ Lo siento, ocurrió un error. Por favor intenta de nuevo.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: '❌ Lo siento, ocurrió un error. Por favor intenta de nuevo.',
+        text: errorMsg,
         timestamp: new Date()
       }]);
+      setTimeout(() => speakText(errorMsg), 500);
     } finally {
       setLoading(false);
     }
@@ -131,14 +215,23 @@ export default function ChatbotWidget() {
               <p className="text-xs opacity-90">Análisis en tiempo real • Disponible 24/7</p>
             </div>
           </div>
-          <button
-            onClick={handleCall}
-            disabled={isCalling}
-            className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur"
-            title="Llamar a un agente"
-          >
-            <Phone className={`w-5 h-5 ${isCalling ? 'animate-pulse' : ''}`} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`${voiceEnabled ? 'bg-white/30' : 'bg-red-500/50'} hover:bg-white/40 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur`}
+              title={voiceEnabled ? 'Desactivar voz' : 'Activar voz'}
+            >
+              {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={handleCall}
+              disabled={isCalling}
+              className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur"
+              title="Llamar a un agente"
+            >
+              <Phone className={`w-5 h-5 ${isCalling ? 'animate-pulse' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -182,11 +275,24 @@ export default function ChatbotWidget() {
       {/* Input */}
       <div className="border-t border-gray-300 p-5 bg-white flex-shrink-0 shadow-lg">
         <form onSubmit={handleSend} className="flex gap-3">
+          <button
+            type="button"
+            onClick={isListening ? stopListening : startListening}
+            disabled={loading}
+            className={`${
+              isListening
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                : 'bg-blue-500 hover:bg-blue-600'
+            } disabled:opacity-50 text-white p-3 rounded-full transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex-shrink-0 font-bold`}
+            title={isListening ? 'Detener grabación' : 'Iniciar grabación de voz'}
+          >
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Pregunta sobre leads, ventas, estadísticas, análisis..."
+            placeholder={isListening ? '🎤 Escuchando...' : 'Pregunta sobre leads, ventas, estadísticas, análisis...'}
             disabled={loading}
             className="flex-1 px-5 py-3 border-2 border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 bg-gray-50 hover:bg-white transition-all shadow-sm"
           />
@@ -200,7 +306,7 @@ export default function ChatbotWidget() {
           </button>
         </form>
         <p className="text-xs text-gray-500 mt-2 text-center">
-          💡 Tip: Pregunta sobre análisis de CRM, leads, ventas o estadísticas
+          🎤 Micrófono • 🔊 Voz automática • 💡 Pregunta sobre análisis, leads, ventas o estadísticas
         </p>
       </div>
     </div>
