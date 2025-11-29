@@ -10,7 +10,14 @@ class ClientPortalController {
     try {
       const usuarioId = (req as any).usuario?.usuarioId;
 
+      console.log('[Portal] obtenerPerfil - Usuario:', {
+        usuarioId,
+        usuario: (req as any).usuario,
+        headers: req.headers.authorization ? 'presente' : 'ausente'
+      });
+
       if (!usuarioId) {
+        console.error('[Portal] No hay usuarioId en el token');
         return res.status(401).json({ error: 'No autenticado' });
       }
 
