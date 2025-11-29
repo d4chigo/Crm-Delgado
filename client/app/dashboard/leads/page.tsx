@@ -181,6 +181,13 @@ export default function PaginaLeads() {
         })
       }
       
+      // Filtro por fuente
+      if (filtrosAvanzados.fuente && filtrosAvanzados.fuente.length > 0) {
+        filtrados = filtrados.filter((lead: Lead) => 
+          filtrosAvanzados.fuente?.includes(lead.fuente)
+        )
+      }
+      
       return filtrados
     }
     
