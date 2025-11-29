@@ -6,14 +6,16 @@ export const autenticar = (req: Request, res: Response, next: NextFunction): voi
   try {
     const authHeader = req.headers.authorization;
     
-    console.log('[AUTH] Headers recibidos:', {
+    console.log('[AUTH] Middleware autenticar ejecutándose:', {
       authorization: authHeader ? `${authHeader.substring(0, 30)}...` : 'No presente',
       url: req.url,
-      method: req.method
+      method: req.method,
+      allHeaders: Object.keys(req.headers)
     });
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.error('[AUTH] Token no proporcionado en header Authorization');
+      console.error('[AUTH] Headers disponibles:', req.headers);
       respuestaError(res, 'Token no proporcionado', 401, null, 'TOKEN_NO_ENCONTRADO');
       return;
     }
