@@ -39,6 +39,27 @@ export interface AsociarClienteDto {
   notas?: string
 }
 
+/**
+ * Mapear datos de Prisma al formato esperado por el frontend
+ */
+function mapearProyecto(proyecto: any) {
+  if (!proyecto) return null
+  
+  return {
+    ...proyecto,
+    etiquetas: proyecto.etiquetas?.map((pe: any) => ({
+      ...pe,
+      etiquetaId: pe.idEtiqueta,
+      proyectoId: pe.idProyecto
+    })) || [],
+    clientes: proyecto.clientes?.map((pc: any) => ({
+      ...pc,
+      clienteId: pc.idCliente,
+      proyectoId: pc.idProyecto
+    })) || []
+  }
+}
+
 export const proyectoService = {
   /**
    * Obtener todos los proyectos con sus relaciones
@@ -57,12 +78,12 @@ export const proyectoService = {
     if (filtros?.etiquetaId) {
       where.etiquetas = {
         some: {
-          etiquetaId: filtros.etiquetaId
+          idEtiqueta: filtros.etiquetaId
         }
       }
     }
 
-    return await prisma.proyecto.findMany({
+    const proyectos = await prisma.proyecto.findMany({
       where,
       include: {
         etiquetas: {
@@ -95,13 +116,15 @@ export const proyectoService = {
         creadoEn: 'desc'
       }
     })
+    
+    return proyectos.map(mapearProyecto)
   },
 
   /**
    * Obtener un proyecto por ID
    */
   async obtenerPorId(id: string) {
-    return await prisma.proyecto.findUnique({
+    const proyecto = await prisma.proyecto.findUnique({
       where: { id },
       include: {
         etiquetas: {
@@ -132,6 +155,8 @@ export const proyectoService = {
         }
       }
     })
+    
+    return mapearProyecto(proyecto)
   },
 
   /**
@@ -152,11 +177,15 @@ export const proyectoService = {
         categoria: proyectoData.categoria,
         mostrarEnWeb: proyectoData.mostrarEnWeb !== undefined ? proyectoData.mostrarEnWeb : true,
         ordenWeb: proyectoData.ordenWeb || 0,
-        usuarioId: proyectoData.usuarioId,
-        etiquetas: etiquetaIds
+        usuario: {
+          connect: {
+            id: proyectoData.usuarioId
+          }
+        },
+        etiquetas: etiquetaIds && etiquetaIds.length > 0
           ? {
               create: etiquetaIds.map((etiquetaId) => ({
-                etiquetaId
+                idEtiqueta: etiquetaId
               }))
             }
           : undefined
@@ -175,14 +204,14 @@ export const proyectoService = {
       }
     })
 
-    return proyecto
+    return mapearProyecto(proyecto)
   },
 
   /**
    * Actualizar un proyecto existente
    */
   async actualizar(id: string, datos: ActualizarProyectoDto) {
-    return await prisma.proyecto.update({
+    const proyecto = await prisma.proyecto.update({
       where: { id },
       data: datos,
       include: {
@@ -198,6 +227,8 @@ export const proyectoService = {
         }
       }
     })
+    
+    return mapearProyecto(proyecto)
   },
 
   /**
@@ -225,16 +256,18 @@ export const proyectoService = {
   async asignarEtiquetas(proyectoId: string, etiquetaIds: string[]) {
     // Eliminar etiquetas existentes
     await prisma.proyectoEtiqueta.deleteMany({
-      where: { proyectoId }
+      where: { idProyecto: proyectoId }
     })
 
-    // Crear nuevas relaciones
-    await prisma.proyectoEtiqueta.createMany({
-      data: etiquetaIds.map((etiquetaId) => ({
-        proyectoId,
-        etiquetaId
-      }))
-    })
+    // Crear nuevas relaciones si hay etiquetas
+    if (etiquetaIds.length > 0) {
+      await prisma.proyectoEtiqueta.createMany({
+        data: etiquetaIds.map((etiquetaId) => ({
+          idProyecto: proyectoId,
+          idEtiqueta: etiquetaId
+        }))
+      })
+    }
 
     return await this.obtenerPorId(proyectoId)
   },
@@ -363,7 +396,7 @@ export const proyectoService = {
    * Obtener proyectos de un cliente específico
    */
   async obtenerPorCliente(clienteId: string) {
-    return await prisma.proyecto.findMany({
+    const proyectos = await prisma.proyecto.findMany({
       where: {
         OR: [
           {
@@ -398,13 +431,15 @@ export const proyectoService = {
         creadoEn: 'desc'
       }
     })
+    
+    return proyectos.map(mapearProyecto)
   },
 
   /**
    * Obtener proyectos de un contacto (lead o cliente)
    */
   async obtenerPorContacto(contactoId: string) {
-    return await prisma.proyecto.findMany({
+    const proyectos = await prisma.proyecto.findMany({
       where: {
         OR: [
           {
@@ -440,5 +475,7 @@ export const proyectoService = {
         creadoEn: 'desc'
       }
     })
+    
+    return proyectos.map(mapearProyecto)
   }
 }

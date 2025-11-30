@@ -15,9 +15,12 @@ router.get('/', async (req: Request, res: Response) => {
     console.log('=== GET /api/public/proyectos ===')
     console.log('Query params:', { etiqueta, estado })
 
-    // Obtener todos los proyectos activos
+    // Obtener todos los proyectos activos y configurados para mostrar en web
     let proyectos = await prisma.proyecto.findMany({
-      where: { activo: true },
+      where: { 
+        activo: true,
+        mostrarEnWeb: true
+      },
       include: {
         etiquetas: {
           include: {

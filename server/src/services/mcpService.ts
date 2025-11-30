@@ -64,7 +64,7 @@ export async function getCRMAnalysis(): Promise<CRMAnalysis> {
     });
 
     const leadsPorEstadoMap: Record<string, number> = {};
-    leadsPorEstado.forEach((item) => {
+    leadsPorEstado.forEach((item: any) => {
       if (item.estado) {
         leadsPorEstadoMap[item.estado] = item._count;
       }
@@ -83,7 +83,7 @@ export async function getCRMAnalysis(): Promise<CRMAnalysis> {
     });
     const ingresoPromedio =
       cotizacionesAceptadas.length > 0
-        ? cotizacionesAceptadas.reduce((sum, c) => sum + c.precioInmueble, 0) /
+        ? cotizacionesAceptadas.reduce((sum: number, c: any) => sum + c.precioInmueble, 0) /
           cotizacionesAceptadas.length
         : 0;
 
@@ -101,7 +101,7 @@ export async function getCRMAnalysis(): Promise<CRMAnalysis> {
       _count: true,
     });
     const leadsPorDepartamento: Record<string, number> = {};
-    leadsPorDeptData.forEach((item) => {
+    leadsPorDeptData.forEach((item: any) => {
       if (item.departamento) {
         leadsPorDepartamento[item.departamento] = item._count;
       }
@@ -113,7 +113,7 @@ export async function getCRMAnalysis(): Promise<CRMAnalysis> {
       _count: true,
     });
     const leadsPorFuente: Record<string, number> = {};
-    leadsPorFuenteData.forEach((item) => {
+    leadsPorFuenteData.forEach((item: any) => {
       if (item.fuente) {
         leadsPorFuente[item.fuente] = item._count;
       }
@@ -419,7 +419,7 @@ export async function getEstadisticasPorAgente() {
       },
     });
 
-    return usuarios.map((usuario) => ({
+    return usuarios.map((usuario: any) => ({
       nombre: usuario.nombre,
       email: usuario.correo,
       totalLeads: usuario.leads.length,

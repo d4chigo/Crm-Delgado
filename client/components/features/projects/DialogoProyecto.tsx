@@ -41,6 +41,7 @@ export function DialogoProyecto({
         precio: proyecto.precio ? Number(proyecto.precio) : undefined,
         ubicacion: proyecto.ubicacion,
         estado: proyecto.estado,
+        mostrarEnWeb: proyecto.mostrarEnWeb,
         etiquetaIds: proyecto.etiquetas?.map(e => e.etiquetaId) || []
       }
     : undefined

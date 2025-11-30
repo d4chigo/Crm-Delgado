@@ -107,13 +107,13 @@ export async function generarExcelReporte(
   };
 
   // Título
-  worksheet.merge('A1:D1');
+  (worksheet as any).mergeCells('A1:D1');
   const titleCell = worksheet.getCell('A1');
   titleCell.value = `REPORTE CRM - ${nombreReporte}`;
-  titleCell.style = estiloTitulo;
+  titleCell.style = estiloTitulo as any;
 
   // Fecha de generación
-  worksheet.merge('A2:D2');
+  (worksheet as any).mergeCells('A2:D2');
   const dateCell = worksheet.getCell('A2');
   dateCell.value = `Generado: ${fechaGeneracion.toLocaleString('es-PE')}`;
   dateCell.style = { font: { size: 10, italic: true } };
@@ -156,7 +156,7 @@ export async function generarExcelReporte(
     column.width = Math.min(maxLength + 2, 50);
   });
 
-  return workbook.xlsx.writeBuffer() as Promise<Buffer>;
+  return workbook.xlsx.writeBuffer() as any;
 }
 
 // ==================== FUNCIONES PARA PDF ====================

@@ -169,9 +169,9 @@ export function TarjetaProyecto({
           <div className="flex items-start gap-2">
             <Tag className="h-4 w-4 mt-0.5 text-muted-foreground" />
             <div className="flex flex-wrap gap-1">
-              {proyecto.etiquetas.slice(0, 3).map((pe) => (
+              {proyecto.etiquetas.slice(0, 3).map((pe, idx) => (
                 <Badge
-                  key={pe.etiquetaId}
+                  key={`${pe.etiquetaId}-${idx}`}
                   variant="outline"
                   className="text-xs"
                   style={{
@@ -183,7 +183,7 @@ export function TarjetaProyecto({
                 </Badge>
               ))}
               {proyecto.etiquetas.length > 3 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge key="mas-etiquetas" variant="outline" className="text-xs">
                   +{proyecto.etiquetas.length - 3}
                 </Badge>
               )}

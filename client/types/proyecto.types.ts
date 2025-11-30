@@ -17,6 +17,7 @@ export interface Proyecto {
   longitud?: number
   estado: EstadoProyecto
   activo: boolean
+  mostrarEnWeb?: boolean
   creadoEn: Date
   actualizadoEn: Date
   usuarioId: string

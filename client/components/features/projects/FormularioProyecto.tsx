@@ -75,8 +75,10 @@ export function FormularioProyecto({
     const datosCompletos = {
       ...datos,
       etiquetaIds: etiquetaSeleccionada ? [etiquetaSeleccionada] : [],
-      precio: datos.precio ? Number(datos.precio) : undefined
+      precio: datos.precio ? Number(datos.precio) : undefined,
+      mostrarEnWeb: datos.mostrarEnWeb === true || datos.mostrarEnWeb === false ? datos.mostrarEnWeb : true
     }
+    console.log('[FormularioProyecto] Datos a enviar:', datosCompletos)
     await onSubmit(datosCompletos)
   }
 

@@ -16,13 +16,13 @@ const crearProyectoSchema = z.object({
     'TECHO_PROPIO', 
     'CREDITO_MIVIVIENDA', 
     'HABILITACIONES', 
-    'RESIDENCIAL', 
-    'COMERCIAL', 
-    'INDUSTRIAL', 
-    'TERRENOS', 
-    'DEPARTAMENTOS', 
-    'CASAS', 
-    'OFICINAS'
+    'COMPRA',
+    'VENTA',
+    'ALQUILER',
+    'DEPARTAMENTO', 
+    'CASA', 
+    'TERRENO',
+    'LOCAL_COMERCIAL'
   ]).optional(),
   categoria: z.string().max(100).optional(),
   galeria: z.array(z.string().url()).optional(),
@@ -46,20 +46,21 @@ const actualizarProyectoSchema = z.object({
     'TECHO_PROPIO', 
     'CREDITO_MIVIVIENDA', 
     'HABILITACIONES', 
-    'RESIDENCIAL', 
-    'COMERCIAL', 
-    'INDUSTRIAL', 
-    'TERRENOS', 
-    'DEPARTAMENTOS', 
-    'CASAS', 
-    'OFICINAS'
+    'COMPRA',
+    'VENTA',
+    'ALQUILER',
+    'DEPARTAMENTO', 
+    'CASA', 
+    'TERRENO',
+    'LOCAL_COMERCIAL'
   ]).optional(),
   categoria: z.string().max(100).optional(),
   galeria: z.array(z.string().url()).optional(),
   caracteristicas: z.record(z.string(), z.any()).optional(),
   mostrarEnWeb: z.boolean().optional(),
   ordenWeb: z.number().int().optional(),
-  activo: z.boolean().optional()
+  activo: z.boolean().optional(),
+  etiquetaIds: z.array(z.string().uuid()).optional()
 })
 
 // Validación para asociar cliente
@@ -141,10 +142,14 @@ export const proyectoController = {
    */
   async crear(req: Request, res: Response) {
     try {
+      console.log('[Proyecto] Crear - Body recibido:', req.body)
+      console.log('[Proyecto] Crear - Usuario autenticado:', req.usuario)
+      
       // Validar datos
       const validacion = crearProyectoSchema.safeParse(req.body)
       
       if (!validacion.success) {
+        console.error('[Proyecto] Validación fallida:', validacion.error.issues)
         return res.status(400).json({
           exito: false,
           mensaje: 'Datos inválidos',
@@ -155,16 +160,21 @@ export const proyectoController = {
       const usuarioId = req.usuario?.usuarioId
 
       if (!usuarioId) {
+        console.error('[Proyecto] Usuario no autenticado')
         return res.status(401).json({
           exito: false,
           mensaje: 'Usuario no autenticado'
         })
       }
 
+      console.log('[Proyecto] Creando proyecto con datos:', { ...validacion.data, usuarioId })
+
       const proyecto = await proyectoService.crear({
         ...validacion.data,
         usuarioId
       })
+
+      console.log('[Proyecto] Proyecto creado exitosamente:', proyecto.id)
 
       return res.status(201).json({
         exito: true,
@@ -172,11 +182,17 @@ export const proyectoController = {
         datos: proyecto
       })
     } catch (error: any) {
-      console.error('Error al crear proyecto:', error)
+      console.error('[Proyecto] Error al crear proyecto:', {
+        mensaje: error.message,
+        stack: error.stack,
+        codigo: error.code,
+        detalles: error
+      })
       return res.status(500).json({
         exito: false,
         mensaje: 'Error al crear proyecto',
-        error: error.message
+        error: error.message,
+        codigo: error.code
       })
     }
   },
@@ -189,10 +205,14 @@ export const proyectoController = {
     try {
       const { id } = req.params
 
+      console.log('[Proyecto] Actualizar - ID:', id)
+      console.log('[Proyecto] Actualizar - Body recibido:', req.body)
+
       // Validar datos
       const validacion = actualizarProyectoSchema.safeParse(req.body)
       
       if (!validacion.success) {
+        console.error('[Proyecto] Validación fallida:', validacion.error.issues)
         return res.status(400).json({
           exito: false,
           mensaje: 'Datos inválidos',
@@ -203,25 +223,53 @@ export const proyectoController = {
       // Verificar que el proyecto existe
       const proyectoExistente = await proyectoService.obtenerPorId(id)
       if (!proyectoExistente) {
+        console.error('[Proyecto] Proyecto no encontrado:', id)
         return res.status(404).json({
           exito: false,
           mensaje: 'Proyecto no encontrado'
         })
       }
 
-      const proyecto = await proyectoService.actualizar(id, validacion.data)
+      // Separar etiquetaIds del resto de datos
+      const { etiquetaIds, ...datosProyecto } = validacion.data
+
+      console.log('[Proyecto] Datos a actualizar:', datosProyecto)
+      console.log('[Proyecto] Etiquetas a asignar:', etiquetaIds)
+
+      const proyecto = await proyectoService.actualizar(id, datosProyecto)
+
+      // Actualizar etiquetas si se proporcionan
+      if (etiquetaIds && etiquetaIds.length > 0) {
+        console.log('[Proyecto] Asignando etiquetas:', etiquetaIds)
+        await proyectoService.asignarEtiquetas(id, etiquetaIds)
+      } else if (etiquetaIds && etiquetaIds.length === 0) {
+        // Si se envía un array vacío, eliminar todas las etiquetas
+        console.log('[Proyecto] Eliminando todas las etiquetas')
+        await proyectoService.asignarEtiquetas(id, [])
+      }
+
+      // Obtener el proyecto actualizado con sus relaciones
+      const proyectoActualizado = await proyectoService.obtenerPorId(id)
+
+      console.log('[Proyecto] Proyecto actualizado exitosamente:', proyectoActualizado.id)
 
       return res.json({
         exito: true,
         mensaje: 'Proyecto actualizado exitosamente',
-        datos: proyecto
+        datos: proyectoActualizado
       })
     } catch (error: any) {
-      console.error('Error al actualizar proyecto:', error)
+      console.error('[Proyecto] Error al actualizar proyecto:', {
+        mensaje: error.message,
+        stack: error.stack,
+        codigo: error.code,
+        detalles: error
+      })
       return res.status(500).json({
         exito: false,
         mensaje: 'Error al actualizar proyecto',
-        error: error.message
+        error: error.message,
+        codigo: error.code
       })
     }
   },
