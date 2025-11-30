@@ -523,8 +523,7 @@ export class CotizacionService {
           where: { id: cotizacionId },
           include: {
             lead: true,
-            cliente: true,
-            usuario: true
+            cliente: true
           }
         });
 
@@ -584,10 +583,10 @@ export class CotizacionService {
 
         doc.moveDown(1);
 
-        // Información del asesor
-        doc.fontSize(11).font('Helvetica-Bold').text('ASESOR ASIGNADO');
-        doc.fontSize(10).font('Helvetica').text(`Nombre: ${cotizacion.usuario?.nombre || 'N/A'}`);
-        doc.text(`Correo: ${cotizacion.usuario?.correo || 'N/A'}`);
+        // Información adicional
+        doc.fontSize(11).font('Helvetica-Bold').text('INFORMACIÓN ADICIONAL');
+        doc.fontSize(10).font('Helvetica').text(`Tipo de Inmueble: ${cotizacion.tipoInmueble || 'N/A'}`);
+        doc.text(`Tipo de Cuota: ${cotizacion.tipoCuota}`);
         doc.moveDown(1);
 
         // Pie de página

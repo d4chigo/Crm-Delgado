@@ -130,7 +130,12 @@ export class CotizacionController {
   async descargarPDF(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      console.log('[Cotizacion] Descargar PDF - ID:', id);
+      console.log('[Cotizacion] Descargar PDF - Usuario:', (req as any).usuario);
+      
       const pdf = await cotizacionService.generarPDF(id);
+      
+      console.log('[Cotizacion] PDF generado - Tamaño:', pdf.length, 'bytes');
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="cotizacion_${id}.pdf"`);
@@ -141,8 +146,12 @@ export class CotizacionController {
       
       res.end(pdf, 'binary');
     } catch (error: any) {
-      console.error('Error al descargar PDF:', error);
-      res.status(400).json({ error: error.message });
+      console.error('[Cotizacion] Error al descargar PDF:', error.message);
+      console.error('[Cotizacion] Stack:', error.stack);
+      res.status(400).json({ 
+        error: error.message,
+        stack: error.stack 
+      });
     }
   }
 }
