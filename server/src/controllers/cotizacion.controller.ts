@@ -125,26 +125,25 @@ export class CotizacionController {
   }
 
   /**
-   * Descargar cotización en PDF
+   * Descargar cotización en PDF (retorna HTML que se convierte a PDF en el cliente)
    */
   async descargarPDF(req: Request, res: Response) {
     try {
       const { id } = req.params;
       console.log('[Cotizacion] Descargar PDF - ID:', id);
-      console.log('[Cotizacion] Descargar PDF - Usuario:', (req as any).usuario);
       
-      const pdf = await cotizacionService.generarPDF(id);
+      const html = await cotizacionService.generarPDF(id);
       
-      console.log('[Cotizacion] PDF generado - Tamaño:', pdf.length, 'bytes');
+      console.log('[Cotizacion] HTML generado - Tamaño:', html.length, 'bytes');
       
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="cotizacion_${id}.pdf"`);
-      res.setHeader('Content-Length', pdf.length);
+      // Enviar HTML que será convertido a PDF en el cliente
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="cotizacion_${id}.html"`);
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       
-      res.end(pdf, 'binary');
+      res.end(html, 'utf-8');
     } catch (error: any) {
       console.error('[Cotizacion] Error al descargar PDF:', error.message);
       console.error('[Cotizacion] Stack:', error.stack);

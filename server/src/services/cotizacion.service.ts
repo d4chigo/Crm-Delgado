@@ -1,8 +1,6 @@
 import prisma from '@/config/database';
 import { CrearCotizacionDTO, ActualizarCotizacionDTO, CalculoCuota, FiltrosCotizacion } from '@/types/cotizacion.types';
 import { TipoCuota, EstadoCotizacion } from '@prisma/client';
-import PDFDocument from 'pdfkit';
-import { Readable } from 'stream';
 
 export class CotizacionService {
   /**
@@ -513,94 +511,122 @@ export class CotizacionService {
   }
 
   /**
-   * Generar PDF de la cotización usando pdfkit
+   * Generar PDF de la cotización usando HTML
+   * Retorna HTML que será convertido a PDF en el cliente
    */
   async generarPDF(cotizacionId: string): Promise<Buffer> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Obtener cotización
-        const cotizacion = await prisma.cotizacion.findUnique({
-          where: { id: cotizacionId },
-          include: {
-            lead: true,
-            cliente: true
-          }
-        });
-
-        if (!cotizacion) {
-          throw new Error('Cotización no encontrada');
+    try {
+      // Obtener cotización
+      const cotizacion = await prisma.cotizacion.findUnique({
+        where: { id: cotizacionId },
+        include: {
+          lead: true,
+          cliente: true
         }
+      });
 
-        // Crear documento PDF
-        const doc = new PDFDocument({
-          size: 'A4',
-          margin: 50
-        });
-
-        const chunks: Buffer[] = [];
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-        doc.on('end', () => {
-          resolve(Buffer.concat(chunks));
-        });
-        doc.on('error', reject);
-
-        // Encabezado
-        doc.fontSize(24).font('Helvetica-Bold').text('COTIZACIÓN', { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(12).font('Helvetica').text(`Referencia: ${cotizacion.numeroReferencia}`, { align: 'center' });
-        doc.fontSize(10).text(`Fecha: ${new Date(cotizacion.creadoEn).toLocaleDateString('es-PE')}`, { align: 'center' });
-        doc.moveDown(1);
-
-        // Estado
-        const estadoColor = cotizacion.estado === 'ACEPTADA' ? '#10b981' : cotizacion.estado === 'ENVIADA' ? '#3b82f6' : '#f59e0b';
-        doc.fontSize(11).font('Helvetica-Bold').fillColor(estadoColor).text(`Estado: ${cotizacion.estado}`).fillColor('black');
-        doc.moveDown(1);
-
-        // Información del cliente/lead
-        doc.fontSize(12).font('Helvetica-Bold').text('CLIENTE/LEAD');
-        const nombreContacto = cotizacion.cliente 
-          ? `${cotizacion.cliente.nombre} ${cotizacion.cliente.apellido}`
-          : `${cotizacion.lead?.nombre} ${cotizacion.lead?.apellido}`;
-        doc.fontSize(11).font('Helvetica').text(nombreContacto);
-        doc.moveDown(1);
-
-        // Detalles de la cotización
-        doc.fontSize(12).font('Helvetica-Bold').text('DETALLES DE LA COTIZACIÓN');
-        doc.moveDown(0.5);
-
-        const detalles = [
-          { label: 'Precio del Inmueble:', valor: `S/ ${(cotizacion.precioInmueble || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` },
-          { label: 'Cuota Inicial:', valor: `S/ ${(cotizacion.cuotaInicial || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` },
-          { label: 'Cuota Mensual Estimada:', valor: `S/ ${(cotizacion.cuotaMensualEstimada || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` },
-          { label: 'Plazo:', valor: `${cotizacion.plazoMeses} meses` },
-          { label: 'Tasa de Interés:', valor: `${cotizacion.tasaInteres}%` }
-        ];
-
-        detalles.forEach(detalle => {
-          doc.fontSize(10).font('Helvetica').text(`${detalle.label} ${detalle.valor}`);
-          doc.moveDown(0.3);
-        });
-
-        doc.moveDown(1);
-
-        // Información adicional
-        doc.fontSize(11).font('Helvetica-Bold').text('INFORMACIÓN ADICIONAL');
-        doc.fontSize(10).font('Helvetica').text(`Tipo de Inmueble: ${cotizacion.tipoInmueble || 'N/A'}`);
-        doc.text(`Tipo de Cuota: ${cotizacion.tipoCuota}`);
-        doc.moveDown(1);
-
-        // Pie de página
-        doc.fontSize(9).font('Helvetica').text('---', { align: 'center' });
-        doc.text('Este documento es una cotización válida por 30 días.', { align: 'center' });
-        doc.text('Para más información, contacta con tu asesor.', { align: 'center' });
-
-        // Finalizar documento
-        doc.end();
-      } catch (error: any) {
-        console.error('Error al generar PDF:', error);
-        reject(new Error(`Error al generar PDF: ${error.message}`));
+      if (!cotizacion) {
+        throw new Error('Cotización no encontrada');
       }
-    });
+
+      // Función auxiliar para formatear moneda
+      const formatearMoneda = (valor: number): string => {
+        return new Intl.NumberFormat('es-PE', {
+          style: 'currency',
+          currency: 'PEN',
+          minimumFractionDigits: 2
+        }).format(valor);
+      };
+
+      // Generar HTML del PDF (igual al del CRM)
+      const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cotización - ${cotizacion.nombreProyecto}</title>
+    <style>
+      * { box-sizing: border-box; }
+      @page { size: A4; margin: 10mm; }
+      body { font-family: Arial, Helvetica, sans-serif; color: #333; margin: 0; padding: 0; font-size: 11px; }
+      .header { display:flex; align-items:center; justify-content: space-between; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+      .header .left { display:flex; align-items:center; gap:10px; }
+      .logo { height: 36px; }
+      .title { margin: 12px 0 6px; }
+      .title h2 { margin: 0; font-size: 16px; }
+      .meta { color:#666; font-size: 11px; margin-top: 2px; }
+      .section { margin-top: 12px; }
+      h3 { margin: 0 0 6px; font-size: 12px; }
+      table { width:100%; border-collapse: collapse; font-size: 10.5px; }
+      th, td { text-align:left; padding:6px; border-bottom:1px solid #eee; }
+      .right { text-align:right; font-size: 11px; }
+      .footer { margin-top: 12px; font-size: 10px; color:#777; }
+      .tabla-cronograma th { background:#f5f7ff; color:#1f3a8a; }
+      .tabla-cronograma td { border-bottom:1px solid #f0f0f0; }
+      .num { text-align:right; }
+      .rojo { color:#dc2626; }
+      .verde { color:#16a34a; }
+      .negrita { font-weight: 700; }
+      thead { display: table-header-group; }
+      tr, td, th { page-break-inside: avoid; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="left">
+        <div>
+          <div><strong>CRM DELGADO</strong></div>
+          <div class="meta">Cotización</div>
+        </div>
+      </div>
+      <div class="right">
+        <div><strong>Referencia:</strong> ${cotizacion.numeroReferencia}</div>
+        <div class="meta">Fecha: ${new Date(cotizacion.creadoEn).toLocaleDateString('es-PE')}</div>
+      </div>
+    </div>
+
+    <div class="title">
+      <h2>${cotizacion.nombreProyecto}</h2>
+      <div class="meta">Estado: <strong>${cotizacion.estado}</strong></div>
+      <div class="meta">Cliente: ${cotizacion.cliente ? `${cotizacion.cliente.nombre} ${cotizacion.cliente.apellido}` : `${cotizacion.lead?.nombre} ${cotizacion.lead?.apellido}`}</div>
+    </div>
+
+    <div class="section">
+      <h3>Datos Financieros</h3>
+      <table>
+        <tr><th>Precio Inmueble</th><td>${formatearMoneda(cotizacion.precioInmueble)}</td></tr>
+        <tr><th>Cuota Inicial</th><td>${formatearMoneda(cotizacion.cuotaInicial)}</td></tr>
+        <tr><th>Monto a Financiar</th><td>${formatearMoneda(cotizacion.montoFinanciar)}</td></tr>
+        <tr><th>Cuota Mensual Estimada</th><td>${formatearMoneda(cotizacion.cuotaMensualEstimada)}</td></tr>
+        <tr><th>Plazo</th><td>${cotizacion.plazoMeses} meses</td></tr>
+        <tr><th>Tasa de Interés</th><td>${cotizacion.tasaInteresAnual}%</td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Información Adicional</h3>
+      <table>
+        <tr><th>Tipo de Inmueble</th><td>${cotizacion.tipoInmueble || 'N/A'}</td></tr>
+        <tr><th>Tipo de Cuota</th><td>${cotizacion.tipoCuota}</td></tr>
+        <tr><th>Total Intereses</th><td>${formatearMoneda(cotizacion.totalIntereses)}</td></tr>
+        <tr><th>Total a Pagar</th><td class="negrita">${formatearMoneda(cotizacion.totalPagar)}</td></tr>
+      </table>
+    </div>
+
+    ${cotizacion.notas ? `<div class="section">
+      <h3>Notas</h3>
+      <div>${cotizacion.notas.replace(/</g,'&lt;')}</div>
+    </div>` : ''}
+
+    <div class="footer">Generado por CRM Delgado • ${new Date().toLocaleString('es-PE')} • Este documento es una cotización válida por 30 días</div>
+  </body>
+</html>`;
+
+      // Convertir HTML a Buffer (para que el navegador lo interprete como PDF)
+      return Buffer.from(html, 'utf-8');
+    } catch (error: any) {
+      console.error('Error al generar PDF:', error);
+      throw new Error(`Error al generar PDF: ${error.message}`);
+    }
   }
 }
 
