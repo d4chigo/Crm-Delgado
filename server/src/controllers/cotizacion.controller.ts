@@ -134,7 +134,12 @@ export class CotizacionController {
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="cotizacion_${id}.pdf"`);
-      res.send(pdf);
+      res.setHeader('Content-Length', pdf.length);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      res.end(pdf, 'binary');
     } catch (error: any) {
       console.error('Error al descargar PDF:', error);
       res.status(400).json({ error: error.message });

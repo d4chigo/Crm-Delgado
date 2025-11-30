@@ -13,6 +13,9 @@ router.post('/', cotizacionController.crearCotizacion);
 // Obtener cotizaciones de un contacto específico - DEBE SER ANTES de /:id
 router.get('/contacto/:contactoId', cotizacionController.obtenerCotizacionesPorContacto);
 
+// Descargar cotización en PDF - DEBE SER ANTES de /:id
+router.get('/:id/descargar-pdf', cotizacionController.descargarPDF);
+
 // Obtener todas las cotizaciones (con filtros)
 router.get('/', cotizacionController.obtenerCotizaciones);
 
@@ -24,9 +27,6 @@ router.put('/:id', cotizacionController.actualizarCotizacion);
 
 // Cambiar estado de cotización
 router.patch('/:id/estado', cotizacionController.cambiarEstado);
-
-// Descargar cotización en PDF - DEBE SER ANTES de DELETE
-router.get('/:id/descargar-pdf', cotizacionController.descargarPDF);
 
 // Eliminar cotización
 router.delete('/:id', cotizacionController.eliminarCotizacion);
