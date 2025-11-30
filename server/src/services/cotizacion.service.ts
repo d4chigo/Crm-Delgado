@@ -509,6 +509,59 @@ export class CotizacionService {
 
     return cotizaciones;
   }
+
+  /**
+   * Generar PDF de la cotización
+   */
+  async generarPDF(cotizacionId: string): Promise<Buffer> {
+    try {
+      // Obtener cotización
+      const cotizacion = await prisma.cotizacion.findUnique({
+        where: { id: cotizacionId },
+        include: {
+          lead: true,
+          cliente: true,
+          usuario: true
+        }
+      });
+
+      if (!cotizacion) {
+        throw new Error('Cotización no encontrada');
+      }
+
+      // Crear PDF simple en formato HTML/texto
+      // En producción, usar una librería como pdfkit o puppeteer
+      const contenido = `
+COTIZACIÓN
+${cotizacion.numeroReferencia}
+
+Fecha: ${new Date(cotizacion.creadoEn).toLocaleDateString('es-PE')}
+Estado: ${cotizacion.estado}
+
+CLIENTE/LEAD:
+${cotizacion.cliente ? `${cotizacion.cliente.nombre} ${cotizacion.cliente.apellido}` : `${cotizacion.lead?.nombre} ${cotizacion.lead?.apellido}`}
+
+DETALLES:
+Precio del Inmueble: S/ ${cotizacion.precioInmueble?.toLocaleString('es-PE')}
+Cuota Inicial: S/ ${cotizacion.cuotaInicial?.toLocaleString('es-PE')}
+Cuota Mensual Estimada: S/ ${cotizacion.cuotaMensualEstimada?.toLocaleString('es-PE')}
+Plazo: ${cotizacion.plazoMeses} meses
+Tasa de Interés: ${cotizacion.tasaInteres}%
+
+Asesor: ${cotizacion.usuario?.nombre}
+Contacto: ${cotizacion.usuario?.correo}
+
+---
+Este documento es una cotización válida por 30 días.
+      `;
+
+      // Convertir a buffer (en producción usar librería PDF)
+      return Buffer.from(contenido, 'utf-8');
+    } catch (error: any) {
+      console.error('Error al generar PDF:', error);
+      throw new Error(`Error al generar PDF: ${error.message}`);
+    }
+  }
 }
 
 export default new CotizacionService();

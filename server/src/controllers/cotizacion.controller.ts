@@ -123,6 +123,23 @@ export class CotizacionController {
       res.status(404).json({ error: error.message });
     }
   }
+
+  /**
+   * Descargar cotización en PDF
+   */
+  async descargarPDF(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const pdf = await cotizacionService.generarPDF(id);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="cotizacion_${id}.pdf"`);
+      res.send(pdf);
+    } catch (error: any) {
+      console.error('Error al descargar PDF:', error);
+      res.status(400).json({ error: error.message });
+    }
+  }
 }
 
 export default new CotizacionController();

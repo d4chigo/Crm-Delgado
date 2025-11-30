@@ -25,6 +25,9 @@ router.put('/:id', cotizacionController.actualizarCotizacion);
 // Cambiar estado de cotización
 router.patch('/:id/estado', cotizacionController.cambiarEstado);
 
+// Descargar cotización en PDF - DEBE SER ANTES de DELETE
+router.get('/:id/descargar-pdf', cotizacionController.descargarPDF);
+
 // Eliminar cotización
 router.delete('/:id', cotizacionController.eliminarCotizacion);
 
