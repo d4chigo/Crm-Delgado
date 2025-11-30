@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react"
+import { useSearchParams } from "next/navigation"
 import { PageHeader } from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/ui/stat-card"
@@ -36,6 +37,7 @@ const AssistantPanel = dynamic(() => import("@/components/assistant/AssistantPan
 type Lead = Contacto
 
 export default function PaginaLeads() {
+  const searchParams = useSearchParams()
   const [abiertoAsistente, setAbiertoAsistente] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   const [estaCargando, setEstaCargando] = useState(true)
@@ -65,6 +67,7 @@ export default function PaginaLeads() {
   const [leadParaOportunidad, setLeadParaOportunidad] = useState<Lead | null>(null)
   const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false)
   const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Lead | null>(null)
+  const [ordenamiento, setOrdenamiento] = useState<string>("recientes")
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { oportunidades, removerDelPipeline } = useOportunidades()
 
@@ -89,6 +92,35 @@ export default function PaginaLeads() {
     }
   }, [])
 
+  // Función optimizada para verificar nuevos leads sin recargar toda la página
+  const verificarNuevosLeads = useCallback(async () => {
+    try {
+      const resultado: any = await leadService.obtenerLeads({
+        tipo: "LEAD",
+        pagina: 1,
+        limite: 6,
+        busqueda: "",
+        estadoLead: ""
+      })
+      
+      const nuevosLeads = resultado.contactos || []
+      
+      // Solo actualizar si hay cambios (nuevos leads o cambios en los existentes)
+      setLeads(prevLeads => {
+        // Comparar si hay nuevos leads o si los existentes cambiaron
+        if (JSON.stringify(prevLeads) !== JSON.stringify(nuevosLeads)) {
+          console.log('✨ Nuevos leads detectados, actualizando...')
+          return nuevosLeads
+        }
+        return prevLeads
+      })
+      
+      setPaginacion(resultado.paginacion || { pagina: 1, total: 0, totalPaginas: 0 })
+    } catch (err: any) {
+      console.log('Error verificando nuevos leads:', err.message)
+    }
+  }, [])
+
   const cargarEtiquetas = useCallback(async () => {
     try {
       const etiquetasObtenidas = await etiquetaService.obtenerTodas()
@@ -103,6 +135,30 @@ export default function PaginaLeads() {
     cargarLeads({ pagina: 1 })
     cargarEtiquetas()
   }, [cargarEtiquetas, cargarLeads])
+
+  // Polling para actualizar leads en tiempo real cada 10 segundos (optimizado, sin lag)
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      verificarNuevosLeads()
+    }, 10000) // 10 segundos
+
+    return () => clearInterval(intervalo)
+  }, [verificarNuevosLeads])
+
+  // Detectar si viene desde dashboard y abrir lead automáticamente
+  useEffect(() => {
+    if (searchParams) {
+      const leadId = searchParams.get('id')
+      if (leadId && leads.length > 0) {
+        const leadEncontrado = leads.find(l => l.id === leadId)
+        if (leadEncontrado) {
+          setLeadSeleccionado(leadEncontrado)
+          setDialogoDetallesAbierto(true)
+          console.log('📍 Lead abierto desde dashboard:', leadId)
+        }
+      }
+    }
+  }, [searchParams, leads])
 
   // Escuchar evento cuando un lead se convierte a cliente en FIDELIZACION
   useEffect(() => {
@@ -158,6 +214,16 @@ export default function PaginaLeads() {
     // Si no está en esos estados, usar el estadoLead del lead
     return lead.estadoLead || 'NUEVO'
   }, [oportunidades])
+
+  // Calcular tasa de conversión
+  const tasaConversion = useMemo(() => {
+    if (leads.length === 0) return 0
+    const leadsGanados = leads.filter(lead => {
+      const estado = determinarEstadoLogico(lead)
+      return estado === 'GANADO'
+    }).length
+    return Math.round((leadsGanados / leads.length) * 100)
+  }, [leads, determinarEstadoLogico])
 
   const leadsFiltrados = useMemo(() => {
     let filtrados = leads
@@ -221,8 +287,25 @@ export default function PaginaLeads() {
       })
     }
     
+    // Aplicar ordenamiento
+    if (ordenamiento === "recientes") {
+      // Ordenar por fecha de creación más reciente
+      filtrados = [...filtrados].sort((a, b) => {
+        const fechaA = new Date(a.creadoEn || 0).getTime()
+        const fechaB = new Date(b.creadoEn || 0).getTime()
+        return fechaB - fechaA
+      })
+    } else if (ordenamiento === "a-z") {
+      // Ordenar alfabéticamente por nombre
+      filtrados = [...filtrados].sort((a, b) => {
+        const nombreA = `${a.nombre || ''} ${a.apellido || ''}`.toLowerCase()
+        const nombreB = `${b.nombre || ''} ${b.apellido || ''}`.toLowerCase()
+        return nombreA.localeCompare(nombreB)
+      })
+    }
+    
     return filtrados
-  }, [leads, etiquetaFiltro, estadoFiltro, filtrosAvanzados, determinarEstadoLogico])
+  }, [leads, etiquetaFiltro, estadoFiltro, filtrosAvanzados, determinarEstadoLogico, ordenamiento])
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
@@ -535,7 +618,7 @@ export default function PaginaLeads() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard title="Leads Activos" value={paginacion.total} description="En proceso de conversión" icon={TrendingUp} iconColor="text-yellow-500" valueColor="text-yellow-600" />
-        <StatCard title="Conversión" value="0%" description="Leads convertidos a clientes" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
+        <StatCard title="Conversión" value={`${tasaConversion}%`} description="Leads convertidos a clientes" icon={Users} iconColor="text-green-500" valueColor="text-green-600" />
       </div>
 
       <div className="space-y-4">
@@ -548,14 +631,26 @@ export default function PaginaLeads() {
           cargando={estaCargando}
         />
 
-        <div className="flex gap-4 items-center flex-wrap">
-          <ContactImportDialog onImport={handleImportarGoogle} />
-          <Button 
-            onClick={() => setDialogoCrearAbierto(true)}
-            className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
-          >
-            + Nuevo Lead
-          </Button>
+        <div className="flex gap-4 items-center flex-wrap justify-between">
+          <div className="flex gap-4 items-center flex-wrap">
+            <ContactImportDialog onImport={handleImportarGoogle} />
+            <Button 
+              onClick={() => setDialogoCrearAbierto(true)}
+              className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030]"
+            >
+              + Nuevo Lead
+            </Button>
+          </div>
+          
+          <Select value={ordenamiento} onValueChange={setOrdenamiento}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Ordenar por..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recientes">Más recientes</SelectItem>
+              <SelectItem value="a-z">A - Z (Alfabético)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {estaCargando && (

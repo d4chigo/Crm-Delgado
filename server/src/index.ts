@@ -60,6 +60,7 @@ import emailMarketingRoutes from '@/routes/email-marketing.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 import { iniciarJobGenerarAlertas } from '@/jobs/generarAlertasAutomaticamente';
+import { iniciarJobAutomatizarEstados } from '@/jobs/automatizarEstados';
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
@@ -216,8 +217,9 @@ httpServer.listen(PORT, () => {
   console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✅ Rutas registradas: /api/auth, /api/contactos, /api/dni, /api/etiquetas, /api/proyectos, /api/oportunidades, /api/cotizaciones, /api/analytics, /api/assistant, /api/calendar, /api/alertas`);
   
-  // 🤖 Iniciar job de generación automática de alertas
+  // 🤖 Iniciar jobs automáticos
   iniciarJobGenerarAlertas();
+  iniciarJobAutomatizarEstados();
 });
 
 export default app;

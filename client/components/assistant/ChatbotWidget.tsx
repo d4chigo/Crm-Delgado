@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Send, Loader2, Sparkles, Phone, Copy, Check, AlertCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Send, Loader2, Sparkles, Copy, Check, AlertCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -21,7 +21,6 @@ export default function ChatbotWidget() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isCalling, setIsCalling] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -246,18 +245,6 @@ export default function ChatbotWidget() {
     }
   }
 
-  function handleCall() {
-    setIsCalling(true);
-    // Simular llamada
-    setTimeout(() => {
-      setIsCalling(false);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: '📞 **Llamada iniciada**\n\nTe conectaré con un agente disponible. Por favor espera...',
-        timestamp: new Date()
-      }]);
-    }, 2000);
-  }
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
@@ -289,7 +276,7 @@ export default function ChatbotWidget() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="flex flex-col w-full bg-gradient-to-b from-slate-50 to-slate-100 rounded-2xl shadow-2xl overflow-hidden" style={{ height: '600px' }}>
       {/* Header Premium - FIJO */}
       <div className="sticky top-0 z-50 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 p-5 text-white shadow-xl flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -310,47 +297,25 @@ export default function ChatbotWidget() {
               <p className="text-xs opacity-90">Análisis en tiempo real • Disponible 24/7</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className={`${voiceEnabled ? 'bg-white/30' : 'bg-red-500/50'} hover:bg-white/40 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur`}
-              title={voiceEnabled ? 'Desactivar voz' : 'Activar voz'}
-            >
-              {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </button>
-            <button
-              onClick={handleCall}
-              disabled={isCalling}
-              className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur"
-              title="Llamar a un agente"
-            >
-              <Phone className={`w-5 h-5 ${isCalling ? 'animate-pulse' : ''}`} />
-            </button>
-          </div>
+          <button
+            onClick={() => setVoiceEnabled(!voiceEnabled)}
+            className={`${voiceEnabled ? 'bg-white/30' : 'bg-red-500/50'} hover:bg-white/40 text-white p-2.5 rounded-full transition-all shadow-lg hover:shadow-xl flex-shrink-0 backdrop-blur`}
+            title={voiceEnabled ? 'Desactivar voz' : 'Activar voz'}
+          >
+            {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
         </div>
       </div>
 
       {/* Messages - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 min-h-0 scroll-smooth" style={{
+      <div className="messages-container flex-1 overflow-y-scroll overflow-x-hidden p-4 space-y-3 scroll-smooth" style={{
         scrollbarWidth: 'thin',
-        scrollbarColor: '#fbbf24 #f3f4f6'
+        scrollbarColor: '#fbbf24 #f3f4f6',
+        flex: '1 1 auto',
+        minHeight: '0',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
-        <style>{`
-          div::-webkit-scrollbar {
-            width: 8px;
-          }
-          div::-webkit-scrollbar-track {
-            background: #f3f4f6;
-            border-radius: 10px;
-          }
-          div::-webkit-scrollbar-thumb {
-            background: #fbbf24;
-            border-radius: 10px;
-          }
-          div::-webkit-scrollbar-thumb:hover {
-            background: #f59e0b;
-          }
-        `}</style>
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}>
             <div

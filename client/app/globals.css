@@ -155,4 +155,40 @@
   .scrollbar-track-transparent {
     scrollbar-color: #fbbf24 transparent;
   }
+
+  /* Scrollbar para messages-container del chatbot */
+  .messages-container {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #fbbf24 #f3f4f6;
+    overflow-y: scroll !important;
+  }
+
+  .messages-container::-webkit-scrollbar {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .messages-container::-webkit-scrollbar-track {
+    background: linear-gradient(to bottom, #f3f4f6, #e5e7eb) !important;
+    border-radius: 10px;
+    margin: 10px 0;
+  }
+
+  .messages-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #fbbf24, #f59e0b) !important;
+    border-radius: 10px;
+    border: 2px solid #f3f4f6;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
+    min-height: 40px;
+  }
+
+  .messages-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #f59e0b, #d97706) !important;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  }
+
+  .messages-container::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(to bottom, #d97706, #b45309) !important;
+  }
 }

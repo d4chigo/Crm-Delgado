@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Lock as IconoCandado, Mail as IconoCorreo, Check as IconoCheck } from "lucide-react"
 import authService from "@/services/api/auth.service"
 import Image from "next/image"
-import { ErrorDisplay } from "@/components/ErrorDisplay"
 
 export default function PaginaLogin() {
   const enrutador = useRouter()
@@ -57,8 +56,34 @@ export default function PaginaLogin() {
       console.log('[Login] Redirigiendo a /dashboard')
       enrutador.push("/dashboard")
     } catch (error: any) {
-      console.error('[Login] ❌ Error en login:', error)
-      setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.")
+      console.log('[Login] Error en login:', error.message)
+      
+      // Mensajes de error más específicos
+      let mensajeError = "Error al iniciar sesión. Verifica tus credenciales."
+      
+      if (error.message) {
+        // Remover prefijo [API] si existe
+        let mensaje = error.message.replace(/^\[API\]\s*/, '').trim()
+        
+        if (mensaje.includes('Credenciales inválidas')) {
+          mensajeError = "Email o contraseña incorrectos. Por favor intenta de nuevo."
+        } else if (mensaje.includes('Usuario inactivo')) {
+          mensajeError = "Tu cuenta está desactivada. Contacta con el administrador."
+        } else if (mensaje.includes('Acceso denegado') || mensaje.includes('Acceso desactivado')) {
+          mensajeError = "Tu cuenta no tiene acceso activo. Por favor, contacta con el administrador."
+        } else if (mensaje.includes('No se puede conectar')) {
+          mensajeError = "No se puede conectar con el servidor. Verifica tu conexión."
+        } else if (mensaje.includes('Datos inválidos')) {
+          mensajeError = "Email o contraseña incorrectos. Por favor intenta de nuevo."
+        } else if (mensaje.includes('Error del servidor')) {
+          mensajeError = "Error del servidor. Intenta más tarde."
+        } else if (mensaje) {
+          // Si hay un mensaje específico, usarlo
+          mensajeError = mensaje
+        }
+      }
+      
+      setError(mensajeError)
       setEstaCargando(false)
     }
   }
@@ -242,7 +267,7 @@ export default function PaginaLogin() {
 
             {/* Texto de copyright */}
             <p className="text-center text-slate-400 text-sm mt-6">
-              © 2025 Delgado Propiedades. Todos los derechos reservados.
+              2025 Delgado Propiedades. Todos los derechos reservados.
             </p>
           </div>
         </div>
@@ -289,8 +314,6 @@ export default function PaginaLogin() {
           animation-delay: 0s;
         }
       `}</style>
-      
-      <ErrorDisplay />
     </div>
   )
 }

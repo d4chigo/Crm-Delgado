@@ -53,9 +53,38 @@ class AuthService {
     console.log('[AuthService.login] Response ok:', response.ok);
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('[AuthService.login] ❌ Error en respuesta:', errorData);
-      throw new Error(errorData.error || 'Error al iniciar sesión');
+      let errorData: any = {};
+      let mensajeError = 'Error al iniciar sesión';
+      
+      try {
+        errorData = await response.json();
+        console.log('[AuthService.login] Error en respuesta:', errorData);
+        
+        // Extraer mensaje de error según el formato de respuesta
+        if (errorData.error) {
+          mensajeError = errorData.error;
+        } else if (errorData.message) {
+          mensajeError = errorData.message;
+        } else if (errorData.detalles && Array.isArray(errorData.detalles)) {
+          // Si hay detalles de validación, mostrar el primer error
+          mensajeError = errorData.detalles[0]?.mensaje || 'Error de validación';
+        }
+      } catch (parseError) {
+        console.log('[AuthService.login] No se pudo parsear respuesta de error');
+        // Si no se puede parsear, usar el status code para determinar el mensaje
+        if (response.status === 401) {
+          mensajeError = 'Credenciales inválidas';
+        } else if (response.status === 403) {
+          mensajeError = 'Acceso denegado';
+        } else if (response.status === 400) {
+          mensajeError = 'Datos inválidos. Verifica tu email y contraseña';
+        } else if (response.status === 500) {
+          mensajeError = 'Error del servidor. Intenta más tarde';
+        }
+      }
+      
+      console.log('[AuthService.login] Mensaje de error final:', mensajeError);
+      throw new Error(mensajeError);
     }
 
     const data = await response.json();

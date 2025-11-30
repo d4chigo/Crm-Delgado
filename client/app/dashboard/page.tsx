@@ -55,6 +55,15 @@ export default function PaginaDashboard() {
     }
   }, [])
 
+  // Polling para actualizar leads recientes en tiempo real cada 10 segundos (optimizado, sin lag)
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      verificarNuevosLeadsRecientes()
+    }, 10000) // 10 segundos
+
+    return () => clearInterval(intervalo)
+  }, [])
+
   async function cargarMetricas() {
     try {
       setCargando(true)
@@ -78,6 +87,25 @@ export default function PaginaDashboard() {
       console.error('Error cargando leads recientes:', err)
     } finally {
       setCargandoLeads(false)
+    }
+  }
+
+  // Función optimizada para verificar nuevos leads sin mostrar loading
+  async function verificarNuevosLeadsRecientes() {
+    try {
+      const datos = await fetchAPI<any>('/contactos/recientes?tipo=LEAD')
+      const nuevosLeads = datos.contactos || []
+      
+      // Solo actualizar si hay cambios
+      setLeadsRecientes(prevLeads => {
+        if (JSON.stringify(prevLeads) !== JSON.stringify(nuevosLeads)) {
+          console.log('✨ Nuevos leads en dashboard detectados')
+          return nuevosLeads
+        }
+        return prevLeads
+      })
+    } catch (err: any) {
+      console.log('Error verificando leads recientes:', err.message)
     }
   }
 
@@ -189,6 +217,7 @@ export default function PaginaDashboard() {
                 {leadsRecientes.slice(0, 6).map((lead, indice) => (
                   <div
                     key={lead.id || indice}
+                    onClick={() => enrutador.push(`/dashboard/leads?id=${lead.id}`)}
                     className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-[#FCBA00]/50 transition-all duration-200 group cursor-pointer"
                   >
                     <div className="flex-shrink-0 w-11 h-11 bg-gradient-to-br from-[#FCBA00] to-[#E5A200] rounded-full flex items-center justify-center shadow-md">
