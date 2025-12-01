@@ -487,15 +487,21 @@ export const proyectoController = {
   async obtenerPorContacto(req: Request, res: Response) {
     try {
       const { contactoId } = req.params
+      console.log('[ProyectoController] obtenerPorContacto - contactoId:', contactoId)
 
       const proyectos = await proyectoService.obtenerPorContacto(contactoId)
+      console.log('[ProyectoController] obtenerPorContacto - proyectos encontrados:', proyectos.length)
 
       return res.json({
         exito: true,
         datos: proyectos
       })
     } catch (error: any) {
-      console.error('Error al obtener proyectos del contacto:', error)
+      console.error('[ProyectoController] Error al obtener proyectos del contacto:', {
+        mensaje: error.message,
+        stack: error.stack,
+        codigo: error.code
+      })
       return res.status(500).json({
         exito: false,
         mensaje: 'Error al obtener proyectos del contacto',

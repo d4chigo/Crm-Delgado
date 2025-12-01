@@ -298,9 +298,9 @@ export const proyectoService = {
     // Verificar si ya está asociado en ProyectoContacto
     const existente = await prisma.proyectoContacto.findUnique({
       where: {
-        proyectoId_contactoId: {
-          proyectoId,
-          contactoId: datos.clienteId
+        idProyecto_idContacto: {
+          idProyecto: proyectoId,
+          idContacto: datos.clienteId
         }
       }
     })
@@ -334,8 +334,8 @@ export const proyectoService = {
     // Crear registro en ProyectoContacto
     await prisma.proyectoContacto.create({
       data: {
-        proyectoId,
-        contactoId: datos.clienteId,
+        idProyecto: proyectoId,
+        idContacto: datos.clienteId,
         tipoContacto,
         notas: datos.notas
       }
@@ -368,9 +368,9 @@ export const proyectoService = {
     // Eliminar de ProyectoContacto
     await prisma.proyectoContacto.delete({
       where: {
-        proyectoId_contactoId: {
-          proyectoId,
-          contactoId: clienteId
+        idProyecto_idContacto: {
+          idProyecto: proyectoId,
+          idContacto: clienteId
         }
       }
     }).catch(() => {
@@ -439,43 +439,65 @@ export const proyectoService = {
    * Obtener proyectos de un contacto (lead o cliente)
    */
   async obtenerPorContacto(contactoId: string) {
-    const proyectos = await prisma.proyecto.findMany({
-      where: {
-        OR: [
-          {
-            clientes: {
-              some: {
-                idCliente: contactoId
+    try {
+      console.log('[ProyectoService] obtenerPorContacto - contactoId:', contactoId)
+      
+      const proyectos = await prisma.proyecto.findMany({
+        where: {
+          OR: [
+            {
+              clientes: {
+                some: {
+                  cliente: {
+                    id: contactoId
+                  }
+                }
               }
+            },
+            {
+              contactos: {
+                some: {
+                  idContacto: contactoId
+                }
+              }
+            }
+          ]
+        },
+        include: {
+          etiquetas: {
+            include: {
+              etiqueta: true
             }
           },
-          {
-            contactos: {
-              some: {
-                idContacto: contactoId
-              }
+          clientes: {
+            include: {
+              cliente: true
+            }
+          },
+          contactos: {
+            select: {
+              idProyecto: true,
+              idContacto: true,
+              tipoContacto: true,
+              asociadoEn: true,
+              notas: true
             }
           }
-        ]
-      },
-      include: {
-        etiquetas: {
-          include: {
-            etiqueta: true
-          }
         },
-        clientes: {
-          include: {
-            cliente: true
-          }
-        },
-        contactos: true
-      },
-      orderBy: {
-        creadoEn: 'desc'
-      }
-    })
-    
-    return proyectos.map(mapearProyecto)
+        orderBy: {
+          creadoEn: 'desc'
+        }
+      })
+      
+      console.log('[ProyectoService] obtenerPorContacto - proyectos encontrados:', proyectos.length)
+      return proyectos.map(mapearProyecto)
+    } catch (error: any) {
+      console.error('[ProyectoService] Error en obtenerPorContacto:', {
+        mensaje: error.message,
+        stack: error.stack,
+        codigo: error.code
+      })
+      throw error
+    }
   }
 }
