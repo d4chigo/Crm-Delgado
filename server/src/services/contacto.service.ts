@@ -998,10 +998,10 @@ export class ContactoService {
             if (leadExistente) {
               console.log(`🔄 Lead duplicado detectado (por teléfono): ${nombre} ${apellido} (${telefono})`);
               
-              // Actualizar datos si han cambiado
+              // Actualizar datos SOLO si están vacíos en el CRM (no sobrescribir cambios del usuario)
               const cambios: any = {};
-              if (leadExistente.nombre !== nombre) cambios.nombre = nombre;
-              if (leadExistente.apellido !== apellido) cambios.apellido = apellido;
+              if (!leadExistente.nombre && nombre) cambios.nombre = nombre;
+              if (!leadExistente.apellido && apellido) cambios.apellido = apellido;
               if (correoNormalizado && !leadExistente.correo) cambios.correo = correoNormalizado;
               
               if (Object.keys(cambios).length > 0) {
@@ -1009,7 +1009,9 @@ export class ContactoService {
                   where: { id: leadExistente.id },
                   data: cambios
                 });
-                console.log(`✏️ Lead actualizado con cambios:`, cambios);
+                console.log(`✏️ Lead actualizado con datos faltantes:`, cambios);
+              } else {
+                console.log(`✅ Lead mantenido sin cambios (datos del usuario preservados)`);
               }
               
               duplicados++;
@@ -1027,10 +1029,10 @@ export class ContactoService {
             if (clienteExistente) {
               console.log(`🔄 Cliente duplicado detectado (por teléfono): ${nombre} ${apellido} (${telefono})`);
               
-              // Actualizar datos si han cambiado
+              // Actualizar datos SOLO si están vacíos en el CRM (no sobrescribir cambios del usuario)
               const cambios: any = {};
-              if (clienteExistente.nombre !== nombre) cambios.nombre = nombre;
-              if (clienteExistente.apellido !== apellido) cambios.apellido = apellido;
+              if (!clienteExistente.nombre && nombre) cambios.nombre = nombre;
+              if (!clienteExistente.apellido && apellido) cambios.apellido = apellido;
               if (correoNormalizado && !clienteExistente.correo) cambios.correo = correoNormalizado;
               
               if (Object.keys(cambios).length > 0) {
@@ -1038,7 +1040,9 @@ export class ContactoService {
                   where: { id: clienteExistente.id },
                   data: cambios
                 });
-                console.log(`✏️ Cliente actualizado con cambios:`, cambios);
+                console.log(`✏️ Cliente actualizado con datos faltantes:`, cambios);
+              } else {
+                console.log(`✅ Cliente mantenido sin cambios (datos del usuario preservados)`);
               }
               
               duplicados++;
