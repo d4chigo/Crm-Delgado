@@ -93,13 +93,21 @@ export default function PaginaLeads() {
   }, [])
 
   // Función optimizada para verificar nuevos leads sin recargar toda la página
+  // IMPORTANTE: Solo actualiza si hay cambios, sin afectar los filtros activos
   const verificarNuevosLeads = useCallback(async () => {
     try {
+      // Si hay filtros avanzados activos, no hacer polling automático
+      // para evitar que se limpien los filtros
+      if (filtrosAvanzados) {
+        console.log('⏭️ Polling pausado: hay filtros avanzados activos')
+        return
+      }
+      
       const resultado: any = await leadService.obtenerLeads({
         tipo: "LEAD",
-        pagina: 1,
+        pagina: paginacion.pagina,
         limite: 6,
-        busqueda: "",
+        busqueda: busqueda,
         estadoLead: ""
       })
       
@@ -119,7 +127,7 @@ export default function PaginaLeads() {
     } catch (err: any) {
       console.log('Error verificando nuevos leads:', err.message)
     }
-  }, [])
+  }, [filtrosAvanzados, paginacion.pagina, busqueda])
 
   const cargarEtiquetas = useCallback(async () => {
     try {
