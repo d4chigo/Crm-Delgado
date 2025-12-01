@@ -382,10 +382,19 @@ export default function PaginaLeads() {
           // Importar contactos usando el token
           const resultado = await contactoService.importarDesdeGoogle(googleToken)
           console.log('✅ Resultado de importación:', resultado)
+          console.log('✅ Tipo de resultado:', typeof resultado)
+          console.log('✅ Propiedades:', resultado ? Object.keys(resultado) : 'null/undefined')
+          
+          // Validar que tenemos los datos correctos
+          const importados = resultado?.importados ?? 0
+          const duplicados = resultado?.duplicados ?? 0
+          const errores = resultado?.errores ?? 0
+          
+          console.log('✅ Valores extraídos - Importados:', importados, 'Duplicados:', duplicados, 'Errores:', errores)
           
           toast({
             title: "✅ Importación completada",
-            description: `Se importaron ${resultado.importados} contactos como leads. ${resultado.duplicados > 0 ? `${resultado.duplicados} duplicados omitidos.` : ''}`
+            description: `Se importaron ${importados} contactos como leads. ${duplicados > 0 ? `${duplicados} duplicados omitidos.` : ''}`
           })
           
           // Recargar leads

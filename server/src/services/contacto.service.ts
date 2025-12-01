@@ -966,36 +966,6 @@ export class ContactoService {
           // Si no tiene correo, usar un correo temporal basado en el nombre
           correoFinal = correo;
           if (!correo) {
-            // Primero verificar si ya existe un lead con el mismo nombre y apellido
-            const leadPorNombre = await prisma.lead.findFirst({
-              where: {
-                nombre: nombre,
-                apellido: apellido,
-                idUsuario: usuarioId
-              }
-            });
-
-            if (leadPorNombre) {
-              console.log(`🔄 Lead duplicado (por nombre): ${nombre} ${apellido}`);
-              duplicados++;
-              continue;
-            }
-
-            // También verificar en clientes
-            const clientePorNombre = await prisma.cliente.findFirst({
-              where: {
-                nombre: nombre,
-                apellido: apellido,
-                idUsuario: usuarioId
-              }
-            });
-
-            if (clientePorNombre) {
-              console.log(`🔄 Cliente duplicado (por nombre): ${nombre} ${apellido}`);
-              duplicados++;
-              continue;
-            }
-
             // Generar un identificador único basado en nombre y timestamp
             const identificador = `${nombre}${apellido}`.toLowerCase().replace(/\s+/g, '');
             correoFinal = `${identificador}_${Date.now()}@importado.local`;
@@ -1010,32 +980,97 @@ export class ContactoService {
           // Normalizar correo final
           const correoNormalizado = correoFinal.toLowerCase().trim();
 
-          // Verificar si ya existe un lead con ese correo
-          const leadExistente = await prisma.lead.findFirst({
-            where: {
-              correo: correoNormalizado,
-              idUsuario: usuarioId
+          // LÓGICA DE DEDUPLICACIÓN POR TELÉFONO
+          let leadExistente = null;
+          let clienteExistente = null;
+
+          // Si tiene teléfono, buscar por teléfono (identificador principal)
+          if (telefono) {
+            const telefonoNormalizado = telefono.replace(/\s+/g, '');
+            
+            leadExistente = await prisma.lead.findFirst({
+              where: {
+                telefono: telefonoNormalizado,
+                idUsuario: usuarioId
+              }
+            });
+
+            if (leadExistente) {
+              console.log(`🔄 Lead duplicado detectado (por teléfono): ${nombre} ${apellido} (${telefono})`);
+              
+              // Actualizar datos si han cambiado
+              const cambios: any = {};
+              if (leadExistente.nombre !== nombre) cambios.nombre = nombre;
+              if (leadExistente.apellido !== apellido) cambios.apellido = apellido;
+              if (correoNormalizado && !leadExistente.correo) cambios.correo = correoNormalizado;
+              
+              if (Object.keys(cambios).length > 0) {
+                await prisma.lead.update({
+                  where: { id: leadExistente.id },
+                  data: cambios
+                });
+                console.log(`✏️ Lead actualizado con cambios:`, cambios);
+              }
+              
+              duplicados++;
+              continue;
             }
-          });
 
-          if (leadExistente) {
-            console.log(`🔄 Lead duplicado: ${nombre} ${apellido} (${correoNormalizado})`);
-            duplicados++;
-            continue;
-          }
+            // También verificar en clientes
+            clienteExistente = await prisma.cliente.findFirst({
+              where: {
+                telefono: telefonoNormalizado,
+                idUsuario: usuarioId
+              }
+            });
 
-          // También verificar en clientes
-          const clienteExistente = await prisma.cliente.findFirst({
-            where: {
-              correo: correoNormalizado,
-              idUsuario: usuarioId
+            if (clienteExistente) {
+              console.log(`🔄 Cliente duplicado detectado (por teléfono): ${nombre} ${apellido} (${telefono})`);
+              
+              // Actualizar datos si han cambiado
+              const cambios: any = {};
+              if (clienteExistente.nombre !== nombre) cambios.nombre = nombre;
+              if (clienteExistente.apellido !== apellido) cambios.apellido = apellido;
+              if (correoNormalizado && !clienteExistente.correo) cambios.correo = correoNormalizado;
+              
+              if (Object.keys(cambios).length > 0) {
+                await prisma.cliente.update({
+                  where: { id: clienteExistente.id },
+                  data: cambios
+                });
+                console.log(`✏️ Cliente actualizado con cambios:`, cambios);
+              }
+              
+              duplicados++;
+              continue;
             }
-          });
+          } else {
+            // Si no tiene teléfono, buscar por correo como fallback
+            leadExistente = await prisma.lead.findFirst({
+              where: {
+                correo: correoNormalizado,
+                idUsuario: usuarioId
+              }
+            });
 
-          if (clienteExistente) {
-            console.log(`🔄 Cliente duplicado: ${nombre} ${apellido} (${correoNormalizado})`);
-            duplicados++;
-            continue;
+            if (leadExistente) {
+              console.log(`🔄 Lead duplicado: ${nombre} ${apellido} (${correoNormalizado})`);
+              duplicados++;
+              continue;
+            }
+
+            clienteExistente = await prisma.cliente.findFirst({
+              where: {
+                correo: correoNormalizado,
+                idUsuario: usuarioId
+              }
+            });
+
+            if (clienteExistente) {
+              console.log(`🔄 Cliente duplicado: ${nombre} ${apellido} (${correoNormalizado})`);
+              duplicados++;
+              continue;
+            }
           }
 
           // Crear el nuevo lead
@@ -1047,7 +1082,7 @@ export class ContactoService {
               estado: 'NUEVO',
               fuente: 'Google Contacts',
               idUsuario: usuarioId,
-              ...(telefono ? { telefono: telefono } : {})
+              ...(telefono ? { telefono: telefono.replace(/\s+/g, '') } : {})
             }
           });
 

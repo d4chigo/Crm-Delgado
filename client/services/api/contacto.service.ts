@@ -266,13 +266,21 @@ class ContactoService {
       console.log('[ContactoService] Llamando a /contactos/importar/google con token de sesión');
       const resultado = await fetchAPI<{ importados: number; duplicados: number; errores: number }>('/contactos/importar/google', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ accessToken }),
       });
       console.log('[ContactoService] Respuesta recibida:', resultado);
+      console.log('[ContactoService] Tipo de resultado:', typeof resultado);
+      console.log('[ContactoService] Propiedades:', Object.keys(resultado || {}));
+      console.log('[ContactoService] Importados:', resultado?.importados);
+      console.log('[ContactoService] Duplicados:', resultado?.duplicados);
+      console.log('[ContactoService] Errores:', resultado?.errores);
+      
+      // Validar que tenemos los datos correctos
+      if (!resultado || typeof resultado !== 'object') {
+        console.error('[ContactoService] Resultado inválido:', resultado);
+        throw new Error('Respuesta inválida del servidor');
+      }
+      
       return resultado;
     } catch (error: any) {
       console.error('[ContactoService] Error en importación:', error.message);
