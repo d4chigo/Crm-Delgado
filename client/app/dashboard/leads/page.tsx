@@ -68,6 +68,7 @@ export default function PaginaLeads() {
   const [dialogoAccesoWebAbierto, setDialogoAccesoWebAbierto] = useState(false)
   const [leadParaAccesoWeb, setLeadParaAccesoWeb] = useState<Lead | null>(null)
   const [ordenamiento, setOrdenamiento] = useState<string>("recientes")
+  const [paginaFiltrada, setPaginaFiltrada] = useState(1)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { oportunidades, removerDelPipeline } = useOportunidades()
 
@@ -75,10 +76,15 @@ export default function PaginaLeads() {
     setEstaCargando(true)
     setError(null)
     try {
+      // Si hay filtros avanzados activos, cargar TODOS los leads sin paginación en backend
+      // para que el filtro se aplique a todos los resultados
+      const limite = filtrosAvanzados ? 10000 : (filtros?.limite || 6)
+      const pagina = filtrosAvanzados ? 1 : (filtros?.pagina || 1)
+      
       const resultado: any = await leadService.obtenerLeads({
         tipo: "LEAD",
-        pagina: filtros?.pagina || 1,
-        limite: 6,
+        pagina: pagina,
+        limite: limite,
         busqueda: filtros?.busqueda || "",
         estadoLead: "" // No filtrar por estado en backend, lo haremos en frontend
       })
@@ -90,7 +96,7 @@ export default function PaginaLeads() {
     } finally {
       setEstaCargando(false)
     }
-  }, [])
+  }, [filtrosAvanzados])
 
   // Función optimizada para verificar nuevos leads sin recargar toda la página
   // IMPORTANTE: Solo actualiza si hay cambios, sin afectar los filtros activos
@@ -314,6 +320,26 @@ export default function PaginaLeads() {
     
     return filtrados
   }, [leads, etiquetaFiltro, estadoFiltro, filtrosAvanzados, determinarEstadoLogico, ordenamiento])
+
+  // Paginar los leads filtrados (6 por página cuando hay filtros)
+  const leadsPaginados = useMemo(() => {
+    if (!filtrosAvanzados) {
+      // Sin filtros, usar la paginación del backend
+      return leadsFiltrados
+    }
+    
+    // Con filtros, paginar en el frontend
+    const itemsPorPagina = 6
+    const inicio = (paginaFiltrada - 1) * itemsPorPagina
+    const fin = inicio + itemsPorPagina
+    return leadsFiltrados.slice(inicio, fin)
+  }, [leadsFiltrados, paginaFiltrada, filtrosAvanzados])
+
+  // Calcular total de páginas para los filtros
+  const totalPaginasFiltradas = useMemo(() => {
+    if (!filtrosAvanzados) return paginacion.totalPaginas
+    return Math.ceil(leadsFiltrados.length / 6)
+  }, [leadsFiltrados, filtrosAvanzados, paginacion.totalPaginas])
 
   const handleGuardarCotizacion = async (datos: CrearCotizacionDTO) => {
     try {
@@ -644,6 +670,17 @@ export default function PaginaLeads() {
           onAplicar={(filtros) => {
             setFiltrosAvanzados(filtros)
             setBusqueda(filtros.busqueda || "")
+            setPaginaFiltrada(1) // Resetear a página 1 cuando se aplican filtros
+            // Cargar todos los leads sin paginación cuando se aplican filtros
+            // para que el filtro se aplique a todos los resultados
+            cargarLeads({ pagina: 1, limite: 10000 })
+          }}
+          onLimpiar={() => {
+            setFiltrosAvanzados(null)
+            setBusqueda("")
+            setPaginaFiltrada(1) // Resetear a página 1 cuando se limpian filtros
+            // Recargar con paginación normal
+            cargarLeads({ pagina: 1 })
           }}
           cargando={estaCargando}
         />
@@ -686,7 +723,7 @@ export default function PaginaLeads() {
         {!estaCargando && leadsFiltrados.length > 0 && (
           <div className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" style={{ gridAutoRows: '1fr', alignItems: 'stretch' }}>
-              {leadsFiltrados.map((lead) => (
+              {leadsPaginados.map((lead) => (
                 <LeadCard
                   key={lead.id}
                   lead={lead}
@@ -716,37 +753,78 @@ export default function PaginaLeads() {
           </div>
         )}
 
-        {!estaCargando && leads.length > 0 && paginacion.totalPaginas > 1 && (
-          <div className="flex items-center justify-between mt-8 pt-6 border-t">
-            <p className="text-sm text-muted-foreground">
-              Mostrando <span className="font-semibold">{leadsFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
-            </p>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => cargarLeads({ pagina: paginacion.pagina - 1 })} 
-                disabled={paginacion.pagina === 1 || estaCargando}
-                className="gap-1"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
-                {paginacion.pagina} / {paginacion.totalPaginas}
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => cargarLeads({ pagina: paginacion.pagina + 1 })} 
-                disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
-                className="gap-1"
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+        {!estaCargando && leadsFiltrados.length > 0 && (
+          <>
+            {filtrosAvanzados ? (
+              // Paginación para filtros (en frontend)
+              totalPaginasFiltradas > 1 && (
+                <div className="flex items-center justify-between mt-8 pt-6 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando <span className="font-semibold">{leadsPaginados.length}</span> de <span className="font-semibold">{leadsFiltrados.length}</span> leads filtrados
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setPaginaFiltrada(paginaFiltrada - 1)} 
+                      disabled={paginaFiltrada === 1 || estaCargando}
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
+                      {paginaFiltrada} / {totalPaginasFiltradas}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setPaginaFiltrada(paginaFiltrada + 1)} 
+                      disabled={paginaFiltrada === totalPaginasFiltradas || estaCargando}
+                      className="gap-1"
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            ) : (
+              // Paginación normal (backend)
+              paginacion.totalPaginas > 1 && (
+                <div className="flex items-center justify-between mt-8 pt-6 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando <span className="font-semibold">{leadsFiltrados.length}</span> de <span className="font-semibold">{paginacion.total}</span> leads
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => cargarLeads({ pagina: paginacion.pagina - 1 })} 
+                      disabled={paginacion.pagina === 1 || estaCargando}
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="text-sm font-medium px-4 py-2 bg-secondary rounded">
+                      {paginacion.pagina} / {paginacion.totalPaginas}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => cargarLeads({ pagina: paginacion.pagina + 1 })} 
+                      disabled={paginacion.pagina === paginacion.totalPaginas || estaCargando}
+                      className="gap-1"
+                    >
+                      Siguiente
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            )}
+          </>
         )}
 
         {!estaCargando && leadsFiltrados.length === 0 && !error && (
@@ -762,9 +840,9 @@ export default function PaginaLeads() {
         )}
       </div>
 
-      <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} onActualizado={() => cargarLeads()} />
+      <DialogoDetallesLead lead={leadSeleccionado} abierto={dialogoDetallesAbierto} onCerrar={() => setDialogoDetallesAbierto(false)} onActualizado={() => cargarLeads({ pagina: paginacion.pagina })} />
       <DialogoEditarLead lead={leadSeleccionado} abierto={dialogoEditarAbierto} onCerrar={() => setDialogoEditarAbierto(false)} onActualizado={() => {
-        cargarLeads()
+        cargarLeads({ pagina: paginacion.pagina })
         setDialogoEditarAbierto(false)
       }} />
 

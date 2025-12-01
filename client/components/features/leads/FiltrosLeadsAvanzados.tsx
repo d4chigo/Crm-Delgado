@@ -43,6 +43,7 @@ export interface FiltrosLeadsAvanzados {
 
 interface FiltrosLeadsAvanzadosProps {
   onAplicar?: (filtros: FiltrosLeadsAvanzados) => void;
+  onLimpiar?: () => void;
   cargando?: boolean;
 }
 
@@ -55,6 +56,7 @@ const FUENTES_LEAD = ['TikTok', 'YouTube', 'Instagram', 'Facebook', 'Recomendaci
  */
 export const FiltrosLeadsAvanzados: React.FC<FiltrosLeadsAvanzadosProps> = ({
   onAplicar,
+  onLimpiar,
   cargando = false
 }) => {
   const [filtros, setFiltros] = useState<FiltrosLeadsAvanzados>({
@@ -132,6 +134,7 @@ export const FiltrosLeadsAvanzados: React.FC<FiltrosLeadsAvanzadosProps> = ({
     setEstadosSeleccionados([]);
     setFuentesSeleccionadas([]);
     setEtiquetasSeleccionadas([]);
+    onLimpiar?.();
   };
 
   // Aplicar filtros
