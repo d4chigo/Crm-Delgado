@@ -300,7 +300,9 @@ export async function obtenerReporteVentasCerradas(filtros?: { fechaInicio?: Dat
  * Clientes con contratos vigentes y oportunidades de seguimiento
  */
 export async function obtenerReporteClientesActivos() {
-  // Clientes con oportunidades activas
+  console.log('[REPORTE CLIENTES] Iniciando búsqueda de clientes activos...');
+  
+  // Clientes con oportunidades activas (excluyendo solo las cerradas perdidas)
   const clientesConOportunidades = await prisma.cliente.findMany({
     select: {
       id: true,
@@ -311,7 +313,7 @@ export async function obtenerReporteClientesActivos() {
       oportunidades: {
         where: {
           etapa: {
-            in: ['CONTACTO_INICIAL', 'NEGOCIACION', 'PROPUESTA'],
+            notIn: ['CIERRE_PERDIDO'], // Excluir solo las cerradas perdidas
           },
         },
         select: {
@@ -324,8 +326,12 @@ export async function obtenerReporteClientesActivos() {
     },
   });
 
+  console.log('[REPORTE CLIENTES] Total de clientes encontrados:', clientesConOportunidades.length);
+
   // Filtrar solo clientes con oportunidades activas
   const clientesActivos = clientesConOportunidades.filter((c: any) => c.oportunidades.length > 0);
+
+  console.log('[REPORTE CLIENTES] Clientes con oportunidades activas:', clientesActivos.length);
 
   return {
     totalClientesActivos: clientesActivos.length,
