@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { getCRMContext } from '@/services/crm-context.service';
 import prisma from '@/config/database';
 import cotizacionService from '@/services/cotizacion.service';
+import { videoTestimonialService } from '@/services/video-testimonial.service';
 
 const apiKey = process.env.SERVER_GEMINI_API_KEY;
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
@@ -12,6 +13,89 @@ export async function askAssistant(req: Request, res: Response) {
     const { question } = req.body as { question: string };
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ exito: false, error: 'Pregunta inválida' });
+    }
+
+    // Intent detection: process video testimonial
+    // Look for video URLs (http/https) - soporta redes sociales y URLs directas
+    const videoUrlRegex = /(https?:\/\/[^\s]+)/i;
+    const videoMatch = question.match(videoUrlRegex);
+    const isVideoRequest = videoMatch || (question.toLowerCase().includes('video') && question.toLowerCase().includes('testimonio'));
+
+    // Detectar si es una solicitud de video (redes sociales o URL directa)
+    if (videoMatch && (question.toLowerCase().includes('testimonio') || question.toLowerCase().includes('resumen') || question.toLowerCase().includes('video'))) {
+      try {
+        const videoUrl = videoMatch[1];
+        
+        // Extraer nombre del usuario si está disponible
+        const nombreMatch = question.match(/(?:para|de|por)\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)/i);
+        const nombre = nombreMatch ? nombreMatch[1].trim() : 'Cliente';
+        
+        // Extraer email si está disponible
+        const emailMatch = question.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        const correo = emailMatch ? emailMatch[1] : undefined;
+
+        // Procesar el video
+        const resultado = await videoTestimonialService.procesarVideoYCrearTestimonio(
+          videoUrl,
+          nombre,
+          correo || 'no-especificado@ejemplo.com'
+        );
+
+        // Construir respuesta en formato de testimonio visual
+        const nombreCliente = resultado.analisis.nombre || nombre;
+        const rolCliente = resultado.analisis.rol ? `\n${resultado.analisis.rol}` : '';
+        const textoTestimonio = resultado.analisis.testimonio;
+        const estrellas = '⭐'.repeat(resultado.analisis.calificacion);
+        const puntosClaveLista = resultado.analisis.puntosClave.map((p: string) => `• ${p}`).join('\n');
+
+        const respuesta = `✅ Testimonio procesado exitosamente
+
+**${nombreCliente}**${rolCliente}
+"${textoTestimonio}"
+${estrellas}
+
+**Puntos clave:**
+${puntosClaveLista}
+
+El testimonio ha sido guardado en la base de datos y está pendiente de aprobación.`;
+
+        return res.json({ exito: true, datos: { answer: respuesta, action: { type: 'none' } } });
+      } catch (error: any) {
+        console.error('[Assistant] Error procesando video:', error);
+        
+        // Mensajes de error personalizados
+        let mensaje = error.message || 'Error desconocido';
+        let sugerencias = '';
+
+        if (mensaje.includes('TikTok')) {
+          sugerencias = `
+Sugerencias para TikTok:
+- Asegúrate de que el video sea **público**
+- Intenta con un video de tu perfil o de otro usuario
+- Si el problema persiste, intenta descargar el video manualmente y sube la URL directa`;
+        } else if (mensaje.includes('Instagram')) {
+          sugerencias = `
+Sugerencias para Instagram:
+- El video debe ser público
+- Los videos privados no se pueden procesar
+- Intenta con un Reel o video de tu feed`;
+        } else if (mensaje.includes('Facebook')) {
+          sugerencias = `
+Sugerencias para Facebook:
+- El video debe ser público
+- Los videos privados no se pueden procesar`;
+        } else {
+          sugerencias = `
+Sugerencias generales:
+- La URL del video debe ser válida y accesible
+- El video debe estar en formato MP4, MOV, AVI, WebM o MKV
+- El video debe contener audio claro con el testimonio
+- Si es de una red social, asegúrate de que sea público`;
+        }
+
+        const respuesta = `❌ No se pudo procesar el video: ${mensaje}${sugerencias}`;
+        return res.json({ exito: true, datos: { answer: respuesta, action: { type: 'none' } } });
+      }
     }
 
     // Intent detection: create quote for a contact
@@ -123,6 +207,15 @@ CAPACIDADES COMPLETAS:
    - Sugerir estructura narrativa y timing
    - Crear variaciones cortas (15-30 seg) y largas (1-2 min)
    - Incluir calls-to-action efectivos
+
+4. PROCESAMIENTO DE VIDEOS DE TESTIMONIOS:
+   - Procesar videos de testimonios desde URLs
+   - Extraer automáticamente el contenido del testimonio
+   - Resumir el contenido en texto
+   - Identificar puntos clave mencionados
+   - Evaluar la satisfacción del cliente
+   - Guardar testimonios en la base de datos
+   - NOTA: El usuario puede enviar un link de video con palabras como "testimonio" o "resumen"
 
 DATOS DISPONIBLES:
 - Resumen: estadísticas generales del CRM
