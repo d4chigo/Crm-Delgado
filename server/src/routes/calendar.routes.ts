@@ -9,6 +9,7 @@ import {
   crearEvento,
   actualizarEvento,
   eliminarEvento,
+  generarLinkWhatsApp,
 } from '@/controllers/calendar.controller';
 
 const router = Router();
@@ -39,5 +40,8 @@ router.put('/update-event', actualizarEvento);
 
 // Eliminar evento en Google Calendar
 router.delete('/delete-event', eliminarEvento);
+
+// Generar link wa.me para enviar notificación por WhatsApp
+router.post('/generar-whatsapp', generarLinkWhatsApp);
 
 export default router;

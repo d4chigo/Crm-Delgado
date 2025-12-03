@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Calendar, Trash2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { crearEventoEnCalendar, actualizarEventoEnCalendar, eliminarEventoEnCalendar, listarEventos } from '@/services/api/calendar.service'
+import { crearEventoEnCalendar, actualizarEventoEnCalendar, eliminarEventoEnCalendar, listarEventos, obtenerTokensGuardados, generarLinkWhatsApp } from '@/services/api/calendar.service'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { MessageCircle, Copy, ExternalLink } from 'lucide-react'
 
 interface DialogoAgendarReunionProps {
   abierto: boolean
@@ -40,6 +41,7 @@ export function DialogoAgendarReunion({
   const { toast } = useToast()
   const [cargando, setCargando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [autenticado, setAutenticado] = useState(true)
   const [asunto, setAsunto] = useState(`Reunión con ${contactoNombre}`)
   const [descripcion, setDescripcion] = useState('')
   const [ubicacion, setUbicacion] = useState('')
@@ -53,6 +55,22 @@ export function DialogoAgendarReunion({
   const [correoParticipante, setCorreoParticipante] = useState(contactoEmail || '')
   const [eventosDelDia, setEventosDelDia] = useState<any[]>([])
   const [conflictoHorario, setConflictoHorario] = useState(false)
+  const [linkWhatsApp, setLinkWhatsApp] = useState<{ url: string; mensaje: string; telefono: string } | null>(null)
+
+  // Verificar autenticación cuando se abre el diálogo
+  useEffect(() => {
+    if (abierto) {
+      const tokens = obtenerTokensGuardados()
+      setAutenticado(!!tokens)
+      if (!tokens) {
+        toast({
+          title: '⚠️ Google Calendar no conectado',
+          description: 'Por favor, conecta tu Google Calendar para agendar reuniones',
+          variant: 'destructive',
+        })
+      }
+    }
+  }, [abierto, toast])
 
   // Cargar datos del evento existente si se proporciona
   useEffect(() => {
@@ -115,8 +133,14 @@ export function DialogoAgendarReunion({
         return fechaEvento === fecha && evento.id !== eventoExistente?.id
       })
       setEventosDelDia(eventosFiltered)
-    } catch (error) {
-      console.error('Error cargando eventos del día:', error)
+    } catch (error: any) {
+      // Si no está autenticado, simplemente no mostrar eventos
+      // Esto permite que el usuario siga usando el diálogo sin Google Calendar
+      if (error?.message?.includes('No autenticado')) {
+        console.log('Google Calendar no autenticado - continuando sin eventos')
+      } else {
+        console.error('Error cargando eventos del día:', error)
+      }
       setEventosDelDia([])
     }
   }
@@ -235,6 +259,23 @@ export function DialogoAgendarReunion({
           title: '✅ Reunión agendada',
           description: `"${asunto}" ha sido creada en Google Calendar`,
         })
+
+        // Generar link wa.me si hay teléfono
+        if (contactoTelefono) {
+          try {
+            const linkData = await generarLinkWhatsApp(datosContacto, evento, 'AGENDADA')
+            setLinkWhatsApp({
+              url: linkData.urlWame,
+              mensaje: linkData.mensaje,
+              telefono: linkData.telefono,
+            })
+            // No cerrar el diálogo, mostrar el link wa.me
+            return
+          } catch (error: any) {
+            console.warn('Error generando link WhatsApp:', error)
+            // Continuar sin WhatsApp si hay error
+          }
+        }
       }
 
       // Resetear formulario
@@ -247,9 +288,16 @@ export function DialogoAgendarReunion({
       onCerrar()
     } catch (error: any) {
       console.error('Error guardando reunión:', error)
+      
+      // Mensaje más específico si no está autenticado
+      let mensajeError = error.message || 'No se pudo guardar la reunión'
+      if (mensajeError.includes('No autenticado')) {
+        mensajeError = 'Por favor, conecta tu Google Calendar primero para agendar reuniones'
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'No se pudo guardar la reunión',
+        description: mensajeError,
         variant: 'destructive',
       })
     } finally {
@@ -287,9 +335,16 @@ export function DialogoAgendarReunion({
       onCerrar()
     } catch (error: any) {
       console.error('Error eliminando reunión:', error)
+      
+      // Mensaje más específico si no está autenticado
+      let mensajeError = error.message || 'No se pudo eliminar la reunión'
+      if (mensajeError.includes('No autenticado')) {
+        mensajeError = 'Por favor, conecta tu Google Calendar primero para eliminar reuniones'
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'No se pudo eliminar la reunión',
+        description: mensajeError,
         variant: 'destructive',
       })
     } finally {
@@ -344,9 +399,16 @@ export function DialogoAgendarReunion({
       onCerrar()
     } catch (error: any) {
       console.error('Error creando reunión:', error)
+      
+      // Mensaje más específico si no está autenticado
+      let mensajeError = error.message || 'No se pudo crear la reunión'
+      if (mensajeError.includes('No autenticado')) {
+        mensajeError = 'Por favor, conecta tu Google Calendar primero para crear reuniones'
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'No se pudo crear la reunión',
+        description: mensajeError,
         variant: 'destructive',
       })
     } finally {
@@ -370,6 +432,54 @@ export function DialogoAgendarReunion({
         </DialogHeader>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+          {/* Mostrar link wa.me después de crear reunión */}
+          {linkWhatsApp && (
+            <div className="p-4 bg-green-50 rounded-md border border-green-200 space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                <p className="font-semibold text-green-900">✅ Reunión creada exitosamente</p>
+              </div>
+              <p className="text-sm text-green-800">
+                Ahora puedes enviar la notificación por WhatsApp a <strong>{linkWhatsApp.telefono}</strong>
+              </p>
+              <div className="bg-white p-3 rounded border border-green-200 max-h-32 overflow-y-auto">
+                <p className="text-xs text-gray-600 whitespace-pre-wrap">{linkWhatsApp.mensaje}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(linkWhatsApp.url)
+                    toast({ title: 'Link copiado', description: 'Pega en tu navegador para enviar por WhatsApp' })
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copiar Link
+                </Button>
+                <Button
+                  onClick={() => window.open(linkWhatsApp.url, '_blank')}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir en WhatsApp
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Alerta de no autenticado */}
+          {!autenticado && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                ⚠️ Google Calendar no está conectado. Por favor, conecta tu Google Calendar en la sección de Calendario para agendar reuniones.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Alerta de conflicto de horario */}
           {conflictoHorario && (
             <Alert variant="destructive">
@@ -401,6 +511,9 @@ export function DialogoAgendarReunion({
             </div>
           )}
 
+          {/* Formulario - Ocultar si se muestra link wa.me */}
+          {!linkWhatsApp && (
+            <>
           {/* Asunto */}
           <div>
             <label className="block text-sm font-medium mb-1">Asunto *</label>
@@ -463,12 +576,21 @@ export function DialogoAgendarReunion({
               onChange={(e) => setCorreoParticipante(e.target.value)}
             />
           </div>
+            </>
+          )}
 
           {/* Botones */}
           <div className="flex gap-2 justify-between pt-4 border-t sticky bottom-0 bg-white">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onCerrar} disabled={cargando || eliminando}>
-                Cancelar
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setLinkWhatsApp(null)
+                  onCerrar()
+                }} 
+                disabled={cargando || eliminando}
+              >
+                {linkWhatsApp ? 'Cerrar' : 'Cancelar'}
               </Button>
             </div>
             
@@ -495,8 +617,9 @@ export function DialogoAgendarReunion({
               
               <Button
                 onClick={handleGuardarReunion}
-                disabled={cargando || eliminando || (conflictoHorario && !eventoExistente)}
+                disabled={cargando || eliminando || (conflictoHorario && !eventoExistente) || !autenticado}
                 className="bg-[#FCBA00] hover:bg-[#e0a800] text-[#303030] disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!autenticado ? 'Conecta tu Google Calendar para agendar reuniones' : ''}
               >
                 {cargando ? (
                   <>

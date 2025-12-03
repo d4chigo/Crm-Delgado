@@ -214,3 +214,35 @@ export async function eliminarEventoEnCalendar(eventId: string, contacto?: {
     body: JSON.stringify({ tokens, eventId, contacto, evento }),
   });
 }
+
+export async function generarLinkWhatsApp(contacto: {
+  nombre?: string;
+  correo?: string;
+  telefono?: string;
+}, evento: {
+  summary?: string;
+  description?: string;
+  location?: string;
+  startDateTime?: string;
+  endDateTime?: string;
+}, tipo: 'AGENDADA' | 'ACTUALIZADA' | 'CANCELADA' = 'AGENDADA'): Promise<{ urlWame: string; mensaje: string; telefono: string }> {
+  const response = await fetchAPI<{
+    urlWame: string;
+    mensaje: string;
+    telefono: string;
+    nombre: string;
+  }>('/calendar/generar-whatsapp', {
+    method: 'POST',
+    body: JSON.stringify({ contacto, evento, tipo }),
+  });
+
+  if (!response) {
+    throw new Error('Error al generar link WhatsApp');
+  }
+
+  return {
+    urlWame: response.urlWame,
+    mensaje: response.mensaje,
+    telefono: response.telefono,
+  };
+}

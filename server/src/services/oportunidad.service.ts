@@ -55,7 +55,7 @@ export class OportunidadService {
     const cliente = await prisma.cliente.findFirst({
       where: {
         id: datos.clienteId,
-        usuarioId
+        idUsuario: usuarioId
       }
     });
 
@@ -70,7 +70,7 @@ export class OportunidadService {
     // Crear la oportunidad
     const oportunidad = await prisma.oportunidadCliente.create({
       data: {
-        clienteId: datos.clienteId,
+        idCliente: datos.clienteId,
         titulo: datos.titulo,
         proyecto: datos.proyecto,
         propiedad: datos.propiedad,
@@ -79,7 +79,7 @@ export class OportunidadService {
         probabilidad: probabilidad,
         proximaAccion: datos.proximaAccion,
         notas: datos.notas,
-        usuarioId,
+        idUsuario: usuarioId,
         ultimaActividad: new Date()
       },
       include: {
@@ -575,7 +575,7 @@ export class OportunidadService {
     console.log('🔍 Buscando oportunidad para eliminar:', { id, usuarioId });
     
     const oportunidadExistente = await prisma.oportunidadCliente.findFirst({
-      where: { id, usuarioId }
+      where: { id, idUsuario: usuarioId }
     });
 
     if (!oportunidadExistente) {
@@ -640,8 +640,8 @@ export class OportunidadService {
    */
   async obtenerOportunidadesDeCliente(clienteId: string, usuarioId: string) {
     // Verificar que el cliente pertenece al usuario
-    const cliente = await prisma.contacto.findFirst({
-      where: { id: clienteId, usuarioId }
+    const cliente = await prisma.cliente.findFirst({
+      where: { id: clienteId, idUsuario: usuarioId }
     });
 
     if (!cliente) {

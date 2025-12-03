@@ -507,3 +507,97 @@ export async function eliminarEvento(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Generar link wa.me para enviar notificación de reunión por WhatsApp
+ */
+export async function generarLinkWhatsApp(req: Request, res: Response) {
+  try {
+    const { contacto, evento, tipo } = req.body;
+
+    if (!contacto || !contacto.telefono) {
+      return res.status(400).json({ 
+        exito: false, 
+        error: 'Teléfono del contacto requerido' 
+      });
+    }
+
+    if (!evento) {
+      return res.status(400).json({ 
+        exito: false, 
+        error: 'Datos del evento requeridos' 
+      });
+    }
+
+    // Limpiar número de teléfono
+    const telefonoLimpio = (contacto.telefono || '').replace(/\D/g, '');
+
+    if (telefonoLimpio.length < 7) {
+      return res.status(400).json({ 
+        exito: false, 
+        error: 'Número de teléfono inválido' 
+      });
+    }
+
+    let mensaje = '';
+    const estado = tipo || 'AGENDADA';
+
+    if (estado === 'AGENDADA') {
+      mensaje = `¡Hola ${contacto.nombre}! 👋
+
+Tu reunión ha sido agendada exitosamente en Delgado Propiedades.
+
+📅 *Detalles:*
+• Asunto: ${evento.summary}
+• Fecha: ${evento.startDateTime?.split('T')[0]}
+• Hora: ${evento.startDateTime?.split('T')[1]?.substring(0, 5)} - ${evento.endDateTime?.split('T')[1]?.substring(0, 5)}
+${evento.location ? `• Ubicación: ${evento.location}` : ''}
+
+Por favor confirma tu asistencia.
+
+¡Muchas gracias!`;
+    } else if (estado === 'ACTUALIZADA') {
+      mensaje = `¡Hola ${contacto.nombre}! 👋
+
+Tu reunión ha sido *actualizada* con nueva información.
+
+📅 *Nuevos detalles:*
+• Asunto: ${evento.summary}
+• Fecha: ${evento.startDateTime?.split('T')[0]}
+• Hora: ${evento.startDateTime?.split('T')[1]?.substring(0, 5)} - ${evento.endDateTime?.split('T')[1]?.substring(0, 5)}
+${evento.location ? `• Ubicación: ${evento.location}` : ''}
+
+Por favor actualiza tu calendario.`;
+    } else if (estado === 'CANCELADA') {
+      mensaje = `Hola ${contacto.nombre}, 
+
+Lamentamos informarte que la reunión "${evento.summary}" programada para ${evento.startDateTime?.split('T')[0]} a las ${evento.startDateTime?.split('T')[1]?.substring(0, 5)} ha sido *cancelada*.
+
+Si deseas reprogramar, por favor comunícate con nosotros.`;
+    }
+
+    // Generar link wa.me
+    const urlWame = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+
+    console.log('[Calendar] Link wa.me generado:');
+    console.log(`Para: +${telefonoLimpio}`);
+    console.log(`URL: ${urlWame}`);
+
+    res.json({
+      exito: true,
+      datos: {
+        urlWame,
+        telefono: `+${telefonoLimpio}`,
+        mensaje,
+        nombre: contacto.nombre
+      }
+    });
+  } catch (error: any) {
+    console.error('[Calendar] Error generando link wa.me:', error.message);
+    res.status(500).json({
+      exito: false,
+      error: 'Error generando link WhatsApp',
+      detalles: error.message
+    });
+  }
+}

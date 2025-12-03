@@ -199,29 +199,6 @@ model OportunidadCliente {
   @@map("oportunidades_clientes")
 }
 
-model HistorialPipelineLead {
-  id                    String        @id @default(uuid())
-  idOportunidad         String        @map("id_oportunidad")
-  idLead                String        @map("id_lead")
-  etapaAnterior         String        @map("etapa_anterior")
-  etapaNueva            String        @map("etapa_nueva")
-  probabilidadAnterior  Int?          @map("probabilidad_anterior")
-  probabilidadNueva     Int?          @map("probabilidad_nueva")
-  valorAnterior         Float?        @map("valor_anterior")
-  valorNuevo            Float?        @map("valor_nuevo")
-  cambiadoEn            DateTime      @default(now()) @map("cambiado_en")
-  cambiadoPor           String        @map("cambiado_por")
-  notas                 String?       @db.Text
-  razon                 String?
-
-  @@index([idOportunidad])
-  @@index([idLead])
-  @@index([cambiadoPor])
-  @@index([cambiadoEn])
-  @@index([etapaNueva])
-  @@map("historial_etapas_leads")
-}
-
 model ProyectoEtiqueta {
   idProyecto String   @map("id_proyecto")
   idEtiqueta String   @map("id_etiqueta")
@@ -247,20 +224,6 @@ model ProyectoCliente {
   @@index([idProyecto])
   @@index([idCliente])
   @@map("clientes_proyectos")
-}
-
-model ProyectoContacto {
-  idProyecto String   @map("id_proyecto")
-  idContacto String   @map("id_contacto")
-  tipoContacto String @map("tipo_contacto") // 'CLIENTE' o 'LEAD'
-  asociadoEn DateTime @default(now()) @map("asociado_en")
-  notas      String?
-  proyecto   Proyecto @relation("ProyectoContactos", fields: [idProyecto], references: [id], onDelete: Cascade)
-
-  @@id([idProyecto, idContacto])
-  @@index([idProyecto])
-  @@index([idContacto])
-  @@map("contactos_proyectos")
 }
 
 model Cotizacion {
@@ -316,27 +279,6 @@ model Reporte {
   @@map("reportes")
 }
 
-model Notificacion {
-  id              String   @id @default(uuid())
-  titulo          String
-  descripcion     String   @db.Text
-  tipo            String   @default("INFO")
-  leida           Boolean  @default(false)
-  idUsuario       String?  @map("id_usuario")
-  idContacto      String?  @map("id_contacto")
-  referencia      String?  // ID del recurso relacionado (lead, contacto, etc)
-  tipoReferencia  String?  @map("tipo_referencia") // Tipo de recurso (LEAD, CONTACTO, OPORTUNIDAD, etc)
-  creadoEn        DateTime @default(now()) @map("creado_en")
-  leidaEn         DateTime? @map("leida_en")
-
-  @@index([idUsuario])
-  @@index([idContacto])
-  @@index([leida])
-  @@index([creadoEn])
-  @@index([tipoReferencia])
-  @@map("notificaciones")
-}
-
 model Proyecto {
   id              String             @id @default(uuid())
   nombre          String
@@ -358,7 +300,6 @@ model Proyecto {
   actualizadoEn   DateTime           @updatedAt @map("actualizado_en")
   idUsuario       String             @map("id_usuario")
   clientes        ProyectoCliente[]
-  contactos       ProyectoContacto[] @relation("ProyectoContactos")
   etiquetas       ProyectoEtiqueta[]
   usuario         Usuario            @relation(fields: [idUsuario], references: [id])
 
@@ -456,163 +397,4 @@ enum TipoProyecto {
   LOCAL_COMERCIAL    @map("local_comercial")
 }
 
-// ==================== MODELOS PARA PANEL ADMIN WEB (PHP) ====================
-// Estos modelos mapean a tablas legacy del sitio PHP
 
-enum TipoServicio {
-  GENERAL    @map("general")
-  TOPOGRAFIA @map("topografia")
-  DRON       @map("dron")
-}
-
-enum EstadoTestimonio {
-  PENDIENTE @map("pendiente")
-  APROBADO  @map("aprobado")
-  RECHAZADO @map("rechazado")
-}
-
-// Testimonios para el sitio web
-model Testimonio {
-  id            Int               @id @default(autoincrement())
-  nombre        String
-  correo        String
-  calificacion  Int
-  testimonio    String            @db.Text
-  foto          String?
-  media         String?
-  videoUrl      String?           @map("video_url")
-  estado        EstadoTestimonio  @default(APROBADO)
-  creadoEn      DateTime          @map("creado_en")
-  aprobadoEn    DateTime?         @map("aprobado_en")
-
-  @@index([estado])
-  @@map("testimonios")
-}
-
-// Otros servicios para el sitio web
-model OtrosServicios {
-  id               Int          @id @default(autoincrement())
-  titulo           String
-  descripcion      String?
-  caracteristicas  String?      @db.LongText  // JSON array as string
-  imagenes         String?      @db.LongText  // JSON array as string
-  enlaceImagen     String?      @map("enlace_imagen")
-  enlaceVideo      String?      @map("enlace_video")
-  tipoServicio     TipoServicio @default(GENERAL) @map("tipo_servicio")
-  creadoEn         DateTime     @default(now()) @map("creado_en")
-  actualizadoEn    DateTime     @updatedAt @map("actualizado_en")
-
-  @@map("servicios_adicionales")
-}
-
-// Miembros del equipo para el sitio web
-model MiembroEquipo {
-  id              Int       @id @default(autoincrement())
-  nombre          String
-  cargo           String
-  descripcion     String    @db.LongText
-  correo          String
-  telefono        String
-  foto            String?   @db.LongText
-  activo          Boolean   @default(true)
-  ordenMostrar    Int       @map("orden_mostrar")
-  facebook        String?
-  instagram       String?
-  tiktok          String?
-  creadoEn        DateTime  @default(now()) @map("creado_en")
-  actualizadoEn   DateTime? @updatedAt @map("actualizado_en")
-
-  @@index([activo])
-  @@index([ordenMostrar])
-  @@map("miembros_equipo")
-}
-
-// Páginas de servicios para el sitio web (Techo Propio, Crédito, etc.)
-model PaginaServicio {
-  id                String    @id @default(uuid())
-  tipo_servicio     TipoProyecto
-  titulo            String
-  subtitulo         String?
-  descripcion_corta String?
-  descripcion_larga String?
-  imagen_banner     String?
-  video_banner      String?
-  requisitos        Json?
-  beneficios        Json?
-  pasos             Json?
-  preguntas         Json?
-  activo            Boolean   @default(true)
-  orden_mostrar     Int       @default(0)
-  meta_title        String?
-  meta_description  String?
-  creado_en         DateTime  @default(now())
-  actualizado_en    DateTime  @updatedAt
-
-  @@unique([tipo_servicio])
-  @@index([activo])
-  @@index([orden_mostrar])
-  @@map("paginas_servicios")
-}
-
-// ==================== MODELOS PARA PORTAL DE CLIENTES ====================
-
-// Contraseñas para acceso web de clientes
-model ClientePassword {
-  id_contacto   String   @id
-  contrasena_web String
-  activo        Boolean  @default(true)
-  creado_en     DateTime @default(now())
-  actualizado_en DateTime @updatedAt
-
-  @@map("contrasenas_clientes")
-}
-
-// Documentos subidos por clientes
-model ClienteDocumento {
-  id              String   @id @default(uuid())
-  id_contacto     String
-  nombre_archivo  String
-  nombre_original String
-  ruta_archivo    String
-  tipo_documento  String
-  descripcion     String?
-  tamano_bytes    Int
-  mime_type       String
-  subido_en       DateTime @default(now())
-  estado          String   @default("PENDIENTE")
-  revisado_por    String?
-  revisado_en     DateTime?
-  notas           String?
-
-  @@index([id_contacto])
-  @@index([estado])
-  @@index([subido_en])
-  @@map("documentos_clientes")
-}
-
-// Registro de accesos al portal
-model ClienteAcceso {
-  id             String   @id @default(uuid())
-  id_contacto    String
-  fecha_acceso   DateTime @default(now())
-  ip_address     String
-  user_agent     String?
-
-  @@index([id_contacto])
-  @@index([fecha_acceso])
-  @@map("accesos_clientes")
-}
-
-// Actividades del cliente en el portal
-model ClienteActividad {
-  id          String   @id @default(uuid())
-  id_contacto String
-  tipo        String
-  descripcion String
-  fecha       DateTime @default(now())
-  metadata    Json?
-
-  @@index([id_contacto])
-  @@index([fecha])
-  @@map("actividades_clientes")
-}

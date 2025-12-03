@@ -214,8 +214,8 @@ Equipo Delgado Propiedades
 }
 
 /**
- * Enviar mensaje de WhatsApp
- * TODO: Integrar con Twilio, WhatsApp Business API, o similar
+ * Enviar mensaje de WhatsApp usando wa.me (GRATIS)
+ * Genera un link que abre WhatsApp con el mensaje preescrito
  */
 async function enviarWhatsAppReunion(
   contacto: DatosContacto,
@@ -266,53 +266,20 @@ Lamentamos informarte que la reunión "${reunion.asunto}" programada para ${reun
 Si deseas reprogramar, por favor comunícate con nosotros.`;
   }
 
-  console.log('💬 Mensaje de WhatsApp simulado:');
+  // Generar link wa.me con el mensaje
+  const urlWame = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+
+  console.log('✅ Notificación WhatsApp generada:');
   console.log(`Para: +${telefonoLimpio}`);
+  console.log(`Nombre: ${contacto.nombre}`);
   console.log('─────────────────────────────────────────');
+  console.log('📱 Link wa.me (copia y abre en navegador):');
+  console.log(urlWame);
+  console.log('─────────────────────────────────────────');
+  console.log('💬 Mensaje a enviar:');
   console.log(mensaje);
   console.log('─────────────────────────────────────────');
-
-  // Opción 1: Enviar por Baileys (WhatsApp Web - GRATIS)
-  // Requiere inicializar cliente Baileys al iniciar servidor
-  const whatsappClient = (global as any).whatsappClient;
-  if (whatsappClient && whatsappClient.isConnected) {
-    try {
-      const chatId = `${telefonoLimpio}@c.us`;
-      await whatsappClient.sendMessage(chatId, mensaje);
-      console.log('✅ Mensaje WhatsApp enviado por Baileys');
-    } catch (error: any) {
-      console.warn('⚠️  Error enviando WhatsApp por Baileys:', error.message);
-      enviarPorIntegracionGratis(telefonoLimpio, mensaje);
-    }
-  } else {
-    // Opción 2: Usar API HTTP gratuita (Twilio Free, etc.)
-    enviarPorIntegracionGratis(telefonoLimpio, mensaje);
-  }
   
   // Simular delay de envío
   await new Promise(resolve => setTimeout(resolve, 100));
-}
-
-/**
- * Enviar WhatsApp por integraciones gratuitas sin servidor local
- * Opciones:
- * 1. Usar texto que el usuario puede copiar/pegar
- * 2. Generar link wa.me para que el usuario envíe
- * 3. Usar webhook/API externa gratuita
- */
-async function enviarPorIntegracionGratis(telefono: string, mensaje: string) {
-  console.log('💡 Opciones para enviar WhatsApp GRATIS:');
-  console.log('\n1️⃣  Link wa.me (Usuario copia y envía):');
-  const urlWame = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-  console.log(`   ${urlWame}`);
-  
-  console.log('\n2️⃣  Para enviar automático (GRATIS):');
-  console.log('   a) Instala Baileys: npm install whatsapp-web.js');
-  console.log('   b) Configura cliente WebSocket');
-  console.log('   c) El bot usará WhatsApp Web automáticamente');
-  
-  console.log('\n3️⃣  Texto para copiar/pegar al contacto:');
-  console.log('─────────────────────────────────────────');
-  console.log(mensaje);
-  console.log('─────────────────────────────────────────');
 }
