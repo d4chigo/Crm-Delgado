@@ -8,46 +8,34 @@ const router = Router()
 router.get('/otros-servicios', async (_req, res) => {
   try {
     console.log('[publicServicios] Obteniendo servicios...')
+    // Usar creadoEn en lugar de createdAt
     const items = await prisma.otrosServicios.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { creadoEn: 'desc' }
     })
 
     console.log('[publicServicios] Items encontrados:', items.length)
     console.log('[publicServicios] Items:', items)
 
     const data = items.map((s: any) => {
-      // Parse JSON fields
-      let caracteristicas: string[] = []
-      let imagenes: string[] = []
-      
-      try {
-        if (s.caracteristicas) {
-          caracteristicas = JSON.parse(s.caracteristicas)
-        }
-      } catch (e) {
-        console.error('Error parsing caracteristicas:', e)
-      }
-      
-      try {
-        if (s.imagenes) {
-          imagenes = JSON.parse(s.imagenes)
-        }
-      } catch (e) {
-        console.error('Error parsing imagenes:', e)
-      }
-      
+      // El modelo OtrosServicios no tiene caracteristicas ni imagenes (JSON)
+      // Tiene enlaceImagen y enlaceVideo
+
+      const imagenes = s.enlaceImagen ? [s.enlaceImagen] : []
+      const caracteristicas: string[] = [] // No hay campo caracteristicas en este modelo
+
       return {
         id: s.id,
         title: s.titulo,
         description: s.descripcion,
         caracteristicas,
         imagenes,
-        image_link: s.imagen,
-        video_link: s.imagen,
-        enlaceVideo: s.imagen,
-        service_type: 'servicio',
-        created_at: s.createdAt,
-        updated_at: s.updatedAt,
+        image_link: s.enlaceImagen,
+        video_link: s.enlaceVideo,
+        enlaceVideo: s.enlaceVideo,
+        service_type: s.tipoServicio,
+        // Mapear campos de fecha correctamente
+        created_at: s.creadoEn,
+        updated_at: s.actualizadoEn,
       }
     })
 
