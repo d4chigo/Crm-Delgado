@@ -62,7 +62,7 @@ export class AuthService {
    */
   async loginCliente(correo: string, password: string): Promise<{ token: string; cliente: any }> {
     console.log(`[Auth] Intentando login de cliente con correo: ${correo}`);
-    
+
     // Buscar cliente por correo en Cliente o Lead
     let cliente: any = await prisma.cliente.findFirst({
       where: { correo }
@@ -84,13 +84,13 @@ export class AuthService {
 
     // Verificar que tiene acceso web activo
     const clienteAcceso = await prisma.clientePassword.findUnique({
-      where: { id_contacto: cliente.id },
+      where: { contactoId: cliente.id },
       select: {
-        id_contacto: true,
-        contrasena_web: true,
+        contactoId: true,
+        passwordWeb: true,
         activo: true,
-        creado_en: true,
-        actualizado_en: true
+        creadoEn: true,
+        actualizadoEn: true
       }
     });
 
@@ -109,7 +109,7 @@ export class AuthService {
 
     // Verificar contraseña
     console.log(`[Auth] Verificando contraseña...`);
-    const passwordValida = await compararPassword(password, clienteAcceso.contrasena_web);
+    const passwordValida = await compararPassword(password, clienteAcceso.passwordWeb);
 
     if (!passwordValida) {
       console.log(`[Auth] Contraseña inválida para: ${cliente.id}`);

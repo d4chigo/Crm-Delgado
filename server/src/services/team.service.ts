@@ -5,9 +5,9 @@ const prisma = new PrismaClient()
 export const teamService = {
   async obtenerTodos() {
     try {
-      const items = await prisma.miembroEquipo.findMany({ 
+      const items = await prisma.miembroEquipo.findMany({
         where: { activo: true },
-        orderBy: { ordenMostrar: 'asc' } 
+        orderBy: { ordenMostrar: 'asc' }
       })
       // Mapear campos de Prisma a formato esperado por el frontend
       return items.map((item: any) => ({
@@ -36,7 +36,7 @@ export const teamService = {
     try {
       const item = await prisma.miembroEquipo.findUnique({ where: { id } })
       if (!item) return null
-      
+
       return {
         id: item.id,
         name: item.nombre,
@@ -70,7 +70,7 @@ export const teamService = {
           telefono: data.telefono || data.phone || '',
           foto: data.foto || data.photo || null,
           activo: data.activo ?? data.active ?? true,
-          ordenMostrar: data.ordenMostrar || data.display_order || 0,
+          ordenMostrar: data.orden_mostrar || data.ordenMostrar || data.display_order || 0,
           facebook: data.facebook || data.facebook_url || null,
           instagram: data.instagram || data.instagram_url || null,
           tiktok: data.tiktok || data.tiktok_url || null,
@@ -111,7 +111,7 @@ export const teamService = {
           ...(data.telefono || data.phone ? { telefono: data.telefono || data.phone } : {}),
           ...(data.foto || data.photo !== undefined ? { foto: data.foto || data.photo } : {}),
           ...(data.activo !== undefined || data.active !== undefined ? { activo: data.activo ?? data.active } : {}),
-          ...(data.ordenMostrar !== undefined || data.display_order !== undefined ? { ordenMostrar: data.ordenMostrar ?? data.display_order } : {}),
+          ...(data.orden_mostrar !== undefined || data.ordenMostrar !== undefined || data.display_order !== undefined ? { ordenMostrar: data.orden_mostrar ?? data.ordenMostrar ?? data.display_order } : {}),
           ...(data.facebook || data.facebook_url !== undefined ? { facebook: data.facebook || data.facebook_url } : {}),
           ...(data.instagram || data.instagram_url !== undefined ? { instagram: data.instagram || data.instagram_url } : {}),
           ...(data.tiktok || data.tiktok_url !== undefined ? { tiktok: data.tiktok || data.tiktok_url } : {}),

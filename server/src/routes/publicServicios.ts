@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { PrismaClient, TipoServicio } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 const router = Router()
@@ -9,7 +9,7 @@ router.get('/otros-servicios', async (_req, res) => {
   try {
     console.log('[publicServicios] Obteniendo servicios...')
     const items = await prisma.otrosServicios.findMany({
-      orderBy: { creadoEn: 'desc' }
+      orderBy: { createdAt: 'desc' }
     })
 
     console.log('[publicServicios] Items encontrados:', items.length)
@@ -42,12 +42,12 @@ router.get('/otros-servicios', async (_req, res) => {
         description: s.descripcion,
         caracteristicas,
         imagenes,
-        image_link: s.enlaceImagen,
-        video_link: s.enlaceVideo,
-        enlaceVideo: s.enlaceVideo,
-        service_type: s.tipoServicio.toLowerCase(),
-        created_at: s.creadoEn,
-        updated_at: s.actualizadoEn,
+        image_link: s.imagen,
+        video_link: s.imagen,
+        enlaceVideo: s.imagen,
+        service_type: 'servicio',
+        created_at: s.createdAt,
+        updated_at: s.updatedAt,
       }
     })
 

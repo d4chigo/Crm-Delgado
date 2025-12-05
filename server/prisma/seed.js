@@ -21,21 +21,21 @@ async function seed() {
 
     if (!adminExistente) {
       // Crear usuario administrador solo si no existe
-      const passwordHasheada = await bcrypt.hash('admin123', 10);
+      const passwordHasheada = await bcrypt.hash('mdpropiedades23', 10);
 
       const admin = await prisma.usuario.create({
         data: {
-          nombre: 'Administrador',
-          correo: 'admin@crm-delgado.com',
+          nombre: 'Mario Delgado',
+          correo: 'dmpropiedades80@gmail.com',
           contrasena: passwordHasheada,
           rol: 'ADMIN',
-          telefono: '1234567890'
+          telefono: '948734448'
         }
       });
 
       console.log('✅ Usuario administrador creado exitosamente');
       console.log('📧 Correo:', admin.correo);
-      console.log('🔑 Contraseña: admin123');
+      console.log('🔑 Contraseña: mdpropiedades23');
       console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');
     } else {
       console.log('ℹ️  Ya existe un usuario administrador');
@@ -43,7 +43,7 @@ async function seed() {
 
     // Crear etiquetas predefinidas para programas inmobiliarios
     const etiquetasExistentes = await prisma.etiqueta.count();
-    
+
     if (etiquetasExistentes === 0) {
       const etiquetas = await prisma.etiqueta.createMany({
         data: [
@@ -102,12 +102,12 @@ async function seed() {
       console.log(`✅ ${etiquetas.count} etiquetas predefinidas creadas`);
     } else {
       console.log('ℹ️  Ya existen etiquetas en la base de datos');
-      
+
       // Verificar si la etiqueta "Habilitaciones" existe
       const habilitacionesExiste = await prisma.etiqueta.findFirst({
         where: { nombre: 'Habilitaciones' }
       });
-      
+
       if (!habilitacionesExiste) {
         await prisma.etiqueta.create({
           data: {

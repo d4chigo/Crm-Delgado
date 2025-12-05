@@ -1,8 +1,64 @@
 import { app, BrowserWindow, shell, ipcMain, Menu, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { spawn } from 'child_process'
 
 let ventanaPrincipal: BrowserWindow | null = null
+let servidorNext: any = null
+
+/**
+ * Inicia el servidor Next.js en producción
+ */
+const iniciarServidorNext = async (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const rutaServidor = path.join(__dirname, '..', '..', 'client', '.next', 'standalone')
+      
+      console.log('🚀 Iniciando servidor Next.js desde:', rutaServidor)
+      
+      // Verificar que exista el servidor
+      const archivoServer = path.join(rutaServidor, 'server.js')
+      if (!fs.existsSync(archivoServer)) {
+        console.error('❌ No se encontró server.js en:', archivoServer)
+        reject(new Error('Servidor Next.js no encontrado'))
+        return
+      }
+
+      servidorNext = spawn('node', [archivoServer], {
+        cwd: rutaServidor,
+        env: {
+          ...process.env,
+          NODE_ENV: 'production',
+          PORT: '3000'
+        },
+        stdio: 'pipe'
+      })
+
+      servidorNext.stdout?.on('data', (data: Buffer) => {
+        console.log(`[Next.js] ${data.toString()}`)
+      })
+
+      servidorNext.stderr?.on('data', (data: Buffer) => {
+        console.log(`[Next.js Error] ${data.toString()}`)
+      })
+
+      servidorNext.on('error', (error: Error) => {
+        console.error('❌ Error al iniciar Next.js:', error)
+        reject(error)
+      })
+
+      // Esperar a que el servidor esté listo
+      setTimeout(() => {
+        console.log('✅ Servidor Next.js iniciado')
+        resolve()
+      }, 2000)
+
+    } catch (error) {
+      console.error('❌ Error al iniciar servidor Next.js:', error)
+      reject(error)
+    }
+  })
+}
 
 /**
  * Crea la ventana principal de Electron
@@ -25,12 +81,18 @@ const crearVentana = () => {
     }
   })
 
-  // En desarrollo, cargar desde localhost; en producción, desde archivo
-  const urlCarga = app.isPackaged
-    ? `file://${path.join(__dirname, '..', '..', 'client', '.next')}`
-    : 'http://localhost:3000'
+  // Siempre cargar desde localhost (ya sea dev o producción con servidor)
+  const urlCarga = 'http://localhost:3000'
 
-  ventanaPrincipal.loadURL(urlCarga)
+  console.log('📍 Cargando aplicación desde:', urlCarga)
+
+  ventanaPrincipal.loadURL(urlCarga).catch(error => {
+    console.error('❌ Error al cargar URL:', error)
+    // Reintentar después de 1 segundo
+    setTimeout(() => {
+      ventanaPrincipal?.loadURL(urlCarga)
+    }, 1000)
+  })
 
   // Abrir DevTools en desarrollo
   if (!app.isPackaged) {
@@ -53,9 +115,18 @@ const crearVentana = () => {
  */
 app.whenReady().then(async () => {
   try {
-    console.log('🚀 Iniciando ventana CRM Delgado...')
+    console.log('🚀 Iniciando CRM Delgado...')
 
-    // Crear ventana (el servidor ya está corriendo por iniciar.js)
+    // En producción, iniciar servidor Next.js
+    if (app.isPackaged) {
+      console.log('📦 Modo producción - Iniciando servidor Next.js')
+      await iniciarServidorNext()
+    } else {
+      console.log('🔧 Modo desarrollo - Esperando servidor en localhost:3000')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+
+    // Crear ventana
     crearVentana()
 
     // Configurar permisos de micrófono
@@ -64,7 +135,7 @@ app.whenReady().then(async () => {
     // Crear menú
     crearMenu()
 
-    console.log('✅ Ventana lista')
+    console.log('✅ Aplicación lista')
 
   } catch (error) {
     console.error('❌ Error al iniciar la aplicación:', error)
@@ -79,6 +150,12 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
+  // Detener servidor Next.js si está corriendo
+  if (servidorNext) {
+    console.log('⏹️ Deteniendo servidor Next.js')
+    servidorNext.kill()
+  }
+  
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -86,6 +163,9 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', async () => {
   console.log('👋 Cerrando aplicación...')
+  if (servidorNext) {
+    servidorNext.kill()
+  }
 })
 
 /**

@@ -10,8 +10,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Habilitar standalone solo en producción
-  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
+  // Deshabilitar standalone para evitar problemas con symlinks en Windows
+  // ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
   // Habilitar polling para hot-reload en Docker (Windows/WSL)
   webpack: (config, { dev, isServer }) => {
     if (dev) {

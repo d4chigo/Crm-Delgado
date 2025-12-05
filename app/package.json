@@ -2,7 +2,7 @@
   "name": "crm-delgado-escritorio",
   "version": "1.0.0",
   "description": "Aplicación de escritorio CRM Delgado",
-  "author": "Tu Nombre",
+  "author": "D4chigo",
   "license": "ISC",
   "main": "dist/principal.js",
   "homepage": "./",
@@ -14,12 +14,13 @@
     "package:windows": "npm run build && electron-builder --win",
     "package:mac": "npm run build && electron-builder --mac",
     "package:linux": "npm run build && electron-builder --linux",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "dist": "npm run build && electron-builder"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "electron": "^28.0.0",
-    "electron-builder": "^24.6.4",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.3.3"
   },
   "dependencies": {

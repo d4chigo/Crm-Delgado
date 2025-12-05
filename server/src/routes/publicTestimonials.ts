@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { PrismaClient, EstadoTestimonio } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 
 const prisma = new PrismaClient()
@@ -9,8 +9,8 @@ const router = Router()
 router.get('/testimonials', async (_req, res) => {
   try {
     const items = await prisma.testimonio.findMany({
-      where: { estado: EstadoTestimonio.APROBADO },
-      orderBy: { aprobadoEn: 'desc' }
+      where: { estado: 'APROBADO' },
+      orderBy: { actualizado_en: 'desc' }
     })
     res.json({ success: true, data: items, meta: { count: items.length } })
   } catch (error) {
@@ -49,10 +49,7 @@ router.post('/testimonials', async (req, res) => {
         calificacion: payload.calificacion,
         testimonio: payload.testimonio,
         foto: payload.foto ?? null,
-        media: payload.media ?? null,
-        videoUrl: payload.videoUrl ?? null,
-        estado: EstadoTestimonio.PENDIENTE,
-        creadoEn: new Date(),
+        estado: 'PENDIENTE',
       } as any,
     })
 
