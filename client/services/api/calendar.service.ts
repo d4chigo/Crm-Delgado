@@ -109,22 +109,5 @@ export async function listarEventos(): Promise<CalendarEvent[]> {
 }
 
 export function getTokenFromCallback(): string | null {
-  if (typeof window === 'undefined') return null;
-  
-  const urlParams = new URLSearchParams(window.location.search);
-  const tokensParam = urlParams.get('tokens');
-  
-  if (tokensParam) {
-    try {
-      const tokens = JSON.parse(atob(tokensParam));
-      guardarTokens(tokens);
-      // Limpiar URL
-      window.history.replaceState({}, '', window.location.pathname);
-      return tokens.access_token;
-    } catch (error) {
-      console.error('Error decodificando tokens:', error);
-    }
-  }
-  
   return null;
 }

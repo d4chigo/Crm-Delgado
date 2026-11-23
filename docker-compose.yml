@@ -7,10 +7,10 @@ services:
     env_file:
       - .env
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password_2025}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-crm_delgado}
       MYSQL_USER: ${MYSQL_USER:-crm_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-crm_password_2025}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
     ports:
       - "3306:3306"
     volumes:
@@ -19,7 +19,7 @@ services:
     networks:
       - crm-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password_2025}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$${MYSQL_ROOT_PASSWORD}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,8 +38,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
-      DATABASE_URL: mysql://${MYSQL_USER:-crm_user}:${MYSQL_PASSWORD:-crm_password_2025}@mysql:3306/${MYSQL_DATABASE:-crm_delgado}
-      JWT_SECRET: ${JWT_SECRET:-tu_super_secreto_jwt_cambiar_en_produccion_2025}
+      DATABASE_URL: mysql://${MYSQL_USER:-crm_user}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-crm_delgado}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       DNI_API_TOKEN: ${DNI_API_TOKEN:-}
       BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}

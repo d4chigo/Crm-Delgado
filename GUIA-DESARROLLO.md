@@ -93,30 +93,30 @@ El archivo `.env` en la raíz del proyecto ya existe. Verifica que contenga:
 
 ```env
 # Base de datos
-MYSQL_ROOT_PASSWORD=root_password_dev_2025
+MYSQL_ROOT_PASSWORD=
 MYSQL_DATABASE=crm_delgado
 MYSQL_USER=crm_user
-MYSQL_PASSWORD=crm_pass_dev_2025
+MYSQL_PASSWORD=
 
 # Backend (IMPORTANTE: usar "mysql" como host en Docker)
-DATABASE_URL=mysql://crm_user:crm_pass_dev_2025@mysql:3306/crm_delgado
+DATABASE_URL=
 
 # JWT
-JWT_SECRET=tu_jwt_secret_super_seguro_cambiar_en_produccion_123456
+JWT_SECRET=
 JWT_EXPIRES_IN=24h
 
 # APIs externas
-DNI_API_TOKEN=sk_10762.TrvGAsEZggD8fm9RdpKUtq17KyerYY6k
+DNI_API_TOKEN=
 
 # Frontend
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 # Google OAuth (opcional)
-GOOGLE_CLIENT_ID=199058992191-0sqmua3i2742qvovg22lp2rnpp7gpmgh.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # Gemini API
-SERVER_GEMINI_API_KEY=AIzaSyBxWeGfCmYlHKhAlqp10nqd3Eftj5p7UbI
+SERVER_GEMINI_API_KEY=
 ```
 
 ⚠️ **IMPORTANTE**: En el `.env`, el `DATABASE_URL` **DEBE usar `@mysql:3306`** (no `@localhost:3306`).
@@ -205,7 +205,7 @@ docker stats
 docker exec -it crm-backend-dev bash
 
 # Entrar a MySQL
-docker exec -it crm-mysql-dev mysql -u crm_user -pcrm_pass_dev_2025 crm_delgado
+docker exec -it crm-mysql-dev mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
 
 # Entrar al frontend
 docker exec -it crm-frontend-dev sh
@@ -294,13 +294,13 @@ docker compose -f docker-compose.dev.yml restart backend
    - **Sistema**: MySQL
    - **Servidor**: mysql
    - **Usuario**: crm_user
-   - **Contraseña**: crm_pass_dev_2025
+   - **Contraseña**: Valor configurado en `MYSQL_PASSWORD`
    - **Base de datos**: crm_delgado
 
 #### Usando CLI
 ```bash
 # Desde el host
-docker exec -it crm-mysql-dev mysql -u crm_user -pcrm_pass_dev_2025 crm_delgado
+docker exec -it crm-mysql-dev mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
 
 # Dentro de MySQL:
 SHOW TABLES;
@@ -381,7 +381,7 @@ docker logs pgdp-web-php -f
 docker exec pgdp-web-php ping -c 3 crm-mysql-dev
 
 # Probar PHP
-docker exec pgdp-web-php php -r "new PDO('mysql:host=crm-mysql-dev;dbname=crm_delgado', 'crm_user', 'crm_pass_dev_2025'); echo 'OK';"
+docker exec pgdp-web-php php -r "new PDO('mysql:host=crm-mysql-dev;dbname=crm_delgado', getenv('MYSQL_USER'), getenv('MYSQL_PASSWORD')); echo 'OK';"
 ```
 
 ### URLs de Acceso
@@ -487,7 +487,7 @@ docker exec pgdp-web-php tail -f /var/log/apache2/error.log
 ```bash
 # 1. Verificar DATABASE_URL en .env
 cat .env | grep DATABASE_URL
-# Debe ser: mysql://crm_user:crm_pass_dev_2025@mysql:3306/crm_delgado
+# Debe usar MYSQL_USER, MYSQL_PASSWORD y @mysql:3306
 #                                            ^^^^^ NO "localhost"
 
 # 2. Si está mal, corregir:
@@ -651,7 +651,7 @@ docker compose -f docker-compose.dev.yml restart backend
 docker exec -it crm-backend-dev bash
 
 # Ver base de datos
-docker exec -it crm-mysql-dev mysql -u crm_user -pcrm_pass_dev_2025 crm_delgado
+docker exec -it crm-mysql-dev mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
 
 # Prisma migrations
 docker exec crm-backend-dev npx prisma migrate dev

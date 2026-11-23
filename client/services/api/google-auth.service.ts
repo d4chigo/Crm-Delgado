@@ -54,20 +54,8 @@ class GoogleAuthService {
     sessionStorage.removeItem(GoogleAuthService.PENDING_IMPORT_KEY);
   }
 
-  /**
-   * Obtener el token del callback de Google (desde la URL)
-   */
   getTokenFromCallback(): string | null {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('google_token');
-    
-    if (token) {
-      console.log('✅ Token de Google encontrado en URL, longitud:', token.length);
-      // Limpiar URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    return token;
+    return null;
   }
 
   /**

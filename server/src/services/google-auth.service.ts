@@ -6,8 +6,8 @@ class GoogleAuthService {
   constructor() {
     // Configuración de OAuth2
     this.oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID || 'your-client-id',
-      process.env.GOOGLE_CLIENT_SECRET || 'your-client-secret',
+      process.env.GOOGLE_CLIENT_ID || '',
+      process.env.GOOGLE_CLIENT_SECRET || '',
       process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback'
     );
   }
@@ -89,10 +89,8 @@ class GoogleAuthService {
    */
   isConfigured(): boolean {
     return !!(
-      process.env.GOOGLE_CLIENT_ID && 
-      process.env.GOOGLE_CLIENT_ID !== 'your-client-id' &&
-      process.env.GOOGLE_CLIENT_SECRET &&
-      process.env.GOOGLE_CLIENT_SECRET !== 'your-client-secret'
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET
     );
   }
 }

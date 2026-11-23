@@ -64,10 +64,9 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const tokens = await googleAuthService.getTokens(code);
     console.log('✅ Tokens obtenidos exitosamente');
 
-    // Redirigir al frontend con el access token
+    // No incluir credenciales OAuth en la URL: pueden quedar en historiales y logs
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-    const redirectUrl = `${clientUrl}/dashboard/contacts?google_token=${encodeURIComponent(tokens.access_token || '')}`;
-    console.log('🔀 Redirigiendo al frontend...');
+    const redirectUrl = `${clientUrl}/dashboard/contacts?google_auth=success`;
     res.redirect(redirectUrl);
   } catch (error: any) {
     console.error('❌ Error en callback de Google:', error.message);

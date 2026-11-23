@@ -42,9 +42,6 @@ import adminUsuariosRoutes from '@/routes/adminUsuarios';
 import clienteWebRoutes from '@/routes/clienteWebRoutes';
 import publicLeadRoutes from '@/routes/publicLeadRoutes';
 import clientPortalRoutes from '@/routes/clientPortalRoutes';
-import testRoutes from '@/routes/test.routes';
-import testPasswordRoutes from '@/routes/test-password.routes';
-import testJwtRoutes from '@/routes/test-jwt.routes';
 import { manejarErrores } from '@/middlewares/error.middleware';
 import { handleVoiceSession } from '@/controllers/voice.controller';
 
@@ -124,9 +121,6 @@ app.use('/api/admin/users', adminUsuariosRoutes);
 app.use('/api/clientes', clienteWebRoutes);
 app.use('/api/public', publicLeadRoutes);
 app.use('/api/portal-cliente', clientPortalRoutes);
-app.use('/api/test', testRoutes);
-app.use('/api/test', testPasswordRoutes);
-app.use('/api/test', testJwtRoutes);
 
 // ==================== MANEJO DE ERRORES ====================
 app.use(manejarErrores);
