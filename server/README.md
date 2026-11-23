@@ -58,7 +58,7 @@ server/
 DATABASE_URL="mysql://root@127.0.0.1:3306/crm_delgado"
 
 # JWT
-JWT_SECRET="tu-secret-super-secreto-cambiar-en-produccion"
+JWT_SECRET=""
 JWT_EXPIRES_IN="24h"
 
 # Servidor

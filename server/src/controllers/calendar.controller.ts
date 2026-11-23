@@ -12,7 +12,6 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 export async function getAuthUrl(req: Request, res: Response) {
   try {
     console.log('[Calendar] Generando URL de autenticación');
-    console.log('[Calendar] Client ID:', process.env.GOOGLE_CALENDAR_CLIENT_ID?.substring(0, 20) + '...');
     console.log('[Calendar] Redirect URI:', process.env.GOOGLE_CALENDAR_REDIRECT_URI);
     
     const authUrl = oauth2Client.generateAuthUrl({
@@ -51,14 +50,7 @@ export async function handleCallback(req: Request, res: Response) {
     const { tokens: newTokens } = await oauth2Client.getToken(code);
     console.log('[Calendar] Tokens obtenidos exitosamente:', Object.keys(newTokens));
     
-    // Codificar tokens en base64 para pasarlos de forma segura en la URL
-    const tokensEncoded = Buffer.from(JSON.stringify(newTokens)).toString('base64');
-    console.log('[Calendar] Tokens codificados, longitud:', tokensEncoded.length);
-
-    const redirectUrl = `${process.env.CORS_ORIGIN}/dashboard/actividades?auth=success&tokens=${tokensEncoded}`;
-    console.log('[Calendar] Redirigiendo a:', redirectUrl.substring(0, 100) + '...');
-    
-    // Redirigir al frontend con tokens
+    const redirectUrl = `${process.env.CORS_ORIGIN}/dashboard/actividades?auth=success`;
     res.redirect(redirectUrl);
   } catch (error: any) {
     console.error('[Calendar] Error en callback de OAuth2:', error);

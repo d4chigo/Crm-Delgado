@@ -1,7 +1,11 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { PayloadJWT } from '@/types';
 
-const SECRET = process.env.JWT_SECRET || 'secret-super-secreto-cambiar-en-produccion';
+const SECRET = process.env.JWT_SECRET;
+
+if (!SECRET) {
+  throw new Error('JWT_SECRET no configurado');
+}
 
 export const generarToken = (payload: PayloadJWT): string => {
   const options: SignOptions = { expiresIn: '24h' };

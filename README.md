@@ -224,7 +224,7 @@ docker logs crm-frontend-dev -f
 docker exec -it crm-backend-dev bash
 
 # Acceder a MySQL
-docker exec -it crm-mysql-dev mysql -u crm_user -pcrm_pass_dev_2025 crm_delgado
+docker exec -it crm-mysql-dev mysql -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"
 ```
 
 ---
@@ -235,7 +235,7 @@ docker exec -it crm-mysql-dev mysql -u crm_user -pcrm_pass_dev_2025 crm_delgado
 |----------|-----|--------------|
 | **CRM Frontend** | http://localhost:3000 | Usuario del sistema |
 | **API Backend** | http://localhost:5000/api | - |
-| **Adminer (BD)** | http://localhost:8080 | user: `crm_user` / pass: `crm_pass_dev_2025` |
+| **Adminer (BD)** | http://localhost:8080 | Configurar credenciales mediante `.env` |
 | **Web PHP** | http://localhost:8081 | - |
 
 ---
@@ -285,18 +285,18 @@ Archivo `.env` principal:
 # Base de datos
 MYSQL_DATABASE=crm_delgado
 MYSQL_USER=crm_user
-MYSQL_PASSWORD=crm_pass_dev_2025
-DATABASE_URL=mysql://crm_user:crm_pass_dev_2025@mysql:3306/crm_delgado
+MYSQL_PASSWORD=
+DATABASE_URL=
 
 # JWT
-JWT_SECRET=cambiar_en_produccion
+JWT_SECRET=
 JWT_EXPIRES_IN=24h
 
 # APIs
-DNI_API_TOKEN=tu_token_aqui
-GOOGLE_CLIENT_ID=tu_client_id
-GOOGLE_CLIENT_SECRET=tu_client_secret
-SERVER_GEMINI_API_KEY=tu_gemini_key
+DNI_API_TOKEN=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+SERVER_GEMINI_API_KEY=
 
 # URLs
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
